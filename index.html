@@ -568,13 +568,14 @@ function paint(e) {
 canvas.addEventListener('mousedown', e => {
   const [c, r] = cellAt(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+  pushHistory();
   paintVal = grid[idx(c, r)] ? 0 : 1; painting = true; paint(e);
 });
 canvas.addEventListener('mousemove', e => { if (painting) paint(e); });
 canvas.addEventListener('mouseup',   () => { painting = false; });
 canvas.addEventListener('mouseleave',() => { painting = false; });
 
-canvas.addEventListener('touchstart', e => { e.preventDefault(); painting = true; paint(e); }, { passive: false });
+canvas.addEventListener('touchstart', e => { e.preventDefault(); pushHistory(); painting = true; paint(e); }, { passive: false });
 canvas.addEventListener('touchmove',  e => { e.preventDefault(); if (painting) paint(e); }, { passive: false });
 canvas.addEventListener('touchend',   () => { painting = false; });
 
