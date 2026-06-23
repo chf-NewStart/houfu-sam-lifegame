@@ -168,10 +168,10 @@
     .win-submitted { color: #1db954; font-size: 0.78rem; margin-bottom: 8px; }
 
     /* ── Shared overlay base ─────────────────────────── */
-    #lbOverlay, #gallerySubmitOverlay, #galleryOverlay, #imgOverlay, #savesOverlay, #importPatternOverlay {
+    #lbOverlay, #gallerySubmitOverlay, #galleryOverlay, #imgOverlay, #savesOverlay, #importPatternOverlay, #patternPickerOverlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center;
     }
-    #lbOverlay.show, #gallerySubmitOverlay.show, #galleryOverlay.show, #imgOverlay.show, #savesOverlay.show, #importPatternOverlay.show { display: flex; }
+    #lbOverlay.show, #gallerySubmitOverlay.show, #galleryOverlay.show, #imgOverlay.show, #savesOverlay.show, #importPatternOverlay.show, #patternPickerOverlay.show { display: flex; }
 
     /* ── Leaderboard overlay ──────────────────────────── */
     #lbOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center; }
@@ -289,7 +289,7 @@
         <button class="pbtn" draggable="true" data-preset="diehard"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
         <button class="pbtn" draggable="true" data-preset="lwss"   ><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
       </div>
-      <button class="btn" onclick="openImportPattern()" style="width:100%;margin-top:5px" data-en="⊕ Import Pattern" data-zh="⊕ 导入图案">⊕ Import Pattern</button>
+      <button class="btn" onclick="openPatternPicker()" style="width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
     </div>
 
     <div class="canvas-wrap">
@@ -382,9 +382,15 @@
         <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press F to flip">⟺ <span id="flipLabel">normal</span> <span style="color:#444;font-size:0.55rem">[F]</span></button>
       </div>
       <div id="customPatternsSection">
-        <div class="dev-header">// saved patterns</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="dev-header" style="margin:0">// saved patterns</div>
+          <button class="btn" onclick="openPatternPicker()" style="padding:2px 8px;font-size:0.6rem;border-color:#1a3a22;color:#1db954">+ add</button>
+        </div>
         <div id="customPatternGrid" class="preset-grid"></div>
-        <div style="color:#444;font-size:0.6rem;margin-top:6px" data-en="From My Saves · drag to stamp" data-zh="来自存档 · 拖拽放置">From My Saves · drag to stamp</div>
+        <div style="color:#333;font-size:0.58rem;margin-top:5px">drag to stamp · R / F to rotate/flip</div>
+      </div>
+      <div class="brow" style="margin-top:6px">
+        <button class="btn" onclick="openPatternPicker()" style="flex:1;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
       </div>
     </div>
 
@@ -466,6 +472,15 @@
     <div class="lb-title">🖼️ Community Gallery</div>
     <div id="galleryList"><div class="lb-empty">Loading…</div></div>
     <button class="btn" onclick="closeGallery()" style="margin-top:18px;width:100%">Close</button>
+  </div>
+</div>
+
+<div id="patternPickerOverlay">
+  <div class="lb-box">
+    <div class="lb-title" style="color:#1db954">⊕ Add to Patterns</div>
+    <div style="color:#555;font-size:0.7rem;margin-bottom:12px">Pick a saved blueprint to add as a draggable pattern tile.</div>
+    <div id="patternPickerList" style="max-height:320px;overflow-y:auto"></div>
+    <button class="btn" onclick="closePatternPicker()" style="margin-top:14px;width:100%">Close</button>
   </div>
 </div>
 
@@ -816,7 +831,6 @@ function toggleDevMode() {
   devMode = !devMode;
   document.getElementById('devPanel').style.display = devMode ? '' : 'none';
   document.getElementById('devModeBtn').classList.toggle('active', devMode);
-  _renderCustomPatternBtns();
   if (devMode) refreshDevPanel();
 }
 
@@ -1603,7 +1617,9 @@ let customPatternList = [];
 function _loadCustomPatternData() {
   try { customPatternList = JSON.parse(localStorage.getItem(CUSTOM_PATTERNS_KEY) || '[]'); }
   catch { customPatternList = []; }
-  customPatternList.forEach(p => { PRESETS[p.id] = p.cells; });
+  // cells are stored in each entry — restore them into PRESETS
+  customPatternList.forEach(p => { if (p.cells) PRESETS[p.id] = p.cells; });
+  _renderCustomPatternBtns();
 }
 
 function addSaveAsPattern(saveIdx) {
@@ -1611,14 +1627,11 @@ function addSaveAsPattern(saveIdx) {
   if (!save) return;
   const cells = JSON.parse(b64dec(save.seed));
   const id = 'custom_' + Date.now();
-  const entry = { id, name: save.name };
-  customPatternList.push(entry);
+  customPatternList.push({ id, name: save.name, cells });
   PRESETS[id] = cells;
   localStorage.setItem(CUSTOM_PATTERNS_KEY, JSON.stringify(customPatternList));
   _renderCustomPatternBtns();
-  // briefly flash the button green as confirmation
-  const btn = document.querySelector(`[data-add-pattern="${saveIdx}"]`);
-  if (btn) { const orig = btn.textContent; btn.textContent = '✓ Added'; setTimeout(() => { btn.textContent = orig; }, 900); }
+  closePatternPicker();
 }
 
 function removeCustomPattern(id) {
@@ -1631,7 +1644,7 @@ function removeCustomPattern(id) {
 function _renderCustomPatternBtns() {
   const section = document.getElementById('customPatternsSection');
   const grid = document.getElementById('customPatternGrid');
-  if (!customPatternList.length || !devMode) { section.style.display = 'none'; return; }
+  if (!customPatternList.length) { section.style.display = 'none'; return; }
   section.style.display = '';
   grid.innerHTML = customPatternList.map(p => `
     <div class="custom-pbtn-wrap">
@@ -1645,6 +1658,31 @@ function _renderCustomPatternBtns() {
     b.addEventListener('click', e => { e.stopPropagation(); removeCustomPattern(b.dataset.delCustom); });
   });
 }
+
+/* ── Pattern picker (add saved blueprint to patterns) */
+function openPatternPicker() {
+  const saves = _getSaves();
+  const list = document.getElementById('patternPickerList');
+  if (!saves.length) {
+    list.innerHTML = '<div class="lb-empty" style="padding:20px 0">No saves yet — save a blueprint first via 💾 My Saves.</div>';
+  } else {
+    const existingIds = new Set(customPatternList.map(p => p.name));
+    list.innerHTML = saves.map((s, i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1a1a1a">
+        <div style="flex:1;min-width:0">
+          <div style="color:#ccc;font-size:0.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name)}</div>
+          <div style="color:#555;font-size:0.6rem">${s.cells} cells · ${new Date(s.date).toLocaleDateString()}</div>
+        </div>
+        <button class="btn" data-pick-save="${i}" style="padding:4px 10px;font-size:0.65rem;flex-shrink:0;border-color:#1a3a22;color:#1db954">+ Add</button>
+      </div>`).join('');
+  }
+  document.getElementById('patternPickerOverlay').classList.add('show');
+}
+function closePatternPicker() { document.getElementById('patternPickerOverlay').classList.remove('show'); }
+document.getElementById('patternPickerList').addEventListener('click', e => {
+  const btn = e.target.closest('[data-pick-save]');
+  if (btn) addSaveAsPattern(+btn.dataset.pickSave);
+});
 
 _loadCustomPatternData();
 
@@ -1779,18 +1817,15 @@ function _renderSaves() {
         <div style="color:#555;font-size:0.6rem">${new Date(s.date).toLocaleDateString()} · ${s.cells} cells</div>
       </div>
       <button class="btn" data-load-save="${i}" style="padding:4px 9px;font-size:0.65rem;flex-shrink:0">Load</button>
-      <button class="btn" data-add-pattern="${i}" style="padding:4px 9px;font-size:0.65rem;flex-shrink:0;border-color:#1a3a22;color:#1db954" title="Add to dev patterns">+ Pattern</button>
       <button class="btn danger" data-del-save="${i}" style="padding:4px 7px;font-size:0.65rem;flex-shrink:0">✕</button>
     </div>`).join('');
 }
 
 document.getElementById('savesList').addEventListener('click', e => {
-  const loadBtn    = e.target.closest('[data-load-save]');
-  const delBtn     = e.target.closest('[data-del-save]');
-  const patternBtn = e.target.closest('[data-add-pattern]');
-  if (loadBtn)    { loadSeedStr(_getSaves()[+loadBtn.dataset.loadSave].seed); closeSaves(); }
-  if (delBtn)     { _deleteBlueprint(+delBtn.dataset.delSave); }
-  if (patternBtn) { addSaveAsPattern(+patternBtn.dataset.addPattern); }
+  const loadBtn = e.target.closest('[data-load-save]');
+  const delBtn  = e.target.closest('[data-del-save]');
+  if (loadBtn) { loadSeedStr(_getSaves()[+loadBtn.dataset.loadSave].seed); closeSaves(); }
+  if (delBtn)  { _deleteBlueprint(+delBtn.dataset.delSave); }
 });
 
 /* Seed buttons use data-seed to avoid XSS — handle via event delegation */
