@@ -151,6 +151,11 @@
     .lb-try:hover { background: #1db954; color: #000; }
     #gallerySubmitOverlay, #galleryOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center; }
     #gallerySubmitOverlay.show, #galleryOverlay.show { display: flex; }
+    #imgOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center; }
+    #imgOverlay.show { display: flex; }
+    #imgDropZone { border: 2px dashed #333; padding: 28px; text-align: center; color: #555; font-size: 0.8rem; cursor: pointer; transition: border-color .15s; }
+    #imgDropZone:hover, #imgDropZone.drag-over { border-color: #1db954; color: #1db954; }
+    #imgPreview { display: none; width: 100%; image-rendering: pixelated; border: 1px solid #222; margin-top: 10px; }
     #gallerySubmitOverlay input:focus, #galleryNickInput:focus { border-color: #1db954 !important; }
     .gallery-item { border-top: 1px solid #1a1a1a; padding: 10px 0; display: flex; align-items: center; gap: 10px; }
     .gallery-item:first-child { border-top: none; }
@@ -274,6 +279,9 @@
         <button class="btn" onclick="openGallerySubmit()" data-en="📤 Share Shape" data-zh="📤 分享形状">📤 Share Shape</button>
         <button class="btn" onclick="openGallery()"       data-en="🖼️ Gallery"    data-zh="🖼️ 图库">🖼️ Gallery</button>
       </div>
+      <div class="brow">
+        <button class="btn" onclick="openImgModal()" data-en="📷 Image → Cells" data-zh="📷 图片转细胞" style="flex:1">📷 Image → Cells</button>
+      </div>
       <div class="slider-row">
         <span data-en="speed" data-zh="速度">speed</span>
         <input type="range" id="speedSlider" min="1" max="30" value="10" oninput="setSpeed(this.value)">
@@ -394,6 +402,30 @@
     <div class="lb-title">🖼️ Community Gallery</div>
     <div id="galleryList"><div class="lb-empty">Loading…</div></div>
     <button class="btn" onclick="closeGallery()" style="margin-top:18px;width:100%">Close</button>
+  </div>
+</div>
+
+<div id="imgOverlay">
+  <div class="lb-box">
+    <div class="lb-title">📷 Image → Cells</div>
+    <div style="color:#888;font-size:0.75rem;margin-bottom:12px">Upload any image — dark pixels become live cells. Adjust the threshold to control density.</div>
+    <div id="imgDropZone" onclick="document.getElementById('imgFileInput').click()">
+      Click or drop an image here
+      <input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="onImgFile(this)">
+    </div>
+    <canvas id="imgPreview"></canvas>
+    <div class="slider-row" id="imgControls" style="display:none;margin-top:10px">
+      <span>threshold</span>
+      <input type="range" id="imgThreshold" min="0" max="255" value="128" oninput="renderImgPreview()">
+      <span id="imgThresholdLabel">128</span>
+    </div>
+    <label id="imgInvertLabel" style="display:none;margin-top:8px;font-size:0.75rem;color:#888;cursor:pointer">
+      <input type="checkbox" id="imgInvert" onchange="renderImgPreview()"> invert (light = alive)
+    </label>
+    <div style="display:flex;gap:6px;margin-top:14px">
+      <button class="btn" id="imgStampBtn" onclick="stampImageToGrid()" style="flex:1;display:none">✓ Stamp to Canvas</button>
+      <button class="btn" onclick="closeImgModal()" style="flex:1">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -1205,6 +1237,94 @@ function openGallery() {
   }).catch(() => { list.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load.</div>'; });
 }
 function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
+
+/* ── Image → Cells ────────────────────────────────── */
+let _imgSource = null, _imgPreviewData = null;
+
+function openImgModal() {
+  document.getElementById('imgFileInput').value = '';
+  document.getElementById('imgDropZone').style.display = 'block';
+  document.getElementById('imgPreview').style.display  = 'none';
+  document.getElementById('imgControls').style.display  = 'none';
+  document.getElementById('imgInvertLabel').style.display = 'none';
+  document.getElementById('imgStampBtn').style.display = 'none';
+  document.getElementById('imgInvert').checked = false;
+  document.getElementById('imgThreshold').value = 128;
+  document.getElementById('imgThresholdLabel').textContent = 128;
+  _imgSource = null; _imgPreviewData = null;
+  document.getElementById('imgOverlay').classList.add('show');
+}
+function closeImgModal() { document.getElementById('imgOverlay').classList.remove('show'); }
+
+function onImgFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      _imgSource = img;
+      renderImgPreview();
+      document.getElementById('imgDropZone').style.display  = 'none';
+      document.getElementById('imgPreview').style.display   = 'block';
+      document.getElementById('imgControls').style.display  = 'flex';
+      document.getElementById('imgInvertLabel').style.display = 'block';
+      document.getElementById('imgStampBtn').style.display  = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderImgPreview() {
+  if (!_imgSource) return;
+  const threshold = +document.getElementById('imgThreshold').value;
+  const invert    = document.getElementById('imgInvert').checked;
+  document.getElementById('imgThresholdLabel').textContent = threshold;
+
+  const preview = document.getElementById('imgPreview');
+  preview.width  = COLS;
+  preview.height = ROWS;
+  const pctx = preview.getContext('2d');
+  pctx.drawImage(_imgSource, 0, 0, COLS, ROWS);
+
+  const imgData = pctx.getImageData(0, 0, COLS, ROWS);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const br = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
+    const alive = invert ? br > threshold : br < threshold;
+    d[i] = d[i+1] = d[i+2] = alive ? 0 : 255;
+    d[i+3] = 255;
+  }
+  pctx.putImageData(imgData, 0, 0);
+  _imgPreviewData = imgData;
+}
+
+function stampImageToGrid() {
+  if (!_imgPreviewData) return;
+  pushHistory();
+  grid.fill(0); generation = 0;
+  document.getElementById('genCount').textContent = 0;
+  const d = _imgPreviewData.data;
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (d[(r * COLS + c) * 4] === 0) grid[idx(c, r)] = 1;
+  draw(); closeImgModal();
+}
+
+/* Drag-and-drop onto the image modal drop zone */
+const imgDZ = document.getElementById('imgDropZone');
+imgDZ.addEventListener('dragover', e => { e.preventDefault(); imgDZ.classList.add('drag-over'); });
+imgDZ.addEventListener('dragleave', ()  => imgDZ.classList.remove('drag-over'));
+imgDZ.addEventListener('drop', e => {
+  e.preventDefault(); imgDZ.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const inp = document.getElementById('imgFileInput');
+    const dt  = new DataTransfer(); dt.items.add(file); inp.files = dt.files;
+    onImgFile(inp);
+  }
+});
 
 /* ── Keyboard shortcuts ───────────────────────────── */
 document.addEventListener('keydown', e => {
