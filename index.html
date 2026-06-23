@@ -99,7 +99,7 @@
     }
     .pbtn:hover { border-color: #aaa; color: #ccc; }
     .pbtn:active { cursor: grabbing; }
-    .pbtn span { display: block; font-size: 0.53rem; color: #666; margin-top: 1px; }
+    .pbtn-desc { display: block; font-size: 0.53rem; color: #666; margin-top: 1px; }
     .drag-hint { font-size: 0.57rem; color: #555; margin-top: 5px; margin-bottom: 5px; }
 
     /* ── Rules ────────────────────────────────────────── */
@@ -109,7 +109,7 @@
     /* ── Mobile patterns (above canvas) ──────────────── */
     .patterns-mobile { display: none; width: 100%; }
     .patterns-mobile .preset-grid { grid-template-columns: repeat(4, 1fr); }
-    .patterns-mobile .pbtn span { display: none; }
+    .patterns-mobile .pbtn-desc { display: none; }
 
     /* ── Canvas HUD (stats overlay) ──────────────────── */
     .canvas-wrap { position: relative; display: inline-block; }
@@ -206,14 +206,14 @@
 <div class="challenges-bar">
   <div class="challenges-row">
     <span class="challenges-label" data-en="// challenges" data-zh="// 挑战">// challenges</span>
-    <button class="cbtn" data-challenge="0" onclick="startChallenge(0)">First Steps<small>survive 20 gens</small></button>
-    <button class="cbtn" data-challenge="1" onclick="startChallenge(1)">Bloom<small>reach 100 cells</small></button>
-    <button class="cbtn" data-challenge="2" onclick="startChallenge(2)">Century<small>survive 100 gens</small></button>
-    <button class="cbtn" data-challenge="3" onclick="startChallenge(3)">Still Life<small>reach stability</small></button>
-    <button class="cbtn" data-challenge="4" onclick="startChallenge(4)">Mega City<small>reach 500 cells</small></button>
-    <button class="cbtn" data-challenge="5" onclick="startChallenge(5)">Extinction<small>all cells die</small></button>
+    <button class="cbtn" data-challenge="0" onclick="startChallenge(0)"><span data-en="First Steps" data-zh="初步">First Steps</span><small data-en="survive 20 gens" data-zh="存活20代">survive 20 gens</small></button>
+    <button class="cbtn" data-challenge="1" onclick="startChallenge(1)"><span data-en="Bloom"        data-zh="盛放">Bloom</span><small data-en="reach 100 cells" data-zh="达100活细胞">reach 100 cells</small></button>
+    <button class="cbtn" data-challenge="2" onclick="startChallenge(2)"><span data-en="Century"      data-zh="百代">Century</span><small data-en="survive 100 gens" data-zh="存活100代">survive 100 gens</small></button>
+    <button class="cbtn" data-challenge="3" onclick="startChallenge(3)"><span data-en="Still Life"   data-zh="静止图案">Still Life</span><small data-en="reach stability" data-zh="达稳定状态">reach stability</small></button>
+    <button class="cbtn" data-challenge="4" onclick="startChallenge(4)"><span data-en="Mega City"    data-zh="超级都市">Mega City</span><small data-en="reach 500 cells" data-zh="达500活细胞">reach 500 cells</small></button>
+    <button class="cbtn" data-challenge="5" onclick="startChallenge(5)"><span data-en="Extinction"   data-zh="灭绝">Extinction</span><small data-en="all cells die" data-zh="所有细胞消亡">all cells die</small></button>
   </div>
-  <div class="challenge-status" id="challengeStatus">select a challenge · draw your pattern · press play</div>
+  <div class="challenge-status" id="challengeStatus" data-en="select a challenge · draw your pattern · press play" data-zh="选择挑战 · 绘制图案 · 按播放">select a challenge · draw your pattern · press play</div>
 </div>
 
 <!-- Main layout -->
@@ -223,14 +223,14 @@
     <!-- Patterns: shown above canvas on mobile only -->
     <div class="patterns-mobile">
       <div class="preset-grid">
-        <button class="pbtn" draggable="true" data-preset="glider"  onclick="loadPreset('glider')">Glider<span>classic mover</span></button>
-        <button class="pbtn" draggable="true" data-preset="blinker" onclick="loadPreset('blinker')">Blinker<span>period-2</span></button>
-        <button class="pbtn" draggable="true" data-preset="pulsar"  onclick="loadPreset('pulsar')">Pulsar<span>period-3</span></button>
-        <button class="pbtn" draggable="true" data-preset="rpento"  onclick="loadPreset('rpento')">R-pentomino<span>chaotic</span></button>
-        <button class="pbtn" draggable="true" data-preset="gun"     onclick="loadPreset('gun')">Gosper Gun<span>glider factory</span></button>
-        <button class="pbtn" draggable="true" data-preset="acorn"   onclick="loadPreset('acorn')">Acorn<span>5206 gens</span></button>
-        <button class="pbtn" draggable="true" data-preset="diehard" onclick="loadPreset('diehard')">Diehard<span>dies gen 130</span></button>
-        <button class="pbtn" draggable="true" data-preset="lwss"    onclick="loadPreset('lwss')">LWSS<span>spaceship</span></button>
+        <button class="pbtn" draggable="true" data-preset="glider"  onclick="loadPreset('glider')"><span class="pbtn-name" data-en="Glider"      data-zh="滑翔机">Glider</span><span class="pbtn-desc" data-en="classic mover"       data-zh="经典移动体">classic mover</span></button>
+        <button class="pbtn" draggable="true" data-preset="blinker" onclick="loadPreset('blinker')"><span class="pbtn-name" data-en="Blinker"     data-zh="闪烁体">Blinker</span><span class="pbtn-desc" data-en="period-2"            data-zh="周期2">period-2</span></button>
+        <button class="pbtn" draggable="true" data-preset="pulsar"  onclick="loadPreset('pulsar')"><span class="pbtn-name" data-en="Pulsar"      data-zh="脉冲星">Pulsar</span><span class="pbtn-desc" data-en="period-3"            data-zh="周期3">period-3</span></button>
+        <button class="pbtn" draggable="true" data-preset="rpento"  onclick="loadPreset('rpento')"><span class="pbtn-name" data-en="R-pentomino" data-zh="R五格">R-pentomino</span><span class="pbtn-desc" data-en="chaotic"        data-zh="混沌型">chaotic</span></button>
+        <button class="pbtn" draggable="true" data-preset="gun"     onclick="loadPreset('gun')"><span class="pbtn-name" data-en="Gosper Gun"  data-zh="高斯帕枪">Gosper Gun</span><span class="pbtn-desc" data-en="glider factory"  data-zh="滑翔机工厂">glider factory</span></button>
+        <button class="pbtn" draggable="true" data-preset="acorn"   onclick="loadPreset('acorn')"><span class="pbtn-name" data-en="Acorn"       data-zh="橡子">Acorn</span><span class="pbtn-desc" data-en="5206 gens"         data-zh="5206代">5206 gens</span></button>
+        <button class="pbtn" draggable="true" data-preset="diehard" onclick="loadPreset('diehard')"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
+        <button class="pbtn" draggable="true" data-preset="lwss"    onclick="loadPreset('lwss')"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
       </div>
     </div>
 
@@ -290,16 +290,16 @@
     <div class="pcard patterns-desktop">
       <div class="pcard-title" data-en="// patterns" data-zh="// 预设图案">// patterns</div>
       <div class="preset-grid" id="presetGrid">
-        <button class="pbtn" draggable="true" data-preset="glider"  onclick="loadPreset('glider')">Glider<span>classic mover</span></button>
-        <button class="pbtn" draggable="true" data-preset="blinker" onclick="loadPreset('blinker')">Blinker<span>period-2 oscillator</span></button>
-        <button class="pbtn" draggable="true" data-preset="pulsar"  onclick="loadPreset('pulsar')">Pulsar<span>period-3 oscillator</span></button>
-        <button class="pbtn" draggable="true" data-preset="rpento"  onclick="loadPreset('rpento')">R-pentomino<span>chaotic, ~1k gens</span></button>
-        <button class="pbtn" draggable="true" data-preset="gun"     onclick="loadPreset('gun')">Gosper Gun<span>infinite glider factory</span></button>
-        <button class="pbtn" draggable="true" data-preset="acorn"   onclick="loadPreset('acorn')">Acorn<span>5206 gen lifespan</span></button>
-        <button class="pbtn" draggable="true" data-preset="diehard" onclick="loadPreset('diehard')">Diehard<span>dies at gen 130</span></button>
-        <button class="pbtn" draggable="true" data-preset="lwss"    onclick="loadPreset('lwss')">LWSS<span>lightweight spaceship</span></button>
+        <button class="pbtn" draggable="true" data-preset="glider"  onclick="loadPreset('glider')"><span class="pbtn-name" data-en="Glider"      data-zh="滑翔机">Glider</span><span class="pbtn-desc" data-en="classic mover"           data-zh="经典移动体">classic mover</span></button>
+        <button class="pbtn" draggable="true" data-preset="blinker" onclick="loadPreset('blinker')"><span class="pbtn-name" data-en="Blinker"     data-zh="闪烁体">Blinker</span><span class="pbtn-desc" data-en="period-2 oscillator"   data-zh="周期2振荡体">period-2 oscillator</span></button>
+        <button class="pbtn" draggable="true" data-preset="pulsar"  onclick="loadPreset('pulsar')"><span class="pbtn-name" data-en="Pulsar"      data-zh="脉冲星">Pulsar</span><span class="pbtn-desc" data-en="period-3 oscillator"   data-zh="周期3振荡体">period-3 oscillator</span></button>
+        <button class="pbtn" draggable="true" data-preset="rpento"  onclick="loadPreset('rpento')"><span class="pbtn-name" data-en="R-pentomino" data-zh="R五格">R-pentomino</span><span class="pbtn-desc" data-en="chaotic, ~1k gens"    data-zh="混沌型，约千代">chaotic, ~1k gens</span></button>
+        <button class="pbtn" draggable="true" data-preset="gun"     onclick="loadPreset('gun')"><span class="pbtn-name" data-en="Gosper Gun"  data-zh="高斯帕枪">Gosper Gun</span><span class="pbtn-desc" data-en="infinite glider factory" data-zh="无限滑翔机工厂">infinite glider factory</span></button>
+        <button class="pbtn" draggable="true" data-preset="acorn"   onclick="loadPreset('acorn')"><span class="pbtn-name" data-en="Acorn"       data-zh="橡子">Acorn</span><span class="pbtn-desc" data-en="5206 gen lifespan"    data-zh="寿命5206代">5206 gen lifespan</span></button>
+        <button class="pbtn" draggable="true" data-preset="diehard" onclick="loadPreset('diehard')"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies at gen 130"     data-zh="第130代消亡">dies at gen 130</span></button>
+        <button class="pbtn" draggable="true" data-preset="lwss"    onclick="loadPreset('lwss')"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="lightweight spaceship"   data-zh="轻型宇宙飞船">lightweight spaceship</span></button>
       </div>
-      <div class="drag-hint">drag onto canvas to stamp · click to load</div>
+      <div class="drag-hint" data-en="drag onto canvas to stamp · click to load" data-zh="拖拽到画布放置 · 点击加载">drag onto canvas to stamp · click to load</div>
       <div class="brow">
         <button class="btn" id="rotBtn"  onclick="rotateStamp()">↻ <span id="rotLabel">0°</span></button>
         <button class="btn" id="flipBtn" onclick="flipStamp()">⟺ <span id="flipLabel">normal</span></button>
@@ -666,6 +666,12 @@ function randomize(density = 0.2) {
 function updateUI() {
   const btn = document.getElementById('playBtn');
   btn.textContent = running ? t('⏸ Pause','⏸ 暂停') : t('⏵ Play','⏵ 播放');
+  if (activeChallenge >= 0) {
+    const ch = CHALLENGES[activeChallenge];
+    const status = document.getElementById('challengeStatus');
+    const prefix = status.classList.contains('won') ? '✓ ' : '▶ ';
+    status.textContent = prefix + t(ch.goal, ch.goalZh);
+  }
 }
 
 /* ── Mouse / touch drawing ────────────────────────── */
@@ -988,12 +994,12 @@ function shareSeed() {
 
 /* ── Challenge system ─────────────────────────────── */
 const CHALLENGES = [
-  { name: 'First Steps', goal: 'Survive 20 generations',  check: (g, c, s) => g >= 20 && c > 0 },
-  { name: 'Bloom',       goal: 'Reach 100 live cells',    check: (g, c)    => c >= 100 },
-  { name: 'Century',     goal: 'Survive 100 generations', check: (g, c)    => g >= 100 && c > 0 },
-  { name: 'Still Life',  goal: 'Reach a stable pattern',  check: (g, c, s) => s && g > 0 },
-  { name: 'Mega City',   goal: 'Reach 500 live cells',    check: (g, c)    => c >= 500 },
-  { name: 'Extinction',  goal: 'All cells must die out',  check: (g, c)    => g > 5 && c === 0 },
+  { name: 'First Steps', nameZh: '初步',     goal: 'Survive 20 generations',  goalZh: '存活20代',          check: (g, c, s) => g >= 20 && c > 0 },
+  { name: 'Bloom',       nameZh: '盛放',     goal: 'Reach 100 live cells',    goalZh: '达到100个活细胞',   check: (g, c)    => c >= 100 },
+  { name: 'Century',     nameZh: '百代',     goal: 'Survive 100 generations', goalZh: '存活100代',         check: (g, c)    => g >= 100 && c > 0 },
+  { name: 'Still Life',  nameZh: '静止图案', goal: 'Reach a stable pattern',  goalZh: '达到稳定图案',      check: (g, c, s) => s && g > 0 },
+  { name: 'Mega City',   nameZh: '超级都市', goal: 'Reach 500 live cells',    goalZh: '达到500个活细胞',   check: (g, c)    => c >= 500 },
+  { name: 'Extinction',  nameZh: '灭绝',     goal: 'All cells must die out',  goalZh: '所有细胞必须消亡',  check: (g, c)    => g > 5 && c === 0 },
 ];
 
 let activeChallenge = -1, prevGridSnap = null, challengeStartSeed = null;
@@ -1002,7 +1008,7 @@ function startChallenge(i) {
   if (running) togglePlay();
   clearGrid(); activeChallenge = i; prevGridSnap = null; challengeStartSeed = null;
   const status = document.getElementById('challengeStatus');
-  status.textContent = '▶ ' + CHALLENGES[i].goal;
+  status.textContent = '▶ ' + t(CHALLENGES[i].goal, CHALLENGES[i].goalZh);
   status.classList.remove('won');
   document.querySelectorAll('.cbtn[data-challenge]').forEach((b, j) => b.classList.toggle('active', j === i));
 }
@@ -1060,9 +1066,9 @@ let pendingScore = null;
 function showWin(ch, cells) {
   if (running) togglePlay();
   const status = document.getElementById('challengeStatus');
-  status.textContent = '✓ ' + ch.goal; status.classList.add('won');
-  document.getElementById('winMsg').textContent   = ch.name + ' — ' + ch.goal;
-  document.getElementById('winStats').textContent = 'Generation ' + generation + ' · ' + cells + ' cells alive';
+  status.textContent = '✓ ' + t(ch.goal, ch.goalZh); status.classList.add('won');
+  document.getElementById('winMsg').textContent   = t(ch.name, ch.nameZh) + ' — ' + t(ch.goal, ch.goalZh);
+  document.getElementById('winStats').textContent = t('Generation','第') + ' ' + generation + ' · ' + cells + ' ' + t('cells alive','个活细胞');
 
   pendingScore = { challenge: ch.name, generation, cells, seed: challengeStartSeed };
   document.getElementById('winSubmit').style.display = 'block';
@@ -1100,7 +1106,9 @@ function openLeaderboard() {
   if (!tabs.children.length) {
     CHALLENGES.forEach(ch => {
       const b = document.createElement('button');
-      b.className = 'lb-tab'; b.dataset.ch = ch.name; b.textContent = ch.name;
+      b.className = 'lb-tab'; b.dataset.ch = ch.name;
+      b.dataset.en = ch.name; b.dataset.zh = ch.nameZh;
+      b.textContent = t(ch.name, ch.nameZh);
       b.onclick = () => showLbChallenge(ch.name);
       tabs.appendChild(b);
     });
