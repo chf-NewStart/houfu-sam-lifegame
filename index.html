@@ -255,9 +255,9 @@
     <div class="canvas-wrap">
       <canvas id="canvas"></canvas>
       <div class="canvas-hud">
-        <div><span class="hud-lbl">gen</span><span id="genCount">0</span></div>
-        <div><span class="hud-lbl">cells</span><span id="cellCount">0</span></div>
-        <div><span class="hud-lbl">next</span><span id="nextCount">0</span></div>
+        <div><span class="hud-lbl" data-en="gen" data-zh="代">gen</span><span id="genCount">0</span></div>
+        <div><span class="hud-lbl" data-en="cells" data-zh="细胞">cells</span><span id="cellCount">0</span></div>
+        <div><span class="hud-lbl" data-en="next" data-zh="下代">next</span><span id="nextCount">0</span></div>
       </div>
     </div>
   </div>
@@ -331,10 +331,10 @@
     <div class="pcard">
       <div class="pcard-title" data-en="// rules (B3/S23)" data-zh="// 规则 (B3/S23)">// rules (B3/S23)</div>
       <div class="rule-info">
-        <b style="color:#1db954">■</b> <b>Survive</b> — live, 2–3 neighbours<br>
-        <b style="color:#f44336">■</b> <b>Die</b> — live, &lt;2 or &gt;3 neighbours<br>
-        <b style="color:#3a3a3a">■</b> <b>Born next</b> — dead, exactly 3 neighbours<br>
-        <span style="color:#555;margin-top:4px;display:block">Cells die at the border.</span>
+        <b style="color:#1db954">■</b> <b data-en="Survive" data-zh="存活">Survive</b> <span data-en="— live, 2–3 neighbours" data-zh="— 活细胞，2–3邻居">— live, 2–3 neighbours</span><br>
+        <b style="color:#f44336">■</b> <b data-en="Die" data-zh="死亡">Die</b> <span data-en="— live, &lt;2 or &gt;3 neighbours" data-zh="— 活细胞，少于2或多于3邻居">— live, &lt;2 or &gt;3 neighbours</span><br>
+        <b style="color:#3a3a3a">■</b> <b data-en="Born next" data-zh="下代诞生">Born next</b> <span data-en="— dead, exactly 3 neighbours" data-zh="— 死细胞，恰好3邻居">— dead, exactly 3 neighbours</span><br>
+        <span style="color:#555;margin-top:4px;display:block" data-en="Cells die at the border." data-zh="细胞在边界消亡。">Cells die at the border.</span>
       </div>
     </div>
 
