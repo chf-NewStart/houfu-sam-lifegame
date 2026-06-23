@@ -572,18 +572,12 @@ function initGrid() {
     maxW = (col ? col.clientWidth : 600) - 26;
     maxH = Math.min(window.innerHeight - 174, 700);
   }
-  const baseC = Math.floor(maxW / CELL);
-  const baseR = Math.floor(maxH / CELL);
-  canvas.width  = baseC * CELL;
-  canvas.height = baseR * CELL;
-  // Grid is 2× the canvas at zoom=1 so the whole viewport is real at min-zoom (0.5)
-  COLS = baseC * 2;
-  ROWS = baseR * 2;
+  COLS = Math.floor(maxW / CELL);
+  ROWS = Math.floor(maxH / CELL);
+  canvas.width  = COLS * CELL;
+  canvas.height = ROWS * CELL;
   grid = new Uint8Array(COLS * ROWS);
   next = new Uint8Array(COLS * ROWS);
-  // Default pan: center the view on the middle of the 2× grid
-  panX = -canvas.width  / 2;
-  panY = -canvas.height / 2;
 }
 
 function idx(c, r) { return r * COLS + c; }
@@ -598,7 +592,7 @@ const GRID_LINE = '#1e1e1e';
 /* ── Zoom / pan state ─────────────────────────────── */
 let zoom = 1, panX = 0, panY = 0;
 
-function resetView() { zoom = 1; panX = -canvas.width / 2; panY = -canvas.height / 2; draw(); }
+function resetView() { zoom = 1; panX = 0; panY = 0; draw(); }
 
 function draw() {
   ctx.fillStyle = BG;
@@ -608,18 +602,26 @@ function draw() {
   ctx.translate(panX, panY);
   ctx.scale(zoom, zoom);
 
-  // Draw grid lines only for the visible portion of the real grid
-  const vc0 = Math.max(0, Math.floor(-panX / zoom / CELL) - 1);
-  const vc1 = Math.min(COLS, Math.ceil((canvas.width  - panX) / zoom / CELL) + 1);
-  const vr0 = Math.max(0, Math.floor(-panY / zoom / CELL) - 1);
-  const vr1 = Math.min(ROWS, Math.ceil((canvas.height - panY) / zoom / CELL) + 1);
-  ctx.strokeStyle = GRID_LINE;
-  ctx.lineWidth = 1 / zoom;
+  // Extended grid covering the full visible canvas area (outside active zone)
+  const vc0 = Math.floor(-panX / zoom / CELL) - 1;
+  const vc1 = Math.ceil((canvas.width  - panX) / zoom / CELL) + 1;
+  const vr0 = Math.floor(-panY / zoom / CELL) - 1;
+  const vr1 = Math.ceil((canvas.height - panY) / zoom / CELL) + 1;
+  ctx.strokeStyle = '#141414';
+  ctx.lineWidth = 0.5 / zoom;
   for (let c = vc0; c <= vc1; c++) {
     ctx.beginPath(); ctx.moveTo(c * CELL, vr0 * CELL); ctx.lineTo(c * CELL, vr1 * CELL); ctx.stroke();
   }
   for (let r = vr0; r <= vr1; r++) {
     ctx.beginPath(); ctx.moveTo(vc0 * CELL, r * CELL); ctx.lineTo(vc1 * CELL, r * CELL); ctx.stroke();
+  }
+  // Active game area grid (slightly brighter)
+  ctx.strokeStyle = GRID_LINE;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
   }
 
   let live = 0, nextLive = 0;
@@ -1992,7 +1994,7 @@ function doResize() {
     for (let c = 0; c < COLS; c++)
       if (grid[idx(c, r)]) liveCells.push([c, r]);
 
-  clearHistory(); zoom = 1; initGrid();
+  clearHistory(); zoom = 1; panX = 0; panY = 0; initGrid();
 
   if (urlSeed !== null) {
     applySeed(urlSeed);
