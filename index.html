@@ -529,8 +529,21 @@ function draw() {
   ctx.translate(panX, panY);
   ctx.scale(zoom, zoom);
 
-  ctx.strokeStyle = GRID_LINE;
+  // Extended grid covering the full visible canvas area (outside active zone)
+  const vc0 = Math.floor(-panX / zoom / CELL) - 1;
+  const vc1 = Math.ceil((canvas.width  - panX) / zoom / CELL) + 1;
+  const vr0 = Math.floor(-panY / zoom / CELL) - 1;
+  const vr1 = Math.ceil((canvas.height - panY) / zoom / CELL) + 1;
+  ctx.strokeStyle = '#141414';
   ctx.lineWidth = 0.5 / zoom;
+  for (let c = vc0; c <= vc1; c++) {
+    ctx.beginPath(); ctx.moveTo(c * CELL, vr0 * CELL); ctx.lineTo(c * CELL, vr1 * CELL); ctx.stroke();
+  }
+  for (let r = vr0; r <= vr1; r++) {
+    ctx.beginPath(); ctx.moveTo(vc0 * CELL, r * CELL); ctx.lineTo(vc1 * CELL, r * CELL); ctx.stroke();
+  }
+  // Active game area grid (slightly brighter)
+  ctx.strokeStyle = GRID_LINE;
   for (let c = 0; c <= COLS; c++) {
     ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
   }
