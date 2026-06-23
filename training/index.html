@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Training — Life Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #ccc;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      padding: 36px 28px 72px;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .topnav {
+      font-size: 0.72rem;
+      color: #333;
+      margin-bottom: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topnav a { color: #1db954; }
+    .topnav a:hover { text-decoration: underline; }
+
+    h1 {
+      font-size: 1.5rem;
+      color: #1db954;
+      letter-spacing: 3px;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 0.72rem;
+      color: #333;
+      margin-bottom: 44px;
+      letter-spacing: 1px;
+    }
+
+    .section-label {
+      font-size: 0.62rem;
+      color: #2a2a2a;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+      max-width: 860px;
+      margin-bottom: 52px;
+    }
+
+    .card {
+      border: 1px solid #1a1a1a;
+      border-radius: 5px;
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .card:hover { border-color: #2e2e2e; background: #0d0d0d; }
+    .card.visited { border-color: #1a3a22; }
+    .card.visited:hover { border-color: #1db954; }
+
+    .card-num { font-size: 0.58rem; color: #2e2e2e; letter-spacing: 2px; }
+    .card-title { font-size: 0.9rem; color: #ddd; font-weight: normal; }
+    .card-desc { font-size: 0.68rem; color: #444; line-height: 1.6; margin-top: 2px; }
+    .card-badge {
+      font-size: 0.58rem;
+      color: #1db954;
+      margin-top: 4px;
+    }
+    .card-soon {
+      font-size: 0.58rem;
+      color: #222;
+      margin-top: 4px;
+    }
+
+    .manual-link {
+      border: 1px dashed #1e1e1e;
+      border-radius: 5px;
+      padding: 18px 22px;
+      max-width: 380px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .manual-link:hover { border-color: #333; }
+    .manual-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .manual-title { font-size: 0.85rem; color: #ddd; margin-bottom: 4px; }
+    .manual-desc { font-size: 0.68rem; color: #333; line-height: 1.5; }
+
+    footer {
+      margin-top: 64px;
+      font-size: 0.6rem;
+      color: #1a1a1a;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="topnav">
+    <a href="/">← Life Game</a>
+    <span>/</span>
+    <span style="color:#555">training</span>
+  </nav>
+
+  <h1>// training</h1>
+  <div class="subtitle">learn the rules · master the tools · build something alive</div>
+
+  <div class="section-label">// lessons</div>
+  <div class="grid" id="lessonGrid"></div>
+
+  <div class="section-label">// reference</div>
+  <a class="manual-link" href="/manual">
+    <div class="manual-icon">📄</div>
+    <div>
+      <div class="manual-title">User Manual</div>
+      <div class="manual-desc">Complete reference — every control, shortcut, and feature explained in one place.</div>
+    </div>
+  </a>
+
+  <footer>lifegameproject.com / training</footer>
+
+<script>
+const LESSONS = [
+  { id: 1, title: 'The Rules',          desc: 'B3/S23 — birth, survival, death. Watch the logic play out cell by cell with a live overlay.' },
+  { id: 2, title: 'Drawing & Playing',  desc: 'Click to paint cells. Play, step, pause, undo. Get comfortable with the core controls.' },
+  { id: 3, title: 'Patterns',           desc: 'Drag built-in patterns onto the canvas. Rotate with R or scroll, flip with F, then stamp.' },
+  { id: 4, title: 'Zoom & Pan',         desc: 'Navigate a larger world. Pinch, scroll, or drag to explore — reset view with ⊙.' },
+  { id: 5, title: 'Zone Tool',          desc: 'Draw a focus area with ⬚ Zone. Track live cell counts inside your boundary in real time.' },
+  { id: 6, title: 'Challenges',         desc: 'Ten built-in objectives — from First Steps to Compressed Gas. Can you beat them all?' },
+  { id: 7, title: 'Dev Mode',           desc: 'Lookahead strip showing 7 future states. Saved blueprint tiles. Advanced tools for builders.' },
+];
+
+const VISITED_KEY = 'lifegame_training_visited';
+function getVisited() {
+  try { return new Set(JSON.parse(localStorage.getItem(VISITED_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+
+const visited = getVisited();
+const grid = document.getElementById('lessonGrid');
+
+LESSONS.forEach(l => {
+  const done = visited.has(l.id);
+  const ready = l.id === 1; // only lesson 1 built so far
+  const card = document.createElement(ready ? 'a' : 'div');
+  if (ready) card.href = `/training/lesson${l.id}`;
+  card.className = 'card' + (done ? ' visited' : '');
+  card.innerHTML = `
+    <div class="card-num">LESSON ${String(l.id).padStart(2,'0')}</div>
+    <div class="card-title">${l.title}</div>
+    <div class="card-desc">${l.desc}</div>
+    ${done ? '<div class="card-badge">✓ visited</div>' : (ready ? '' : '<div class="card-soon">coming soon</div>')}
+  `;
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>

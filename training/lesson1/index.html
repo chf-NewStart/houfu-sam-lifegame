@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lesson 1: The Rules — Life Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      color: #ccc;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Header ─────────────────────────────────── */
+    .lesson-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid #141414;
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .back-link { font-size: 0.7rem; color: #1db954; }
+    .back-link:hover { text-decoration: underline; }
+    .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
+    .lesson-title-h { font-size: 0.85rem; color: #888; }
+
+    .progress-dots { display: flex; gap: 5px; }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .dot.active { background: #1db954; }
+    .dot.done   { background: #1a3a22; }
+
+    /* ── Main layout ─────────────────────────────── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Left: explanation panel ─────────────────── */
+    .panel {
+      width: 320px;
+      flex-shrink: 0;
+      border-right: 1px solid #141414;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 28px;
+      overflow-y: auto;
+    }
+
+    .stage-num { font-size: 0.58rem; color: #2a2a2a; letter-spacing: 2px; margin-bottom: 10px; }
+    .stage-title { font-size: 1.1rem; color: #eee; margin-bottom: 16px; font-weight: normal; }
+    .stage-text {
+      font-size: 0.74rem;
+      color: #666;
+      line-height: 1.85;
+      flex: 1;
+    }
+    .stage-text b { color: #aaa; font-weight: normal; }
+    .stage-text .hi-green { color: #1db954; }
+    .stage-text .hi-red   { color: #e05252; }
+
+    .example-btn {
+      margin-top: 22px;
+      padding: 8px 14px;
+      background: none;
+      border: 1px solid #1a3a22;
+      color: #1db954;
+      font-family: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+      border-radius: 3px;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .example-btn:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+
+    .stage-nav {
+      display: flex;
+      gap: 8px;
+      margin-top: 28px;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 9px 0;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #555;
+      font-family: inherit;
+      font-size: 0.72rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .nav-btn:hover { border-color: #333; color: #888; }
+    .nav-btn.primary { border-color: #1a3a22; color: #1db954; }
+    .nav-btn.primary:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+    .nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+    /* ── Right: canvas area ──────────────────────── */
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 24px;
+      gap: 16px;
+    }
+
+    canvas {
+      display: block;
+      cursor: crosshair;
+      border: 1px solid #141414;
+    }
+
+    .controls {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .ctrl-btn {
+      padding: 6px 14px;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #555;
+      font-family: inherit;
+      font-size: 0.68rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .ctrl-btn:hover { border-color: #333; color: #888; }
+    .ctrl-btn.active { border-color: #1db954; color: #1db954; }
+
+    .legend {
+      display: flex;
+      gap: 18px;
+      font-size: 0.62rem;
+      color: #333;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-swatch {
+      width: 12px; height: 12px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .gen-display {
+      font-size: 0.62rem;
+      color: #2a2a2a;
+      letter-spacing: 1px;
+    }
+
+    /* ── Footer nav ──────────────────────────────── */
+    .lesson-footer {
+      border-top: 1px solid #141414;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .foot-btn {
+      padding: 7px 16px;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #333;
+      font-family: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+      border-radius: 3px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .foot-btn:hover { border-color: #333; color: #666; }
+    .foot-btn.hi { border-color: #1a3a22; color: #1db954; }
+    .foot-btn.hi:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+
+    /* ── Mobile ──────────────────────────────────── */
+    @media (max-width: 720px) {
+      .main { flex-direction: column-reverse; overflow: visible; }
+      .panel { width: 100%; border-right: none; border-top: 1px solid #141414; padding: 24px 18px; }
+      .canvas-area { padding: 18px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="lesson-header">
+  <div class="header-left">
+    <a class="back-link" href="/training">← Training</a>
+    <span class="lesson-id">LESSON 01</span>
+    <span class="lesson-title-h">The Rules</span>
+  </div>
+  <div class="progress-dots" id="progressDots"></div>
+</header>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Left: explanation -->
+  <aside class="panel">
+    <div class="stage-num" id="stageNum">STAGE 1 / 6</div>
+    <h2 class="stage-title" id="stageTitle"></h2>
+    <div class="stage-text" id="stageText"></div>
+    <button class="example-btn" id="exampleBtn" style="display:none"></button>
+    <div class="stage-nav">
+      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
+      <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
+    </div>
+  </aside>
+
+  <!-- Right: canvas + controls -->
+  <section class="canvas-area">
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+      <button class="ctrl-btn" onclick="clearGrid()">✕ Clear</button>
+      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+      <button class="ctrl-btn" id="countsBtn" onclick="toggleCounts()">＃ Counts</button>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#1db954"></div>
+        <span>alive · will survive</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#c0392b"></div>
+        <span>alive · will die</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:rgba(29,185,84,0.15);border:1px dashed rgba(29,185,84,0.5)"></div>
+        <span>dead · will be born</span>
+      </div>
+    </div>
+
+    <div class="gen-display">gen <span id="genNum">0</span></div>
+  </section>
+
+</div>
+
+<!-- Footer -->
+<footer class="lesson-footer">
+  <a class="foot-btn" href="/training">↑ All Lessons</a>
+  <a class="foot-btn hi" href="/training/lesson2">Lesson 2: Drawing & Playing →</a>
+</footer>
+
+<script>
+/* ── Stage definitions ──────────────────────────── */
+const STAGES = [
+  {
+    title: 'The Grid',
+    text: `Conway's Game of Life takes place on a grid of cells. Each cell is either <span class="hi-green">alive</span> or <span style="color:#444">dead</span>.<br><br>The game advances in discrete steps called <b>generations</b>. At each step, every cell lives or dies according to simple rules — and complex patterns emerge.<br><br><b>Click any cell to toggle it.</b>`,
+    example: 'blinker',
+    exampleLabel: '↺ Load example: Blinker',
+  },
+  {
+    title: 'The 8 Neighbors',
+    text: `Every cell's fate depends on how many of its <b>8 surrounding cells</b> are alive — left, right, up, down, and all four diagonals.<br><br>The neighbor count drives every rule. <b>Hover over any cell</b> to see its neighbors highlighted in yellow.<br><br>The small numbers (when Counts is on) show each cell's live neighbor count.`,
+    example: 'blinker',
+    exampleLabel: '↺ Reload blinker',
+    hoverMode: true,
+  },
+  {
+    title: 'Birth (B3)',
+    text: `A <span style="color:#444">dead</span> cell with exactly <b>3</b> live neighbors comes <span class="hi-green">alive</span> next generation.<br><br>Look at the <b>ghost cells</b> — the faint green dashed outlines. Those are dead cells about to be born.<br><br>Click <b>Step</b> to watch them appear.`,
+    example: 'blinker',
+    exampleLabel: '↺ Reload blinker',
+  },
+  {
+    title: 'Survival (S23)',
+    text: `A <span class="hi-green">live</span> cell with <b>2 or 3</b> neighbors stays alive next generation.<br><br>In the blinker, the <b>center cell</b> has 2 neighbors — it survives. The two <b>end cells</b> each have only 1 neighbor — they die.<br><br>Green cells will survive. <span class="hi-red">Red cells</span> will die.`,
+    example: 'blinker',
+    exampleLabel: '↺ Reload blinker',
+  },
+  {
+    title: 'Death',
+    text: `A live cell dies if it has <b>fewer than 2</b> neighbors (isolation) or <b>more than 3</b> (overcrowding).<br><br>This 3×3 block shows <b>overcrowding</b> — the inner cells each have 5+ neighbors and die. Only the corners survive.<br><br>After a few steps it settles into a stable 2×2 block.`,
+    example: 'block3x3',
+    exampleLabel: '↺ Load overcrowded block',
+  },
+  {
+    title: 'Try It Yourself',
+    text: `You know the rules!<br><br>Draw your own pattern, enable <b>Counts</b> to see neighbor numbers, and click <b>Step</b> to watch what happens.<br><br>Can you build a pattern that lives forever? One that dies out? One that repeats?<br><br>Head to <b>Lesson 2</b> to learn all the controls.`,
+    example: null,
+    final: true,
+  },
+];
+
+/* ── Patterns (center-relative [col, row]) ───────── */
+const PATTERNS = {
+  blinker:  [[0,-1],[0,0],[0,1]],
+  block3x3: [[-1,-1],[0,-1],[1,-1],[-1,0],[0,0],[1,0],[-1,1],[0,1],[1,1]],
+  glider:   [[-1,1],[0,-1],[0,1],[1,0],[1,1]],
+};
+
+/* ── Grid setup ──────────────────────────────────── */
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+const COLS    = 18;
+const ROWS    = 13;
+
+function computeCell() {
+  const maxW = Math.min(window.innerWidth <= 720 ? window.innerWidth - 24 : 560, 560);
+  return Math.max(22, Math.floor(maxW / COLS));
+}
+let CELL = computeCell();
+canvas.width  = COLS * CELL;
+canvas.height = ROWS * CELL;
+
+let grid       = new Uint8Array(COLS * ROWS);
+let generation = 0;
+let running    = false;
+let rafId      = null;
+let showCounts = true;
+let hoverCell  = null;
+let hoverMode  = false;
+let lastStep   = 0;
+const INTERVAL = 180;
+
+function idx(c, r) { return r * COLS + c; }
+
+function countNeighbors(c, r) {
+  let n = 0;
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nc = c + dc, nr = r + dr;
+      if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) n += grid[idx(nc, nr)];
+    }
+  return n;
+}
+
+/* ── Drawing ─────────────────────────────────────── */
+function draw() {
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid lines
+  ctx.strokeStyle = '#181818';
+  ctx.lineWidth = 1;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
+  }
+
+  // Hover neighbor highlight
+  if (hoverMode && hoverCell) {
+    const { c: hc, r: hr } = hoverCell;
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nc = hc + dc, nr = hr + dr;
+        if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) {
+          ctx.fillStyle = 'rgba(255,220,50,0.07)';
+          ctx.fillRect(nc * CELL + 1, nr * CELL + 1, CELL - 2, CELL - 2);
+          ctx.strokeStyle = 'rgba(255,220,50,0.18)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(nc * CELL + 1.5, nr * CELL + 1.5, CELL - 3, CELL - 3);
+        }
+      }
+    // hovered cell outline
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(hc * CELL + 1, hr * CELL + 1, CELL - 2, CELL - 2);
+  }
+
+  // Cells
+  const fontSize = Math.max(9, Math.floor(CELL * 0.32));
+  ctx.font = `${fontSize}px 'Courier New', monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const alive = grid[idx(c, r)];
+      const n     = countNeighbors(c, r);
+      const willLive = alive ? (n === 2 || n === 3) : (n === 3);
+
+      const cx = c * CELL, cy = r * CELL;
+
+      if (alive) {
+        ctx.fillStyle = willLive ? '#1db954' : '#c0392b';
+        ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+        if (showCounts) {
+          ctx.fillStyle = 'rgba(255,255,255,0.75)';
+          ctx.fillText(n, cx + CELL / 2, cy + CELL / 2);
+        }
+      } else if (n === 3) {
+        // Ghost — will be born
+        ctx.fillStyle = 'rgba(29,185,84,0.12)';
+        ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+        ctx.strokeStyle = 'rgba(29,185,84,0.45)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(cx + 1.5, cy + 1.5, CELL - 3, CELL - 3);
+        ctx.setLineDash([]);
+        if (showCounts) {
+          ctx.fillStyle = 'rgba(29,185,84,0.7)';
+          ctx.fillText(n, cx + CELL / 2, cy + CELL / 2);
+        }
+      } else if (showCounts && n > 0) {
+        ctx.fillStyle = '#242424';
+        ctx.fillText(n, cx + CELL / 2, cy + CELL / 2);
+      }
+    }
+  }
+
+  document.getElementById('genNum').textContent = generation;
+}
+
+/* ── Simulation ──────────────────────────────────── */
+function stepGrid() {
+  const next = new Uint8Array(COLS * ROWS);
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      const n = countNeighbors(c, r);
+      const alive = grid[idx(c, r)];
+      next[idx(c, r)] = alive ? (n === 2 || n === 3 ? 1 : 0) : (n === 3 ? 1 : 0);
+    }
+  grid = next;
+  generation++;
+  draw();
+}
+
+function loop(ts) {
+  if (!running) return;
+  if (ts - lastStep >= INTERVAL) { stepGrid(); lastStep = ts; }
+  rafId = requestAnimationFrame(loop);
+}
+
+function togglePlay() {
+  running = !running;
+  const btn = document.getElementById('playBtn');
+  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.classList.toggle('active', running);
+  if (running) rafId = requestAnimationFrame(loop);
+  else if (rafId) cancelAnimationFrame(rafId);
+}
+
+function clearGrid() {
+  if (running) togglePlay();
+  grid.fill(0);
+  generation = 0;
+  draw();
+}
+
+function toggleCounts() {
+  showCounts = !showCounts;
+  document.getElementById('countsBtn').classList.toggle('active', showCounts);
+  draw();
+}
+
+/* ── Pattern loader ──────────────────────────────── */
+function loadPattern(name) {
+  if (running) togglePlay();
+  const cells = PATTERNS[name];
+  if (!cells) return;
+  grid.fill(0);
+  generation = 0;
+  const offC = Math.floor(COLS / 2), offR = Math.floor(ROWS / 2);
+  cells.forEach(([dc, dr]) => {
+    const c = offC + dc, r = offR + dr;
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+  });
+  draw();
+}
+
+/* ── Canvas interaction ──────────────────────────── */
+let painting = false, paintVal = 1;
+
+function cellAt(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top)  * scaleY;
+  return { c: Math.floor(x / CELL), r: Math.floor(y / CELL) };
+}
+
+canvas.addEventListener('mousedown', e => {
+  const { c, r } = cellAt(e);
+  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+  paintVal = grid[idx(c, r)] ? 0 : 1;
+  painting = true;
+  grid[idx(c, r)] = paintVal;
+  draw();
+});
+canvas.addEventListener('mousemove', e => {
+  const { c, r } = cellAt(e);
+  hoverCell = (c >= 0 && c < COLS && r >= 0 && r < ROWS) ? { c, r } : null;
+  if (painting && hoverCell) { grid[idx(c, r)] = paintVal; }
+  draw();
+});
+canvas.addEventListener('mouseup',    () => { painting = false; });
+canvas.addEventListener('mouseleave', () => { painting = false; hoverCell = null; draw(); });
+
+// Touch draw
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  const { c, r } = cellAt(t);
+  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+  paintVal = grid[idx(c, r)] ? 0 : 1;
+  painting = true;
+  grid[idx(c, r)] = paintVal;
+  draw();
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  const { c, r } = cellAt(t);
+  if (painting && c >= 0 && c < COLS && r >= 0 && r < ROWS) { grid[idx(c, r)] = paintVal; draw(); }
+}, { passive: false });
+canvas.addEventListener('touchend', () => { painting = false; });
+
+/* ── Stage system ────────────────────────────────── */
+let currentStage = 0;
+
+function buildDots() {
+  const container = document.getElementById('progressDots');
+  container.innerHTML = '';
+  STAGES.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < currentStage ? ' done' : i === currentStage ? ' active' : '');
+    d.title = STAGES[i].title;
+    d.onclick = () => goToStage(i);
+    container.appendChild(d);
+  });
+}
+
+function renderStage() {
+  const s = STAGES[currentStage];
+  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
+  document.getElementById('stageTitle').textContent = s.title;
+  document.getElementById('stageText').innerHTML    = s.text;
+
+  const exBtn = document.getElementById('exampleBtn');
+  if (s.example) {
+    exBtn.style.display = '';
+    exBtn.textContent   = s.exampleLabel || '↺ Load example';
+    exBtn.onclick       = () => loadPattern(s.example);
+  } else {
+    exBtn.style.display = 'none';
+  }
+
+  document.getElementById('backBtn').disabled = currentStage === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  if (currentStage === STAGES.length - 1) {
+    nextBtn.textContent = 'Finish ✓';
+    nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
+  } else {
+    nextBtn.textContent = 'Continue →';
+    nextBtn.onclick     = nextStage;
+  }
+
+  hoverMode = !!s.hoverMode;
+  buildDots();
+}
+
+function goToStage(i) {
+  currentStage = i;
+  renderStage();
+}
+
+function nextStage() {
+  if (currentStage < STAGES.length - 1) {
+    currentStage++;
+    renderStage();
+    // Auto-load the stage's example if grid is empty
+    if (STAGES[currentStage].example && !grid.some(v => v)) {
+      loadPattern(STAGES[currentStage].example);
+    }
+  }
+}
+
+function prevStage() {
+  if (currentStage > 0) { currentStage--; renderStage(); }
+}
+
+/* ── Visited tracking ───────────────────────────── */
+function markVisited() {
+  try {
+    const key  = 'lifegame_training_visited';
+    const set  = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+    set.add(1);
+    localStorage.setItem(key, JSON.stringify([...set]));
+  } catch {}
+}
+// Mark visited on arrival
+markVisited();
+
+/* ── Resize ─────────────────────────────────────── */
+window.addEventListener('resize', () => {
+  CELL = computeCell();
+  canvas.width  = COLS * CELL;
+  canvas.height = ROWS * CELL;
+  draw();
+});
+
+/* ── Init ────────────────────────────────────────── */
+renderStage();
+document.getElementById('countsBtn').classList.add('active');
+loadPattern('blinker');
+</script>
+</body>
+</html>
