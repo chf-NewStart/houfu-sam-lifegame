@@ -147,6 +147,8 @@
     #lbTable td { padding: 7px 4px; border-top: 1px solid #1a1a1a; color: #ccc; }
     #lbTable tr:first-child td { color: #1db954; }
     .lb-empty { color: #555; font-size: 0.8rem; padding: 20px 0; text-align: center; }
+    .lb-try { background: none; border: 1px solid #2e2e2e; color: #1db954; padding: 2px 7px; font-family: inherit; font-size: 0.68rem; cursor: pointer; white-space: nowrap; }
+    .lb-try:hover { background: #1db954; color: #000; }
 
     @keyframes pulse-border {
       0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0.4); }
@@ -514,6 +516,7 @@ function redoStep() {
 }
 
 function step() {
+  if (generation === 0 && activeChallenge >= 0) challengeStartSeed = encodeSeed();
   pushHistory();
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -926,11 +929,11 @@ const CHALLENGES = [
   { name: 'Extinction',  goal: 'All cells must die out',  check: (g, c)    => g > 5 && c === 0 },
 ];
 
-let activeChallenge = -1, prevGridSnap = null;
+let activeChallenge = -1, prevGridSnap = null, challengeStartSeed = null;
 
 function startChallenge(i) {
   if (running) togglePlay();
-  clearGrid(); activeChallenge = i; prevGridSnap = null;
+  clearGrid(); activeChallenge = i; prevGridSnap = null; challengeStartSeed = null;
   const status = document.getElementById('challengeStatus');
   status.textContent = '▶ ' + CHALLENGES[i].goal;
   status.classList.remove('won');
@@ -955,18 +958,27 @@ const SB_HDR = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content
 
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-async function submitScore(nickname, challenge, gen, cells) {
+function loadSeedStr(seedStr) {
+  try {
+    if (running) togglePlay();
+    pushHistory();
+    applySeed(JSON.parse(b64dec(seedStr)));
+    draw();
+  } catch(e) { /* ignore malformed seed */ }
+}
+
+async function submitScore(nickname, challenge, gen, cells, seed) {
   const res = await fetch(`${SB_URL}/rest/v1/Scores`, {
     method: 'POST',
     headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ nickname, challenge, generation: gen, cells })
+    body: JSON.stringify({ nickname, challenge, generation: gen, cells, seed })
   });
   if (!res.ok) throw new Error(res.status);
 }
 
 async function fetchScores(challenge) {
   const res = await fetch(
-    `${SB_URL}/rest/v1/Scores?select=nickname,generation,cells&challenge=eq.${encodeURIComponent(challenge)}&order=generation.asc,cells.desc&limit=10`,
+    `${SB_URL}/rest/v1/Scores?select=nickname,generation,cells,seed&challenge=eq.${encodeURIComponent(challenge)}&order=generation.asc,cells.desc&limit=10`,
     { headers: SB_HDR }
   );
   if (!res.ok) throw new Error(res.status);
@@ -982,7 +994,7 @@ function showWin(ch, cells) {
   document.getElementById('winMsg').textContent   = ch.name + ' — ' + ch.goal;
   document.getElementById('winStats').textContent = 'Generation ' + generation + ' · ' + cells + ' cells alive';
 
-  pendingScore = { challenge: ch.name, generation, cells };
+  pendingScore = { challenge: ch.name, generation, cells, seed: challengeStartSeed };
   document.getElementById('winSubmit').style.display = 'block';
   document.getElementById('winSubmitted').style.display = 'none';
   const btn = document.getElementById('submitScoreBtn');
@@ -1001,7 +1013,7 @@ function onSubmitScore() {
   localStorage.setItem('lifegame_nick', nick);
   const btn = document.getElementById('submitScoreBtn');
   btn.disabled = true; btn.textContent = '…';
-  submitScore(nick, pendingScore.challenge, pendingScore.generation, pendingScore.cells)
+  submitScore(nick, pendingScore.challenge, pendingScore.generation, pendingScore.cells, pendingScore.seed)
     .then(() => {
       document.getElementById('winSubmit').style.display = 'none';
       document.getElementById('winSubmitted').style.display = 'block';
@@ -1038,12 +1050,13 @@ async function showLbChallenge(name) {
     if (!rows.length) { tb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>'; return; }
     const medals = ['🥇','🥈','🥉'];
     tb.innerHTML = `<table>
-      <thead><tr><th>#</th><th>Name</th><th style="text-align:right">Gen</th><th style="text-align:right">Cells</th></tr></thead>
+      <thead><tr><th>#</th><th>Name</th><th style="text-align:right">Gen</th><th style="text-align:right">Cells</th><th></th></tr></thead>
       <tbody>${rows.map((r,i) => `<tr>
         <td>${medals[i] || i+1}</td>
         <td>${escHtml(r.nickname)}</td>
         <td style="text-align:right">${r.generation}</td>
         <td style="text-align:right">${r.cells}</td>
+        <td>${r.seed ? `<button class="lb-try" onclick="loadSeedStr('${r.seed}');closeLb()">▶ Try</button>` : ''}</td>
       </tr>`).join('')}</tbody></table>`;
   } catch(e) {
     tb.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load — check connection.</div>';
