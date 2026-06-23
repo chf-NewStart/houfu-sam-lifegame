@@ -11,133 +11,213 @@
     body {
       font-family: Consolas, 'Courier New', monospace;
       background: #080808; color: #ccc;
-      min-height: 100vh; padding: 20px 16px;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
     }
 
-    .pg-header { max-width: 980px; margin: 0 auto 18px; }
-    .pg-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .pg-title { color: #1db954; font-size: 1.4rem; text-transform: uppercase; letter-spacing: -1px; }
-    .pg-sub   { color: #999; font-size: 0.72rem; margin-top: 3px; line-height: 1.6; }
-    .pg-back  { font-size: 0.72rem; color: #1db954; text-decoration: none; margin-top: 6px; display: inline-block; }
+    /* ── Header ───────────────────────────────────────── */
+    .pg-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 18px; border-bottom: 1px solid #2e2e2e; flex-shrink: 0;
+    }
+    .pg-title { color: #1db954; font-size: 1.1rem; text-transform: uppercase; letter-spacing: -1px; }
+    .pg-sub   { color: #999; font-size: 0.65rem; margin-top: 2px; }
+    .pg-back  { font-size: 0.65rem; color: #1db954; text-decoration: none; }
     .pg-back:hover { text-decoration: underline; }
-    .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
+    .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.7rem; padding: 5px 10px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
     .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
-    .layout { display: flex; gap: 20px; align-items: flex-start; max-width: 980px; margin: 0 auto; }
-    .board-col { flex: 0 0 auto; }
-    .panel-col { flex: 1; min-width: 180px; }
+    /* ── Challenges bar (top) ─────────────────────────── */
+    .challenges-bar {
+      border-bottom: 1px solid #2e2e2e; padding: 8px 18px; flex-shrink: 0; background: #0c0c0c;
+    }
+    .challenges-row {
+      display: flex; align-items: center; gap: 6px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .challenges-row::-webkit-scrollbar { display: none; }
+    .challenges-label {
+      color: #1db954; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px;
+      white-space: nowrap; flex-shrink: 0; margin-right: 4px;
+    }
+    .cbtn {
+      background: #0d0d0d; border: 1px solid #333; color: #999;
+      font-family: Consolas, monospace; font-size: 0.63rem;
+      padding: 5px 10px; cursor: pointer; text-align: center;
+      transition: all 0.1s; white-space: nowrap; line-height: 1.5; flex-shrink: 0;
+    }
+    .cbtn small { display: block; font-size: 0.53rem; color: #555; }
+    .cbtn:hover { border-color: #888; color: #ccc; }
+    .cbtn:hover small { color: #888; }
+    .cbtn.active { border-color: #1db954; color: #1db954; background: rgba(29,185,84,0.08); }
+    .cbtn.active small { color: rgba(29,185,84,0.7); }
+    .challenge-status { font-size: 0.63rem; color: #666; margin-top: 5px; }
+    .challenge-status.won { color: #1db954; }
+
+    /* ── Main layout ──────────────────────────────────── */
+    .main-layout { display: flex; flex: 1; min-height: 0; }
+
+    .canvas-col {
+      flex: 1; min-width: 0; padding: 14px 14px 10px;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+    }
 
     canvas {
-      display: block;
-      background: #0a0a0a;
-      border: 1px solid #333;
-      cursor: crosshair;
-      image-rendering: pixelated;
+      display: block; background: #0a0a0a;
+      border: 1px solid #333; cursor: crosshair; image-rendering: pixelated;
+      max-width: 100%;
     }
-    canvas.running { border-color: #1db954; }
+    canvas.running { border-color: #1db954; animation: pulse-border 2s ease-in-out infinite; }
+    canvas.drag-over { border-color: #1db954; cursor: copy; }
 
-    .pcard { background: #111; border: 1px solid #2e2e2e; padding: 11px 13px; margin-bottom: 8px; }
-    .pcard-title { color: #1db954; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #2e2e2e; }
+    /* ── Right panel ──────────────────────────────────── */
+    .right-panel {
+      width: 220px; flex-shrink: 0; border-left: 1px solid #2e2e2e;
+      overflow-y: auto; padding: 6px 10px; display: flex; flex-direction: column; gap: 0;
+    }
+    .pcard { padding: 9px 2px; border-bottom: 1px solid #1e1e1e; }
+    .pcard:last-child { border-bottom: none; }
+    .pcard-title { color: #1db954; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; }
 
-    .stat-row { display: flex; gap: 6px; margin-bottom: 8px; }
-    .sbox { flex: 1; background: #0d0d0d; border: 1px solid #2e2e2e; padding: 6px 8px; }
-    .slabel { font-size: 0.6rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
-    .sval { font-size: 1rem; color: #1db954; }
-
-    .brow { display: flex; gap: 5px; margin-bottom: 5px; flex-wrap: wrap; }
-    .btn { flex: 1; background: transparent; border: 1px solid #3d3d3d; color: #aaa; font-family: Consolas, monospace; font-size: 0.72rem; padding: 7px 8px; cursor: pointer; transition: all 0.1s; white-space: nowrap; }
+    .brow { display: flex; gap: 4px; margin-bottom: 4px; flex-wrap: wrap; }
+    .btn { flex: 1; background: transparent; border: 1px solid #3d3d3d; color: #aaa; font-family: Consolas, monospace; font-size: 0.66rem; padding: 6px 5px; cursor: pointer; transition: all 0.1s; white-space: nowrap; }
     .btn:hover { border-color: #1db954; color: #1db954; }
     .btn.active { border-color: #1db954; color: #1db954; background: rgba(29,185,84,0.08); }
     .btn.danger:hover { border-color: #f44336; color: #f44336; }
 
-    .slider-row { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: #888; margin-top: 4px; }
+    .slider-row { display: flex; align-items: center; gap: 6px; font-size: 0.66rem; color: #888; margin-top: 4px; }
     .slider-row input[type=range] { flex: 1; accent-color: #1db954; }
 
-    .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-    .pbtn { background: #0d0d0d; border: 1px solid #333; color: #999; font-family: Consolas, monospace; font-size: 0.68rem; padding: 7px 8px; cursor: grab; text-align: left; transition: all 0.1s; line-height: 1.5; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    /* ── Pattern buttons ──────────────────────────────── */
+    .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .pbtn {
+      background: #0d0d0d; border: 1px solid #333; color: #999;
+      font-family: Consolas, monospace; font-size: 0.63rem;
+      padding: 5px 6px; cursor: grab; text-align: left;
+      transition: all 0.1s; line-height: 1.5;
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    }
     .pbtn:hover { border-color: #aaa; color: #ccc; }
     .pbtn:active { cursor: grabbing; }
-    .pbtn span { display: block; font-size: 0.58rem; color: #666; margin-top: 1px; }
-    canvas.drag-over { border-color: #1db954; cursor: copy; }
+    .pbtn span { display: block; font-size: 0.53rem; color: #666; margin-top: 1px; }
+    .drag-hint { font-size: 0.57rem; color: #555; margin-top: 5px; margin-bottom: 5px; }
 
-    .rule-info { font-size: 0.67rem; color: #777; line-height: 1.8; }
+    /* ── Rules ────────────────────────────────────────── */
+    .rule-info { font-size: 0.64rem; color: #777; line-height: 1.9; }
     .rule-info b { color: #aaa; }
 
-    .challenge-status { font-size: 0.67rem; color: #888; margin-bottom: 8px; min-height: 1.4em; }
-    .challenge-status.won { color: #1db954; }
+    /* ── Mobile patterns (above canvas) ──────────────── */
+    .patterns-mobile { display: none; width: 100%; }
+    .patterns-mobile .preset-grid { grid-template-columns: repeat(4, 1fr); }
+    .patterns-mobile .pbtn span { display: none; }
 
+    /* ── Stats bar (bottom) ───────────────────────────── */
+    .stats-bar {
+      display: flex; align-items: center; gap: 0;
+      border-top: 1px solid #2e2e2e; padding: 7px 18px;
+      background: #0a0a0a; flex-shrink: 0;
+    }
+    .stat-item { display: flex; align-items: baseline; gap: 7px; padding-right: 22px; }
+    .stat-item:not(:last-child) { border-right: 1px solid #252525; margin-right: 22px; }
+    .stat-lbl { font-size: 0.58rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-val { font-size: 1rem; color: #1db954; min-width: 36px; }
+
+    /* ── Win overlay ──────────────────────────────────── */
     #winOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
     #winOverlay.show { display: flex; }
-    .win-box { background: #111; border: 1px solid #1db954; padding: 32px 40px; text-align: center; max-width: 360px; }
-    .win-title { color: #1db954; font-size: 1.3rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
-    .win-msg { color: #ccc; font-size: 0.85rem; margin-bottom: 6px; }
-    .win-stats { color: #666; font-size: 0.7rem; margin-bottom: 16px; }
+    .win-box { background: #111; border: 1px solid #1db954; padding: 32px 40px; text-align: center; max-width: 360px; width: 90%; }
+    .win-title { color: #1db954; font-size: 1.2rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
+    .win-msg  { color: #ccc; font-size: 0.83rem; margin-bottom: 5px; }
+    .win-stats { color: #666; font-size: 0.68rem; margin-bottom: 16px; }
 
     @keyframes pulse-border {
       0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0.4); }
       50%      { box-shadow: 0 0 0 4px rgba(29,185,84,0); }
     }
-    canvas.running { animation: pulse-border 2s ease-in-out infinite; }
 
+    /* ── Mobile ───────────────────────────────────────── */
     @media (max-width: 700px) {
-      body { padding: 12px; }
-      .layout { flex-direction: column; }
-      .board-col { width: 100%; }
-      .board-col canvas { width: 100% !important; }
-      .panel-col { width: 100%; }
+      .main-layout { flex-direction: column; overflow: visible; }
+
+      .canvas-col { padding: 10px 10px 6px; align-items: stretch; }
+      .canvas-col canvas { width: 100% !important; height: auto !important; }
+
+      .patterns-mobile { display: block; }
+
+      .right-panel {
+        width: 100%; border-left: none; border-top: 1px solid #2e2e2e;
+        padding: 6px 10px; overflow-y: visible;
+      }
+      /* hide patterns in right panel on mobile — they're above canvas */
+      .patterns-desktop { display: none; }
+
+      .stats-bar { padding: 6px 12px; gap: 12px; flex-wrap: wrap; }
+      .stat-item:not(:last-child) { border-right: none; margin-right: 0; padding-right: 12px; }
     }
   </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="pg-header">
-  <div class="pg-header-row">
-    <div>
-      <div class="pg-title" id="pgTitle">Conway's Game of Life</div>
-      <div class="pg-sub"  id="pgSub">Click to draw · drag to paint · watch it evolve</div>
-      <a class="pg-back" href="https://houfu0702.github.io">← back to portfolio</a>
-    </div>
-    <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+  <div>
+    <div class="pg-title" id="pgTitle">Conway's Game of Life</div>
+    <div class="pg-sub"  id="pgSub">Click to draw · drag to paint · watch it evolve</div>
+    <a class="pg-back" href="https://houfu0702.github.io">← portfolio</a>
   </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
 
-<div class="layout">
-  <div class="board-col">
+<!-- Challenges bar -->
+<div class="challenges-bar">
+  <div class="challenges-row">
+    <span class="challenges-label" data-en="// challenges" data-zh="// 挑战">// challenges</span>
+    <button class="cbtn" data-challenge="0" onclick="startChallenge(0)">First Steps<small>survive 20 gens</small></button>
+    <button class="cbtn" data-challenge="1" onclick="startChallenge(1)">Bloom<small>reach 100 cells</small></button>
+    <button class="cbtn" data-challenge="2" onclick="startChallenge(2)">Century<small>survive 100 gens</small></button>
+    <button class="cbtn" data-challenge="3" onclick="startChallenge(3)">Still Life<small>reach stability</small></button>
+    <button class="cbtn" data-challenge="4" onclick="startChallenge(4)">Mega City<small>reach 500 cells</small></button>
+    <button class="cbtn" data-challenge="5" onclick="startChallenge(5)">Extinction<small>all cells die</small></button>
+  </div>
+  <div class="challenge-status" id="challengeStatus">select a challenge · draw your pattern · press play</div>
+</div>
+
+<!-- Main layout -->
+<div class="main-layout">
+  <div class="canvas-col">
+
+    <!-- Patterns: shown above canvas on mobile only -->
+    <div class="patterns-mobile">
+      <div class="preset-grid">
+        <button class="pbtn" draggable="true" data-preset="glider"  onclick="loadPreset('glider')">Glider<span>classic mover</span></button>
+        <button class="pbtn" draggable="true" data-preset="blinker" onclick="loadPreset('blinker')">Blinker<span>period-2</span></button>
+        <button class="pbtn" draggable="true" data-preset="pulsar"  onclick="loadPreset('pulsar')">Pulsar<span>period-3</span></button>
+        <button class="pbtn" draggable="true" data-preset="rpento"  onclick="loadPreset('rpento')">R-pentomino<span>chaotic</span></button>
+        <button class="pbtn" draggable="true" data-preset="gun"     onclick="loadPreset('gun')">Gosper Gun<span>glider factory</span></button>
+        <button class="pbtn" draggable="true" data-preset="acorn"   onclick="loadPreset('acorn')">Acorn<span>5206 gens</span></button>
+        <button class="pbtn" draggable="true" data-preset="diehard" onclick="loadPreset('diehard')">Diehard<span>dies gen 130</span></button>
+        <button class="pbtn" draggable="true" data-preset="lwss"    onclick="loadPreset('lwss')">LWSS<span>spaceship</span></button>
+      </div>
+    </div>
+
     <canvas id="canvas"></canvas>
   </div>
 
-  <div class="panel-col">
-
-    <!-- Stats -->
-    <div class="pcard">
-      <div class="pcard-title" data-en="// status" data-zh="// 状态">// status</div>
-      <div class="stat-row">
-        <div class="sbox">
-          <div class="slabel" data-en="generation" data-zh="代数">generation</div>
-          <div class="sval" id="genCount">0</div>
-        </div>
-        <div class="sbox">
-          <div class="slabel" data-en="live cells" data-zh="活细胞">live cells</div>
-          <div class="sval" id="cellCount">0</div>
-        </div>
-        <div class="sbox">
-          <div class="slabel" data-en="next turn" data-zh="下一代">next turn</div>
-          <div class="sval" id="nextCount">0</div>
-        </div>
-      </div>
-    </div>
+  <!-- Right panel -->
+  <div class="right-panel">
 
     <!-- Controls -->
     <div class="pcard">
       <div class="pcard-title" data-en="// controls" data-zh="// 控制">// controls</div>
       <div class="brow">
-        <button class="btn" id="playBtn"  onclick="togglePlay()"  data-en="⏵ Play"  data-zh="⏵ 播放">⏵ Play</button>
-        <button class="btn" id="stepBtn"  onclick="stepOnce()"    data-en="⏭ Step"  data-zh="⏭ 步进">⏭ Step</button>
-        <button class="btn" id="undoBtn"  onclick="undoStep()"    data-en="↩ Undo"  data-zh="↩ 撤销" disabled>↩ Undo</button>
+        <button class="btn" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放">⏵ Play</button>
+        <button class="btn" id="stepBtn" onclick="stepOnce()"   data-en="⏭ Step" data-zh="⏭ 步进">⏭ Step</button>
+        <button class="btn" id="undoBtn" onclick="undoStep()"   data-en="↩ Undo" data-zh="↩ 撤销" disabled>↩ Undo</button>
       </div>
       <div class="brow">
-        <button class="btn danger" onclick="clearGrid()"    data-en="⬜ Clear"    data-zh="⬜ 清空">⬜ Clear</button>
-        <button class="btn"        onclick="randomize(0.2)" data-en="⚄ Random"   data-zh="⚄ 随机">⚄ Random</button>
+        <button class="btn danger" onclick="clearGrid()"    data-en="⬜ Clear"  data-zh="⬜ 清空">⬜ Clear</button>
+        <button class="btn"        onclick="randomize(0.2)" data-en="⚄ Random" data-zh="⚄ 随机">⚄ Random</button>
         <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share" data-zh="⎘ 分享">⎘ Share</button>
       </div>
       <div class="slider-row">
@@ -145,15 +225,15 @@
         <input type="range" id="speedSlider" min="1" max="30" value="10" oninput="setSpeed(this.value)">
         <span id="speedLabel">10 fps</span>
       </div>
-      <div class="slider-row" style="margin-top:8px">
+      <div class="slider-row" style="margin-top:6px">
         <span data-en="cell px" data-zh="格大小">cell px</span>
         <input type="range" id="cellSizeSlider" min="4" max="16" value="8" oninput="setCellSize(this.value)">
         <span id="cellSizeLabel">8</span>
       </div>
     </div>
 
-    <!-- Presets -->
-    <div class="pcard">
+    <!-- Patterns (desktop only) -->
+    <div class="pcard patterns-desktop">
       <div class="pcard-title" data-en="// patterns" data-zh="// 预设图案">// patterns</div>
       <div class="preset-grid" id="presetGrid">
         <button class="pbtn" draggable="true" data-preset="glider"  onclick="loadPreset('glider')">Glider<span>classic mover</span></button>
@@ -165,24 +245,10 @@
         <button class="pbtn" draggable="true" data-preset="diehard" onclick="loadPreset('diehard')">Diehard<span>dies at gen 130</span></button>
         <button class="pbtn" draggable="true" data-preset="lwss"    onclick="loadPreset('lwss')">LWSS<span>lightweight spaceship</span></button>
       </div>
-      <div style="font-size:0.6rem;color:#333;margin-top:6px;margin-bottom:6px">drag onto canvas to stamp · click to load</div>
+      <div class="drag-hint">drag onto canvas to stamp · click to load</div>
       <div class="brow">
         <button class="btn" id="rotBtn"  onclick="rotateStamp()">↻ <span id="rotLabel">0°</span></button>
         <button class="btn" id="flipBtn" onclick="flipStamp()">⟺ <span id="flipLabel">normal</span></button>
-      </div>
-    </div>
-
-    <!-- Challenges -->
-    <div class="pcard">
-      <div class="pcard-title" data-en="// challenges" data-zh="// 挑战">// challenges</div>
-      <div class="challenge-status" id="challengeStatus">select a challenge · draw · press play</div>
-      <div class="preset-grid" style="margin-top:8px">
-        <button class="pbtn" data-challenge="0" onclick="startChallenge(0)">First Steps<span>survive 20 gens</span></button>
-        <button class="pbtn" data-challenge="1" onclick="startChallenge(1)">Bloom<span>reach 100 live cells</span></button>
-        <button class="pbtn" data-challenge="2" onclick="startChallenge(2)">Century<span>survive 100 gens</span></button>
-        <button class="pbtn" data-challenge="3" onclick="startChallenge(3)">Still Life<span>reach stability</span></button>
-        <button class="pbtn" data-challenge="4" onclick="startChallenge(4)">Mega City<span>reach 500 live cells</span></button>
-        <button class="pbtn" data-challenge="5" onclick="startChallenge(5)">Extinction<span>all cells must die</span></button>
       </div>
     </div>
 
@@ -193,17 +259,34 @@
         <b style="color:#1db954">■</b> <b>Survive</b> — live, 2–3 neighbours<br>
         <b style="color:#f44336">■</b> <b>Die</b> — live, &lt;2 or &gt;3 neighbours<br>
         <b style="color:#3a3a3a">■</b> <b>Born next</b> — dead, exactly 3 neighbours<br>
-        <span style="color:#222;margin-top:4px;display:block">Grid wraps toroidally.</span>
+        <span style="color:#555;margin-top:4px;display:block">Grid wraps toroidally.</span>
       </div>
     </div>
 
   </div>
 </div>
 
+<!-- Stats bar (bottom) -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <span class="stat-lbl" data-en="generation" data-zh="代数">generation</span>
+    <span class="stat-val" id="genCount">0</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-lbl" data-en="live cells" data-zh="活细胞">live cells</span>
+    <span class="stat-val" id="cellCount">0</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-lbl" data-en="next turn" data-zh="下一代">next turn</span>
+    <span class="stat-val" id="nextCount">0</span>
+  </div>
+</div>
+
+<!-- Win overlay -->
 <div id="winOverlay">
   <div class="win-box">
     <div class="win-title">✓ Complete</div>
-    <div class="win-msg" id="winMsg"></div>
+    <div class="win-msg"   id="winMsg"></div>
     <div class="win-stats" id="winStats"></div>
     <button class="btn" onclick="closeWin()" style="margin-top:4px;width:100%">Continue →</button>
   </div>
@@ -233,11 +316,11 @@ let grid, next;
 function initGrid() {
   const mobile = window.innerWidth <= 700;
   const maxW = mobile
-    ? window.innerWidth - 32
-    : Math.min(window.innerWidth - 240, 720);
+    ? window.innerWidth - 24
+    : Math.min(window.innerWidth - 258, 760);
   const maxH = mobile
-    ? Math.round(window.innerHeight * 0.52)
-    : Math.min(window.innerHeight - 140, 640);
+    ? Math.round(window.innerHeight * 0.42)
+    : Math.min(window.innerHeight - 174, 700);
   COLS = Math.floor(maxW / CELL);
   ROWS = Math.floor(maxH / CELL);
   canvas.width  = COLS * CELL;
@@ -251,7 +334,7 @@ function idx(c, r) { return r * COLS + c; }
 /* ── Rendering ────────────────────────────────────── */
 const GREEN     = '#1db954';
 const RED       = '#f44336';
-const GHOST     = '#3a3a3a';   // dead cell that will be born next turn
+const GHOST     = '#3a3a3a';
 const BG        = '#0a0a0a';
 const GRID_LINE = '#111111';
 
@@ -259,7 +342,6 @@ function draw() {
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Grid lines
   ctx.strokeStyle = GRID_LINE;
   ctx.lineWidth = 0.5;
   for (let c = 0; c <= COLS; c++) {
@@ -289,21 +371,15 @@ function draw() {
   document.getElementById('cellCount').textContent = live;
   document.getElementById('nextCount').textContent = nextLive;
 
-  // ghost preview while dragging a pattern over the canvas
   if (dragPattern && dragOff) {
     const tCells = transformCells(PRESETS[dragPattern]);
-
-    // full-canvas crosshair at cursor position (very faint)
     if (dragCursor) {
       ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([]);
+      ctx.lineWidth = 1; ctx.setLineDash([]);
       const cx = (dragCursor.c + 0.5) * CELL, cy = (dragCursor.r + 0.5) * CELL;
       ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, canvas.height); ctx.stroke();
     }
-
-    // ghost cells (brighter fill)
     ctx.fillStyle = 'rgba(29,185,84,0.55)';
     let minC = Infinity, minR = Infinity, maxC2 = -Infinity, maxR2 = -Infinity;
     tCells.forEach(([dc, dr]) => {
@@ -313,15 +389,9 @@ function draw() {
       const c = (rawC % COLS + COLS) % COLS, r = (rawR % ROWS + ROWS) % ROWS;
       ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
     });
-
-    // dashed bounding box around the whole pattern footprint
     ctx.strokeStyle = 'rgba(29,185,84,0.85)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 3]);
-    ctx.strokeRect(
-      minC * CELL + 0.5, minR * CELL + 0.5,
-      (maxC2 - minC + 1) * CELL, (maxR2 - minR + 1) * CELL
-    );
+    ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.strokeRect(minC * CELL + 0.5, minR * CELL + 0.5, (maxC2 - minC + 1) * CELL, (maxR2 - minR + 1) * CELL);
     ctx.setLineDash([]);
   }
 }
@@ -332,9 +402,7 @@ function neighbors(c, r) {
   for (let dr = -1; dr <= 1; dr++) {
     for (let dc = -1; dc <= 1; dc++) {
       if (dr === 0 && dc === 0) continue;
-      const nc = (c + dc + COLS) % COLS;
-      const nr = (r + dr + ROWS) % ROWS;
-      n += grid[idx(nc, nr)];
+      n += grid[idx((c + dc + COLS) % COLS, (r + dr + ROWS) % ROWS)];
     }
   }
   return n;
@@ -384,8 +452,7 @@ function loop(t) {
   rafId = requestAnimationFrame(loop);
   if (t - lastT < 1000 / fps) return;
   lastT = t;
-  step();
-  draw();
+  step(); draw();
 }
 
 function togglePlay() {
@@ -404,10 +471,7 @@ function togglePlay() {
   }
 }
 
-function stepOnce() {
-  if (running) togglePlay();
-  step(); draw();
-}
+function stepOnce() { if (running) togglePlay(); step(); draw(); }
 
 function setSpeed(v) {
   fps = +v;
@@ -422,18 +486,15 @@ function setCellSize(v) {
   const snap = grid.slice();
   const oldC = COLS, oldR = ROWS;
   initGrid();
-  // copy centered: offset so the middle of the old grid maps to the middle of the new
   const offC = Math.floor(oldC / 2) - Math.floor(COLS / 2);
   const offR = Math.floor(oldR / 2) - Math.floor(ROWS / 2);
-  for (let r = 0; r < ROWS; r++) {
+  for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++) {
       const oc = c + offC, or = r + offR;
       if (oc >= 0 && oc < oldC && or >= 0 && or < oldR)
         grid[idx(c, r)] = snap[or * oldC + oc];
     }
-  }
-  generation = 0;
-  draw();
+  generation = 0; draw();
   if (wasRunning) togglePlay();
 }
 
@@ -445,8 +506,7 @@ function clearHistory() {
 function clearGrid() {
   if (running) togglePlay();
   clearHistory();
-  grid.fill(0);
-  generation = 0;
+  grid.fill(0); generation = 0;
   document.getElementById('genCount').textContent = 0;
   draw();
 }
@@ -478,16 +538,13 @@ function cellAt(e) {
 function paint(e) {
   const [c, r] = cellAt(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
-  grid[idx(c, r)] = paintVal;
-  draw();
+  grid[idx(c, r)] = paintVal; draw();
 }
 
 canvas.addEventListener('mousedown', e => {
   const [c, r] = cellAt(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
-  paintVal = grid[idx(c, r)] ? 0 : 1;
-  painting = true;
-  paint(e);
+  paintVal = grid[idx(c, r)] ? 0 : 1; painting = true; paint(e);
 });
 canvas.addEventListener('mousemove', e => { if (painting) paint(e); });
 canvas.addEventListener('mouseup',   () => { painting = false; });
@@ -512,7 +569,6 @@ const PRESETS = {
     const p=[];
     [2,3,4,8,9,10].forEach(c=>{ [0,5,7,12].forEach(r=>p.push([c,r])); });
     [0,5,7,12].forEach(r=>{ [2,3,4,8,9,10].forEach(c=>p.push([c,r])); });
-    // remove duplicates
     const seen=new Set(); return p.filter(([c,r])=>{ const k=c+','+r; return seen.has(k)?false:(seen.add(k),true); });
   })(),
   rpento:  [[1,0],[2,0],[0,1],[1,1],[1,2]],
@@ -531,20 +587,16 @@ const PRESETS = {
 function loadPreset(name) {
   if (running) togglePlay();
   clearHistory();
-  grid.fill(0);
-  generation = 0;
-  document.getElementById('genCount').textContent  = 0;
+  grid.fill(0); generation = 0;
+  document.getElementById('genCount').textContent = 0;
   const cells = PRESETS[name];
-  // Center on grid
   const maxC = Math.max(...cells.map(([c]) => c));
   const maxR = Math.max(...cells.map(([,r]) => r));
-  const offC = Math.floor((COLS - maxC) / 2);
-  const offR = Math.floor((ROWS - maxR) / 2);
-  place(cells, offC, offR);
+  place(cells, Math.floor((COLS - maxC) / 2), Math.floor((ROWS - maxR) / 2));
   draw();
 }
 
-/* ── Pattern transform (rotate / mirror) ─────────── */
+/* ── Pattern transform ────────────────────────────── */
 let stampRot = 0, stampFlipH = false;
 
 function transformCells(cells) {
@@ -553,7 +605,6 @@ function transformCells(cells) {
     const mc = Math.max(...pts.map(([c]) => c));
     pts = pts.map(([c, r]) => [mc - c, r]);
   }
-  // rotate 90° CW, stampRot times:  (c,r) → (maxR−r, c)
   for (let i = 0; i < stampRot; i++) {
     const mr = Math.max(...pts.map(([, r]) => r));
     pts = pts.map(([c, r]) => [mr - r, c]);
@@ -563,8 +614,7 @@ function transformCells(cells) {
 
 function rotateStamp() {
   stampRot = (stampRot + 1) % 4;
-  const labels = ['0°', '90°', '180°', '270°'];
-  document.getElementById('rotLabel').textContent = labels[stampRot];
+  document.getElementById('rotLabel').textContent = ['0°','90°','180°','270°'][stampRot];
   document.getElementById('rotBtn').classList.toggle('active', stampRot !== 0);
   if (dragPattern && dragOff) draw();
 }
@@ -576,29 +626,26 @@ function flipStamp() {
   if (dragPattern && dragOff) draw();
 }
 
-/* ── Drag-and-drop pattern stamp ──────────────────── */
+/* ── Drag-and-drop stamp ──────────────────────────── */
 let dragPattern = null, dragOff = null, dragCursor = null;
 
 document.querySelectorAll('.pbtn[data-preset]').forEach(btn => {
   btn.addEventListener('dragstart', e => {
-    dragPattern = btn.dataset.preset;
-    dragOff = null;
+    dragPattern = btn.dataset.preset; dragOff = null;
     e.dataTransfer.effectAllowed = 'copy';
-    // hide the browser's default drag ghost; canvas preview takes its place
     const blank = new Image();
     blank.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     e.dataTransfer.setDragImage(blank, 0, 0);
   });
   btn.addEventListener('dragend', () => {
     dragPattern = null; dragOff = null; dragCursor = null;
-    canvas.classList.remove('drag-over');
-    draw();
+    canvas.classList.remove('drag-over'); draw();
   });
 });
 
 canvas.addEventListener('dragenter', e => { e.preventDefault(); canvas.classList.add('drag-over'); });
 canvas.addEventListener('dragleave', () => { dragOff = null; dragCursor = null; canvas.classList.remove('drag-over'); draw(); });
-canvas.addEventListener('dragover',  e => {
+canvas.addEventListener('dragover', e => {
   e.preventDefault();
   if (!dragPattern) return;
   const [cc, cr] = cellAt(e);
@@ -607,10 +654,7 @@ canvas.addEventListener('dragover',  e => {
   const maxC = Math.max(...cells.map(([c]) => c));
   const maxR = Math.max(...cells.map(([, r]) => r));
   const nc = cc - Math.floor(maxC / 2), nr = cr - Math.floor(maxR / 2);
-  if (!dragOff || dragOff.c !== nc || dragOff.r !== nr) {
-    dragOff = { c: nc, r: nr };
-    draw();
-  }
+  if (!dragOff || dragOff.c !== nc || dragOff.r !== nr) { dragOff = { c: nc, r: nr }; draw(); }
 });
 canvas.addEventListener('drop', e => {
   e.preventDefault();
@@ -621,36 +665,33 @@ canvas.addEventListener('drop', e => {
     const r = ((dragOff.r + dr) % ROWS + ROWS) % ROWS;
     grid[idx(c, r)] = 1;
   });
-  dragPattern = null; dragOff = null; dragCursor = null;
-  draw();
+  dragPattern = null; dragOff = null; dragCursor = null; draw();
 });
 
-/* ── Touch drag-and-drop for mobile ──────────────── */
+/* ── Touch drag-and-drop ──────────────────────────── */
 let touchDragActive = false;
 
 document.querySelectorAll('.pbtn[data-preset]').forEach(btn => {
   btn.addEventListener('touchstart', e => {
-    e.preventDefault(); // stop browser selection / long-press menu
-    dragPattern = btn.dataset.preset;
-    dragOff = null; dragCursor = null;
-    touchDragActive = true;
-    btn.classList.add('active');
+    e.preventDefault();
+    dragPattern = btn.dataset.preset; dragOff = null; dragCursor = null;
+    touchDragActive = true; btn.classList.add('active');
   }, { passive: false });
 });
 
 document.addEventListener('touchmove', e => {
   if (!touchDragActive || !dragPattern) return;
-  e.preventDefault(); // block page scroll while dragging a pattern
+  e.preventDefault();
   const touch = e.touches[0];
-  const rect  = canvas.getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
   const x = touch.clientX - rect.left, y = touch.clientY - rect.top;
   if (x >= 0 && x < rect.width && y >= 0 && y < rect.height) {
     canvas.classList.add('drag-over');
     const cc = Math.floor(x / CELL), cr = Math.floor(y / CELL);
     dragCursor = { c: cc, r: cr };
     const cells = transformCells(PRESETS[dragPattern]);
-    const maxC  = Math.max(...cells.map(([c]) => c));
-    const maxR  = Math.max(...cells.map(([, r]) => r));
+    const maxC = Math.max(...cells.map(([c]) => c));
+    const maxR = Math.max(...cells.map(([, r]) => r));
     const nc = cc - Math.floor(maxC / 2), nr = cr - Math.floor(maxR / 2);
     if (!dragOff || dragOff.c !== nc || dragOff.r !== nr) { dragOff = { c: nc, r: nr }; draw(); }
   } else {
@@ -664,16 +705,13 @@ function endTouchDrag() {
   document.querySelectorAll('.pbtn.active').forEach(b => b.classList.remove('active'));
   canvas.classList.remove('drag-over');
   if (dragPattern && dragOff) {
-    // finger lifted over canvas — stamp
     transformCells(PRESETS[dragPattern]).forEach(([dc, dr]) => {
       const c = ((dragOff.c + dc) % COLS + COLS) % COLS;
       const r = ((dragOff.r + dr) % ROWS + ROWS) % ROWS;
       grid[idx(c, r)] = 1;
     });
-    dragPattern = null; dragOff = null; dragCursor = null;
-    draw();
+    dragPattern = null; dragOff = null; dragCursor = null; draw();
   } else if (dragPattern) {
-    // finger never reached canvas — treat as tap → load centered
     const p = dragPattern;
     dragPattern = null; dragOff = null; dragCursor = null;
     loadPreset(p);
@@ -682,95 +720,70 @@ function endTouchDrag() {
 document.addEventListener('touchend',    endTouchDrag);
 document.addEventListener('touchcancel', endTouchDrag);
 
-window.addEventListener('resize', () => {
-  const wasRunning = running;
-  if (running) togglePlay();
-  clearHistory();
-  initGrid();
-  if (urlSeed !== null) applySeed(urlSeed);
-  draw();
-  if (wasRunning) togglePlay();
-});
-
 /* ── Seed sharing ─────────────────────────────────── */
-// Use URL-safe base64 (no +, /, or = that could be mangled in URLs)
-function b64enc(str) {
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-function b64dec(str) {
-  const s = str.replace(/-/g, '+').replace(/_/g, '/');
-  return atob(s + '=='.slice(0, (4 - s.length % 4) % 4));
-}
+// URL-safe base64 — avoids +/= that get mangled in query strings
+function b64enc(str) { return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,''); }
+function b64dec(str) { const s=str.replace(/-/g,'+').replace(/_/g,'/'); return atob(s+'=='.slice(0,(4-s.length%4)%4)); }
 
-let urlSeed = null; // cached so resize restores it instead of wiping it
+let urlSeed = null;
 
 function encodeSeed() {
-  const centerC = Math.floor(COLS / 2), centerR = Math.floor(ROWS / 2);
-  const live = [];
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++)
-      if (grid[idx(c, r)]) live.push([c - centerC, r - centerR]);
+  const cC = Math.floor(COLS/2), cR = Math.floor(ROWS/2), live = [];
+  for (let r=0; r<ROWS; r++) for (let c=0; c<COLS; c++) if (grid[idx(c,r)]) live.push([c-cC, r-cR]);
   return b64enc(JSON.stringify(live));
 }
 
 function applySeed(live) {
-  const centerC = Math.floor(COLS / 2), centerR = Math.floor(ROWS / 2);
+  const cC = Math.floor(COLS/2), cR = Math.floor(ROWS/2);
   grid.fill(0); generation = 0;
-  live.forEach(([dc, dr]) => {
-    const c = centerC + dc, r = centerR + dr;
-    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
-  });
+  live.forEach(([dc,dr]) => { const c=cC+dc, r=cR+dr; if (c>=0&&c<COLS&&r>=0&&r<ROWS) grid[idx(c,r)]=1; });
   document.getElementById('genCount').textContent = 0;
 }
 
 function loadSeedParam() {
-  const s = new URLSearchParams(window.location.search).get('s');
-  if (!s) return false;
+  // Use hash (#s=...) — never touched by servers or redirects
+  const hash = window.location.hash;
+  if (!hash.startsWith('#s=')) return false;
   try {
-    urlSeed = JSON.parse(b64dec(s));
-    applySeed(urlSeed);
-    draw();
-    return true;
+    urlSeed = JSON.parse(b64dec(hash.slice(3)));
+    applySeed(urlSeed); draw(); return true;
   } catch(e) { return false; }
 }
 
 function shareSeed() {
-  const url = new URL(window.location.href);
-  url.searchParams.set('s', encodeSeed());
-  navigator.clipboard.writeText(url.toString()).then(() => {
-    const btn = document.getElementById('shareBtn');
-    const prev = btn.textContent;
-    btn.textContent = '✓ Copied!';
-    btn.classList.add('active');
+  const url = window.location.origin + window.location.pathname + '#s=' + encodeSeed();
+  const btn = document.getElementById('shareBtn');
+  const prev = btn.textContent;
+  const flash = () => {
+    btn.textContent = '✓ Copied!'; btn.classList.add('active');
     setTimeout(() => { btn.textContent = prev; btn.classList.remove('active'); }, 2000);
-  });
+  };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(flash).catch(() => { prompt('Copy this link:', url); });
+  } else {
+    prompt('Copy this link:', url);
+  }
 }
 
 /* ── Challenge system ─────────────────────────────── */
 const CHALLENGES = [
-  { name: 'First Steps', goal: 'Survive 20 generations',  check: (g, c, stable) => g >= 20 && c > 0 },
-  { name: 'Bloom',       goal: 'Reach 100 live cells',    check: (g, c)          => c >= 100 },
-  { name: 'Century',     goal: 'Survive 100 generations', check: (g, c)          => g >= 100 && c > 0 },
-  { name: 'Still Life',  goal: 'Reach a stable pattern',  check: (g, c, stable)  => stable && g > 0 },
-  { name: 'Mega City',   goal: 'Reach 500 live cells',    check: (g, c)          => c >= 500 },
-  { name: 'Extinction',  goal: 'All cells must die out',  check: (g, c)          => g > 5 && c === 0 },
+  { name: 'First Steps', goal: 'Survive 20 generations',  check: (g, c, s) => g >= 20 && c > 0 },
+  { name: 'Bloom',       goal: 'Reach 100 live cells',    check: (g, c)    => c >= 100 },
+  { name: 'Century',     goal: 'Survive 100 generations', check: (g, c)    => g >= 100 && c > 0 },
+  { name: 'Still Life',  goal: 'Reach a stable pattern',  check: (g, c, s) => s && g > 0 },
+  { name: 'Mega City',   goal: 'Reach 500 live cells',    check: (g, c)    => c >= 500 },
+  { name: 'Extinction',  goal: 'All cells must die out',  check: (g, c)    => g > 5 && c === 0 },
 ];
 
-let activeChallenge = -1;
-let prevGridSnap = null;
+let activeChallenge = -1, prevGridSnap = null;
 
 function startChallenge(i) {
   if (running) togglePlay();
-  clearGrid();
-  activeChallenge = i;
-  prevGridSnap = null;
-  const ch = CHALLENGES[i];
+  clearGrid(); activeChallenge = i; prevGridSnap = null;
   const status = document.getElementById('challengeStatus');
-  status.textContent = '▶ ' + ch.goal;
+  status.textContent = '▶ ' + CHALLENGES[i].goal;
   status.classList.remove('won');
-  document.querySelectorAll('.pbtn[data-challenge]').forEach((b, j) => {
-    b.classList.toggle('active', j === i);
-  });
+  document.querySelectorAll('.cbtn[data-challenge]').forEach((b, j) => b.classList.toggle('active', j === i));
 }
 
 function doChallengeTick() {
@@ -779,8 +792,7 @@ function doChallengeTick() {
   prevGridSnap = grid.slice();
   const ch = CHALLENGES[activeChallenge];
   if (ch.check(generation, cells, stable)) {
-    const won = activeChallenge;
-    activeChallenge = -1;
+    const won = activeChallenge; activeChallenge = -1;
     setTimeout(() => showWin(CHALLENGES[won], cells), 60);
   }
 }
@@ -788,21 +800,28 @@ function doChallengeTick() {
 function showWin(ch, cells) {
   if (running) togglePlay();
   const status = document.getElementById('challengeStatus');
-  status.textContent = '✓ ' + ch.goal;
-  status.classList.add('won');
-  document.getElementById('winMsg').textContent = ch.name + ' — ' + ch.goal;
+  status.textContent = '✓ ' + ch.goal; status.classList.add('won');
+  document.getElementById('winMsg').textContent   = ch.name + ' — ' + ch.goal;
   document.getElementById('winStats').textContent = 'Generation ' + generation + ' · ' + cells + ' cells alive';
   document.getElementById('winOverlay').classList.add('show');
-  document.querySelectorAll('.pbtn[data-challenge]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
 }
 
-function closeWin() {
-  document.getElementById('winOverlay').classList.remove('show');
-}
+function closeWin() { document.getElementById('winOverlay').classList.remove('show'); }
+
+/* ── Resize ───────────────────────────────────────── */
+window.addEventListener('resize', () => {
+  const wasRunning = running;
+  if (running) togglePlay();
+  clearHistory(); initGrid();
+  if (urlSeed !== null) applySeed(urlSeed);
+  draw();
+  if (wasRunning) togglePlay();
+});
 
 /* ── Init ─────────────────────────────────────────── */
 initGrid();
-if (!loadSeedParam()) loadPreset('gun');  // start with something visually impressive
+if (!loadSeedParam()) loadPreset('gun');
 </script>
 </body>
 </html>
