@@ -17,7 +17,7 @@
     .pg-header { max-width: 980px; margin: 0 auto 18px; }
     .pg-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
     .pg-title { color: #1db954; font-size: 1.4rem; text-transform: uppercase; letter-spacing: -1px; }
-    .pg-sub   { color: #666; font-size: 0.72rem; margin-top: 3px; line-height: 1.6; }
+    .pg-sub   { color: #999; font-size: 0.72rem; margin-top: 3px; line-height: 1.6; }
     .pg-back  { font-size: 0.72rem; color: #1db954; text-decoration: none; margin-top: 6px; display: inline-block; }
     .pg-back:hover { text-decoration: underline; }
     .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
@@ -30,38 +30,38 @@
     canvas {
       display: block;
       background: #0a0a0a;
-      border: 1px solid #1c1c1c;
+      border: 1px solid #333;
       cursor: crosshair;
       image-rendering: pixelated;
     }
     canvas.running { border-color: #1db954; }
 
-    .pcard { background: #111; border: 1px solid #1c1c1c; padding: 11px 13px; margin-bottom: 8px; }
-    .pcard-title { color: #1db954; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #1a1a1a; }
+    .pcard { background: #111; border: 1px solid #2e2e2e; padding: 11px 13px; margin-bottom: 8px; }
+    .pcard-title { color: #1db954; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #2e2e2e; }
 
     .stat-row { display: flex; gap: 6px; margin-bottom: 8px; }
-    .sbox { flex: 1; background: #0d0d0d; border: 1px solid #1c1c1c; padding: 6px 8px; }
-    .slabel { font-size: 0.6rem; color: #444; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    .sbox { flex: 1; background: #0d0d0d; border: 1px solid #2e2e2e; padding: 6px 8px; }
+    .slabel { font-size: 0.6rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
     .sval { font-size: 1rem; color: #1db954; }
 
     .brow { display: flex; gap: 5px; margin-bottom: 5px; flex-wrap: wrap; }
-    .btn { flex: 1; background: transparent; border: 1px solid #2a2a2a; color: #777; font-family: Consolas, monospace; font-size: 0.72rem; padding: 7px 8px; cursor: pointer; transition: all 0.1s; white-space: nowrap; }
+    .btn { flex: 1; background: transparent; border: 1px solid #3d3d3d; color: #aaa; font-family: Consolas, monospace; font-size: 0.72rem; padding: 7px 8px; cursor: pointer; transition: all 0.1s; white-space: nowrap; }
     .btn:hover { border-color: #1db954; color: #1db954; }
     .btn.active { border-color: #1db954; color: #1db954; background: rgba(29,185,84,0.08); }
     .btn.danger:hover { border-color: #f44336; color: #f44336; }
 
-    .slider-row { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: #555; margin-top: 4px; }
+    .slider-row { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: #888; margin-top: 4px; }
     .slider-row input[type=range] { flex: 1; accent-color: #1db954; }
 
     .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-    .pbtn { background: #0d0d0d; border: 1px solid #222; color: #666; font-family: Consolas, monospace; font-size: 0.68rem; padding: 7px 8px; cursor: grab; text-align: left; transition: all 0.1s; line-height: 1.5; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-    .pbtn:hover { border-color: #888; color: #aaa; }
+    .pbtn { background: #0d0d0d; border: 1px solid #333; color: #999; font-family: Consolas, monospace; font-size: 0.68rem; padding: 7px 8px; cursor: grab; text-align: left; transition: all 0.1s; line-height: 1.5; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .pbtn:hover { border-color: #aaa; color: #ccc; }
     .pbtn:active { cursor: grabbing; }
-    .pbtn span { display: block; font-size: 0.58rem; color: #333; margin-top: 1px; }
+    .pbtn span { display: block; font-size: 0.58rem; color: #666; margin-top: 1px; }
     canvas.drag-over { border-color: #1db954; cursor: copy; }
 
-    .rule-info { font-size: 0.67rem; color: #333; line-height: 1.8; }
-    .rule-info b { color: #555; }
+    .rule-info { font-size: 0.67rem; color: #777; line-height: 1.8; }
+    .rule-info b { color: #aaa; }
 
     @keyframes pulse-border {
       0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0.4); }
