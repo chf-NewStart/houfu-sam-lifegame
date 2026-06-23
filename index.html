@@ -134,7 +134,6 @@
     .dev-gen { font-size: 0.5rem; color: #555; }
     /* Dev mode green outline on button */
     #devModeBtn.active { border-color: #1db954 !important; color: #1db954 !important; box-shadow: 0 0 0 1px #1db954; }
-    .dev-only { display: none !important; }
     /* Custom patterns section */
     #customPatternsSection { display: none; margin-top: 10px; border: 1px dashed #1db954; border-radius: 5px; padding: 8px; }
     #customPatternsSection .dev-header { margin-bottom: 8px; }
@@ -290,7 +289,7 @@
         <button class="pbtn" draggable="true" data-preset="diehard"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
         <button class="pbtn" draggable="true" data-preset="lwss"   ><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
       </div>
-      <button class="btn dev-only" id="addSavedBtnMobile" onclick="openPatternPicker()" style="width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
+      <button class="btn" id="addSavedBtnMobile" onclick="openPatternPicker()" style="display:none;width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
     </div>
 
     <div class="canvas-wrap">
@@ -390,7 +389,7 @@
         <div id="customPatternGrid" class="preset-grid"></div>
         <div style="color:#333;font-size:0.58rem;margin-top:5px">drag to stamp · R / F to rotate/flip</div>
       </div>
-      <div class="brow dev-only" id="addSavedBtnDesktop" style="margin-top:6px">
+      <div class="brow" id="addSavedBtnDesktop" style="display:none;margin-top:6px">
         <button class="btn" onclick="openPatternPicker()" style="flex:1;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
       </div>
     </div>
@@ -832,8 +831,8 @@ function toggleDevMode() {
   devMode = !devMode;
   document.getElementById('devPanel').style.display = devMode ? '' : 'none';
   document.getElementById('devModeBtn').classList.toggle('active', devMode);
-  document.querySelectorAll('.dev-only').forEach(el => el.style.removeProperty('display'));
-  if (!devMode) document.querySelectorAll('.dev-only').forEach(el => el.style.display = 'none');
+  document.getElementById('addSavedBtnDesktop').style.display = devMode ? 'flex' : 'none';
+  document.getElementById('addSavedBtnMobile').style.display  = devMode ? 'block' : 'none';
   _renderCustomPatternBtns();
   if (devMode) refreshDevPanel();
 }
