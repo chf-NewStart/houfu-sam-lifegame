@@ -539,8 +539,8 @@ function draw() {
       const rawC = dragOff.c + dc, rawR = dragOff.r + dr;
       if (rawC < minC) minC = rawC; if (rawC > maxC2) maxC2 = rawC;
       if (rawR < minR) minR = rawR; if (rawR > maxR2) maxR2 = rawR;
-      const c = (rawC % COLS + COLS) % COLS, r = (rawR % ROWS + ROWS) % ROWS;
-      ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
+      if (rawC < 0 || rawC >= COLS || rawR < 0 || rawR >= ROWS) return;
+      ctx.fillRect(rawC * CELL + 1, rawR * CELL + 1, CELL - 1, CELL - 1);
     });
     ctx.strokeStyle = 'rgba(29,185,84,0.85)';
     ctx.lineWidth = 1 / zoom; ctx.setLineDash([4 / zoom, 3 / zoom]);
@@ -557,7 +557,8 @@ function neighbors(c, r) {
   for (let dr = -1; dr <= 1; dr++) {
     for (let dc = -1; dc <= 1; dc++) {
       if (dr === 0 && dc === 0) continue;
-      n += grid[idx((c + dc + COLS) % COLS, (r + dr + ROWS) % ROWS)];
+      const nc = c + dc, nr = r + dr;
+      if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) n += grid[idx(nc, nr)];
     }
   }
   return n;
@@ -972,8 +973,9 @@ function endTouchDrag() {
   if (dragPattern && dragOff && !drawLocked()) {
     pushHistory();
     transformCells(PRESETS[dragPattern]).forEach(([dc, dr]) => {
-      const c = ((dragOff.c + dc) % COLS + COLS) % COLS;
-      const r = ((dragOff.r + dr) % ROWS + ROWS) % ROWS;
+      const c = dragOff.c + dc;
+      const r = dragOff.r + dr;
+      if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
       grid[idx(c, r)] = 1;
     });
     dragPattern = null; dragOff = null; dragCursor = null; draw();
