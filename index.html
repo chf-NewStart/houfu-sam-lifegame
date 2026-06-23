@@ -124,6 +124,15 @@
     .patterns-mobile .preset-grid { grid-template-columns: repeat(4, 1fr); }
     .patterns-mobile .pbtn-desc { display: none; }
 
+    /* ── Dev mode lookahead strip ────────────────────── */
+    #devPanel { width: 100%; margin-top: 6px; }
+    .dev-header { color: #1db954; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    .dev-strip { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+    .dev-strip::-webkit-scrollbar { display: none; }
+    .dev-thumb { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+    .dev-canvas { border: 1px solid #2e2e2e; background: #0a0a0a; display: block; image-rendering: pixelated; }
+    .dev-gen { font-size: 0.5rem; color: #555; }
+
     /* ── Canvas HUD (stats overlay) ──────────────────── */
     .canvas-wrap { position: relative; display: block; width: 100%; }
     #canvas { width: 100%; }
@@ -272,6 +281,19 @@
         <div><span class="hud-lbl" data-en="next" data-zh="下代">next</span><span id="nextCount">0</span></div>
       </div>
     </div>
+
+    <div id="devPanel" style="display:none">
+      <div class="dev-header">// lookahead</div>
+      <div class="dev-strip">
+        <div class="dev-thumb"><canvas class="dev-canvas"></canvas><span class="dev-gen">+5</span></div>
+        <div class="dev-thumb"><canvas class="dev-canvas"></canvas><span class="dev-gen">+10</span></div>
+        <div class="dev-thumb"><canvas class="dev-canvas"></canvas><span class="dev-gen">+20</span></div>
+        <div class="dev-thumb"><canvas class="dev-canvas"></canvas><span class="dev-gen">+40</span></div>
+        <div class="dev-thumb"><canvas class="dev-canvas"></canvas><span class="dev-gen">+80</span></div>
+        <div class="dev-thumb"><canvas class="dev-canvas"></canvas><span class="dev-gen">+160</span></div>
+        <div class="dev-thumb"><canvas class="dev-canvas"></canvas><span class="dev-gen">+320</span></div>
+      </div>
+    </div>
   </div>
 
   <!-- Right panel -->
@@ -305,7 +327,8 @@
         <button class="btn" onclick="openGallery()"       data-en="🖼️ Gallery"    data-zh="🖼️ 图库">🖼️ Gallery</button>
       </div>
       <div class="brow">
-        <button class="btn" onclick="openImgModal()" data-en="📷 Image → Cells" data-zh="📷 图片转细胞" style="flex:1">📷 Image → Cells</button>
+        <button class="btn" onclick="openImgModal()" data-en="📷 Image → Cells" data-zh="📷 图片转细胞">📷 Image → Cells</button>
+        <button class="btn" id="devModeBtn" onclick="toggleDevMode()" data-en="⚡ Dev" data-zh="⚡ 预测">⚡ Dev</button>
       </div>
       <div class="slider-row">
         <span data-en="speed" data-zh="速度">speed</span>
@@ -603,7 +626,7 @@ function undoStep() {
   generation = state.generation;
   document.getElementById('genCount').textContent = generation;
   setUndoRedoBtns();
-  draw();
+  draw(); refreshDevPanel();
 }
 
 function redoStep() {
@@ -615,7 +638,7 @@ function redoStep() {
   generation = state.generation;
   document.getElementById('genCount').textContent = generation;
   setUndoRedoBtns();
-  draw();
+  draw(); refreshDevPanel();
 }
 
 function step() {
@@ -643,6 +666,7 @@ function loop(t) {
   if (t - lastT < 1000 / fps) return;
   lastT = t;
   step(); draw();
+  if (devMode && (++_devTick % 15 === 0)) refreshDevPanel();
 }
 
 function togglePlay() {
@@ -658,10 +682,67 @@ function togglePlay() {
     btn.classList.remove('active');
     canvas.classList.remove('running');
     cancelAnimationFrame(rafId);
+    refreshDevPanel();
   }
 }
 
-function stepOnce() { if (running) togglePlay(); step(); draw(); }
+function stepOnce() { if (running) togglePlay(); step(); draw(); refreshDevPanel(); }
+
+/* ── Dev mode lookahead ───────────────────────────── */
+let devMode = false;
+const DEV_OFFSETS = [5, 10, 20, 40, 80, 160, 320];
+let _devTick = 0;
+
+function toggleDevMode() {
+  devMode = !devMode;
+  document.getElementById('devPanel').style.display = devMode ? '' : 'none';
+  document.getElementById('devModeBtn').classList.toggle('active', devMode);
+  if (devMode) refreshDevPanel();
+}
+
+function _computeFuture(startG, steps) {
+  let a = startG.slice(), b = new Uint8Array(COLS * ROWS);
+  for (let i = 0; i < steps; i++) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        let nb = 0;
+        for (let dr = -1; dr <= 1; dr++)
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nc = c + dc, nr = r + dr;
+            if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) nb += a[idx(nc, nr)];
+          }
+        b[idx(c, r)] = (a[idx(c, r)] ? (nb === 2 || nb === 3) : (nb === 3)) ? 1 : 0;
+      }
+    }
+    [a, b] = [b, a];
+  }
+  return a;
+}
+
+function _drawThumb(cnv, g) {
+  const dctx = cnv.getContext('2d');
+  dctx.fillStyle = BG;
+  dctx.fillRect(0, 0, cnv.width, cnv.height);
+  const pw = cnv.width / COLS, ph = cnv.height / ROWS;
+  dctx.fillStyle = GREEN;
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (g[idx(c, r)]) dctx.fillRect(c * pw, r * ph, Math.max(1, pw - 0.3), Math.max(1, ph - 0.3));
+}
+
+function refreshDevPanel() {
+  if (!devMode) return;
+  const thumbW = 100, thumbH = Math.round(100 * ROWS / COLS);
+  const thumbs = document.querySelectorAll('.dev-canvas');
+  thumbs.forEach(c => { c.width = thumbW; c.height = thumbH; });
+  let g = grid, prev = 0;
+  DEV_OFFSETS.forEach((offset, i) => {
+    g = _computeFuture(g, offset - prev);
+    prev = offset;
+    _drawThumb(thumbs[i], g);
+  });
+}
 
 function setSpeed(v) {
   fps = +v;
@@ -700,7 +781,7 @@ function clearGrid() {
   document.getElementById('genCount').textContent = 0;
   activeChallenge = -1; canvas.style.cursor = 'crosshair';
   document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
-  draw();
+  draw(); refreshDevPanel();
 }
 
 function randomize(density = 0.2) {
@@ -709,7 +790,7 @@ function randomize(density = 0.2) {
   for (let i = 0; i < grid.length; i++) grid[i] = Math.random() < density ? 1 : 0;
   generation = 0;
   document.getElementById('genCount').textContent = 0;
-  draw();
+  draw(); refreshDevPanel();
 }
 
 function updateUI() {
@@ -867,7 +948,7 @@ function loadPreset(name) {
   const maxC = Math.max(...cells.map(([c]) => c));
   const maxR = Math.max(...cells.map(([,r]) => r));
   place(cells, Math.floor((COLS - maxC) / 2), Math.floor((ROWS - maxR) / 2));
-  draw();
+  draw(); refreshDevPanel();
 }
 
 /* ── Pattern transform ────────────────────────────── */
@@ -1109,7 +1190,7 @@ function loadSeedStr(seedStr) {
     if (running) togglePlay();
     pushHistory();
     applySeed(JSON.parse(b64dec(seedStr)));
-    draw();
+    draw(); refreshDevPanel();
   } catch(e) { /* ignore malformed seed */ }
 }
 
@@ -1360,7 +1441,7 @@ function stampImageToGrid() {
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++)
       if (d[(r * COLS + c) * 4] === 0) grid[idx(c, r)] = 1;
-  draw(); closeImgModal();
+  draw(); closeImgModal(); refreshDevPanel();
 }
 
 /* Drag-and-drop onto the image modal drop zone */
@@ -1439,7 +1520,7 @@ function doResize() {
     loadDefault();
   }
 
-  draw();
+  draw(); refreshDevPanel();
   if (wasRunning) togglePlay();
 }
 window.addEventListener('resize', () => {
