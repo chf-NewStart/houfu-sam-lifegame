@@ -132,6 +132,16 @@
     .dev-thumb { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
     .dev-canvas { border: 1px solid #2e2e2e; background: #0a0a0a; display: block; image-rendering: pixelated; }
     .dev-gen { font-size: 0.5rem; color: #555; }
+    /* Dev mode green outline on button */
+    #devModeBtn.active { border-color: #1db954 !important; color: #1db954 !important; box-shadow: 0 0 0 1px #1db954; }
+    /* Custom patterns section */
+    #customPatternsSection { display: none; margin-top: 10px; border: 1px dashed #1db954; border-radius: 5px; padding: 8px; }
+    #customPatternsSection .dev-header { margin-bottom: 8px; }
+    .custom-pbtn-wrap { position: relative; }
+    .custom-pbtn { width: 100%; border-color: #1a3a22 !important; }
+    .custom-pbtn:hover { border-color: #1db954 !important; }
+    .custom-del-btn { position: absolute; top: 3px; right: 3px; background: none; border: none; color: #444; font-size: 0.6rem; cursor: pointer; padding: 2px 4px; line-height: 1; }
+    .custom-del-btn:hover { color: #e05; }
 
     /* ── Canvas HUD (stats overlay) ──────────────────── */
     .canvas-wrap { position: relative; display: block; width: 100%; }
@@ -371,8 +381,10 @@
         <button class="btn" id="rotBtn"  onclick="rotateStamp()" title="Press R to rotate">↻ <span id="rotLabel">0°</span> <span style="color:#444;font-size:0.55rem">[R]</span></button>
         <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press F to flip">⟺ <span id="flipLabel">normal</span> <span style="color:#444;font-size:0.55rem">[F]</span></button>
       </div>
-      <div class="brow">
-        <button class="btn" onclick="openImportPattern()" style="flex:1" data-en="⊕ Import Pattern" data-zh="⊕ 导入图案">⊕ Import Pattern</button>
+      <div id="customPatternsSection">
+        <div class="dev-header">// saved patterns</div>
+        <div id="customPatternGrid" class="preset-grid"></div>
+        <div style="color:#444;font-size:0.6rem;margin-top:6px" data-en="From My Saves · drag to stamp" data-zh="来自存档 · 拖拽放置">From My Saves · drag to stamp</div>
       </div>
     </div>
 
@@ -804,6 +816,7 @@ function toggleDevMode() {
   devMode = !devMode;
   document.getElementById('devPanel').style.display = devMode ? '' : 'none';
   document.getElementById('devModeBtn').classList.toggle('active', devMode);
+  _renderCustomPatternBtns();
   if (devMode) refreshDevPanel();
 }
 
@@ -1088,6 +1101,7 @@ function loadPreset(name) {
   place(cells, Math.floor((COLS - maxC) / 2), Math.floor((ROWS - maxR) / 2));
   draw(); refreshDevPanel();
 }
+function loadCustomOrPreset(name) { loadPreset(name); }
 
 /* ── Pattern transform ────────────────────────────── */
 let stampRot = 0, stampFlipH = false;
@@ -1156,14 +1170,13 @@ function _stampAndEndMouseDrag() {
   draw();
 }
 
-document.querySelectorAll('.pbtn[data-preset]').forEach(btn => {
-  btn.addEventListener('dragstart', e => e.preventDefault()); // block native drag
+function _attachPBtnListeners(btn) {
+  btn.addEventListener('dragstart', e => e.preventDefault());
   btn.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
     e.preventDefault();
     _mouseDragging = false;
     const preset = btn.dataset.preset;
-
     function onMove(me) {
       if (!_mouseDragging) {
         const dx = me.clientX - e.clientX, dy = me.clientY - e.clientY;
@@ -1174,18 +1187,23 @@ document.querySelectorAll('.pbtn[data-preset]').forEach(btn => {
       }
       _updatePatternDragPos(me.clientX, me.clientY);
     }
-
     function onUp() {
       document.removeEventListener('mousemove', onMove);
       btn.classList.remove('active');
       if (_mouseDragging) { _stampAndEndMouseDrag(); }
-      else { loadPreset(preset); } // treated as a plain click
+      else { loadCustomOrPreset(preset); }
     }
-
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp, { once: true });
   });
-});
+  btn.addEventListener('touchstart', e => {
+    e.preventDefault();
+    dragPattern = btn.dataset.preset; dragOff = null; dragCursor = null;
+    touchDragActive = true; btn.classList.add('active');
+  }, { passive: false });
+}
+
+document.querySelectorAll('.pbtn[data-preset]').forEach(_attachPBtnListeners);
 
 // Prevent accidental file-drop navigation on canvas
 canvas.addEventListener('dragover', e => e.preventDefault());
@@ -1193,14 +1211,6 @@ canvas.addEventListener('drop',     e => e.preventDefault());
 
 /* ── Touch drag-and-drop ──────────────────────────── */
 let touchDragActive = false;
-
-document.querySelectorAll('.pbtn[data-preset]').forEach(btn => {
-  btn.addEventListener('touchstart', e => {
-    e.preventDefault();
-    dragPattern = btn.dataset.preset; dragOff = null; dragCursor = null;
-    touchDragActive = true; btn.classList.add('active');
-  }, { passive: false });
-});
 
 document.addEventListener('touchmove', e => {
   if (!touchDragActive || !dragPattern) return;
@@ -1586,6 +1596,58 @@ function openGallery() {
 }
 function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
 
+/* ── Custom (saved) patterns in dev mode ─────────── */
+const CUSTOM_PATTERNS_KEY = 'lifegame_custom_patterns';
+let customPatternList = [];
+
+function _loadCustomPatternData() {
+  try { customPatternList = JSON.parse(localStorage.getItem(CUSTOM_PATTERNS_KEY) || '[]'); }
+  catch { customPatternList = []; }
+  customPatternList.forEach(p => { PRESETS[p.id] = p.cells; });
+}
+
+function addSaveAsPattern(saveIdx) {
+  const save = _getSaves()[saveIdx];
+  if (!save) return;
+  const cells = JSON.parse(b64dec(save.seed));
+  const id = 'custom_' + Date.now();
+  const entry = { id, name: save.name };
+  customPatternList.push(entry);
+  PRESETS[id] = cells;
+  localStorage.setItem(CUSTOM_PATTERNS_KEY, JSON.stringify(customPatternList));
+  _renderCustomPatternBtns();
+  // briefly flash the button green as confirmation
+  const btn = document.querySelector(`[data-add-pattern="${saveIdx}"]`);
+  if (btn) { const orig = btn.textContent; btn.textContent = '✓ Added'; setTimeout(() => { btn.textContent = orig; }, 900); }
+}
+
+function removeCustomPattern(id) {
+  customPatternList = customPatternList.filter(p => p.id !== id);
+  delete PRESETS[id];
+  localStorage.setItem(CUSTOM_PATTERNS_KEY, JSON.stringify(customPatternList));
+  _renderCustomPatternBtns();
+}
+
+function _renderCustomPatternBtns() {
+  const section = document.getElementById('customPatternsSection');
+  const grid = document.getElementById('customPatternGrid');
+  if (!customPatternList.length || !devMode) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  grid.innerHTML = customPatternList.map(p => `
+    <div class="custom-pbtn-wrap">
+      <button class="pbtn custom-pbtn" data-preset="${escHtml(p.id)}">
+        <span class="pbtn-name" style="font-size:0.65rem">${escHtml(p.name)}</span>
+      </button>
+      <button class="custom-del-btn" data-del-custom="${escHtml(p.id)}" title="Remove from patterns">✕</button>
+    </div>`).join('');
+  grid.querySelectorAll('.pbtn[data-preset]').forEach(_attachPBtnListeners);
+  grid.querySelectorAll('.custom-del-btn').forEach(b => {
+    b.addEventListener('click', e => { e.stopPropagation(); removeCustomPattern(b.dataset.delCustom); });
+  });
+}
+
+_loadCustomPatternData();
+
 /* ── Import Pattern (RLE / plaintext) ────────────── */
 let _importedCells = null;
 
@@ -1717,15 +1779,18 @@ function _renderSaves() {
         <div style="color:#555;font-size:0.6rem">${new Date(s.date).toLocaleDateString()} · ${s.cells} cells</div>
       </div>
       <button class="btn" data-load-save="${i}" style="padding:4px 9px;font-size:0.65rem;flex-shrink:0">Load</button>
+      <button class="btn" data-add-pattern="${i}" style="padding:4px 9px;font-size:0.65rem;flex-shrink:0;border-color:#1a3a22;color:#1db954" title="Add to dev patterns">+ Pattern</button>
       <button class="btn danger" data-del-save="${i}" style="padding:4px 7px;font-size:0.65rem;flex-shrink:0">✕</button>
     </div>`).join('');
 }
 
 document.getElementById('savesList').addEventListener('click', e => {
-  const loadBtn = e.target.closest('[data-load-save]');
-  const delBtn  = e.target.closest('[data-del-save]');
-  if (loadBtn) { loadSeedStr(_getSaves()[+loadBtn.dataset.loadSave].seed); closeSaves(); }
-  if (delBtn)  { _deleteBlueprint(+delBtn.dataset.delSave); }
+  const loadBtn    = e.target.closest('[data-load-save]');
+  const delBtn     = e.target.closest('[data-del-save]');
+  const patternBtn = e.target.closest('[data-add-pattern]');
+  if (loadBtn)    { loadSeedStr(_getSaves()[+loadBtn.dataset.loadSave].seed); closeSaves(); }
+  if (delBtn)     { _deleteBlueprint(+delBtn.dataset.delSave); }
+  if (patternBtn) { addSaveAsPattern(+patternBtn.dataset.addPattern); }
 });
 
 /* Seed buttons use data-seed to avoid XSS — handle via event delegation */
