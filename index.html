@@ -195,6 +195,15 @@
     /* ── Credits ──────────────────────────────────────── */
     .credits-list { font-size: 0.65rem; color: #666; line-height: 2; }
     .credits-list span { color: #999; }
+    /* ── Footer ───────────────────────────────────────── */
+    .pg-footer {
+      border-top: 1px solid #1e1e1e; padding: 10px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; flex-wrap: wrap; gap: 6px;
+      font-size: 0.6rem; color: #444;
+    }
+    .pg-footer a { color: #1db954; text-decoration: none; }
+    .pg-footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -325,29 +334,19 @@
         <b style="color:#1db954">■</b> <b>Survive</b> — live, 2–3 neighbours<br>
         <b style="color:#f44336">■</b> <b>Die</b> — live, &lt;2 or &gt;3 neighbours<br>
         <b style="color:#3a3a3a">■</b> <b>Born next</b> — dead, exactly 3 neighbours<br>
-        <span style="color:#555;margin-top:4px;display:block">Grid wraps toroidally.</span>
+        <span style="color:#555;margin-top:4px;display:block">Cells die at the border.</span>
       </div>
     </div>
 
-    <!-- Credits -->
-    <div class="pcard">
-      <div class="pcard-title">// made by</div>
-      <div class="credits-list">
-        <span>Houfu Chen</span><br>
-        <span>Sam Qiu</span><br>
-        <span>Husam</span>
-      </div>
-      <div class="pcard-title" style="margin-top:10px">// contact</div>
-      <div class="credits-list">
-        <a href="https://houfu72.com" target="_blank" rel="noopener"
-           style="color:#1db954;text-decoration:none">houfu72.com</a>
-      </div>
-    </div>
 
   </div>
 </div>
 
-<!-- Stats bar (bottom) -->
+<!-- Footer -->
+<footer class="pg-footer">
+  <span>made by <a href="https://houfu0702.github.io/" target="_blank" rel="noopener">Houfu Chen</a> · Sam Qiu · Husam</span>
+  <span>contact: <a href="mailto:houfuchen0702@gmail.com">houfuchen0702@gmail.com</a></span>
+</footer>
 
 <!-- Win overlay -->
 <div id="winOverlay">
