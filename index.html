@@ -859,7 +859,7 @@ document.addEventListener('mousemove', e => {
 });
 document.addEventListener('mouseup', e => {
   if (e.button === 1 || e.button === 2) { panning = false; canvas.style.cursor = 'crosshair'; }
-  else { painting = false; }
+  else { painting = false; refreshDevPanel(); }
 });
 
 /* ── Scroll to zoom ───────────────────────────────── */
@@ -907,7 +907,7 @@ canvas.addEventListener('touchmove', e => {
   lastPinchDist = null; lastPinchMid = null;
   if (painting) paint(e);
 }, { passive: false });
-canvas.addEventListener('touchend', () => { painting = false; lastPinchDist = null; lastPinchMid = null; });
+canvas.addEventListener('touchend', () => { painting = false; lastPinchDist = null; lastPinchMid = null; refreshDevPanel(); });
 
 /* ── Presets ──────────────────────────────────────── */
 function place(cells, offC, offR) {
@@ -1022,7 +1022,7 @@ canvas.addEventListener('drop', e => {
     const r = ((dragOff.r + dr) % ROWS + ROWS) % ROWS;
     grid[idx(c, r)] = 1;
   });
-  dragPattern = null; dragOff = null; dragCursor = null; draw();
+  dragPattern = null; dragOff = null; dragCursor = null; draw(); refreshDevPanel();
 });
 
 /* ── Touch drag-and-drop ──────────────────────────── */
@@ -1070,7 +1070,7 @@ function endTouchDrag() {
       if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
       grid[idx(c, r)] = 1;
     });
-    dragPattern = null; dragOff = null; dragCursor = null; draw();
+    dragPattern = null; dragOff = null; dragCursor = null; draw(); refreshDevPanel();
   } else if (dragPattern) {
     const p = dragPattern;
     dragPattern = null; dragOff = null; dragCursor = null;
