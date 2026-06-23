@@ -686,32 +686,49 @@ window.addEventListener('resize', () => {
   const wasRunning = running;
   if (running) togglePlay();
   clearHistory();
-  initGrid(); draw();
+  initGrid();
+  if (urlSeed !== null) applySeed(urlSeed);
+  draw();
   if (wasRunning) togglePlay();
 });
 
 /* ── Seed sharing ─────────────────────────────────── */
+// Use URL-safe base64 (no +, /, or = that could be mangled in URLs)
+function b64enc(str) {
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+function b64dec(str) {
+  const s = str.replace(/-/g, '+').replace(/_/g, '/');
+  return atob(s + '=='.slice(0, (4 - s.length % 4) % 4));
+}
+
+let urlSeed = null; // cached so resize restores it instead of wiping it
+
 function encodeSeed() {
   const centerC = Math.floor(COLS / 2), centerR = Math.floor(ROWS / 2);
   const live = [];
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++)
       if (grid[idx(c, r)]) live.push([c - centerC, r - centerR]);
-  return btoa(JSON.stringify(live));
+  return b64enc(JSON.stringify(live));
+}
+
+function applySeed(live) {
+  const centerC = Math.floor(COLS / 2), centerR = Math.floor(ROWS / 2);
+  grid.fill(0); generation = 0;
+  live.forEach(([dc, dr]) => {
+    const c = centerC + dc, r = centerR + dr;
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+  });
+  document.getElementById('genCount').textContent = 0;
 }
 
 function loadSeedParam() {
   const s = new URLSearchParams(window.location.search).get('s');
   if (!s) return false;
   try {
-    const live = JSON.parse(atob(s));
-    const centerC = Math.floor(COLS / 2), centerR = Math.floor(ROWS / 2);
-    grid.fill(0); generation = 0;
-    live.forEach(([dc, dr]) => {
-      const c = centerC + dc, r = centerR + dr;
-      if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
-    });
-    document.getElementById('genCount').textContent = 0;
+    urlSeed = JSON.parse(b64dec(s));
+    applySeed(urlSeed);
     draw();
     return true;
   } catch(e) { return false; }
