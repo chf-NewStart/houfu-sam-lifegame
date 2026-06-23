@@ -149,6 +149,14 @@
     .lb-empty { color: #555; font-size: 0.8rem; padding: 20px 0; text-align: center; }
     .lb-try { background: none; border: 1px solid #2e2e2e; color: #1db954; padding: 2px 7px; font-family: inherit; font-size: 0.68rem; cursor: pointer; white-space: nowrap; }
     .lb-try:hover { background: #1db954; color: #000; }
+    #gallerySubmitOverlay, #galleryOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center; }
+    #gallerySubmitOverlay.show, #galleryOverlay.show { display: flex; }
+    #gallerySubmitOverlay input:focus, #galleryNickInput:focus { border-color: #1db954 !important; }
+    .gallery-item { border-top: 1px solid #1a1a1a; padding: 10px 0; display: flex; align-items: center; gap: 10px; }
+    .gallery-item:first-child { border-top: none; }
+    .gallery-info { flex: 1; min-width: 0; }
+    .gallery-title { color: #ddd; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gallery-meta  { color: #555; font-size: 0.68rem; margin-top: 2px; }
 
     @keyframes pulse-border {
       0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0.4); }
@@ -230,15 +238,15 @@
     <div class="pcard">
       <div class="pcard-title" data-en="// controls" data-zh="// 控制">// controls</div>
       <div class="brow">
-        <button class="btn" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放">⏵ Play</button>
-        <button class="btn" id="stepBtn" onclick="stepOnce()"   data-en="Step →" data-zh="步进 →">Step →</button>
+        <button class="btn" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放" style="flex:1">⏵ Play</button>
       </div>
       <div class="brow">
         <button class="btn" id="stepBkBtn" onclick="undoStep()"  data-en="← Step" data-zh="← 后退" disabled>← Step</button>
-        <button class="btn" id="redoBtn"   onclick="redoStep()"  data-en="↻ Redo" data-zh="↻ 重做" disabled>↻ Redo</button>
+        <button class="btn" id="stepBtn"   onclick="stepOnce()"  data-en="Step →" data-zh="步进 →">Step →</button>
       </div>
       <div class="brow">
         <button class="btn" id="undoBtn" onclick="undoStep()" data-en="↩ Undo" data-zh="↩ 撤销" disabled>↩ Undo</button>
+        <button class="btn" id="redoBtn" onclick="redoStep()" data-en="↻ Redo" data-zh="↻ 重做" disabled>↻ Redo</button>
       </div>
       <div class="brow">
         <button class="btn danger" onclick="clearGrid()"    data-en="⬜ Clear"  data-zh="⬜ 清空">⬜ Clear</button>
@@ -246,8 +254,12 @@
         <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share" data-zh="⎘ 分享">⎘ Share</button>
       </div>
       <div class="brow">
-        <button class="btn" onclick="resetView()" data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
-        <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board" data-zh="🏆 榜单">🏆 Board</button>
+        <button class="btn" onclick="resetView()"     data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
+        <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board"   data-zh="🏆 榜单">🏆 Board</button>
+      </div>
+      <div class="brow">
+        <button class="btn" onclick="openGallerySubmit()" data-en="📤 Share Shape" data-zh="📤 分享形状">📤 Share Shape</button>
+        <button class="btn" onclick="openGallery()"       data-en="🖼️ Gallery"    data-zh="🖼️ 图库">🖼️ Gallery</button>
       </div>
       <div class="slider-row">
         <span data-en="speed" data-zh="速度">speed</span>
@@ -338,6 +350,36 @@
     <div class="lb-tabs" id="lbTabs"></div>
     <div id="lbTable"><div class="lb-empty">Loading...</div></div>
     <button class="btn" onclick="closeLb()" style="margin-top:18px;width:100%">Close</button>
+  </div>
+</div>
+
+<div id="gallerySubmitOverlay">
+  <div class="lb-box">
+    <div class="lb-title">📤 Share Shape</div>
+    <div style="color:#888;font-size:0.75rem;margin-bottom:14px">Share your current grid with the community so others can try it.</div>
+    <div style="margin-bottom:8px">
+      <input id="galleryTitleInput" type="text" placeholder="Name your shape…" maxlength="40"
+        style="width:100%;box-sizing:border-box;background:#1a1a1a;border:1px solid #333;color:#eee;padding:7px 10px;font-family:inherit;font-size:0.82rem;outline:none"
+        onkeydown="if(event.key==='Enter')document.getElementById('galleryNickInput').focus()">
+    </div>
+    <div style="margin-bottom:14px">
+      <input id="galleryNickInput" type="text" placeholder="Your nickname" maxlength="20"
+        style="width:100%;box-sizing:border-box;background:#1a1a1a;border:1px solid #333;color:#eee;padding:7px 10px;font-family:inherit;font-size:0.82rem;outline:none"
+        onkeydown="if(event.key==='Enter')onSubmitGallery()">
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn" id="gallerySubmitBtn" onclick="onSubmitGallery()" style="flex:1">Share</button>
+      <button class="btn" onclick="closeGallerySubmit()" style="flex:1">Cancel</button>
+    </div>
+    <div id="gallerySubmitDone" class="win-submitted" style="display:none;margin-top:10px">✓ Shape shared with the community!</div>
+  </div>
+</div>
+
+<div id="galleryOverlay">
+  <div class="lb-box">
+    <div class="lb-title">🖼️ Community Gallery</div>
+    <div id="galleryList"><div class="lb-empty">Loading…</div></div>
+    <button class="btn" onclick="closeGallery()" style="margin-top:18px;width:100%">Close</button>
   </div>
 </div>
 
@@ -1065,6 +1107,71 @@ async function showLbChallenge(name) {
     tb.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load — check connection.</div>';
   }
 }
+
+/* ── Gallery ──────────────────────────────────────── */
+async function submitGalleryShape(nickname, title, seed) {
+  const res = await fetch(`${SB_URL}/rest/v1/Gallery`, {
+    method: 'POST',
+    headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ nickname, title, seed })
+  });
+  if (!res.ok) { const b = await res.text().catch(() => ''); throw new Error(`${res.status}: ${b}`); }
+}
+
+async function fetchGallery() {
+  const res = await fetch(
+    `${SB_URL}/rest/v1/Gallery?select=nickname,title,seed,created_at&order=created_at.desc&limit=30`,
+    { headers: SB_HDR }
+  );
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+function openGallerySubmit() {
+  const overlay = document.getElementById('gallerySubmitOverlay');
+  overlay.classList.add('show');
+  document.getElementById('gallerySubmitDone').style.display = 'none';
+  const btn = document.getElementById('gallerySubmitBtn');
+  btn.disabled = false; btn.textContent = 'Share';
+  document.getElementById('galleryNickInput').value = localStorage.getItem('lifegame_nick') || '';
+  document.getElementById('galleryTitleInput').value = '';
+  setTimeout(() => document.getElementById('galleryTitleInput').focus(), 50);
+}
+function closeGallerySubmit() { document.getElementById('gallerySubmitOverlay').classList.remove('show'); }
+
+function onSubmitGallery() {
+  const title = document.getElementById('galleryTitleInput').value.trim().slice(0, 40);
+  const nick  = document.getElementById('galleryNickInput').value.trim().slice(0, 20);
+  if (!title) { document.getElementById('galleryTitleInput').focus(); return; }
+  if (!nick)  { document.getElementById('galleryNickInput').focus();  return; }
+  localStorage.setItem('lifegame_nick', nick);
+  const btn = document.getElementById('gallerySubmitBtn');
+  btn.disabled = true; btn.textContent = '…';
+  submitGalleryShape(nick, title, encodeSeed())
+    .then(() => { document.getElementById('gallerySubmitDone').style.display = 'block'; btn.textContent = 'Shared!'; })
+    .catch(err => { btn.disabled = false; btn.textContent = 'Share'; alert('Failed: ' + err.message); });
+}
+
+function openGallery() {
+  document.getElementById('galleryOverlay').classList.add('show');
+  const list = document.getElementById('galleryList');
+  list.innerHTML = '<div class="lb-empty">Loading…</div>';
+  fetchGallery().then(items => {
+    if (!items.length) { list.innerHTML = '<div class="lb-empty">No shapes yet — be the first to share!</div>'; return; }
+    list.innerHTML = items.map(it => {
+      const d = new Date(it.created_at);
+      const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      return `<div class="gallery-item">
+        <div class="gallery-info">
+          <div class="gallery-title">${escHtml(it.title)}</div>
+          <div class="gallery-meta">by ${escHtml(it.nickname)} · ${date}</div>
+        </div>
+        ${it.seed ? `<button class="lb-try" onclick="loadSeedStr('${it.seed}');closeGallery()">▶ Load</button>` : ''}
+      </div>`;
+    }).join('');
+  }).catch(() => { list.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load.</div>'; });
+}
+function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
 
 /* ── Keyboard shortcuts ───────────────────────────── */
 document.addEventListener('keydown', e => {
