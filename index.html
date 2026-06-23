@@ -63,6 +63,16 @@
     .rule-info { font-size: 0.67rem; color: #777; line-height: 1.8; }
     .rule-info b { color: #aaa; }
 
+    .challenge-status { font-size: 0.67rem; color: #888; margin-bottom: 8px; min-height: 1.4em; }
+    .challenge-status.won { color: #1db954; }
+
+    #winOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
+    #winOverlay.show { display: flex; }
+    .win-box { background: #111; border: 1px solid #1db954; padding: 32px 40px; text-align: center; max-width: 360px; }
+    .win-title { color: #1db954; font-size: 1.3rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
+    .win-msg { color: #ccc; font-size: 0.85rem; margin-bottom: 6px; }
+    .win-stats { color: #666; font-size: 0.7rem; margin-bottom: 16px; }
+
     @keyframes pulse-border {
       0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0.4); }
       50%      { box-shadow: 0 0 0 4px rgba(29,185,84,0); }
@@ -128,6 +138,7 @@
       <div class="brow">
         <button class="btn danger" onclick="clearGrid()"    data-en="⬜ Clear"    data-zh="⬜ 清空">⬜ Clear</button>
         <button class="btn"        onclick="randomize(0.2)" data-en="⚄ Random"   data-zh="⚄ 随机">⚄ Random</button>
+        <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share" data-zh="⎘ 分享">⎘ Share</button>
       </div>
       <div class="slider-row">
         <span data-en="speed" data-zh="速度">speed</span>
@@ -161,6 +172,20 @@
       </div>
     </div>
 
+    <!-- Challenges -->
+    <div class="pcard">
+      <div class="pcard-title" data-en="// challenges" data-zh="// 挑战">// challenges</div>
+      <div class="challenge-status" id="challengeStatus">select a challenge · draw · press play</div>
+      <div class="preset-grid" style="margin-top:8px">
+        <button class="pbtn" data-challenge="0" onclick="startChallenge(0)">First Steps<span>survive 20 gens</span></button>
+        <button class="pbtn" data-challenge="1" onclick="startChallenge(1)">Bloom<span>reach 100 live cells</span></button>
+        <button class="pbtn" data-challenge="2" onclick="startChallenge(2)">Century<span>survive 100 gens</span></button>
+        <button class="pbtn" data-challenge="3" onclick="startChallenge(3)">Still Life<span>reach stability</span></button>
+        <button class="pbtn" data-challenge="4" onclick="startChallenge(4)">Mega City<span>reach 500 live cells</span></button>
+        <button class="pbtn" data-challenge="5" onclick="startChallenge(5)">Extinction<span>all cells must die</span></button>
+      </div>
+    </div>
+
     <!-- Rules -->
     <div class="pcard">
       <div class="pcard-title" data-en="// rules (B3/S23)" data-zh="// 规则 (B3/S23)">// rules (B3/S23)</div>
@@ -172,6 +197,15 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<div id="winOverlay">
+  <div class="win-box">
+    <div class="win-title">✓ Complete</div>
+    <div class="win-msg" id="winMsg"></div>
+    <div class="win-stats" id="winStats"></div>
+    <button class="btn" onclick="closeWin()" style="margin-top:4px;width:100%">Continue →</button>
   </div>
 </div>
 
@@ -339,6 +373,7 @@ function step() {
   [grid, next] = [next, grid];
   generation++;
   document.getElementById('genCount').textContent = generation;
+  if (activeChallenge >= 0) doChallengeTick();
 }
 
 /* ── Run loop ─────────────────────────────────────── */
@@ -647,7 +682,6 @@ function endTouchDrag() {
 document.addEventListener('touchend',    endTouchDrag);
 document.addEventListener('touchcancel', endTouchDrag);
 
-/* ── Init ─────────────────────────────────────────── */
 window.addEventListener('resize', () => {
   const wasRunning = running;
   if (running) togglePlay();
@@ -656,8 +690,102 @@ window.addEventListener('resize', () => {
   if (wasRunning) togglePlay();
 });
 
+/* ── Seed sharing ─────────────────────────────────── */
+function encodeSeed() {
+  const centerC = Math.floor(COLS / 2), centerR = Math.floor(ROWS / 2);
+  const live = [];
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid[idx(c, r)]) live.push([c - centerC, r - centerR]);
+  return btoa(JSON.stringify(live));
+}
+
+function loadSeedParam() {
+  const s = new URLSearchParams(window.location.search).get('s');
+  if (!s) return false;
+  try {
+    const live = JSON.parse(atob(s));
+    const centerC = Math.floor(COLS / 2), centerR = Math.floor(ROWS / 2);
+    grid.fill(0); generation = 0;
+    live.forEach(([dc, dr]) => {
+      const c = centerC + dc, r = centerR + dr;
+      if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+    });
+    document.getElementById('genCount').textContent = 0;
+    draw();
+    return true;
+  } catch(e) { return false; }
+}
+
+function shareSeed() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('s', encodeSeed());
+  navigator.clipboard.writeText(url.toString()).then(() => {
+    const btn = document.getElementById('shareBtn');
+    const prev = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('active');
+    setTimeout(() => { btn.textContent = prev; btn.classList.remove('active'); }, 2000);
+  });
+}
+
+/* ── Challenge system ─────────────────────────────── */
+const CHALLENGES = [
+  { name: 'First Steps', goal: 'Survive 20 generations',  check: (g, c, stable) => g >= 20 && c > 0 },
+  { name: 'Bloom',       goal: 'Reach 100 live cells',    check: (g, c)          => c >= 100 },
+  { name: 'Century',     goal: 'Survive 100 generations', check: (g, c)          => g >= 100 && c > 0 },
+  { name: 'Still Life',  goal: 'Reach a stable pattern',  check: (g, c, stable)  => stable && g > 0 },
+  { name: 'Mega City',   goal: 'Reach 500 live cells',    check: (g, c)          => c >= 500 },
+  { name: 'Extinction',  goal: 'All cells must die out',  check: (g, c)          => g > 5 && c === 0 },
+];
+
+let activeChallenge = -1;
+let prevGridSnap = null;
+
+function startChallenge(i) {
+  if (running) togglePlay();
+  clearGrid();
+  activeChallenge = i;
+  prevGridSnap = null;
+  const ch = CHALLENGES[i];
+  const status = document.getElementById('challengeStatus');
+  status.textContent = '▶ ' + ch.goal;
+  status.classList.remove('won');
+  document.querySelectorAll('.pbtn[data-challenge]').forEach((b, j) => {
+    b.classList.toggle('active', j === i);
+  });
+}
+
+function doChallengeTick() {
+  const cells = grid.reduce((s, v) => s + v, 0);
+  const stable = prevGridSnap !== null && grid.every((v, i) => v === prevGridSnap[i]);
+  prevGridSnap = grid.slice();
+  const ch = CHALLENGES[activeChallenge];
+  if (ch.check(generation, cells, stable)) {
+    const won = activeChallenge;
+    activeChallenge = -1;
+    setTimeout(() => showWin(CHALLENGES[won], cells), 60);
+  }
+}
+
+function showWin(ch, cells) {
+  if (running) togglePlay();
+  const status = document.getElementById('challengeStatus');
+  status.textContent = '✓ ' + ch.goal;
+  status.classList.add('won');
+  document.getElementById('winMsg').textContent = ch.name + ' — ' + ch.goal;
+  document.getElementById('winStats').textContent = 'Generation ' + generation + ' · ' + cells + ' cells alive';
+  document.getElementById('winOverlay').classList.add('show');
+  document.querySelectorAll('.pbtn[data-challenge]').forEach(b => b.classList.remove('active'));
+}
+
+function closeWin() {
+  document.getElementById('winOverlay').classList.remove('show');
+}
+
+/* ── Init ─────────────────────────────────────────── */
 initGrid();
-loadPreset('gun');  // start with something visually impressive
+if (!loadSeedParam()) loadPreset('gun');  // start with something visually impressive
 </script>
 </body>
 </html>
