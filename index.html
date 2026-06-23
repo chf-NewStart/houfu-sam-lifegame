@@ -60,13 +60,13 @@
 
     .canvas-col {
       flex: 1; min-width: 0; padding: 14px 14px 10px;
-      display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+      display: flex; flex-direction: column; align-items: stretch; gap: 8px;
     }
 
     canvas {
       display: block; background: #0a0a0a;
       border: 1px solid #333; cursor: crosshair; image-rendering: pixelated;
-      max-width: 100%;
+      width: 100%; height: auto;
     }
     canvas.running { border-color: #1db954; animation: pulse-border 2s ease-in-out infinite; }
     canvas.drag-over { border-color: #1db954; cursor: copy; }
@@ -315,9 +315,9 @@ let grid, next;
 
 function initGrid() {
   const mobile = window.innerWidth <= 700;
-  const maxW = mobile
-    ? window.innerWidth - 24
-    : Math.min(window.innerWidth - 258, 760);
+  const col = canvas.closest('.canvas-col');
+  const colW = col ? col.clientWidth - 28 : window.innerWidth - 258;
+  const maxW = mobile ? window.innerWidth - 24 : Math.max(colW, 200);
   const maxH = mobile
     ? Math.round(window.innerHeight * 0.42)
     : Math.min(window.innerHeight - 174, 700);
