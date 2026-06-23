@@ -134,6 +134,7 @@
     .dev-gen { font-size: 0.5rem; color: #555; }
     /* Dev mode green outline on button */
     #devModeBtn.active { border-color: #1db954 !important; color: #1db954 !important; box-shadow: 0 0 0 1px #1db954; }
+    .dev-only { display: none !important; }
     /* Custom patterns section */
     #customPatternsSection { display: none; margin-top: 10px; border: 1px dashed #1db954; border-radius: 5px; padding: 8px; }
     #customPatternsSection .dev-header { margin-bottom: 8px; }
@@ -289,7 +290,7 @@
         <button class="pbtn" draggable="true" data-preset="diehard"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
         <button class="pbtn" draggable="true" data-preset="lwss"   ><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
       </div>
-      <button class="btn" onclick="openPatternPicker()" style="width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
+      <button class="btn dev-only" id="addSavedBtnMobile" onclick="openPatternPicker()" style="width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
     </div>
 
     <div class="canvas-wrap">
@@ -389,7 +390,7 @@
         <div id="customPatternGrid" class="preset-grid"></div>
         <div style="color:#333;font-size:0.58rem;margin-top:5px">drag to stamp · R / F to rotate/flip</div>
       </div>
-      <div class="brow" style="margin-top:6px">
+      <div class="brow dev-only" id="addSavedBtnDesktop" style="margin-top:6px">
         <button class="btn" onclick="openPatternPicker()" style="flex:1;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
       </div>
     </div>
@@ -568,15 +569,21 @@ function initGrid() {
     maxH = Math.round(window.innerHeight * 0.42);
   } else {
     const col = document.querySelector('.canvas-col');
-    maxW = (col ? col.clientWidth : 600) - 26; // subtract horizontal padding
+    maxW = (col ? col.clientWidth : 600) - 26;
     maxH = Math.min(window.innerHeight - 174, 700);
   }
-  COLS = Math.floor(maxW / CELL);
-  ROWS = Math.floor(maxH / CELL);
-  canvas.width  = COLS * CELL;
-  canvas.height = ROWS * CELL;
+  const baseC = Math.floor(maxW / CELL);
+  const baseR = Math.floor(maxH / CELL);
+  canvas.width  = baseC * CELL;
+  canvas.height = baseR * CELL;
+  // Grid is 2× the canvas at zoom=1 so the whole viewport is real at min-zoom (0.5)
+  COLS = baseC * 2;
+  ROWS = baseR * 2;
   grid = new Uint8Array(COLS * ROWS);
   next = new Uint8Array(COLS * ROWS);
+  // Default pan: center the view on the middle of the 2× grid
+  panX = -canvas.width  / 2;
+  panY = -canvas.height / 2;
 }
 
 function idx(c, r) { return r * COLS + c; }
@@ -591,7 +598,7 @@ const GRID_LINE = '#1e1e1e';
 /* ── Zoom / pan state ─────────────────────────────── */
 let zoom = 1, panX = 0, panY = 0;
 
-function resetView() { zoom = 1; panX = 0; panY = 0; draw(); }
+function resetView() { zoom = 1; panX = -canvas.width / 2; panY = -canvas.height / 2; draw(); }
 
 function draw() {
   ctx.fillStyle = BG;
@@ -601,26 +608,18 @@ function draw() {
   ctx.translate(panX, panY);
   ctx.scale(zoom, zoom);
 
-  // Extended grid covering the full visible canvas area (outside active zone)
-  const vc0 = Math.floor(-panX / zoom / CELL) - 1;
-  const vc1 = Math.ceil((canvas.width  - panX) / zoom / CELL) + 1;
-  const vr0 = Math.floor(-panY / zoom / CELL) - 1;
-  const vr1 = Math.ceil((canvas.height - panY) / zoom / CELL) + 1;
-  ctx.strokeStyle = '#141414';
-  ctx.lineWidth = 0.5 / zoom;
+  // Draw grid lines only for the visible portion of the real grid
+  const vc0 = Math.max(0, Math.floor(-panX / zoom / CELL) - 1);
+  const vc1 = Math.min(COLS, Math.ceil((canvas.width  - panX) / zoom / CELL) + 1);
+  const vr0 = Math.max(0, Math.floor(-panY / zoom / CELL) - 1);
+  const vr1 = Math.min(ROWS, Math.ceil((canvas.height - panY) / zoom / CELL) + 1);
+  ctx.strokeStyle = GRID_LINE;
+  ctx.lineWidth = 1 / zoom;
   for (let c = vc0; c <= vc1; c++) {
     ctx.beginPath(); ctx.moveTo(c * CELL, vr0 * CELL); ctx.lineTo(c * CELL, vr1 * CELL); ctx.stroke();
   }
   for (let r = vr0; r <= vr1; r++) {
     ctx.beginPath(); ctx.moveTo(vc0 * CELL, r * CELL); ctx.lineTo(vc1 * CELL, r * CELL); ctx.stroke();
-  }
-  // Active game area grid (slightly brighter)
-  ctx.strokeStyle = GRID_LINE;
-  for (let c = 0; c <= COLS; c++) {
-    ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
-  }
-  for (let r = 0; r <= ROWS; r++) {
-    ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
   }
 
   let live = 0, nextLive = 0;
@@ -831,6 +830,9 @@ function toggleDevMode() {
   devMode = !devMode;
   document.getElementById('devPanel').style.display = devMode ? '' : 'none';
   document.getElementById('devModeBtn').classList.toggle('active', devMode);
+  document.querySelectorAll('.dev-only').forEach(el => el.style.removeProperty('display'));
+  if (!devMode) document.querySelectorAll('.dev-only').forEach(el => el.style.display = 'none');
+  _renderCustomPatternBtns();
   if (devMode) refreshDevPanel();
 }
 
@@ -1644,7 +1646,7 @@ function removeCustomPattern(id) {
 function _renderCustomPatternBtns() {
   const section = document.getElementById('customPatternsSection');
   const grid = document.getElementById('customPatternGrid');
-  if (!customPatternList.length) { section.style.display = 'none'; return; }
+  if (!customPatternList.length || !devMode) { section.style.display = 'none'; return; }
   section.style.display = 'block';
   grid.innerHTML = customPatternList.map(p => `
     <div class="custom-pbtn-wrap">
@@ -1990,7 +1992,7 @@ function doResize() {
     for (let c = 0; c < COLS; c++)
       if (grid[idx(c, r)]) liveCells.push([c, r]);
 
-  clearHistory(); zoom = 1; panX = 0; panY = 0; initGrid();
+  clearHistory(); zoom = 1; initGrid();
 
   if (urlSeed !== null) {
     applySeed(urlSeed);
