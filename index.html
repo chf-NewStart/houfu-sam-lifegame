@@ -1212,19 +1212,50 @@ document.addEventListener('keydown', e => {
   if (e.key === '0' && !e.ctrlKey && !e.metaKey) resetView();
 });
 
+/* ── Default welcome pattern ("HI" in cells) ─────── */
+function loadDefault() {
+  const HI = [
+    // H  (5 wide × 7 tall)
+    [0,0],[4,0],
+    [0,1],[4,1],
+    [0,2],[4,2],
+    [0,3],[1,3],[2,3],[3,3],[4,3],
+    [0,4],[4,4],
+    [0,5],[4,5],
+    [0,6],[4,6],
+    // I  (3 wide × 7 tall, offset x=7)
+    [7,0],[8,0],[9,0],
+    [8,1],[8,2],[8,3],[8,4],[8,5],
+    [7,6],[8,6],[9,6],
+  ];
+  const scale = 3;
+  const startC = Math.floor((COLS - 10 * scale) / 2);
+  const startR = Math.floor((ROWS -  7 * scale) / 2);
+  HI.forEach(([px, py]) => {
+    for (let dr = 0; dr < scale; dr++)
+      for (let dc = 0; dc < scale; dc++) {
+        const c = startC + px * scale + dc;
+        const r = startR + py * scale + dr;
+        if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+      }
+  });
+  draw();
+}
+
 /* ── Resize ───────────────────────────────────────── */
 window.addEventListener('resize', () => {
   const wasRunning = running;
   if (running) togglePlay();
   clearHistory(); zoom = 1; panX = 0; panY = 0; initGrid();
   if (urlSeed !== null) applySeed(urlSeed);
+  else loadDefault();
   draw();
   if (wasRunning) togglePlay();
 });
 
 /* ── Init ─────────────────────────────────────────── */
 initGrid();
-if (!loadSeedParam()) loadPreset('gun');
+if (!loadSeedParam()) loadDefault();
 </script>
 </body>
 </html>
