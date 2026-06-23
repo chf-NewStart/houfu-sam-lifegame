@@ -355,7 +355,7 @@
         <button class="pbtn" draggable="true" data-preset="diehard" onclick="loadPreset('diehard')"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies at gen 130"     data-zh="第130代消亡">dies at gen 130</span></button>
         <button class="pbtn" draggable="true" data-preset="lwss"    onclick="loadPreset('lwss')"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="lightweight spaceship"   data-zh="轻型宇宙飞船">lightweight spaceship</span></button>
       </div>
-      <div class="drag-hint" data-en="drag onto canvas to stamp · click to load" data-zh="拖拽到画布放置 · 点击加载">drag onto canvas to stamp · click to load</div>
+      <div class="drag-hint" data-en="drag to stamp · scroll to rotate · R / F keys" data-zh="拖拽放置 · 滚轮旋转 · R/F键">drag to stamp · scroll to rotate · R / F keys</div>
       <div class="brow">
         <button class="btn" id="rotBtn"  onclick="rotateStamp()" title="Press R to rotate">↻ <span id="rotLabel">0°</span> <span style="color:#444;font-size:0.55rem">[R]</span></button>
         <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press F to flip">⟺ <span id="flipLabel">normal</span> <span style="color:#444;font-size:0.55rem">[F]</span></button>
@@ -875,9 +875,16 @@ document.addEventListener('mouseup', e => {
   else { painting = false; refreshDevPanel(); }
 });
 
-/* ── Scroll to zoom ───────────────────────────────── */
+/* ── Scroll to zoom / rotate pattern during drag ─── */
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
+  if (dragPattern) {
+    stampRot = e.deltaY < 0 ? (stampRot + 1) % 4 : (stampRot + 3) % 4;
+    document.getElementById('rotLabel').textContent = ['0°','90°','180°','270°'][stampRot];
+    document.getElementById('rotBtn').classList.toggle('active', stampRot !== 0);
+    draw();
+    return;
+  }
   const [mx, my] = screenToCanvas(e.clientX, e.clientY);
   const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
   const newZoom = Math.max(0.5, Math.min(12, zoom * factor));
