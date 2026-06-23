@@ -113,7 +113,8 @@
     .patterns-mobile .pbtn-desc { display: none; }
 
     /* ── Canvas HUD (stats overlay) ──────────────────── */
-    .canvas-wrap { position: relative; display: inline-block; }
+    .canvas-wrap { position: relative; display: block; width: 100%; }
+    #canvas { width: 100%; }
     .canvas-hud {
       position: absolute; top: 7px; left: 7px;
       background: rgba(0,0,0,0.68); color: #1db954;
@@ -458,9 +459,8 @@ function initGrid() {
     maxW = window.innerWidth - 24;
     maxH = Math.round(window.innerHeight * 0.42);
   } else {
-    const rp = document.querySelector('.right-panel');
-    const rpW = rp ? rp.offsetWidth : 230;
-    maxW = window.innerWidth - rpW - 56; // padding + border + extra breathing room
+    const col = document.querySelector('.canvas-col');
+    maxW = (col ? col.clientWidth : 600) - 26; // subtract horizontal padding
     maxH = Math.min(window.innerHeight - 174, 700);
   }
   COLS = Math.floor(maxW / CELL);
@@ -1368,7 +1368,8 @@ function loadDefault() {
 }
 
 /* ── Resize ───────────────────────────────────────── */
-window.addEventListener('resize', () => {
+let _resizeTimer;
+function doResize() {
   const wasRunning = running;
   if (running) togglePlay();
 
@@ -1390,6 +1391,10 @@ window.addEventListener('resize', () => {
 
   draw();
   if (wasRunning) togglePlay();
+}
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(doResize, 120);
 });
 
 /* ── Init ─────────────────────────────────────────── */
