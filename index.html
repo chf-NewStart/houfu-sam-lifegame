@@ -256,7 +256,9 @@
     <button class="cbtn" data-challenge="4" onclick="startChallenge(4)"><span data-en="Mega City"    data-zh="超级都市">Mega City</span><small data-en="reach 500 cells" data-zh="达500活细胞">reach 500 cells</small></button>
     <button class="cbtn" data-challenge="5" onclick="startChallenge(5)"><span data-en="Extinction"   data-zh="灭绝">Extinction</span><small data-en="all cells die" data-zh="所有细胞消亡">all cells die</small></button>
     <button class="cbtn" data-challenge="6" onclick="startChallenge(6)"><span data-en="Equilibrium"  data-zh="平衡态">Equilibrium</span><small data-en="stable pop 30 gens" data-zh="种群稳定30代">stable pop 30 gens</small></button>
-    <button class="cbtn" data-challenge="7" onclick="startChallenge(7)"><span data-en="Steady State" data-zh="稳态">Steady State</span><small data-en="period-2 oscillator" data-zh="周期2振荡器">period-2 oscillator</small></button>
+    <button class="cbtn" data-challenge="7" onclick="startChallenge(7)"><span data-en="Steady State"   data-zh="稳态">Steady State</span><small data-en="period-2 oscillator" data-zh="周期2振荡器">period-2 oscillator</small></button>
+    <button class="cbtn" data-challenge="8" onclick="startChallenge(8)"><span data-en="Zone Control"   data-zh="区域控制">Zone Control</span><small data-en="25+ cells in zone 20 gens" data-zh="区域25+细胞持续20代">25+ cells in zone 20 gens</small></button>
+    <button class="cbtn" data-challenge="9" onclick="startChallenge(9)"><span data-en="Compressed Gas" data-zh="压缩气体">Compressed Gas</span><small data-en="survive shrinking arena" data-zh="在缩小竞技场中存活">survive shrinking arena</small></button>
   </div>
   <div class="challenge-status" id="challengeStatus" data-en="select a challenge · draw your pattern · press play" data-zh="选择挑战 · 绘制图案 · 按播放">select a challenge · draw your pattern · press play</div>
 </div>
@@ -1271,18 +1273,23 @@ function shareSeed() {
 
 /* ── Challenge system ─────────────────────────────── */
 const CHALLENGES = [
-  { name: 'First Steps', nameZh: '初步',     goal: 'Survive 20 generations',             goalZh: '存活20代',              check: (g, c, s) => g >= 20 && c > 0 },
-  { name: 'Bloom',       nameZh: '盛放',     goal: 'Reach 100 live cells',               goalZh: '达到100个活细胞',       check: (g, c)    => c >= 100 },
-  { name: 'Century',     nameZh: '百代',     goal: 'Survive 100 generations',            goalZh: '存活100代',             check: (g, c)    => g >= 100 && c > 0 },
-  { name: 'Still Life',  nameZh: '静止图案', goal: 'Reach a stable pattern',             goalZh: '达到稳定图案',          check: (g, c, s) => s && g > 0 },
-  { name: 'Mega City',   nameZh: '超级都市', goal: 'Reach 500 live cells',               goalZh: '达到500个活细胞',       check: (g, c)    => c >= 500 },
-  { name: 'Extinction',  nameZh: '灭绝',     goal: 'All cells must die out',             goalZh: '所有细胞必须消亡',      check: (g, c)    => g > 5 && c === 0 },
-  { name: 'Equilibrium', nameZh: '平衡态',   goal: 'Keep population stable for 30 gens', goalZh: '种群数量稳定持续30代',  check: ()        => stableCountStreak >= 30 },
-  { name: 'Steady State',nameZh: '稳态',     goal: 'Reach a period-2 oscillating pattern',goalZh: '达到周期2振荡图案',    check: (g, c, s) => !s && g > 5 && prevPrevGridSnap !== null && grid.every((v, i) => v === prevPrevGridSnap[i]) },
+  { name: 'First Steps',    nameZh: '初步',     goal: 'Survive 20 generations',              goalZh: '存活20代',              check: (g, c, s) => g >= 20 && c > 0 },
+  { name: 'Bloom',          nameZh: '盛放',     goal: 'Reach 100 live cells',                goalZh: '达到100个活细胞',       check: (g, c)    => c >= 100 },
+  { name: 'Century',        nameZh: '百代',     goal: 'Survive 100 generations',             goalZh: '存活100代',             check: (g, c)    => g >= 100 && c > 0 },
+  { name: 'Still Life',     nameZh: '静止图案', goal: 'Reach a stable pattern',              goalZh: '达到稳定图案',          check: (g, c, s) => s && g > 0 },
+  { name: 'Mega City',      nameZh: '超级都市', goal: 'Reach 500 live cells',                goalZh: '达到500个活细胞',       check: (g, c)    => c >= 500 },
+  { name: 'Extinction',     nameZh: '灭绝',     goal: 'All cells must die out',              goalZh: '所有细胞必须消亡',      check: (g, c)    => g > 5 && c === 0 },
+  { name: 'Equilibrium',    nameZh: '平衡态',   goal: 'Keep population stable for 30 gens',  goalZh: '种群数量稳定持续30代',  check: ()        => stableCountStreak >= 30 },
+  { name: 'Steady State',   nameZh: '稳态',     goal: 'Reach a period-2 oscillating pattern',goalZh: '达到周期2振荡图案',     check: (g, c, s) => !s && g > 5 && prevPrevGridSnap !== null && grid.every((v, i) => v === prevPrevGridSnap[i]) },
+  { name: 'Zone Control',   nameZh: '区域控制', goal: 'Keep 25+ cells in your zone for 20 gens', goalZh: '区域内保持25+细胞持续20代', check: () => zoneGoalStreak >= 20, fail: (g,c) => g > 5 && c === 0 },
+  { name: 'Compressed Gas', nameZh: '压缩气体', goal: 'Survive as the arena shrinks every 5 gens', goalZh: '在每5代缩小的竞技场中存活', check: () => cgWon, fail: (g,c) => g > 2 && c === 0 },
 ];
 
 let activeChallenge = -1, prevGridSnap = null, prevPrevGridSnap = null, challengeStartSeed = null;
 let stableCountStreak = 0, prevCellCount = -1;
+let zoneGoalStreak = 0;
+let cgWon = false, cgInitW = 0, cgInitH = 0;
+const CG_IDX = 9, ZC_IDX = 8;
 
 function drawLocked() { return activeChallenge >= 0 && generation > 0; }
 
@@ -1291,33 +1298,88 @@ function startChallenge(i) {
   clearGrid(); activeChallenge = i;
   prevGridSnap = null; prevPrevGridSnap = null; challengeStartSeed = null;
   stableCountStreak = 0; prevCellCount = -1;
+  zoneGoalStreak = 0; cgWon = false;
   canvas.style.cursor = 'crosshair';
+
+  if (i === ZC_IDX) {
+    // Zone Control: ensure a zone exists; auto-create center zone if not
+    if (!selRect) {
+      const w = Math.floor(COLS / 3), h = Math.floor(ROWS / 3);
+      const c0 = Math.floor((COLS - w) / 2), r0 = Math.floor((ROWS - h) / 2);
+      selRect = { c0, r0, c1: c0 + w - 1, r1: r0 + h - 1 };
+    }
+  }
+
+  if (i === CG_IDX) {
+    // Compressed Gas: arena = full grid
+    selRect = { c0: 0, r0: 0, c1: COLS - 1, r1: ROWS - 1 };
+    cgInitW = COLS; cgInitH = ROWS;
+  }
+
   const status = document.getElementById('challengeStatus');
   status.textContent = '▶ ' + t(CHALLENGES[i].goal, CHALLENGES[i].goalZh);
   status.classList.remove('won');
   document.querySelectorAll('.cbtn[data-challenge]').forEach((b, j) => b.classList.toggle('active', j === i));
+  draw();
 }
 
 function doChallengeTick() {
+  // Compressed Gas: shrink arena then kill cells outside it
+  if (activeChallenge === CG_IDX && selRect) {
+    if (generation % 5 === 0 && generation > 0) {
+      const minW = Math.max(5, Math.floor(cgInitW * 0.1));
+      const minH = Math.max(5, Math.floor(cgInitH * 0.1));
+      if (selRect.c1 - selRect.c0 + 1 > minW) { selRect.c0++; selRect.c1--; }
+      if (selRect.r1 - selRect.r0 + 1 > minH) { selRect.r0++; selRect.r1--; }
+      // Check if fully compressed
+      const atMinW = selRect.c1 - selRect.c0 + 1 <= minW;
+      const atMinH = selRect.r1 - selRect.r0 + 1 <= minH;
+      if (atMinW || atMinH) cgWon = true;
+    }
+    // Kill cells outside the arena
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        if (r < selRect.r0 || r > selRect.r1 || c < selRect.c0 || c > selRect.c1)
+          grid[idx(c, r)] = 0;
+  }
+
   const cells = grid.reduce((s, v) => s + v, 0);
   const stable = prevGridSnap !== null && grid.every((v, i) => v === prevGridSnap[i]);
 
-  // Track population stability streak (Equilibrium)
+  // Equilibrium streak
   if (prevCellCount !== -1 && cells === prevCellCount) stableCountStreak++;
   else stableCountStreak = 0;
   prevCellCount = cells;
 
-  // Track 2-gen-ago snapshot (Steady State period-2 detection)
+  // Zone Control streak
+  if (activeChallenge === ZC_IDX) {
+    if (selRect && _zoneCount() >= 25) zoneGoalStreak++;
+    else zoneGoalStreak = 0;
+  }
+
+  // Steady State 2-gen snapshot
   prevPrevGridSnap = prevGridSnap;
   prevGridSnap = grid.slice();
 
-  // Lock drawing once simulation has started
   if (generation === 1) canvas.style.cursor = 'not-allowed';
 
   const ch = CHALLENGES[activeChallenge];
+
+  // Fail check (Compressed Gas / Zone Control extinction)
+  if (ch.fail && ch.fail(generation, cells)) {
+    activeChallenge = -1; canvas.style.cursor = 'crosshair';
+    selRect = null;
+    document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
+    const status = document.getElementById('challengeStatus');
+    status.textContent = t('✗ All cells died — try again', '✗ 所有细胞消亡 — 再试一次');
+    return;
+  }
+
+  // Win check
   if (ch.check(generation, cells, stable)) {
     const won = activeChallenge; activeChallenge = -1;
     canvas.style.cursor = 'crosshair';
+    if (won === CG_IDX) selRect = null;
     setTimeout(() => showWin(CHALLENGES[won], cells), 60);
   }
 }
