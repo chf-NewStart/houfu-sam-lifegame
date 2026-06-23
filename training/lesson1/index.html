@@ -234,7 +234,6 @@
     <canvas id="canvas"></canvas>
 
     <div class="controls">
-      <button class="ctrl-btn" onclick="clearGrid()">✕ Clear</button>
       <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
       <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
       <button class="ctrl-btn" id="countsBtn" onclick="toggleCounts()">＃ Counts</button>
@@ -250,7 +249,7 @@
         <span>alive · will die</span>
       </div>
       <div class="legend-item">
-        <div class="legend-swatch" style="background:rgba(29,185,84,0.15);border:1px dashed rgba(29,185,84,0.5)"></div>
+        <div class="legend-swatch" style="background:#3a3a3a"></div>
         <span>dead · will be born</span>
       </div>
     </div>
@@ -284,7 +283,7 @@ const STAGES = [
   },
   {
     title: 'Birth (B3)',
-    text: `A <span style="color:#444">dead</span> cell with exactly <b>3</b> live neighbors comes <span class="hi-green">alive</span> next generation.<br><br>Look at the <b>ghost cells</b> — the faint green dashed outlines. Those are dead cells about to be born.<br><br>Click <b>Step</b> to watch them appear.`,
+    text: `A <span style="color:#444">dead</span> cell with exactly <b>3</b> live neighbors comes <span class="hi-green">alive</span> next generation.<br><br>Look at the <b>grey cells</b> — those are dead cells about to be born next step.<br><br>Click <b>Step</b> to watch them turn green.`,
     example: 'blinker',
     exampleLabel: '↺ Reload blinker',
   },
@@ -410,16 +409,11 @@ function draw() {
           ctx.fillText(n, cx + CELL / 2, cy + CELL / 2);
         }
       } else if (n === 3) {
-        // Ghost — will be born
-        ctx.fillStyle = 'rgba(29,185,84,0.12)';
+        // Ghost — will be born (same grey as main game)
+        ctx.fillStyle = '#3a3a3a';
         ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
-        ctx.strokeStyle = 'rgba(29,185,84,0.45)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.strokeRect(cx + 1.5, cy + 1.5, CELL - 3, CELL - 3);
-        ctx.setLineDash([]);
         if (showCounts) {
-          ctx.fillStyle = 'rgba(29,185,84,0.7)';
+          ctx.fillStyle = 'rgba(255,255,255,0.55)';
           ctx.fillText(n, cx + CELL / 2, cy + CELL / 2);
         }
       } else if (showCounts && n > 0) {
@@ -459,13 +453,6 @@ function togglePlay() {
   btn.classList.toggle('active', running);
   if (running) rafId = requestAnimationFrame(loop);
   else if (rafId) cancelAnimationFrame(rafId);
-}
-
-function clearGrid() {
-  if (running) togglePlay();
-  grid.fill(0);
-  generation = 0;
-  draw();
 }
 
 function toggleCounts() {
