@@ -219,6 +219,8 @@
     <button class="cbtn" data-challenge="3" onclick="startChallenge(3)"><span data-en="Still Life"   data-zh="静止图案">Still Life</span><small data-en="reach stability" data-zh="达稳定状态">reach stability</small></button>
     <button class="cbtn" data-challenge="4" onclick="startChallenge(4)"><span data-en="Mega City"    data-zh="超级都市">Mega City</span><small data-en="reach 500 cells" data-zh="达500活细胞">reach 500 cells</small></button>
     <button class="cbtn" data-challenge="5" onclick="startChallenge(5)"><span data-en="Extinction"   data-zh="灭绝">Extinction</span><small data-en="all cells die" data-zh="所有细胞消亡">all cells die</small></button>
+    <button class="cbtn" data-challenge="6" onclick="startChallenge(6)"><span data-en="Equilibrium"  data-zh="平衡态">Equilibrium</span><small data-en="stable pop 30 gens" data-zh="种群稳定30代">stable pop 30 gens</small></button>
+    <button class="cbtn" data-challenge="7" onclick="startChallenge(7)"><span data-en="Steady State" data-zh="稳态">Steady State</span><small data-en="period-2 oscillator" data-zh="周期2振荡器">period-2 oscillator</small></button>
   </div>
   <div class="challenge-status" id="challengeStatus" data-en="select a challenge · draw your pattern · press play" data-zh="选择挑战 · 绘制图案 · 按播放">select a challenge · draw your pattern · press play</div>
 </div>
@@ -684,6 +686,8 @@ function clearGrid() {
   clearHistory();
   grid.fill(0); generation = 0;
   document.getElementById('genCount').textContent = 0;
+  activeChallenge = -1; canvas.style.cursor = 'crosshair';
+  document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
   draw();
 }
 
@@ -743,6 +747,7 @@ canvas.addEventListener('mousedown', e => {
     canvas.style.cursor = 'grabbing';
     return;
   }
+  if (drawLocked()) return;
   const [c, r] = cellAt(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
   pushHistory();
@@ -781,7 +786,7 @@ let lastPinchDist = null, lastPinchMid = null;
 
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  if (e.touches.length === 1) { pushHistory(); painting = true; paint(e); }
+  if (e.touches.length === 1) { if (drawLocked()) return; pushHistory(); painting = true; paint(e); }
   else { painting = false; lastPinchDist = null; lastPinchMid = null; }
 }, { passive: false });
 canvas.addEventListener('touchmove', e => {
@@ -917,6 +922,7 @@ canvas.addEventListener('drop', e => {
   e.preventDefault();
   canvas.classList.remove('drag-over');
   if (!dragPattern || !dragOff) return;
+  if (drawLocked()) { dragPattern = null; dragOff = null; dragCursor = null; draw(); return; }
   pushHistory();
   transformCells(PRESETS[dragPattern]).forEach(([dc, dr]) => {
     const c = ((dragOff.c + dc) % COLS + COLS) % COLS;
@@ -963,7 +969,7 @@ function endTouchDrag() {
   touchDragActive = false;
   document.querySelectorAll('.pbtn.active').forEach(b => b.classList.remove('active'));
   canvas.classList.remove('drag-over');
-  if (dragPattern && dragOff) {
+  if (dragPattern && dragOff && !drawLocked()) {
     pushHistory();
     transformCells(PRESETS[dragPattern]).forEach(([dc, dr]) => {
       const c = ((dragOff.c + dc) % COLS + COLS) % COLS;
@@ -1027,19 +1033,27 @@ function shareSeed() {
 
 /* ── Challenge system ─────────────────────────────── */
 const CHALLENGES = [
-  { name: 'First Steps', nameZh: '初步',     goal: 'Survive 20 generations',  goalZh: '存活20代',          check: (g, c, s) => g >= 20 && c > 0 },
-  { name: 'Bloom',       nameZh: '盛放',     goal: 'Reach 100 live cells',    goalZh: '达到100个活细胞',   check: (g, c)    => c >= 100 },
-  { name: 'Century',     nameZh: '百代',     goal: 'Survive 100 generations', goalZh: '存活100代',         check: (g, c)    => g >= 100 && c > 0 },
-  { name: 'Still Life',  nameZh: '静止图案', goal: 'Reach a stable pattern',  goalZh: '达到稳定图案',      check: (g, c, s) => s && g > 0 },
-  { name: 'Mega City',   nameZh: '超级都市', goal: 'Reach 500 live cells',    goalZh: '达到500个活细胞',   check: (g, c)    => c >= 500 },
-  { name: 'Extinction',  nameZh: '灭绝',     goal: 'All cells must die out',  goalZh: '所有细胞必须消亡',  check: (g, c)    => g > 5 && c === 0 },
+  { name: 'First Steps', nameZh: '初步',     goal: 'Survive 20 generations',             goalZh: '存活20代',              check: (g, c, s) => g >= 20 && c > 0 },
+  { name: 'Bloom',       nameZh: '盛放',     goal: 'Reach 100 live cells',               goalZh: '达到100个活细胞',       check: (g, c)    => c >= 100 },
+  { name: 'Century',     nameZh: '百代',     goal: 'Survive 100 generations',            goalZh: '存活100代',             check: (g, c)    => g >= 100 && c > 0 },
+  { name: 'Still Life',  nameZh: '静止图案', goal: 'Reach a stable pattern',             goalZh: '达到稳定图案',          check: (g, c, s) => s && g > 0 },
+  { name: 'Mega City',   nameZh: '超级都市', goal: 'Reach 500 live cells',               goalZh: '达到500个活细胞',       check: (g, c)    => c >= 500 },
+  { name: 'Extinction',  nameZh: '灭绝',     goal: 'All cells must die out',             goalZh: '所有细胞必须消亡',      check: (g, c)    => g > 5 && c === 0 },
+  { name: 'Equilibrium', nameZh: '平衡态',   goal: 'Keep population stable for 30 gens', goalZh: '种群数量稳定持续30代',  check: ()        => stableCountStreak >= 30 },
+  { name: 'Steady State',nameZh: '稳态',     goal: 'Reach a period-2 oscillating pattern',goalZh: '达到周期2振荡图案',    check: (g, c, s) => !s && g > 5 && prevPrevGridSnap !== null && grid.every((v, i) => v === prevPrevGridSnap[i]) },
 ];
 
-let activeChallenge = -1, prevGridSnap = null, challengeStartSeed = null;
+let activeChallenge = -1, prevGridSnap = null, prevPrevGridSnap = null, challengeStartSeed = null;
+let stableCountStreak = 0, prevCellCount = -1;
+
+function drawLocked() { return activeChallenge >= 0 && generation > 0; }
 
 function startChallenge(i) {
   if (running) togglePlay();
-  clearGrid(); activeChallenge = i; prevGridSnap = null; challengeStartSeed = null;
+  clearGrid(); activeChallenge = i;
+  prevGridSnap = null; prevPrevGridSnap = null; challengeStartSeed = null;
+  stableCountStreak = 0; prevCellCount = -1;
+  canvas.style.cursor = 'crosshair';
   const status = document.getElementById('challengeStatus');
   status.textContent = '▶ ' + t(CHALLENGES[i].goal, CHALLENGES[i].goalZh);
   status.classList.remove('won');
@@ -1049,10 +1063,23 @@ function startChallenge(i) {
 function doChallengeTick() {
   const cells = grid.reduce((s, v) => s + v, 0);
   const stable = prevGridSnap !== null && grid.every((v, i) => v === prevGridSnap[i]);
+
+  // Track population stability streak (Equilibrium)
+  if (prevCellCount !== -1 && cells === prevCellCount) stableCountStreak++;
+  else stableCountStreak = 0;
+  prevCellCount = cells;
+
+  // Track 2-gen-ago snapshot (Steady State period-2 detection)
+  prevPrevGridSnap = prevGridSnap;
   prevGridSnap = grid.slice();
+
+  // Lock drawing once simulation has started
+  if (generation === 1) canvas.style.cursor = 'not-allowed';
+
   const ch = CHALLENGES[activeChallenge];
   if (ch.check(generation, cells, stable)) {
     const won = activeChallenge; activeChallenge = -1;
+    canvas.style.cursor = 'crosshair';
     setTimeout(() => showWin(CHALLENGES[won], cells), 60);
   }
 }
