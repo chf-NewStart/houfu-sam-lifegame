@@ -157,6 +157,12 @@
     .win-submit input:focus { border-color: #1db954; }
     .win-submitted { color: #1db954; font-size: 0.78rem; margin-bottom: 8px; }
 
+    /* ── Shared overlay base ─────────────────────────── */
+    #lbOverlay, #gallerySubmitOverlay, #galleryOverlay, #imgOverlay, #savesOverlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center;
+    }
+    #lbOverlay.show, #gallerySubmitOverlay.show, #galleryOverlay.show, #imgOverlay.show, #savesOverlay.show { display: flex; }
+
     /* ── Leaderboard overlay ──────────────────────────── */
     #lbOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center; }
     #lbOverlay.show { display: flex; }
@@ -325,6 +331,7 @@
       <div class="brow">
         <button class="btn" onclick="openGallerySubmit()" data-en="📤 Share Shape" data-zh="📤 分享形状">📤 Share Shape</button>
         <button class="btn" onclick="openGallery()"       data-en="🖼️ Gallery"    data-zh="🖼️ 图库">🖼️ Gallery</button>
+        <button class="btn" onclick="openSaves()"         data-en="💾 My Saves"   data-zh="💾 我的存档">💾 My Saves</button>
       </div>
       <div class="brow">
         <button class="btn" onclick="openImgModal()" data-en="📷 Image → Cells" data-zh="📷 图片转细胞">📷 Image → Cells</button>
@@ -440,6 +447,21 @@
     <div class="lb-title">🖼️ Community Gallery</div>
     <div id="galleryList"><div class="lb-empty">Loading…</div></div>
     <button class="btn" onclick="closeGallery()" style="margin-top:18px;width:100%">Close</button>
+  </div>
+</div>
+
+<div id="savesOverlay">
+  <div class="lb-box">
+    <div class="lb-title">💾 My Saves</div>
+    <div style="color:#666;font-size:0.72rem;margin-bottom:12px">Saved locally in your browser — private, never shared.</div>
+    <div style="display:flex;gap:6px;margin-bottom:16px">
+      <input id="savesNameInput" type="text" placeholder="Name this blueprint…" maxlength="40"
+        style="flex:1;background:#1a1a1a;border:1px solid #333;color:#eee;padding:7px 10px;font-family:inherit;font-size:0.8rem;outline:none;min-width:0"
+        onkeydown="if(event.key==='Enter')onSaveBlueprint()">
+      <button class="btn" onclick="onSaveBlueprint()" style="flex-shrink:0">Save</button>
+    </div>
+    <div id="savesList"></div>
+    <button class="btn" onclick="closeSaves()" style="margin-top:16px;width:100%">Close</button>
   </div>
 </div>
 
@@ -1407,6 +1429,57 @@ function openGallery() {
   }).catch(() => { list.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load.</div>'; });
 }
 function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
+
+/* ── My Saves (localStorage) ──────────────────────── */
+const SAVES_KEY = 'lifegame_saves';
+
+function _getSaves() {
+  try { return JSON.parse(localStorage.getItem(SAVES_KEY) || '[]'); } catch { return []; }
+}
+function _setSaves(arr) { localStorage.setItem(SAVES_KEY, JSON.stringify(arr)); }
+
+function openSaves() {
+  _renderSaves();
+  document.getElementById('savesOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('savesNameInput').focus(), 50);
+}
+function closeSaves() { document.getElementById('savesOverlay').classList.remove('show'); }
+
+function onSaveBlueprint() {
+  const name = document.getElementById('savesNameInput').value.trim() || 'Untitled';
+  const cells = grid.reduce((s, v) => s + v, 0);
+  const saves = _getSaves();
+  saves.unshift({ name, seed: encodeSeed(), date: Date.now(), cells });
+  _setSaves(saves);
+  document.getElementById('savesNameInput').value = '';
+  _renderSaves();
+}
+
+function _deleteBlueprint(i) {
+  const saves = _getSaves(); saves.splice(i, 1); _setSaves(saves); _renderSaves();
+}
+
+function _renderSaves() {
+  const saves = _getSaves();
+  const list = document.getElementById('savesList');
+  if (!saves.length) { list.innerHTML = '<div class="lb-empty">No saves yet.</div>'; return; }
+  list.innerHTML = saves.map((s, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1a1a1a">
+      <div style="flex:1;min-width:0">
+        <div style="color:#ccc;font-size:0.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name)}</div>
+        <div style="color:#555;font-size:0.6rem">${new Date(s.date).toLocaleDateString()} · ${s.cells} cells</div>
+      </div>
+      <button class="btn" data-load-save="${i}" style="padding:4px 9px;font-size:0.65rem;flex-shrink:0">Load</button>
+      <button class="btn danger" data-del-save="${i}" style="padding:4px 7px;font-size:0.65rem;flex-shrink:0">✕</button>
+    </div>`).join('');
+}
+
+document.getElementById('savesList').addEventListener('click', e => {
+  const loadBtn = e.target.closest('[data-load-save]');
+  const delBtn  = e.target.closest('[data-del-save]');
+  if (loadBtn) { loadSeedStr(_getSaves()[+loadBtn.dataset.loadSave].seed); closeSaves(); }
+  if (delBtn)  { _deleteBlueprint(+delBtn.dataset.delSave); }
+});
 
 /* Seed buttons use data-seed to avoid XSS — handle via event delegation */
 document.getElementById('lbTable').addEventListener('click', e => {
