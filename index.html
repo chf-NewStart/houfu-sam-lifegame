@@ -1645,7 +1645,7 @@ function _renderCustomPatternBtns() {
   const section = document.getElementById('customPatternsSection');
   const grid = document.getElementById('customPatternGrid');
   if (!customPatternList.length) { section.style.display = 'none'; return; }
-  section.style.display = '';
+  section.style.display = 'block';
   grid.innerHTML = customPatternList.map(p => `
     <div class="custom-pbtn-wrap">
       <button class="pbtn custom-pbtn" data-preset="${escHtml(p.id)}">
