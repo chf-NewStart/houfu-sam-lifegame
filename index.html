@@ -973,7 +973,10 @@ async function submitScore(nickname, challenge, gen, cells, seed) {
     headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
     body: JSON.stringify({ nickname, challenge, generation: gen, cells, seed })
   });
-  if (!res.ok) throw new Error(res.status);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${res.status}: ${body}`);
+  }
 }
 
 async function fetchScores(challenge) {
@@ -1018,7 +1021,7 @@ function onSubmitScore() {
       document.getElementById('winSubmit').style.display = 'none';
       document.getElementById('winSubmitted').style.display = 'block';
     })
-    .catch(() => { btn.disabled = false; btn.textContent = 'Submit'; alert('Submit failed — check your connection.'); });
+    .catch(err => { btn.disabled = false; btn.textContent = 'Submit'; alert('Submit failed: ' + err.message); });
 }
 
 let lbActiveCh = null;
