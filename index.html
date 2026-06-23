@@ -210,8 +210,12 @@
     <div class="pcard">
       <div class="pcard-title" data-en="// controls" data-zh="// 控制">// controls</div>
       <div class="brow">
-        <button class="btn" id="playBtn" onclick="togglePlay()" data-en="⏵ Play"   data-zh="⏵ 播放">⏵ Play</button>
-        <button class="btn" id="stepBtn" onclick="stepOnce()"   data-en="Step →"   data-zh="步进 →">Step →</button>
+        <button class="btn" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放">⏵ Play</button>
+        <button class="btn" id="stepBtn" onclick="stepOnce()"   data-en="Step →" data-zh="步进 →">Step →</button>
+      </div>
+      <div class="brow">
+        <button class="btn" id="stepBkBtn" onclick="undoStep()"  data-en="← Step" data-zh="← 后退" disabled>← Step</button>
+        <button class="btn" id="redoBtn"   onclick="redoStep()"  data-en="↻ Redo" data-zh="↻ 重做" disabled>↻ Redo</button>
       </div>
       <div class="brow">
         <button class="btn" id="undoBtn" onclick="undoStep()" data-en="↩ Undo" data-zh="↩ 撤销" disabled>↩ Undo</button>
@@ -414,23 +418,45 @@ function neighbors(c, r) {
 }
 
 let generation = 0;
-let stepHistory = [];
+let stepHistory = [], redoHistory = [];
 const MAX_HISTORY = 50;
+
+function setUndoRedoBtns() {
+  const hasUndo = stepHistory.length > 0;
+  const hasRedo = redoHistory.length > 0;
+  document.getElementById('undoBtn').disabled    = !hasUndo;
+  document.getElementById('stepBkBtn').disabled  = !hasUndo;
+  document.getElementById('redoBtn').disabled    = !hasRedo;
+}
 
 function pushHistory() {
   stepHistory.push({ grid: grid.slice(), generation });
   if (stepHistory.length > MAX_HISTORY) stepHistory.shift();
-  document.getElementById('undoBtn').disabled = false;
+  redoHistory = [];
+  setUndoRedoBtns();
 }
 
 function undoStep() {
   if (stepHistory.length === 0) return;
   if (running) togglePlay();
+  redoHistory.push({ grid: grid.slice(), generation });
   const state = stepHistory.pop();
   grid = state.grid;
   generation = state.generation;
   document.getElementById('genCount').textContent = generation;
-  document.getElementById('undoBtn').disabled = stepHistory.length === 0;
+  setUndoRedoBtns();
+  draw();
+}
+
+function redoStep() {
+  if (redoHistory.length === 0) return;
+  if (running) togglePlay();
+  stepHistory.push({ grid: grid.slice(), generation });
+  const state = redoHistory.pop();
+  grid = state.grid;
+  generation = state.generation;
+  document.getElementById('genCount').textContent = generation;
+  setUndoRedoBtns();
   draw();
 }
 
@@ -504,8 +530,8 @@ function setCellSize(v) {
 }
 
 function clearHistory() {
-  stepHistory = [];
-  document.getElementById('undoBtn').disabled = true;
+  stepHistory = []; redoHistory = [];
+  setUndoRedoBtns();
 }
 
 function clearGrid() {
@@ -666,6 +692,7 @@ canvas.addEventListener('drop', e => {
   e.preventDefault();
   canvas.classList.remove('drag-over');
   if (!dragPattern || !dragOff) return;
+  pushHistory();
   transformCells(PRESETS[dragPattern]).forEach(([dc, dr]) => {
     const c = ((dragOff.c + dc) % COLS + COLS) % COLS;
     const r = ((dragOff.r + dr) % ROWS + ROWS) % ROWS;
@@ -711,6 +738,7 @@ function endTouchDrag() {
   document.querySelectorAll('.pbtn.active').forEach(b => b.classList.remove('active'));
   canvas.classList.remove('drag-over');
   if (dragPattern && dragOff) {
+    pushHistory();
     transformCells(PRESETS[dragPattern]).forEach(([dc, dr]) => {
       const c = ((dragOff.c + dc) % COLS + COLS) % COLS;
       const r = ((dragOff.r + dr) % ROWS + ROWS) % ROWS;
