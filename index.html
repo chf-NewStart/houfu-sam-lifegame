@@ -1195,7 +1195,7 @@ async function showLbChallenge(name) {
         <td>${escHtml(r.nickname)}</td>
         <td style="text-align:right">${r.generation}</td>
         <td style="text-align:right">${r.cells}</td>
-        <td>${r.seed ? `<button class="lb-try" onclick="loadSeedStr('${r.seed}');closeLb()">▶ Try</button>` : ''}</td>
+        <td>${r.seed ? `<button class="lb-try" data-seed="${escHtml(r.seed)}">▶ Try</button>` : ''}</td>
       </tr>`).join('')}</tbody></table>`;
   } catch(e) {
     tb.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load — check connection.</div>';
@@ -1260,12 +1260,22 @@ function openGallery() {
           <div class="gallery-title">${escHtml(it.title)}</div>
           <div class="gallery-meta">by ${escHtml(it.nickname)} · ${date}</div>
         </div>
-        ${it.seed ? `<button class="lb-try" onclick="loadSeedStr('${it.seed}');closeGallery()">▶ Load</button>` : ''}
+        ${it.seed ? `<button class="lb-try" data-seed="${escHtml(it.seed)}">▶ Load</button>` : ''}
       </div>`;
     }).join('');
   }).catch(() => { list.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load.</div>'; });
 }
 function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
+
+/* Seed buttons use data-seed to avoid XSS — handle via event delegation */
+document.getElementById('lbTable').addEventListener('click', e => {
+  const btn = e.target.closest('[data-seed]');
+  if (btn) { loadSeedStr(btn.dataset.seed); closeLb(); }
+});
+document.getElementById('galleryList').addEventListener('click', e => {
+  const btn = e.target.closest('[data-seed]');
+  if (btn) { loadSeedStr(btn.dataset.seed); closeGallery(); }
+});
 
 /* ── Image → Cells ────────────────────────────────── */
 let _imgSource = null, _imgPreviewData = null;
