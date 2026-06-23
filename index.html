@@ -357,8 +357,8 @@
       </div>
       <div class="drag-hint" data-en="drag onto canvas to stamp · click to load" data-zh="拖拽到画布放置 · 点击加载">drag onto canvas to stamp · click to load</div>
       <div class="brow">
-        <button class="btn" id="rotBtn"  onclick="rotateStamp()">↻ <span id="rotLabel">0°</span></button>
-        <button class="btn" id="flipBtn" onclick="flipStamp()">⟺ <span id="flipLabel">normal</span></button>
+        <button class="btn" id="rotBtn"  onclick="rotateStamp()" title="Press R to rotate">↻ <span id="rotLabel">0°</span> <span style="color:#444;font-size:0.55rem">[R]</span></button>
+        <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press F to flip">⟺ <span id="flipLabel">normal</span> <span style="color:#444;font-size:0.55rem">[F]</span></button>
       </div>
     </div>
 
@@ -1475,6 +1475,14 @@ imgDZ.addEventListener('drop', e => {
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoStep(); }
   if (e.key === '0' && !e.ctrlKey && !e.metaKey) resetView();
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (e.key === 'r' || e.key === 'R') { rotateStamp(); if (dragPattern) draw(); }
+  if (e.key === 'f' || e.key === 'F') { flipStamp();   if (dragPattern) draw(); }
+  if (e.key === 'Escape' && dragPattern) {
+    dragPattern = null; dragOff = null; dragCursor = null;
+    touchDragActive = false; canvas.classList.remove('drag-over'); draw();
+  }
 });
 
 /* ── Default welcome pattern ("LIFE GAME" in cells) ─ */
