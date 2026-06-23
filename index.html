@@ -111,16 +111,16 @@
     .patterns-mobile .preset-grid { grid-template-columns: repeat(4, 1fr); }
     .patterns-mobile .pbtn span { display: none; }
 
-    /* ── Stats bar (bottom) ───────────────────────────── */
-    .stats-bar {
-      display: flex; align-items: center; gap: 0;
-      border-top: 1px solid #2e2e2e; padding: 7px 18px;
-      background: #0a0a0a; flex-shrink: 0;
+    /* ── Canvas HUD (stats overlay) ──────────────────── */
+    .canvas-wrap { position: relative; display: inline-block; }
+    .canvas-hud {
+      position: absolute; top: 7px; left: 7px;
+      background: rgba(0,0,0,0.68); color: #1db954;
+      font-family: Consolas, monospace; font-size: 0.65rem;
+      padding: 5px 10px; pointer-events: none; line-height: 1.9;
+      backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.05);
     }
-    .stat-item { display: flex; align-items: baseline; gap: 7px; padding-right: 22px; }
-    .stat-item:not(:last-child) { border-right: 1px solid #252525; margin-right: 22px; }
-    .stat-lbl { font-size: 0.58rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-    .stat-val { font-size: 1rem; color: #1db954; min-width: 36px; }
+    .hud-lbl { color: #555; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 1px; margin-right: 5px; }
 
     /* ── Win overlay ──────────────────────────────────── */
     #winOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
@@ -168,7 +168,8 @@
       .main-layout { flex-direction: column; overflow: visible; }
 
       .canvas-col { padding: 10px 10px 6px; align-items: stretch; }
-      .canvas-col canvas { width: 100% !important; height: auto !important; }
+      .canvas-wrap { width: 100%; display: block; }
+      .canvas-wrap canvas { width: 100% !important; height: auto !important; }
 
       .patterns-mobile { display: block; }
 
@@ -233,7 +234,14 @@
       </div>
     </div>
 
-    <canvas id="canvas"></canvas>
+    <div class="canvas-wrap">
+      <canvas id="canvas"></canvas>
+      <div class="canvas-hud">
+        <div><span class="hud-lbl">gen</span><span id="genCount">0</span></div>
+        <div><span class="hud-lbl">cells</span><span id="cellCount">0</span></div>
+        <div><span class="hud-lbl">next</span><span id="nextCount">0</span></div>
+      </div>
+    </div>
   </div>
 
   <!-- Right panel -->
@@ -317,28 +325,17 @@
         <span>Sam Qiu</span><br>
         <span>Husam</span>
       </div>
-      <div class="pcard-title" style="margin-top:10px">// community</div>
-      <div id="communityCredits" class="credits-list" style="color:#555">Loading…</div>
+      <div class="pcard-title" style="margin-top:10px">// contact</div>
+      <div class="credits-list">
+        <a href="https://houfu72.com" target="_blank" rel="noopener"
+           style="color:#1db954;text-decoration:none">houfu72.com</a>
+      </div>
     </div>
 
   </div>
 </div>
 
 <!-- Stats bar (bottom) -->
-<div class="stats-bar">
-  <div class="stat-item">
-    <span class="stat-lbl" data-en="generation" data-zh="代数">generation</span>
-    <span class="stat-val" id="genCount">0</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-lbl" data-en="live cells" data-zh="活细胞">live cells</span>
-    <span class="stat-val" id="cellCount">0</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-lbl" data-en="next turn" data-zh="下一代">next turn</span>
-    <span class="stat-val" id="nextCount">0</span>
-  </div>
-</div>
 
 <!-- Win overlay -->
 <div id="winOverlay">
@@ -1200,22 +1197,6 @@ function openGallery() {
   }).catch(() => { list.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load.</div>'; });
 }
 function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
-
-/* ── Community credits ────────────────────────────── */
-(async function loadCommunityCredits() {
-  try {
-    const res = await fetch(
-      `${SB_URL}/rest/v1/Gallery?select=nickname&order=created_at.asc&limit=200`,
-      { headers: SB_HDR }
-    );
-    const rows = await res.json();
-    const unique = [...new Set(rows.map(r => r.nickname))];
-    const el = document.getElementById('communityCredits');
-    el.innerHTML = unique.length
-      ? unique.map(n => `<span>${escHtml(n)}</span>`).join('<br>')
-      : '<span style="color:#444">Share a shape to appear here!</span>';
-  } catch(e) {}
-})();
 
 /* ── Keyboard shortcuts ───────────────────────────── */
 document.addEventListener('keydown', e => {
