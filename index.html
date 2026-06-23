@@ -181,7 +181,12 @@
 
       .stats-bar { padding: 6px 12px; gap: 12px; flex-wrap: wrap; }
       .stat-item:not(:last-child) { border-right: none; margin-right: 0; padding-right: 12px; }
+      .btn { padding: 9px 5px; font-size: 0.72rem; }
+      .pbtn { padding: 8px 6px; }
     }
+    /* ── Credits ──────────────────────────────────────── */
+    .credits-list { font-size: 0.65rem; color: #666; line-height: 2; }
+    .credits-list span { color: #999; }
   </style>
 </head>
 <body>
@@ -302,6 +307,18 @@
         <b style="color:#3a3a3a">■</b> <b>Born next</b> — dead, exactly 3 neighbours<br>
         <span style="color:#555;margin-top:4px;display:block">Grid wraps toroidally.</span>
       </div>
+    </div>
+
+    <!-- Credits -->
+    <div class="pcard">
+      <div class="pcard-title">// made by</div>
+      <div class="credits-list">
+        <span>Houfu Chen</span><br>
+        <span>Sam Qiu</span><br>
+        <span>Husam</span>
+      </div>
+      <div class="pcard-title" style="margin-top:10px">// community</div>
+      <div id="communityCredits" class="credits-list" style="color:#555">Loading…</div>
     </div>
 
   </div>
@@ -657,10 +674,18 @@ function updateUI() {
 /* ── Mouse / touch drawing ────────────────────────── */
 let painting = false, paintVal = 1;
 
-function cellAt(e) {
+/* Convert a CSS-pixel screen point to canvas pixel space (accounts for CSS scaling on mobile) */
+function screenToCanvas(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  return [
+    (clientX - rect.left) * (canvas.width  / rect.width),
+    (clientY - rect.top)  * (canvas.height / rect.height)
+  ];
+}
+
+function cellAt(e) {
+  const src = e.touches ? e.touches[0] : e;
+  const [cx, cy] = screenToCanvas(src.clientX, src.clientY);
   return [Math.floor((cx - panX) / zoom / CELL), Math.floor((cy - panY) / zoom / CELL)];
 }
 
@@ -677,7 +702,8 @@ canvas.addEventListener('mousedown', e => {
   if (e.button === 1 || e.button === 2) {
     e.preventDefault();
     panning = true;
-    panStart = { x: e.clientX - panX, y: e.clientY - panY };
+    const [cx, cy] = screenToCanvas(e.clientX, e.clientY);
+    panStart = { cx, cy, px: panX, py: panY };
     canvas.style.cursor = 'grabbing';
     return;
   }
@@ -692,8 +718,9 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 document.addEventListener('mousemove', e => {
   if (!panning) return;
-  panX = e.clientX - panStart.x;
-  panY = e.clientY - panStart.y;
+  const [cx, cy] = screenToCanvas(e.clientX, e.clientY);
+  panX = panStart.px + (cx - panStart.cx);
+  panY = panStart.py + (cy - panStart.cy);
   draw();
 });
 document.addEventListener('mouseup', e => {
@@ -704,8 +731,7 @@ document.addEventListener('mouseup', e => {
 /* ── Scroll to zoom ───────────────────────────────── */
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const [mx, my] = screenToCanvas(e.clientX, e.clientY);
   const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
   const newZoom = Math.max(0.5, Math.min(12, zoom * factor));
   panX = mx - (mx - panX) / zoom * newZoom;
@@ -726,12 +752,13 @@ canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   if (e.touches.length === 2) {
     painting = false;
-    const rect = canvas.getBoundingClientRect();
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-    const my = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+    const [mx, my] = screenToCanvas(
+      (e.touches[0].clientX + e.touches[1].clientX) / 2,
+      (e.touches[0].clientY + e.touches[1].clientY) / 2
+    );
     if (lastPinchDist !== null) {
       const newZoom = Math.max(0.5, Math.min(12, zoom * dist / lastPinchDist));
       panX = mx - (mx - panX) / zoom * newZoom;
@@ -882,7 +909,8 @@ document.addEventListener('touchmove', e => {
   const x = touch.clientX - rect.left, y = touch.clientY - rect.top;
   if (x >= 0 && x < rect.width && y >= 0 && y < rect.height) {
     canvas.classList.add('drag-over');
-    const cc = Math.floor((x - panX) / zoom / CELL), cr = Math.floor((y - panY) / zoom / CELL);
+    const [cx2, cy2] = screenToCanvas(touch.clientX, touch.clientY);
+    const cc = Math.floor((cx2 - panX) / zoom / CELL), cr = Math.floor((cy2 - panY) / zoom / CELL);
     dragCursor = { c: cc, r: cr };
     const cells = transformCells(PRESETS[dragPattern]);
     const maxC = Math.max(...cells.map(([c]) => c));
@@ -1172,6 +1200,22 @@ function openGallery() {
   }).catch(() => { list.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load.</div>'; });
 }
 function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
+
+/* ── Community credits ────────────────────────────── */
+(async function loadCommunityCredits() {
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/Gallery?select=nickname&order=created_at.asc&limit=200`,
+      { headers: SB_HDR }
+    );
+    const rows = await res.json();
+    const unique = [...new Set(rows.map(r => r.nickname))];
+    const el = document.getElementById('communityCredits');
+    el.innerHTML = unique.length
+      ? unique.map(n => `<span>${escHtml(n)}</span>`).join('<br>')
+      : '<span style="color:#444">Share a shape to appear here!</span>';
+  } catch(e) {}
+})();
 
 /* ── Keyboard shortcuts ───────────────────────────── */
 document.addEventListener('keydown', e => {
