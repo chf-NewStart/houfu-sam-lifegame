@@ -125,10 +125,28 @@
     /* ── Win overlay ──────────────────────────────────── */
     #winOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
     #winOverlay.show { display: flex; }
-    .win-box { background: #111; border: 1px solid #1db954; padding: 32px 40px; text-align: center; max-width: 360px; width: 90%; }
+    .win-box { background: #111; border: 1px solid #1db954; padding: 32px 40px; text-align: center; max-width: 380px; width: 90%; }
     .win-title { color: #1db954; font-size: 1.2rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
     .win-msg  { color: #ccc; font-size: 0.83rem; margin-bottom: 5px; }
-    .win-stats { color: #666; font-size: 0.68rem; margin-bottom: 16px; }
+    .win-stats { color: #666; font-size: 0.68rem; margin-bottom: 14px; }
+    .win-submit { display: flex; gap: 6px; margin-bottom: 8px; }
+    .win-submit input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 6px 10px; font-family: inherit; font-size: 0.8rem; outline: none; }
+    .win-submit input:focus { border-color: #1db954; }
+    .win-submitted { color: #1db954; font-size: 0.78rem; margin-bottom: 8px; }
+
+    /* ── Leaderboard overlay ──────────────────────────── */
+    #lbOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center; }
+    #lbOverlay.show { display: flex; }
+    .lb-box { background: #111; border: 1px solid #2e2e2e; padding: 28px 32px; width: min(520px, 94vw); max-height: 86vh; overflow-y: auto; }
+    .lb-title { color: #1db954; font-size: 1rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
+    .lb-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .lb-tab { background: #1a1a1a; border: 1px solid #2e2e2e; color: #888; padding: 4px 10px; font-family: inherit; font-size: 0.72rem; cursor: pointer; }
+    .lb-tab.active { border-color: #1db954; color: #1db954; }
+    #lbTable table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    #lbTable th { color: #555; text-transform: uppercase; letter-spacing: 1px; font-size: 0.62rem; padding: 6px 4px; text-align: left; border-bottom: 1px solid #222; }
+    #lbTable td { padding: 7px 4px; border-top: 1px solid #1a1a1a; color: #ccc; }
+    #lbTable tr:first-child td { color: #1db954; }
+    .lb-empty { color: #555; font-size: 0.8rem; padding: 20px 0; text-align: center; }
 
     @keyframes pulse-border {
       0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0.4); }
@@ -227,6 +245,7 @@
       </div>
       <div class="brow">
         <button class="btn" onclick="resetView()" data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
+        <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board" data-zh="🏆 榜单">🏆 Board</button>
       </div>
       <div class="slider-row">
         <span data-en="speed" data-zh="速度">speed</span>
@@ -296,7 +315,27 @@
     <div class="win-title">✓ Complete</div>
     <div class="win-msg"   id="winMsg"></div>
     <div class="win-stats" id="winStats"></div>
-    <button class="btn" onclick="closeWin()" style="margin-top:4px;width:100%">Continue →</button>
+    <div id="winSubmit">
+      <div style="color:#888;font-size:0.72rem;margin-bottom:6px;text-align:left">Post your score to the leaderboard:</div>
+      <div class="win-submit">
+        <input id="nicknameInput" type="text" placeholder="Your nickname" maxlength="20" onkeydown="if(event.key==='Enter')onSubmitScore()">
+        <button class="btn" id="submitScoreBtn" onclick="onSubmitScore()">Submit</button>
+      </div>
+    </div>
+    <div id="winSubmitted" class="win-submitted" style="display:none">✓ Score posted to the leaderboard!</div>
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <button class="btn" onclick="closeWin();openLeaderboard()" style="flex:1">🏆 View Board</button>
+      <button class="btn" onclick="closeWin()" style="flex:1">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<div id="lbOverlay">
+  <div class="lb-box">
+    <div class="lb-title">🏆 Leaderboard</div>
+    <div class="lb-tabs" id="lbTabs"></div>
+    <div id="lbTable"><div class="lb-empty">Loading...</div></div>
+    <button class="btn" onclick="closeLb()" style="margin-top:18px;width:100%">Close</button>
   </div>
 </div>
 
@@ -909,17 +948,107 @@ function doChallengeTick() {
   }
 }
 
+/* ── Supabase scoreboard ──────────────────────────── */
+const SB_URL = 'https://vlhcwhzicxiyxwyebvwi.supabase.co';
+const SB_KEY = 'sb_publishable_31ikrpZYn07ybl5n5MaWug_B-SizOHT';
+const SB_HDR = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function submitScore(nickname, challenge, gen, cells) {
+  const res = await fetch(`${SB_URL}/rest/v1/Scores`, {
+    method: 'POST',
+    headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ nickname, challenge, generation: gen, cells })
+  });
+  if (!res.ok) throw new Error(res.status);
+}
+
+async function fetchScores(challenge) {
+  const res = await fetch(
+    `${SB_URL}/rest/v1/Scores?select=nickname,generation,cells&challenge=eq.${encodeURIComponent(challenge)}&order=generation.asc,cells.desc&limit=10`,
+    { headers: SB_HDR }
+  );
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+let pendingScore = null;
+
 function showWin(ch, cells) {
   if (running) togglePlay();
   const status = document.getElementById('challengeStatus');
   status.textContent = '✓ ' + ch.goal; status.classList.add('won');
   document.getElementById('winMsg').textContent   = ch.name + ' — ' + ch.goal;
   document.getElementById('winStats').textContent = 'Generation ' + generation + ' · ' + cells + ' cells alive';
+
+  pendingScore = { challenge: ch.name, generation, cells };
+  document.getElementById('winSubmit').style.display = 'block';
+  document.getElementById('winSubmitted').style.display = 'none';
+  const btn = document.getElementById('submitScoreBtn');
+  btn.disabled = false; btn.textContent = 'Submit';
+  document.getElementById('nicknameInput').value = localStorage.getItem('lifegame_nick') || '';
+
   document.getElementById('winOverlay').classList.add('show');
   document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
 }
 
 function closeWin() { document.getElementById('winOverlay').classList.remove('show'); }
+
+function onSubmitScore() {
+  const nick = document.getElementById('nicknameInput').value.trim().slice(0, 20);
+  if (!nick) { document.getElementById('nicknameInput').focus(); return; }
+  localStorage.setItem('lifegame_nick', nick);
+  const btn = document.getElementById('submitScoreBtn');
+  btn.disabled = true; btn.textContent = '…';
+  submitScore(nick, pendingScore.challenge, pendingScore.generation, pendingScore.cells)
+    .then(() => {
+      document.getElementById('winSubmit').style.display = 'none';
+      document.getElementById('winSubmitted').style.display = 'block';
+    })
+    .catch(() => { btn.disabled = false; btn.textContent = 'Submit'; alert('Submit failed — check your connection.'); });
+}
+
+let lbActiveCh = null;
+
+function openLeaderboard() {
+  const overlay = document.getElementById('lbOverlay');
+  overlay.classList.add('show');
+  const tabs = document.getElementById('lbTabs');
+  if (!tabs.children.length) {
+    CHALLENGES.forEach(ch => {
+      const b = document.createElement('button');
+      b.className = 'lb-tab'; b.dataset.ch = ch.name; b.textContent = ch.name;
+      b.onclick = () => showLbChallenge(ch.name);
+      tabs.appendChild(b);
+    });
+  }
+  showLbChallenge(lbActiveCh || CHALLENGES[0].name);
+}
+
+function closeLb() { document.getElementById('lbOverlay').classList.remove('show'); }
+
+async function showLbChallenge(name) {
+  lbActiveCh = name;
+  document.querySelectorAll('.lb-tab').forEach(t => t.classList.toggle('active', t.dataset.ch === name));
+  const tb = document.getElementById('lbTable');
+  tb.innerHTML = '<div class="lb-empty">Loading…</div>';
+  try {
+    const rows = await fetchScores(name);
+    if (!rows.length) { tb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>'; return; }
+    const medals = ['🥇','🥈','🥉'];
+    tb.innerHTML = `<table>
+      <thead><tr><th>#</th><th>Name</th><th style="text-align:right">Gen</th><th style="text-align:right">Cells</th></tr></thead>
+      <tbody>${rows.map((r,i) => `<tr>
+        <td>${medals[i] || i+1}</td>
+        <td>${escHtml(r.nickname)}</td>
+        <td style="text-align:right">${r.generation}</td>
+        <td style="text-align:right">${r.cells}</td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e) {
+    tb.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load — check connection.</div>';
+  }
+}
 
 /* ── Keyboard shortcuts ───────────────────────────── */
 document.addEventListener('keydown', e => {
