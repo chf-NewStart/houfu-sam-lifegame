@@ -214,7 +214,8 @@
         <button class="btn" id="stepBtn" onclick="stepOnce()"   data-en="Step →"   data-zh="步进 →">Step →</button>
       </div>
       <div class="brow">
-        <button class="btn" id="undoBtn" onclick="undoStep()"   data-en="← Step"   data-zh="← 后退" disabled>← Step</button>
+        <button class="btn" id="undoBtn" onclick="undoStep()" data-en="← Step" data-zh="← 后退" disabled>← Step</button>
+        <button class="btn" id="redoBtn" onclick="redoStep()" data-en="Step →→" data-zh="重做 →" disabled>Step →→</button>
       </div>
       <div class="brow">
         <button class="btn danger" onclick="clearGrid()"    data-en="⬜ Clear"  data-zh="⬜ 清空">⬜ Clear</button>
@@ -414,23 +415,40 @@ function neighbors(c, r) {
 }
 
 let generation = 0;
-let stepHistory = [];
+let stepHistory = [], redoHistory = [];
 const MAX_HISTORY = 50;
 
 function pushHistory() {
   stepHistory.push({ grid: grid.slice(), generation });
   if (stepHistory.length > MAX_HISTORY) stepHistory.shift();
+  redoHistory = [];
   document.getElementById('undoBtn').disabled = false;
+  document.getElementById('redoBtn').disabled = true;
 }
 
 function undoStep() {
   if (stepHistory.length === 0) return;
   if (running) togglePlay();
+  redoHistory.push({ grid: grid.slice(), generation });
   const state = stepHistory.pop();
   grid = state.grid;
   generation = state.generation;
   document.getElementById('genCount').textContent = generation;
   document.getElementById('undoBtn').disabled = stepHistory.length === 0;
+  document.getElementById('redoBtn').disabled = false;
+  draw();
+}
+
+function redoStep() {
+  if (redoHistory.length === 0) return;
+  if (running) togglePlay();
+  stepHistory.push({ grid: grid.slice(), generation });
+  const state = redoHistory.pop();
+  grid = state.grid;
+  generation = state.generation;
+  document.getElementById('genCount').textContent = generation;
+  document.getElementById('undoBtn').disabled = false;
+  document.getElementById('redoBtn').disabled = redoHistory.length === 0;
   draw();
 }
 
@@ -504,8 +522,9 @@ function setCellSize(v) {
 }
 
 function clearHistory() {
-  stepHistory = [];
+  stepHistory = []; redoHistory = [];
   document.getElementById('undoBtn').disabled = true;
+  document.getElementById('redoBtn').disabled = true;
 }
 
 function clearGrid() {
