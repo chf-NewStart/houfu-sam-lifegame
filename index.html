@@ -325,7 +325,8 @@
         <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share" data-zh="⎘ 分享">⎘ Share</button>
       </div>
       <div class="brow">
-        <button class="btn" onclick="resetView()"     data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
+        <button class="btn" onclick="resetView()"       data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
+        <button class="btn" id="selModeBtn" onclick="toggleSelMode()" data-en="⬚ Zone" data-zh="⬚ 区域" title="Draw a focus zone · Esc to cancel">⬚ Zone</button>
         <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board"   data-zh="🏆 榜单">🏆 Board</button>
       </div>
       <div class="brow">
@@ -617,8 +618,57 @@ function draw() {
     ctx.setLineDash([]);
   }
 
+  // Zone selection overlay
+  if (selRect) {
+    const { c0, r0, c1, r1 } = selRect;
+    // Dim outside
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0,           0,           COLS*CELL,         r0*CELL);
+    ctx.fillRect(0,           r1*CELL+CELL, COLS*CELL,        ROWS*CELL - (r1*CELL+CELL));
+    ctx.fillRect(0,           r0*CELL,     c0*CELL,           (r1-r0+1)*CELL);
+    ctx.fillRect(c1*CELL+CELL, r0*CELL,   COLS*CELL-(c1*CELL+CELL), (r1-r0+1)*CELL);
+    // Dashed border
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 1.5 / zoom;
+    ctx.setLineDash([5 / zoom, 3 / zoom]);
+    ctx.strokeRect(c0*CELL + 0.5, r0*CELL + 0.5, (c1-c0+1)*CELL - 1, (r1-r0+1)*CELL - 1);
+    ctx.setLineDash([]);
+    // Cell count badge
+    const zc = _zoneCount();
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    const label = `zone: ${zc}`;
+    ctx.font = `${Math.max(9, 11/zoom)}px Consolas, monospace`;
+    const tw = ctx.measureText(label).width;
+    const bx = c0*CELL, by = r0*CELL - 16/zoom;
+    ctx.fillRect(bx, by, tw + 8/zoom, 14/zoom);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(label, bx + 4/zoom, by + 10/zoom);
+  }
+
   ctx.restore();
 }
+
+/* ── Zone selection ───────────────────────────────── */
+let selRect = null, selMode = false, _selStart = null;
+
+function _zoneCount() {
+  if (!selRect) return 0;
+  const { c0, r0, c1, r1 } = selRect;
+  let n = 0;
+  for (let r = r0; r <= r1; r++)
+    for (let c = c0; c <= c1; c++)
+      if (c >= 0 && c < COLS && r >= 0 && r < ROWS) n += grid[idx(c, r)];
+  return n;
+}
+
+function toggleSelMode() {
+  selMode = !selMode;
+  document.getElementById('selModeBtn').classList.toggle('active', selMode);
+  canvas.style.cursor = selMode ? 'crosshair' : (drawLocked() ? 'not-allowed' : 'crosshair');
+  if (!selMode) { selRect = null; _selStart = null; draw(); }
+}
+
+function clearZone() { selRect = null; _selStart = null; draw(); }
 
 /* ── Simulation ───────────────────────────────────── */
 function neighbors(c, r) {
@@ -815,6 +865,8 @@ function clearGrid() {
   grid.fill(0); generation = 0;
   document.getElementById('genCount').textContent = 0;
   activeChallenge = -1; canvas.style.cursor = 'crosshair';
+  selRect = null; _selStart = null; selMode = false;
+  const sb = document.getElementById('selModeBtn'); if (sb) sb.classList.remove('active');
   document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
   draw(); refreshDevPanel();
 }
@@ -875,13 +927,32 @@ canvas.addEventListener('mousedown', e => {
     canvas.style.cursor = 'grabbing';
     return;
   }
+  if (selMode) {
+    const [c, r] = cellAt(e);
+    _selStart = { c, r };
+    selRect = { c0: c, r0: r, c1: c, r1: r };
+    draw(); return;
+  }
   if (drawLocked()) return;
   const [c, r] = cellAt(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
   pushHistory();
   paintVal = grid[idx(c, r)] ? 0 : 1; painting = true; paint(e);
 });
-canvas.addEventListener('mousemove', e => { if (!panning && painting) paint(e); });
+canvas.addEventListener('mousemove', e => {
+  if (panning) return;
+  if (selMode && _selStart) {
+    const [c, r] = cellAt(e);
+    selRect = {
+      c0: Math.max(0, Math.min(_selStart.c, c)),
+      r0: Math.max(0, Math.min(_selStart.r, r)),
+      c1: Math.min(COLS-1, Math.max(_selStart.c, c)),
+      r1: Math.min(ROWS-1, Math.max(_selStart.r, r))
+    };
+    draw(); return;
+  }
+  if (painting) paint(e);
+});
 canvas.addEventListener('mouseleave', () => { painting = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -894,7 +965,10 @@ document.addEventListener('mousemove', e => {
 });
 document.addEventListener('mouseup', e => {
   if (e.button === 1 || e.button === 2) { panning = false; canvas.style.cursor = 'crosshair'; }
-  else { painting = false; refreshDevPanel(); }
+  else {
+    if (selMode && _selStart) { _selStart = null; draw(); return; }
+    painting = false; refreshDevPanel();
+  }
 });
 
 /* ── Scroll to zoom / rotate pattern during drag ─── */
@@ -1587,9 +1661,13 @@ document.addEventListener('keydown', e => {
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   if (e.key === 'r' || e.key === 'R') { rotateStamp(); if (dragPattern) draw(); }
   if (e.key === 'f' || e.key === 'F') { flipStamp();   if (dragPattern) draw(); }
-  if (e.key === 'Escape' && dragPattern) {
-    dragPattern = null; dragOff = null; dragCursor = null;
-    touchDragActive = false; canvas.classList.remove('drag-over'); draw();
+  if (e.key === 'Escape') {
+    if (dragPattern) {
+      dragPattern = null; dragOff = null; dragCursor = null;
+      touchDragActive = false; canvas.classList.remove('drag-over'); draw();
+    } else if (selMode) {
+      toggleSelMode();
+    }
   }
 });
 
