@@ -492,7 +492,7 @@
       <div class="brow">
         <button class="btn primary" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放" style="flex:1">⏵ Play</button>
       </div>
-      <div class="brow sb-only">
+      <div class="brow">
         <button class="btn dis" id="restartBtn" onclick="restartFromPlay()" data-en="↺ Back a play" data-zh="↺ 退回一次播放" title="Back to the board before your last Play — hit again to step back through earlier plays" style="flex:1">↺ Back a play</button>
       </div>
       <div class="brow">
@@ -1110,8 +1110,8 @@ function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
   if (running) {
-    // Push the board as it is right now so Restart can step back to it (sandbox only).
-    if (appMode === 'sandbox') pushPlaySnapshot();
+    // Push the board as it is right now so Restart can step back to it.
+    pushPlaySnapshot();
     const _n = document.getElementById('firstNudge');
     if (_n && _n.classList.contains('show')) dismissNudge();
     btn.textContent = t('⏸ Pause', '⏸ 暂停');
@@ -1239,7 +1239,8 @@ function clearHistory() {
 /* ── Restart: step back through the stack of "board at each Play press" ─
    Each Play pushes a snapshot; each Restart pops one, so hitting it again
    returns to the previous play, then the play before that, and so on.
-   Sandbox-only — in Challenges the retry is re-selecting the challenge. */
+   In a challenge it also captures/restores the challenge's dynamic state
+   (shrinking-arena / zone rect + streak counters) so it's a clean retry. */
 const PLAY_STACK_MAX = 25;
 let playStack = [];
 function setRestartBtn() {
@@ -1247,7 +1248,14 @@ function setRestartBtn() {
   if (b) b.classList.toggle('dis', playStack.length === 0);
 }
 function pushPlaySnapshot() {
-  playStack.push({ grid: grid.slice(), gen: generation });
+  playStack.push({
+    grid: grid.slice(), gen: generation,
+    // challenge progress, so "Back a play" is a clean retry mid-challenge
+    selRect: selRect ? { ...selRect } : null,
+    stableCountStreak, prevCellCount, zoneGoalStreak, cgWon, bridgeStreak,
+    prevGridSnap: prevGridSnap ? prevGridSnap.slice() : null,
+    prevPrevGridSnap: prevPrevGridSnap ? prevPrevGridSnap.slice() : null,
+  });
   if (playStack.length > PLAY_STACK_MAX) playStack.shift();
   setRestartBtn();
 }
@@ -1262,6 +1270,12 @@ function restartFromPlay() {
   grid.set(snap.grid);
   generation = snap.gen;
   document.getElementById('genCount').textContent = generation;
+  // restore challenge progress (resets the shrinking arena / streaks for a retry)
+  selRect = snap.selRect ? { ...snap.selRect } : null;
+  stableCountStreak = snap.stableCountStreak; prevCellCount = snap.prevCellCount;
+  zoneGoalStreak = snap.zoneGoalStreak; cgWon = snap.cgWon; bridgeStreak = snap.bridgeStreak;
+  prevGridSnap = snap.prevGridSnap ? snap.prevGridSnap.slice() : null;
+  prevPrevGridSnap = snap.prevPrevGridSnap ? snap.prevPrevGridSnap.slice() : null;
   syncAges();
   if (trail) trail.fill(0);                        // drop any Aura ghost-trails from the run
   stepHistory = []; redoHistory = []; setUndoRedoBtns();
