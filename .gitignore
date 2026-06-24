@@ -14,6 +14,9 @@ worldmap.png
 demo/*.MOV
 demo/*.mov
 
+# Raw screen-recording sources for the feature GIFs (kept local, not deployed)
+finaldemo/
+
 # OS / editor junk
 .DS_Store
 *.swp

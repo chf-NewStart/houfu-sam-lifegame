@@ -18,6 +18,16 @@ Switch from the toggle in the header:
 
 ---
 
+## See it in action
+
+| | |
+|:--:|:--:|
+| **draw & play** — draw, hit play, watch it evolve<br>![draw and play](demo/gif/regular.gif) | **🔮 Aura** — cells coloured by age<br>![aura](demo/gif/aura.gif) |
+| **⚡ Lookahead** — preview future generations<br>![lookahead](demo/gif/lookingahead.gif) | **🎶 Symphony** — patterns become music<br>![symphony](demo/gif/sound.gif) |
+| **the rules, live** — born / survive / die as you draw<br>![drawing](demo/gif/diy.gif) | 🔊 **[▶ Watch Symphony with sound](demo/symphony-with-sound.mp4)** |
+
+---
+
 ## Features
 
 ### Core
