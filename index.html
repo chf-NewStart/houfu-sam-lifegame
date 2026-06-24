@@ -105,8 +105,9 @@
       66%  { border-color: #8a5cff; box-shadow: 0 0 9px rgba(138,92,255,0.45); color: #a87bff; }
       100% { border-color: #1db954; box-shadow: 0 0 5px rgba(29,185,84,0.35);  color: #2fd06a; }
     }
-    #auraBtn { background-image: linear-gradient(90deg, rgba(29,185,84,0.10), rgba(31,166,196,0.10), rgba(138,92,255,0.10)); }
-    #auraBtn:not(.active) { animation: auraLure 3.2s ease-in-out infinite; }
+    /* Only lure while the sim is running (.lure) and Aura is still off —
+       Aura's age colors only look good on a moving board. */
+    #auraBtn.lure:not(.active) { animation: auraLure 3.2s ease-in-out infinite; }
     #auraBtn:hover { box-shadow: 0 0 11px rgba(138,92,255,0.55); }
     #auraBtn.active { animation: none; background-image: linear-gradient(90deg, rgba(29,185,84,0.18), rgba(138,92,255,0.18)); }
 
@@ -953,15 +954,24 @@ function togglePlay() {
     cancelAnimationFrame(rafId);
     refreshDevPanel();
   }
+  updateAuraLure();
 }
 
 function stepOnce() { if (running) togglePlay(); step(); draw(); refreshDevPanel(); }
+
+// Glow the Aura button only while the sim is running and Aura is off —
+// the age colors only pay off on a moving board.
+function updateAuraLure() {
+  const btn = document.getElementById('auraBtn');
+  if (btn) btn.classList.toggle('lure', running && !auraMode);
+}
 
 function toggleAura() {
   auraMode = !auraMode;
   localStorage.setItem('lifegame_aura', auraMode ? '1' : '0');
   const btn = document.getElementById('auraBtn');
   if (btn) btn.classList.toggle('active', auraMode);
+  updateAuraLure();
   draw();
 }
 
