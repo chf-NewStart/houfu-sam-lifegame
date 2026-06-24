@@ -119,15 +119,6 @@
   <div class="section-label">// lessons</div>
   <div class="grid" id="lessonGrid"></div>
 
-  <div class="section-label">// reference</div>
-  <a class="manual-link" href="/manual">
-    <div class="manual-icon">📄</div>
-    <div>
-      <div class="manual-title">User Manual</div>
-      <div class="manual-desc">Complete reference — every control, shortcut, and feature explained in one place.</div>
-    </div>
-  </a>
-
   <footer>lifegameproject.com / training</footer>
 
 <script>
@@ -153,15 +144,14 @@ const grid = document.getElementById('lessonGrid');
 
 LESSONS.forEach(l => {
   const done = visited.has(l.id);
-  const ready = true;
-  const card = document.createElement(ready ? 'a' : 'div');
-  if (ready) card.href = `/training/lesson${l.id}`;
+  const card = document.createElement('a');
+  card.href = `/training/lesson${l.id}`;
   card.className = 'card' + (done ? ' visited' : '');
   card.innerHTML = `
     <div class="card-num">LESSON ${String(l.id).padStart(2,'0')}</div>
     <div class="card-title">${l.title}</div>
     <div class="card-desc">${l.desc}</div>
-    ${done ? '<div class="card-badge">✓ visited</div>' : (ready ? '' : '<div class="card-soon">coming soon</div>')}
+    ${done ? '<div class="card-badge">✓ visited</div>' : ''}
   `;
   grid.appendChild(card);
 });

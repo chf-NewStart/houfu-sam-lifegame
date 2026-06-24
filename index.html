@@ -17,6 +17,15 @@
   <meta name="twitter:description" content="Draw patterns, watch them evolve, compete on the global leaderboard. Free to play in your browser.">
   <meta name="twitter:image"       content="https://lifegameproject.com/gameicon.png">
   <link rel="icon" type="image/png" href="gameicon.png">
+
+  <!-- PWA: installable + offline -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Life Game">
+  <link rel="apple-touch-icon" href="/icon-192.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -2298,6 +2307,14 @@ if (!loadSeedParam()) loadDefault();
 {
   const _ab = document.getElementById('auraBtn');
   if (_ab) _ab.classList.toggle('active', auraMode);
+}
+</script>
+<script>
+/* Register the service worker (installable PWA + offline). No-op on file://. */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
 }
 </script>
 </body>
