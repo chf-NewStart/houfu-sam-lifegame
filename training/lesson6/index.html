@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lesson 6: Bridge — Life Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a0a; color: #ccc; font-family: 'Courier New', Courier, monospace; min-height: 100vh; display: flex; flex-direction: column; }
+    a { color: inherit; text-decoration: none; }
+
+    .lesson-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid #141414; flex-shrink: 0; }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .back-link { font-size: 0.7rem; color: #1db954; }
+    .back-link:hover { text-decoration: underline; }
+    .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
+    .lesson-title-h { font-size: 0.85rem; color: #888; }
+    .progress-dots { display: flex; gap: 5px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #1a1a1a; transition: background 0.2s; cursor: pointer; }
+    .dot.active { background: #1db954; }
+    .dot.done   { background: #1a3a22; }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    .panel { width: 320px; flex-shrink: 0; border-right: 1px solid #141414; display: flex; flex-direction: column; padding: 32px 28px; overflow-y: auto; }
+    .stage-num { font-size: 0.58rem; color: #2a2a2a; letter-spacing: 2px; margin-bottom: 10px; }
+    .stage-title { font-size: 1.1rem; color: #eee; margin-bottom: 16px; font-weight: normal; }
+    .stage-text { font-size: 0.74rem; color: #666; line-height: 1.85; }
+    .stage-text b { color: #aaa; font-weight: normal; }
+
+    .rule-box { background: #0d0d0d; border-left: 3px solid #1db954; padding: 11px 14px; margin: 18px 0 4px; font-size: 0.76rem; line-height: 2; color: #999; }
+    .rule-box b { color: #eee; font-weight: normal; }
+
+    .hint-box { background: #0d0d0d; border-left: 3px solid #ffb400; padding: 11px 14px; margin: 18px 0 4px; font-size: 0.74rem; line-height: 1.8; color: #888; }
+    .hint-box b { color: #ffb400; font-weight: normal; }
+
+    .example-btn { margin-top: 22px; padding: 8px 14px; background: none; border: 1px solid #1a3a22; color: #1db954; font-family: inherit; font-size: 0.7rem; cursor: pointer; border-radius: 3px; transition: border-color 0.15s, background 0.15s; }
+    .example-btn:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+
+    .stage-nav { display: flex; gap: 8px; margin-top: 28px; }
+    .nav-btn { flex: 1; padding: 9px 0; background: none; border: 1px solid #1e1e1e; color: #555; font-family: inherit; font-size: 0.72rem; cursor: pointer; border-radius: 3px; transition: border-color 0.15s, color 0.15s; }
+    .nav-btn:hover { border-color: #333; color: #888; }
+    .nav-btn.primary { border-color: #1a3a22; color: #1db954; }
+    .nav-btn.primary:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+    .nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+    .canvas-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 24px; gap: 14px; }
+    canvas { display: block; cursor: crosshair; border: 1px solid #141414; }
+
+    .controls { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; }
+    .ctrl-btn { padding: 6px 14px; background: none; border: 1px solid #1e1e1e; color: #555; font-family: inherit; font-size: 0.68rem; cursor: pointer; border-radius: 3px; transition: border-color 0.15s, color 0.15s; }
+    .ctrl-btn:hover { border-color: #333; color: #888; }
+    .ctrl-btn.active { border-color: #1db954; color: #1db954; }
+
+    .status-bar { font-size: 0.68rem; color: #333; min-height: 1.4em; text-align: center; }
+    .status-bar.win { color: #1db954; }
+    .status-bar.fail { color: #c0392b; }
+
+    .legend { display: flex; gap: 18px; font-size: 0.62rem; color: #333; flex-wrap: wrap; justify-content: center; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+    .gen-display { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
+
+    .lesson-footer { border-top: 1px solid #141414; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .foot-btn { padding: 7px 16px; background: none; border: 1px solid #1e1e1e; color: #333; font-family: inherit; font-size: 0.7rem; cursor: pointer; border-radius: 3px; text-decoration: none; display: inline-block; }
+    .foot-btn:hover { border-color: #333; color: #666; }
+    .foot-btn.hi { border-color: #1a3a22; color: #1db954; }
+    .foot-btn.hi:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+
+    @media (max-width: 720px) {
+      .main { flex-direction: column-reverse; overflow: visible; }
+      .panel { width: 100%; border-right: none; border-top: 1px solid #141414; padding: 24px 18px; }
+      .canvas-area { padding: 16px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="lesson-header">
+  <div class="header-left">
+    <a class="back-link" href="/training">← Training</a>
+    <span class="lesson-id">LESSON 06</span>
+    <span class="lesson-title-h">Bridge</span>
+  </div>
+  <div class="progress-dots" id="progressDots"></div>
+</header>
+
+<div class="main">
+  <aside class="panel">
+    <div class="stage-num" id="stageNum">STAGE 1 / 4</div>
+    <h2 class="stage-title" id="stageTitle"></h2>
+    <div class="rule-box"  id="ruleBox"  style="display:none"></div>
+    <div class="hint-box"  id="hintBox"  style="display:none"></div>
+    <div class="stage-text" id="stageText"></div>
+    <button class="example-btn" id="exampleBtn" style="display:none"></button>
+    <div class="stage-nav">
+      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
+      <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
+    </div>
+  </aside>
+
+  <section class="canvas-area">
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+      <button class="ctrl-btn" id="resetBtn" onclick="resetChallenge()">↺ Reset</button>
+      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+    </div>
+    <div class="status-bar" id="statusBar">draw in zone A · get cells to zone B</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:none;border:1px dashed rgba(29,185,84,0.8)"></div><span>A — draw here</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:none;border:1px dashed rgba(255,165,0,0.8)"></div><span>B — target</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#1db954"></div><span>alive · survives</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#c0392b"></div><span>alive · dies</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#3a3a3a"></div><span>dead · born next</span></div>
+    </div>
+    <div class="gen-display">gen <span id="genNum">0</span></div>
+  </section>
+</div>
+
+<footer class="lesson-footer">
+  <a class="foot-btn" href="/training/lesson5">← Lesson 5</a>
+  <a class="foot-btn hi" href="/training/lesson7">Lesson 7: Challenges →</a>
+</footer>
+
+<script>
+const STAGES = [
+  {
+    title: 'Two Zones',
+    text: `The canvas has two bounded zones:<br><br><b style="color:#1db954">Zone A</b> (green) — your draw area. You can only place cells inside it.<br><br><b style="color:#ffb400">Zone B</b> (amber) — the target. You need to get cells in there.<br><br>The gap between them is open space. Cells can travel through it.`,
+  },
+  {
+    title: 'Moving Patterns',
+    rule: `Some patterns move across the grid.<br>The Glider travels diagonally one cell every 4 generations.`,
+    text: `A Glider placed in zone A will naturally travel toward zone B — if you aim it right.<br><br>Try loading the Glider and clicking <b>Play</b> to watch it move. Then <b>Reset</b> to try placing it yourself.`,
+    example: 'glider_aimed',
+    exampleLabel: '↺ Load aimed Glider',
+  },
+  {
+    title: 'The Challenge',
+    hint: `Hint: place a Glider in zone A aimed toward zone B. You need <b>1 cell</b> to reach zone B to complete this lesson version. The main game challenge requires 5.`,
+    text: `Draw inside zone A. Hit <b>Play</b> and watch what happens.<br><br>The challenge resets automatically if all cells die. You have unlimited attempts here.`,
+  },
+  {
+    title: 'You Did It!',
+    text: `A pattern born in zone A reached zone B — carried by the rules alone, no direct control after you hit Play.<br><br>This is the core idea behind many Life Game structures: <b>design the initial state</b>, then let the rules do the work.<br><br>Head to <b>Lesson 7</b> to tackle the full set of built-in challenges.`,
+    final: true,
+  },
+];
+
+/* ── Grid ─────────────────────────────────────────── */
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+const COLS   = 22, ROWS = 14;
+
+function computeCell() {
+  const maxW = Math.min(window.innerWidth <= 720 ? window.innerWidth - 56 : 600, 600);
+  return Math.max(20, Math.floor(maxW / COLS));
+}
+let CELL = computeCell();
+canvas.width  = COLS * CELL;
+canvas.height = ROWS * CELL;
+
+let grid       = new Uint8Array(COLS * ROWS);
+let generation = 0;
+let running    = false, rafId = null, lastStep = 0;
+const INTERVAL = 160;
+
+// Zones
+const ZW   = Math.max(5, Math.floor(COLS * 0.2));
+const ZH   = Math.max(5, Math.floor(ROWS * 0.65));
+const VOFF = Math.floor((ROWS - ZH) / 2);
+const ZONE_A = { c0: 1,          r0: VOFF, c1: ZW,              r1: VOFF + ZH - 1 };
+const ZONE_B = { c0: COLS-ZW-1,  r0: VOFF, c1: COLS - 2,        r1: VOFF + ZH - 1 };
+
+function idx(c, r)  { return r * COLS + c; }
+function inA(c, r)  { return c >= ZONE_A.c0 && c <= ZONE_A.c1 && r >= ZONE_A.r0 && r <= ZONE_A.r1; }
+function inB(c, r)  { return c >= ZONE_B.c0 && c <= ZONE_B.c1 && r >= ZONE_B.r0 && r <= ZONE_B.r1; }
+
+function countN(c, r) {
+  let n = 0;
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nc = c+dc, nr = r+dr;
+      if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) n += grid[idx(nc,nr)];
+    }
+  return n;
+}
+
+/* ── Draw ─────────────────────────────────────────── */
+function draw() {
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = '#181818';
+  ctx.lineWidth = 1;
+  for (let c = 0; c <= COLS; c++) { ctx.beginPath(); ctx.moveTo(c*CELL, 0); ctx.lineTo(c*CELL, ROWS*CELL); ctx.stroke(); }
+  for (let r = 0; r <= ROWS; r++) { ctx.beginPath(); ctx.moveTo(0, r*CELL); ctx.lineTo(COLS*CELL, r*CELL); ctx.stroke(); }
+
+  // Zone dim — outside both zones
+  ctx.fillStyle = 'rgba(0,0,0,0.32)';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (!inA(c,r) && !inB(c,r)) ctx.fillRect(c*CELL, r*CELL, CELL, CELL);
+    }
+  }
+
+  // Cells
+  ctx.font = `${Math.max(8, Math.floor(CELL * 0.3))}px monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const alive = grid[idx(c,r)];
+      const n     = countN(c,r);
+      const wl    = alive ? (n===2||n===3) : n===3;
+      const cx    = c*CELL, cy = r*CELL;
+      if (alive) {
+        ctx.fillStyle = wl ? '#1db954' : '#c0392b';
+        ctx.fillRect(cx+1, cy+1, CELL-2, CELL-2);
+      } else if (n === 3) {
+        ctx.fillStyle = '#3a3a3a';
+        ctx.fillRect(cx+1, cy+1, CELL-2, CELL-2);
+      }
+    }
+  }
+
+  // Zone borders
+  const drawZone = (z, color, label) => {
+    const { c0, r0, c1, r1 } = z;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(c0*CELL+1, r0*CELL+1, (c1-c0+1)*CELL-2, (r1-r0+1)*CELL-2);
+    ctx.setLineDash([]);
+    ctx.fillStyle = color;
+    ctx.font = `bold ${Math.max(9, Math.floor(CELL*0.35))}px monospace`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(label, c0*CELL + 4, r0*CELL + 4);
+  };
+  drawZone(ZONE_A, 'rgba(29,185,84,0.8)',  'A');
+  drawZone(ZONE_B, 'rgba(255,165,0,0.8)',  'B');
+
+  document.getElementById('genNum').textContent = generation;
+  checkWin();
+}
+
+/* ── Win / fail ───────────────────────────────────── */
+let won = false;
+function cellsInB() {
+  let n = 0;
+  for (let r = ZONE_B.r0; r <= ZONE_B.r1; r++)
+    for (let c = ZONE_B.c0; c <= ZONE_B.c1; c++)
+      n += grid[idx(c,r)];
+  return n;
+}
+function totalCells() { let n=0; for (let i=0;i<grid.length;i++) n+=grid[i]; return n; }
+
+function checkWin() {
+  if (won) return;
+  const bar = document.getElementById('statusBar');
+  const bc  = cellsInB();
+  if (generation > 0 && bc >= 1) {
+    if (running) togglePlay();
+    won = true;
+    bar.textContent = `✓ ${bc} cell${bc>1?'s':''} reached zone B! — gen ${generation}`;
+    bar.className = 'status-bar win';
+    if (currentStage === 2) {
+      currentStage = 3; renderStage();
+    }
+    return;
+  }
+  const tc = totalCells();
+  if (generation > 3 && tc === 0) {
+    if (running) togglePlay();
+    bar.textContent = 'All cells died — reset and try again';
+    bar.className = 'status-bar fail';
+    return;
+  }
+  bar.textContent = generation === 0
+    ? 'draw in zone A · press Play'
+    : `gen ${generation} · ${bc} cell${bc===1?'':'s'} in B`;
+  bar.className = 'status-bar';
+}
+
+/* ── Simulation ───────────────────────────────────── */
+function stepGrid() {
+  const next = new Uint8Array(COLS * ROWS);
+  for (let r=0;r<ROWS;r++)
+    for (let c=0;c<COLS;c++) {
+      const n=countN(c,r), a=grid[idx(c,r)];
+      next[idx(c,r)] = a ? (n===2||n===3?1:0) : (n===3?1:0);
+    }
+  grid=next; generation++; draw();
+}
+
+function loop(ts) {
+  if (!running) return;
+  if (ts - lastStep >= INTERVAL) { stepGrid(); lastStep = ts; }
+  rafId = requestAnimationFrame(loop);
+}
+
+function togglePlay() {
+  running = !running;
+  const btn = document.getElementById('playBtn');
+  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.classList.toggle('active', running);
+  if (running) rafId = requestAnimationFrame(loop);
+  else if (rafId) cancelAnimationFrame(rafId);
+}
+
+function resetChallenge() {
+  if (running) togglePlay();
+  grid.fill(0); generation = 0; won = false;
+  document.getElementById('statusBar').textContent = 'draw in zone A · press Play';
+  document.getElementById('statusBar').className = 'status-bar';
+  draw();
+}
+
+/* ── Patterns ─────────────────────────────────────── */
+const PATTERNS = {
+  // Glider aimed right: placed in zone A center
+  glider_aimed: () => {
+    grid.fill(0); generation = 0; won = false;
+    const c = ZONE_A.c0 + 1, r = Math.floor((ZONE_A.r0 + ZONE_A.r1) / 2);
+    // standard glider oriented to travel right-down
+    [[0,-1],[1,0],[-1,1],[0,1],[1,1]].forEach(([dc,dr]) => {
+      const gc=c+dc, gr=r+dr;
+      if (gc>=0&&gc<COLS&&gr>=0&&gr<ROWS) grid[idx(gc,gr)]=1;
+    });
+    document.getElementById('statusBar').textContent = 'glider loaded — hit Play to watch it go';
+    document.getElementById('statusBar').className = 'status-bar';
+    draw();
+  },
+};
+
+/* ── Drawing (restricted to zone A at gen 0) ─────── */
+let painting = false, paintVal = 1;
+
+function cellAt(e) {
+  const src = e.touches ? e.touches[0] : e;
+  const rect = canvas.getBoundingClientRect();
+  const x = (src.clientX - rect.left) * (canvas.width  / rect.width);
+  const y = (src.clientY - rect.top)  * (canvas.height / rect.height);
+  return [Math.floor(x / CELL), Math.floor(y / CELL)];
+}
+
+function tryPaint(c, r) {
+  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+  if (generation > 0) return;        // locked after first step
+  if (!inA(c, r)) return;            // must draw in zone A
+  grid[idx(c,r)] = paintVal; draw();
+}
+
+canvas.addEventListener('mousedown', e => {
+  const [c,r] = cellAt(e);
+  paintVal = grid[idx(Math.max(0,Math.min(COLS-1,c)), Math.max(0,Math.min(ROWS-1,r)))] ? 0 : 1;
+  painting = true; tryPaint(c,r);
+});
+canvas.addEventListener('mousemove', e => { if (painting) { const [c,r]=cellAt(e); tryPaint(c,r); } });
+canvas.addEventListener('mouseup',    () => { painting = false; });
+canvas.addEventListener('mouseleave', () => { painting = false; });
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const [c,r]=cellAt(e);
+  paintVal = grid[idx(Math.max(0,Math.min(COLS-1,c)),Math.max(0,Math.min(ROWS-1,r)))] ? 0 : 1;
+  painting=true; tryPaint(c,r);
+}, { passive:false });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); const [c,r]=cellAt(e); tryPaint(c,r); }, { passive:false });
+canvas.addEventListener('touchend', () => { painting=false; });
+
+/* ── Stage system ─────────────────────────────────── */
+let currentStage = 0;
+
+function buildDots() {
+  const container = document.getElementById('progressDots');
+  container.innerHTML = '';
+  STAGES.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < currentStage ? ' done' : i === currentStage ? ' active' : '');
+    d.onclick = () => goToStage(i);
+    container.appendChild(d);
+  });
+}
+
+function renderStage() {
+  const s = STAGES[currentStage];
+  document.getElementById('stageNum').textContent   = `STAGE ${currentStage+1} / ${STAGES.length}`;
+  document.getElementById('stageTitle').textContent = s.title;
+  document.getElementById('stageText').innerHTML    = s.text;
+
+  const rb = document.getElementById('ruleBox');
+  if (s.rule) { rb.style.display=''; rb.innerHTML=s.rule; } else rb.style.display='none';
+  const hb = document.getElementById('hintBox');
+  if (s.hint) { hb.style.display=''; hb.innerHTML=s.hint; } else hb.style.display='none';
+
+  const exBtn = document.getElementById('exampleBtn');
+  if (s.example) {
+    exBtn.style.display='';
+    exBtn.textContent = s.exampleLabel || '↺ Load example';
+    exBtn.onclick = () => { if (PATTERNS[s.example]) PATTERNS[s.example](); };
+  } else { exBtn.style.display='none'; }
+
+  document.getElementById('backBtn').disabled = currentStage === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  if (currentStage === STAGES.length - 1) {
+    nextBtn.textContent = 'Finish ✓';
+    nextBtn.onclick = () => { markVisited(); window.location.href = '/training'; };
+  } else {
+    nextBtn.textContent = 'Continue →';
+    nextBtn.onclick = nextStage;
+  }
+  buildDots();
+}
+
+function goToStage(i) { currentStage=i; renderStage(); }
+function nextStage()   { if (currentStage < STAGES.length-1) { currentStage++; renderStage(); } }
+function prevStage()   { if (currentStage > 0) { currentStage--; renderStage(); } }
+
+function markVisited() {
+  try {
+    const key = 'lifegame_training_visited';
+    const set = new Set(JSON.parse(localStorage.getItem(key)||'[]'));
+    set.add(6); localStorage.setItem(key, JSON.stringify([...set]));
+  } catch {}
+}
+markVisited();
+
+renderStage();
+draw();
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Lesson 1: The Rules — Life Game</title>
+  <title>Lesson 3: Patterns — Life Game</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -72,7 +72,6 @@
     }
     .stage-text b { color: #aaa; font-weight: normal; }
     .stage-text .hi-green { color: #1db954; }
-    .stage-text .hi-red   { color: #e05252; }
 
     .rule-box {
       background: #0d0d0d;
@@ -132,8 +131,29 @@
       align-items: center;
       justify-content: center;
       padding: 28px 24px;
-      gap: 16px;
+      gap: 14px;
     }
+
+    /* Pattern row above canvas */
+    .pattern-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .pbtn {
+      padding: 5px 12px;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #444;
+      font-family: inherit;
+      font-size: 0.65rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .pbtn:hover { border-color: #333; color: #888; }
+    .pbtn.active { border-color: #1db954; color: #1db954; }
 
     canvas {
       display: block;
@@ -160,21 +180,6 @@
     }
     .ctrl-btn:hover { border-color: #333; color: #888; }
     .ctrl-btn.active { border-color: #1db954; color: #1db954; }
-
-    .legend {
-      display: flex;
-      gap: 18px;
-      font-size: 0.62rem;
-      color: #333;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .legend-item { display: flex; align-items: center; gap: 6px; }
-    .legend-swatch {
-      width: 12px; height: 12px;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
 
     .gen-display {
       font-size: 0.62rem;
@@ -221,8 +226,8 @@
 <header class="lesson-header">
   <div class="header-left">
     <a class="back-link" href="/training">← Training</a>
-    <span class="lesson-id">LESSON 01</span>
-    <span class="lesson-title-h">The Rules</span>
+    <span class="lesson-id">LESSON 03</span>
+    <span class="lesson-title-h">Patterns</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
 </header>
@@ -232,7 +237,7 @@
 
   <!-- Left: explanation -->
   <aside class="panel">
-    <div class="stage-num" id="stageNum">STAGE 1 / 8</div>
+    <div class="stage-num" id="stageNum">STAGE 1 / 5</div>
     <h2 class="stage-title" id="stageTitle"></h2>
     <div class="rule-box" id="ruleBox" style="display:none"></div>
     <div class="stage-text" id="stageText"></div>
@@ -245,27 +250,23 @@
 
   <!-- Right: canvas + controls -->
   <section class="canvas-area">
+
+    <!-- Pattern stamp buttons -->
+    <div class="pattern-row" id="patternRow">
+      <button class="pbtn" data-p="glider">Glider</button>
+      <button class="pbtn" data-p="blinker">Blinker</button>
+      <button class="pbtn" data-p="block">Block</button>
+      <button class="pbtn" data-p="lwss">LWSS</button>
+    </div>
+
     <canvas id="canvas"></canvas>
 
     <div class="controls">
+      <button class="ctrl-btn" onclick="clearGrid()">↺ Clear</button>
+      <button class="ctrl-btn" onclick="rotatePattern()">↻ Rotate</button>
+      <button class="ctrl-btn" onclick="flipPattern()">⇄ Flip</button>
       <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
       <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
-      <button class="ctrl-btn" id="countsBtn" onclick="toggleCounts()">＃ Counts</button>
-    </div>
-
-    <div class="legend">
-      <div class="legend-item">
-        <div class="legend-swatch" style="background:#1db954"></div>
-        <span>alive · will survive</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-swatch" style="background:#c0392b"></div>
-        <span>alive · will die</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-swatch" style="background:#3a3a3a"></div>
-        <span>dead · will be born</span>
-      </div>
     </div>
 
     <div class="gen-display">gen <span id="genNum">0</span></div>
@@ -275,102 +276,112 @@
 
 <!-- Footer -->
 <footer class="lesson-footer">
-  <a class="foot-btn" href="/training">↑ All Lessons</a>
-  <a class="foot-btn hi" href="/training/lesson2">Lesson 2: Drawing & Playing →</a>
+  <a class="foot-btn" href="/training/lesson2">← Lesson 2</a>
+  <a class="foot-btn hi" href="/training/lesson4">Lesson 4: Zoom &amp; Pan →</a>
 </footer>
 
 <script>
-/* ── Stage definitions ──────────────────────────── */
-// center of the 18×13 grid
-const CC = 9, CR = 6;
+/* ── Patterns (center-relative [dc, dr]) ─────────── */
+const BASE_PATTERNS = {
+  glider:  [[-1,1],[0,-1],[0,1],[1,0],[1,1]],
+  blinker: [[0,-1],[0,0],[0,1]],
+  block:   [[-1,-1],[0,-1],[-1,0],[0,0]],
+  lwss:    [[-2,0],[-1,-1],[2,-1],[-2,1],[2,1],[-1,2],[0,2],[1,2]],
+};
 
-function _setup(fn) { return () => { if (running) togglePlay(); grid.fill(0); generation = 0; fn(); draw(); }; }
+// Rotation & flip state
+let rotN    = 0;   // 0-3  (×90°)
+let flipped = false;
+
+function transformCells(cells) {
+  let out = cells.map(([dc, dr]) => {
+    if (flipped) dc = -dc;
+    // rotate rotN times: [dc,dr] → [-dr,dc]
+    for (let i = 0; i < rotN; i++) {
+      const tmp = dc;
+      dc = -dr;
+      dr = tmp;
+    }
+    return [dc, dr];
+  });
+  return out;
+}
+
+let currentPatternName = 'glider';
+
+function getTransformedPattern(name) {
+  return transformCells(BASE_PATTERNS[name] || []);
+}
+
+function rotatePattern() {
+  rotN = (rotN + 1) % 4;
+  // re-stamp current pattern
+  stampCurrentPattern();
+}
+
+function flipPattern() {
+  flipped = !flipped;
+  stampCurrentPattern();
+}
+
+function stampCurrentPattern() {
+  if (running) togglePlay();
+  grid.fill(0);
+  generation = 0;
+  const cells = getTransformedPattern(currentPatternName);
+  const offC = Math.floor(COLS / 2), offR = Math.floor(ROWS / 2);
+  cells.forEach(([dc, dr]) => {
+    const c = offC + dc, r = offR + dr;
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+  });
+  draw();
+}
+
+/* ── Stage definitions ──────────────────────────── */
+function _setup(fn) {
+  return () => { if (running) togglePlay(); grid.fill(0); generation = 0; rotN = 0; flipped = false; fn(); draw(); };
+}
 
 const STAGES = [
   {
-    title: 'The Grid',
-    rule: `too crowded (4+ neighbors) → <b>dies</b><br>too lonely (0–1 neighbors) → <b>dies</b><br>exactly 3 around a dead cell → <b>born</b><br>2 or 3 around a live cell → <b>stays alive</b>`,
-    ruleClass: 'casual',
-    text: `Each cell is either <span class="hi-green">alive</span> or <span style="color:#333">dead (empty)</span>. Those four rules are everything — the next screens let you trigger each one yourself.<br><br><b>Click any cell to draw.</b>`,
-    setup: _setup(() => {}),
+    title: 'Patterns',
+    text: `Patterns are named configurations with known behaviors.<br><br>Click a pattern button above the canvas to stamp it centered. Try clicking <b>Glider</b> then <b>Play</b> to watch it travel diagonally across the grid.<br><br>Explore the others too — each behaves differently.`,
+    setup: _setup(() => stampCurrentPattern()),
     resetLabel: '↺ Clear',
   },
   {
-    title: 'The 8 Neighbors',
-    text: `Every cell's fate depends on how many of its <b>8 surrounding cells</b> are alive — left, right, up, down, and all four diagonals.<br><br><b>Hover over any cell</b> to see its 8 neighbors light up yellow. The number (toggle Counts) is its live neighbor count.<br><br>That single count drives all the rules.`,
-    setup: _setup(() => loadPattern('blinker')),
-    resetLabel: '↺ Reload blinker',
-    hoverMode: true,
+    title: 'The Glider',
+    rule: `The Glider travels diagonally.<br>Every <b>4 generations</b> it moves one cell.`,
+    text: `The Glider is the simplest moving pattern in Life. It cycles through 4 shapes before returning to its original form, shifted one cell diagonally.<br><br>Click <b>Glider</b> above to load one, then hit <b>Play</b> and watch it travel.`,
+    setup: _setup(() => { currentPatternName = 'glider'; stampCurrentPattern(); }),
+    resetLabel: '↺ Reload Glider',
   },
   {
-    title: 'Birth — draw 3 around a gap',
-    rule: `exactly <b>3</b> live neighbors around a dead cell → <b style="color:#1db954">born</b>`,
-    text: `Draw 3 live cells that all touch the same empty space. That empty cell immediately glows <span style="color:#555">grey</span> — it has exactly 3 neighbors and will be born.<br><br>The grey appears <b>live as you draw</b>. Once you see it, hit <b>Step</b> to watch it come alive.`,
-    setup: _setup(() => {}),
-    resetLabel: '↺ Clear',
+    title: 'Rotate',
+    text: `Click <b>Blinker</b> above to load a Blinker — normally horizontal.<br><br>Click <b>Rotate</b> to spin it 90°. It becomes vertical. Rotate again to go back.<br><br>Rotation applies before stamping, so you can aim a pattern in any of 4 orientations before it lands on the canvas.`,
+    setup: _setup(() => { currentPatternName = 'blinker'; stampCurrentPattern(); }),
+    resetLabel: '↺ Reload Blinker',
   },
   {
-    title: 'Survival — save the cell',
-    rule: `<b>2 or 3</b> live neighbors → <b style="color:#1db954">stays alive</b>`,
-    text: `The centre cell has 1 neighbor right now — <span class="hi-red">shown red, it will die</span>.<br><br>Add 1 or 2 more cells touching it. At 2–3 neighbors it turns green (saved). Push to 4+ and it goes red again — too crowded.<br><br>Get it green, then hit <b>Step</b>.`,
-    setup: _setup(() => {
-      grid[idx(CC, CR)]   = 1;
-      grid[idx(CC-1, CR)] = 1;
-    }),
-    resetLabel: '↺ Reset',
-    labels: [{ c: CC, r: CR, text: '← add cells here', color: '#555', pos: 'right' }],
+    title: 'Flip',
+    text: `Load a <b>Glider</b> and click <b>Flip</b> — it mirrors left-to-right. Combined with Rotate, you get all 8 orientations.<br><br>This matters for aimed patterns: a Glider travels in a direction determined by its orientation. Rotate + Flip let you point it anywhere.<br><br>Try it: stamp a Glider, Flip it, Play — it now travels a different direction.`,
+    setup: _setup(() => { currentPatternName = 'glider'; stampCurrentPattern(); }),
+    resetLabel: '↺ Reload Glider',
   },
   {
-    title: 'Death — too lonely',
-    rule: `<b>0–1</b> neighbors → <b style="color:#c0392b">dies</b> (lonely)`,
-    text: `This cell has no neighbors — <span class="hi-red">shown red</span>. Hit <b>Step</b> to watch it vanish from loneliness.<br><br>Or add 2–3 cells next to it first — it turns green and survives instead.`,
-    setup: _setup(() => {
-      grid[idx(CC, CR)] = 1;
-    }),
-    resetLabel: '↺ Reset isolated cell',
-    labels: [{ c: CC, r: CR, text: '← 0 nbrs · will die', color: '#e05252', pos: 'right' }],
-  },
-  {
-    title: 'Death — too crowded',
-    rule: `<b>4+</b> neighbors → <b style="color:#c0392b">dies</b> (crowded)`,
-    text: `The centre cell has 3 neighbors — just enough to survive (green). Add one more cell touching it to push past 3.<br><br>Watch it flip red — too crowded. Hit <b>Step</b> to watch it die.`,
-    setup: _setup(() => {
-      grid[idx(CC,   CR  )] = 1;
-      grid[idx(CC-1, CR-1)] = 1;
-      grid[idx(CC,   CR-1)] = 1;
-      grid[idx(CC+1, CR-1)] = 1;
-    }),
-    resetLabel: '↺ Reset',
-    labels: [{ c: CC, r: CR, text: '← add 1 more cell', color: '#555', pos: 'right' }],
-  },
-  {
-    title: 'B3 / S23',
-    rule: `<b>B3</b> — born with exactly 3 neighbors<br><b>S2</b> — survives with 2 neighbors<br><b>S3</b> — survives with 3 neighbors<br><span style="color:#333">everything else → dies</span>`,
-    text: `Three conditions — that's the entire ruleset, abbreviated <b>B3/S23</b>.<br><br>From these rules, patterns emerge that move, grow, and self-replicate. The Glider is the simplest moving pattern — watch it travel diagonally.`,
-    setup: _setup(() => loadPattern('glider')),
-    resetLabel: '↺ Reload glider',
-  },
-  {
-    title: 'Try It Yourself',
-    text: `You know all the rules. Draw anything, toggle <b>Counts</b>, hit <b>Play</b>.<br><br>Can you build something stable? Something that loops forever? Something that moves?<br><br>Head to <b>Lesson 2</b> when you're ready.`,
+    title: 'Try It',
+    text: `Combine patterns to build bigger structures. Try placing multiple patterns — what happens when a Glider runs into a Block?<br><br>In the main game you can drag patterns directly onto the canvas from the side panel, with live rotation and flip.<br><br>Head to <b>Lesson 4</b> when ready.`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
     final: true,
   },
 ];
 
-/* ── Patterns (center-relative [col, row]) ───────── */
-const PATTERNS = {
-  blinker:  [[0,-1],[0,0],[0,1]],
-  block3x3: [[-1,-1],[0,-1],[1,-1],[-1,0],[0,0],[1,0],[-1,1],[0,1],[1,1]],
-  glider:   [[-1,1],[0,-1],[0,1],[1,0],[1,1]],
-};
-
 /* ── Grid setup ──────────────────────────────────── */
-const canvas  = document.getElementById('canvas');
-const ctx     = canvas.getContext('2d');
-const COLS    = 18;
-const ROWS    = 13;
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+const COLS   = 18;
+const ROWS   = 13;
 
 function computeCell() {
   const maxW = Math.min(window.innerWidth <= 720 ? window.innerWidth - 56 : 560, 560);
@@ -384,9 +395,6 @@ let grid       = new Uint8Array(COLS * ROWS);
 let generation = 0;
 let running    = false;
 let rafId      = null;
-let showCounts = true;
-let hoverCell  = null;
-let hoverMode  = false;
 let lastStep   = 0;
 const INTERVAL = 180;
 
@@ -408,7 +416,6 @@ function draw() {
   ctx.fillStyle = '#0a0a0a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Grid lines
   ctx.strokeStyle = '#181818';
   ctx.lineWidth = 1;
   for (let c = 0; c <= COLS; c++) {
@@ -418,90 +425,19 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
   }
 
-  // Hover neighbor highlight
-  if (hoverMode && hoverCell) {
-    const { c: hc, r: hr } = hoverCell;
-    for (let dr = -1; dr <= 1; dr++)
-      for (let dc = -1; dc <= 1; dc++) {
-        if (dr === 0 && dc === 0) continue;
-        const nc = hc + dc, nr = hr + dr;
-        if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) {
-          ctx.fillStyle = 'rgba(255,220,50,0.07)';
-          ctx.fillRect(nc * CELL + 1, nr * CELL + 1, CELL - 2, CELL - 2);
-          ctx.strokeStyle = 'rgba(255,220,50,0.18)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(nc * CELL + 1.5, nr * CELL + 1.5, CELL - 3, CELL - 3);
-        }
-      }
-    // hovered cell outline
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(hc * CELL + 1, hr * CELL + 1, CELL - 2, CELL - 2);
-  }
-
-  // Cells
-  const fontSize = Math.max(9, Math.floor(CELL * 0.32));
-  ctx.font = `${fontSize}px 'Courier New', monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const alive = grid[idx(c, r)];
       const n     = countNeighbors(c, r);
       const willLive = alive ? (n === 2 || n === 3) : (n === 3);
-
       const cx = c * CELL, cy = r * CELL;
-
       if (alive) {
         ctx.fillStyle = willLive ? '#1db954' : '#c0392b';
         ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
-        if (showCounts) {
-          ctx.fillStyle = 'rgba(255,255,255,0.75)';
-          ctx.fillText(n, cx + CELL / 2, cy + CELL / 2);
-        }
       } else if (n === 3) {
-        // Ghost — will be born (same grey as main game)
         ctx.fillStyle = '#3a3a3a';
         ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
-        if (showCounts) {
-          ctx.fillStyle = 'rgba(255,255,255,0.55)';
-          ctx.fillText(n, cx + CELL / 2, cy + CELL / 2);
-        }
-      } else if (showCounts && n > 0) {
-        ctx.fillStyle = '#242424';
-        ctx.fillText(n, cx + CELL / 2, cy + CELL / 2);
       }
-    }
-  }
-
-  // Stage labels — show at gen 0 only (before stepping)
-  if (generation === 0) {
-    const stage = STAGES[currentStage];
-    const labels = stage && stage.labels;
-    if (labels) {
-      const lFont = Math.max(9, Math.floor(CELL * 0.37));
-      labels.forEach(({ c, r, text, color, pos = 'right', ring = true }) => {
-        if (ring) {
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([3, 2]);
-          ctx.strokeRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
-          ctx.setLineDash([]);
-        }
-        ctx.fillStyle = color;
-        ctx.font = `${lFont}px 'Courier New', monospace`;
-        if (pos === 'right') {
-          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          ctx.fillText(text, (c + 1) * CELL + 5, r * CELL + CELL / 2);
-        } else if (pos === 'left') {
-          ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-          ctx.fillText(text, c * CELL - 5, r * CELL + CELL / 2);
-        } else if (pos === 'above') {
-          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-          ctx.fillText(text, c * CELL + CELL / 2, r * CELL - 4);
-        }
-      });
     }
   }
 
@@ -537,26 +473,25 @@ function togglePlay() {
   else if (rafId) cancelAnimationFrame(rafId);
 }
 
-function toggleCounts() {
-  showCounts = !showCounts;
-  document.getElementById('countsBtn').classList.toggle('active', showCounts);
+function clearGrid() {
+  if (running) togglePlay();
+  grid.fill(0);
+  generation = 0;
   draw();
 }
 
-/* ── Pattern loader ──────────────────────────────── */
-function loadPattern(name) {
-  if (running) togglePlay();
-  const cells = PATTERNS[name];
-  if (!cells) return;
-  grid.fill(0);
-  generation = 0;
-  const offC = Math.floor(COLS / 2), offR = Math.floor(ROWS / 2);
-  cells.forEach(([dc, dr]) => {
-    const c = offC + dc, r = offR + dr;
-    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
-  });
-  draw();
-}
+/* ── Pattern button clicks ───────────────────────── */
+document.getElementById('patternRow').addEventListener('click', e => {
+  const btn = e.target.closest('.pbtn');
+  if (!btn) return;
+  const name = btn.dataset.p;
+  if (!BASE_PATTERNS[name]) return;
+  // update active highlight
+  document.querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPatternName = name;
+  stampCurrentPattern();
+});
 
 /* ── Canvas interaction ──────────────────────────── */
 let painting = false, paintVal = 1;
@@ -579,15 +514,13 @@ canvas.addEventListener('mousedown', e => {
   draw();
 });
 canvas.addEventListener('mousemove', e => {
+  if (!painting) return;
   const { c, r } = cellAt(e);
-  hoverCell = (c >= 0 && c < COLS && r >= 0 && r < ROWS) ? { c, r } : null;
-  if (painting && hoverCell) { grid[idx(c, r)] = paintVal; }
-  draw();
+  if (c >= 0 && c < COLS && r >= 0 && r < ROWS) { grid[idx(c, r)] = paintVal; draw(); }
 });
 canvas.addEventListener('mouseup',    () => { painting = false; });
-canvas.addEventListener('mouseleave', () => { painting = false; hoverCell = null; draw(); });
+canvas.addEventListener('mouseleave', () => { painting = false; });
 
-// Touch draw
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   const t = e.touches[0];
@@ -652,34 +585,23 @@ function renderStage() {
     nextBtn.onclick     = nextStage;
   }
 
-  hoverMode = !!s.hoverMode;
   if (s.setup) s.setup();
   buildDots();
 }
 
-function goToStage(i) {
-  currentStage = i;
-  renderStage();
-}
-
-function nextStage() {
-  if (currentStage < STAGES.length - 1) { currentStage++; renderStage(); }
-}
-
-function prevStage() {
-  if (currentStage > 0) { currentStage--; renderStage(); }
-}
+function goToStage(i) { currentStage = i; renderStage(); }
+function nextStage()   { if (currentStage < STAGES.length - 1) { currentStage++; renderStage(); } }
+function prevStage()   { if (currentStage > 0) { currentStage--; renderStage(); } }
 
 /* ── Visited tracking ───────────────────────────── */
 function markVisited() {
   try {
     const key  = 'lifegame_training_visited';
     const set  = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
-    set.add(1);
+    set.add(3);
     localStorage.setItem(key, JSON.stringify([...set]));
   } catch {}
 }
-// Mark visited on arrival
 markVisited();
 
 /* ── Resize ─────────────────────────────────────── */
@@ -692,8 +614,6 @@ window.addEventListener('resize', () => {
 
 /* ── Init ────────────────────────────────────────── */
 renderStage();
-document.getElementById('countsBtn').classList.add('active');
-loadPattern('blinker');
 </script>
 </body>
 </html>

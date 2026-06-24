@@ -137,8 +137,9 @@ const LESSONS = [
   { id: 3, title: 'Patterns',           desc: 'Drag built-in patterns onto the canvas. Rotate with R or scroll, flip with F, then stamp.' },
   { id: 4, title: 'Zoom & Pan',         desc: 'Navigate a larger world. Pinch, scroll, or drag to explore — reset view with ⊙.' },
   { id: 5, title: 'Zone Tool',          desc: 'Draw a focus area with ⬚ Zone. Track live cell counts inside your boundary in real time.' },
-  { id: 6, title: 'Challenges',         desc: 'Ten built-in objectives — from First Steps to Compressed Gas. Can you beat them all?' },
-  { id: 7, title: 'Dev Mode',           desc: 'Lookahead strip showing 7 future states. Saved blueprint tiles. Advanced tools for builders.' },
+  { id: 6, title: 'Bridge',             desc: 'Draw in zone A. Get 5 cells into zone B. Needs a moving pattern — hint: try a Glider.' },
+  { id: 7, title: 'Challenges',         desc: 'Eleven built-in objectives — from First Steps to Bridge. Can you beat them all?' },
+  { id: 8, title: 'Dev Mode',           desc: 'Lookahead strip showing 7 future states. Saved blueprint tiles. Advanced tools for builders.' },
 ];
 
 const VISITED_KEY = 'lifegame_training_visited';
@@ -152,7 +153,7 @@ const grid = document.getElementById('lessonGrid');
 
 LESSONS.forEach(l => {
   const done = visited.has(l.id);
-  const ready = l.id === 1; // only lesson 1 built so far
+  const ready = true;
   const card = document.createElement(ready ? 'a' : 'div');
   if (ready) card.href = `/training/lesson${l.id}`;
   card.className = 'card' + (done ? ' visited' : '');

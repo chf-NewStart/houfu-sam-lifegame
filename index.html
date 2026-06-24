@@ -269,6 +269,7 @@
     <button class="cbtn" data-challenge="7" onclick="startChallenge(7)"><span data-en="Steady State"   data-zh="稳态">Steady State</span><small data-en="period-2 oscillator" data-zh="周期2振荡器">period-2 oscillator</small></button>
     <button class="cbtn" data-challenge="8" onclick="startChallenge(8)"><span data-en="Zone Control"   data-zh="区域控制">Zone Control</span><small data-en="25+ cells in zone 20 gens" data-zh="区域25+细胞持续20代">25+ cells in zone 20 gens</small></button>
     <button class="cbtn" data-challenge="9" onclick="startChallenge(9)"><span data-en="Compressed Gas" data-zh="压缩气体">Compressed Gas</span><small data-en="survive shrinking arena" data-zh="在缩小竞技场中存活">survive shrinking arena</small></button>
+    <button class="cbtn" data-challenge="10" onclick="startChallenge(10)"><span data-en="Bridge" data-zh="信使">Bridge</span><small data-en="5 cells from A to B, 200 gens" data-zh="将5细胞从A送到B区">5 cells from A to B, 200 gens</small></button>
   </div>
   <div class="challenge-status" id="challengeStatus" data-en="select a challenge · draw your pattern · press play" data-zh="选择挑战 · 绘制图案 · 按播放">select a challenge · draw your pattern · press play</div>
 </div>
@@ -329,7 +330,7 @@
         <button class="btn" id="stepBtn"   onclick="stepOnce()"  data-en="Step →" data-zh="步进 →">Step →</button>
       </div>
       <div class="brow">
-        <button class="btn" id="undoBtn" onclick="undoStep()" data-en="↩ Undo" data-zh="↩ 撤销" disabled>↩ Undo</button>
+        <button class="btn" id="undoBtn" onclick="undoDraw()" data-en="↩ Undo" data-zh="↩ 撤销" disabled>↩ Undo</button>
         <button class="btn" id="redoBtn" onclick="redoStep()" data-en="↻ Redo" data-zh="↻ 重做" disabled>↻ Redo</button>
       </div>
       <div class="brow">
@@ -695,6 +696,24 @@ function draw() {
     ctx.fillText(label, bx + 4/zoom, by + 10/zoom);
   }
 
+  // Bridge challenge: zone A (green) and zone B (amber)
+  if (zoneA || zoneB) {
+    const drawZone = (z, color, label) => {
+      const { c0, r0, c1, r1 } = z;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5 / zoom;
+      ctx.setLineDash([5 / zoom, 3 / zoom]);
+      ctx.strokeRect(c0*CELL + 0.5, r0*CELL + 0.5, (c1-c0+1)*CELL - 1, (r1-r0+1)*CELL - 1);
+      ctx.setLineDash([]);
+      ctx.font = `bold ${Math.max(9, 13/zoom)}px Consolas, monospace`;
+      ctx.fillStyle = color;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(label, c0*CELL + 4/zoom, r0*CELL + 3/zoom);
+    };
+    if (zoneA) drawZone(zoneA, 'rgba(29,185,84,0.85)',  'A · draw here');
+    if (zoneB) drawZone(zoneB, 'rgba(255,165,0,0.85)',  'B · target');
+  }
+
   ctx.restore();
 }
 
@@ -738,27 +757,44 @@ let stepHistory = [], redoHistory = [];
 const MAX_HISTORY = 50;
 
 function setUndoRedoBtns() {
-  const hasUndo = stepHistory.length > 0;
-  const hasRedo = redoHistory.length > 0;
-  document.getElementById('undoBtn').disabled    = !hasUndo;
-  document.getElementById('stepBkBtn').disabled  = !hasUndo;
-  document.getElementById('redoBtn').disabled    = !hasRedo;
+  const hasDrawUndo = stepHistory.some(e => e.type === 'draw');
+  const hasStepUndo = stepHistory.length > 0;
+  document.getElementById('undoBtn').disabled    = !hasDrawUndo;
+  document.getElementById('stepBkBtn').disabled  = !hasStepUndo;
+  document.getElementById('redoBtn').disabled    = redoHistory.length === 0;
 }
 
-function pushHistory() {
-  stepHistory.push({ grid: grid.slice(), generation });
+function pushHistory(type = 'draw') {
+  stepHistory.push({ grid: grid.slice(), generation, type });
   if (stepHistory.length > MAX_HISTORY) stepHistory.shift();
   redoHistory = [];
   setUndoRedoBtns();
 }
 
+// ↩ Undo — only undoes drawing actions, never crosses into simulation history
+function undoDraw() {
+  let drawIdx = -1;
+  for (let i = stepHistory.length - 1; i >= 0; i--) {
+    if (stepHistory[i].type === 'draw') { drawIdx = i; break; }
+  }
+  if (drawIdx < 0) return;
+  if (running) togglePlay();
+  redoHistory.push({ grid: grid.slice(), generation, type: 'draw' });
+  const state = stepHistory[drawIdx];
+  stepHistory = stepHistory.slice(0, drawIdx);
+  grid = state.grid; generation = state.generation;
+  document.getElementById('genCount').textContent = generation;
+  setUndoRedoBtns();
+  draw(); refreshDevPanel();
+}
+
+// ← Step — steps back through any history entry
 function undoStep() {
   if (stepHistory.length === 0) return;
   if (running) togglePlay();
-  redoHistory.push({ grid: grid.slice(), generation });
+  redoHistory.push({ grid: grid.slice(), generation, type: stepHistory[stepHistory.length - 1].type });
   const state = stepHistory.pop();
-  grid = state.grid;
-  generation = state.generation;
+  grid = state.grid; generation = state.generation;
   document.getElementById('genCount').textContent = generation;
   setUndoRedoBtns();
   draw(); refreshDevPanel();
@@ -778,7 +814,7 @@ function redoStep() {
 
 function step() {
   if (generation === 0 && activeChallenge >= 0) challengeStartSeed = encodeSeed();
-  pushHistory();
+  pushHistory('step');
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const n = neighbors(c, r);
@@ -965,6 +1001,7 @@ function cellAt(e) {
 function paint(e) {
   const [c, r] = cellAt(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+  if (activeChallenge === BRIDGE_IDX && generation === 0 && !_inZoneA(c, r)) return;
   grid[idx(c, r)] = paintVal; draw();
 }
 
@@ -1331,22 +1368,26 @@ const CHALLENGES = [
   { name: 'Steady State',   nameZh: '稳态',     goal: 'Reach a period-2 oscillating pattern',goalZh: '达到周期2振荡图案',     check: (g, c, s) => !s && g > 5 && prevPrevGridSnap !== null && grid.every((v, i) => v === prevPrevGridSnap[i]) },
   { name: 'Zone Control',   nameZh: '区域控制', goal: 'Keep 25+ cells in your zone for 20 gens', goalZh: '区域内保持25+细胞持续20代', check: () => zoneGoalStreak >= 20, fail: (g,c) => g > 5 && c === 0 },
   { name: 'Compressed Gas', nameZh: '压缩气体', goal: 'Survive as the arena shrinks every 5 gens', goalZh: '在每5代缩小的竞技场中存活', check: () => cgWon, fail: (g,c) => g > 2 && c === 0 },
+  { name: 'Bridge',         nameZh: '信使',     goal: 'Get 5+ cells into zone B within 200 gens', goalZh: '200代内将5个细胞送入B区', check: () => bridgeStreak >= 5, fail: (g,c) => (g > 5 && c === 0) || g > 200 },
 ];
 
 let activeChallenge = -1, prevGridSnap = null, prevPrevGridSnap = null, challengeStartSeed = null;
 let stableCountStreak = 0, prevCellCount = -1;
 let zoneGoalStreak = 0;
 let cgWon = false, cgInitW = 0, cgInitH = 0;
-const CG_IDX = 9, ZC_IDX = 8;
+let zoneA = null, zoneB = null, bridgeStreak = 0;
+const CG_IDX = 9, ZC_IDX = 8, BRIDGE_IDX = 10;
 
 function drawLocked() { return activeChallenge >= 0 && generation > 0; }
+function _inZoneA(c, r) { return zoneA && c >= zoneA.c0 && c <= zoneA.c1 && r >= zoneA.r0 && r <= zoneA.r1; }
 
 function startChallenge(i) {
   if (running) togglePlay();
   clearGrid(); activeChallenge = i;
   prevGridSnap = null; prevPrevGridSnap = null; challengeStartSeed = null;
   stableCountStreak = 0; prevCellCount = -1;
-  zoneGoalStreak = 0; cgWon = false;
+  zoneGoalStreak = 0; cgWon = false; bridgeStreak = 0;
+  zoneA = null; zoneB = null;
   canvas.style.cursor = 'crosshair';
 
   if (i === ZC_IDX) {
@@ -1362,6 +1403,15 @@ function startChallenge(i) {
     // Compressed Gas: arena = full grid
     selRect = { c0: 0, r0: 0, c1: COLS - 1, r1: ROWS - 1 };
     cgInitW = COLS; cgInitH = ROWS;
+  }
+
+  if (i === BRIDGE_IDX) {
+    // Bridge: small draw zone A on left, target zone B on right, gap in middle
+    const zw = Math.max(6, Math.floor(COLS * 0.18));
+    const zh = Math.max(6, Math.floor(ROWS * 0.55));
+    const vOff = Math.floor((ROWS - zh) / 2);
+    zoneA = { c0: 2,          r0: vOff, c1: 2 + zw - 1,          r1: vOff + zh - 1 };
+    zoneB = { c0: COLS-2-zw,  r0: vOff, c1: COLS - 3,             r1: vOff + zh - 1 };
   }
 
   const status = document.getElementById('challengeStatus');
@@ -1405,6 +1455,15 @@ function doChallengeTick() {
     else zoneGoalStreak = 0;
   }
 
+  // Bridge: count cells in zone B
+  if (activeChallenge === BRIDGE_IDX && zoneB) {
+    let bc = 0;
+    for (let r = zoneB.r0; r <= zoneB.r1; r++)
+      for (let c = zoneB.c0; c <= zoneB.c1; c++)
+        bc += grid[idx(c, r)];
+    bridgeStreak = bc;
+  }
+
   // Steady State 2-gen snapshot
   prevPrevGridSnap = prevGridSnap;
   prevGridSnap = grid.slice();
@@ -1415,11 +1474,15 @@ function doChallengeTick() {
 
   // Fail check (Compressed Gas / Zone Control extinction)
   if (ch.fail && ch.fail(generation, cells)) {
+    const wasChallenge = activeChallenge;
     activeChallenge = -1; canvas.style.cursor = 'crosshair';
     selRect = null;
+    if (wasChallenge === BRIDGE_IDX) { zoneA = null; zoneB = null; }
     document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
     const status = document.getElementById('challengeStatus');
-    status.textContent = t('✗ All cells died — try again', '✗ 所有细胞消亡 — 再试一次');
+    status.textContent = wasChallenge === BRIDGE_IDX && generation > 200
+      ? t('✗ Ran out of time — try a Glider', '✗ 超时了 — 试试滑翔机')
+      : t('✗ All cells died — try again', '✗ 所有细胞消亡 — 再试一次');
     return;
   }
 
@@ -1428,6 +1491,7 @@ function doChallengeTick() {
     const won = activeChallenge; activeChallenge = -1;
     canvas.style.cursor = 'crosshair';
     if (won === CG_IDX) selRect = null;
+    if (won === BRIDGE_IDX) { zoneA = null; zoneB = null; }
     setTimeout(() => showWin(CHALLENGES[won], cells), 60);
   }
 }
@@ -1932,7 +1996,7 @@ imgDZ.addEventListener('drop', e => {
 
 /* ── Keyboard shortcuts ───────────────────────────── */
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoStep(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoDraw(); }
   if (e.key === '0' && !e.ctrlKey && !e.metaKey) resetView();
   const tag = document.activeElement?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lesson 4: Zoom &amp; Pan — Life Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      color: #ccc;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Header ─────────────────────────────────── */
+    .lesson-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid #141414;
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .back-link { font-size: 0.7rem; color: #1db954; }
+    .back-link:hover { text-decoration: underline; }
+    .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
+    .lesson-title-h { font-size: 0.85rem; color: #888; }
+
+    .progress-dots { display: flex; gap: 5px; }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .dot.active { background: #1db954; }
+    .dot.done   { background: #1a3a22; }
+
+    /* ── Main layout ─────────────────────────────── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Left: explanation panel ─────────────────── */
+    .panel {
+      width: 320px;
+      flex-shrink: 0;
+      border-right: 1px solid #141414;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 28px;
+      overflow-y: auto;
+    }
+
+    .stage-num { font-size: 0.58rem; color: #2a2a2a; letter-spacing: 2px; margin-bottom: 10px; }
+    .stage-title { font-size: 1.1rem; color: #eee; margin-bottom: 16px; font-weight: normal; }
+    .stage-text {
+      font-size: 0.74rem;
+      color: #666;
+      line-height: 1.85;
+      flex: 1;
+    }
+    .stage-text b { color: #aaa; font-weight: normal; }
+    .stage-text .hi-green { color: #1db954; }
+
+    .rule-box {
+      background: #0d0d0d;
+      border-left: 3px solid #1db954;
+      padding: 11px 14px;
+      margin: 18px 0 4px;
+      font-size: 0.78rem;
+      line-height: 2;
+      color: #999;
+    }
+    .rule-box b { color: #eee; font-weight: normal; }
+    .rule-box.casual { border-left-color: #2a2a2a; color: #555; line-height: 2.3; font-size: 0.76rem; }
+    .rule-box.casual b { color: #888; }
+
+    .example-btn {
+      margin-top: 22px;
+      padding: 8px 14px;
+      background: none;
+      border: 1px solid #1a3a22;
+      color: #1db954;
+      font-family: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+      border-radius: 3px;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .example-btn:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+
+    .stage-nav {
+      display: flex;
+      gap: 8px;
+      margin-top: 28px;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 9px 0;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #555;
+      font-family: inherit;
+      font-size: 0.72rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .nav-btn:hover { border-color: #333; color: #888; }
+    .nav-btn.primary { border-color: #1a3a22; color: #1db954; }
+    .nav-btn.primary:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+    .nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+    /* ── Right: canvas area ──────────────────────── */
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 24px;
+      gap: 16px;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #141414;
+      cursor: crosshair;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0; left: 0;
+    }
+
+    .controls {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .ctrl-btn {
+      padding: 6px 14px;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #555;
+      font-family: inherit;
+      font-size: 0.68rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .ctrl-btn:hover { border-color: #333; color: #888; }
+    .ctrl-btn.active { border-color: #1db954; color: #1db954; }
+
+    .zoom-display {
+      font-size: 0.62rem;
+      color: #2a2a2a;
+      letter-spacing: 1px;
+    }
+
+    .gen-display {
+      font-size: 0.62rem;
+      color: #2a2a2a;
+      letter-spacing: 1px;
+    }
+
+    /* ── Footer nav ──────────────────────────────── */
+    .lesson-footer {
+      border-top: 1px solid #141414;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .foot-btn {
+      padding: 7px 16px;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #333;
+      font-family: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+      border-radius: 3px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .foot-btn:hover { border-color: #333; color: #666; }
+    .foot-btn.hi { border-color: #1a3a22; color: #1db954; }
+    .foot-btn.hi:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+
+    /* ── Mobile ──────────────────────────────────── */
+    @media (max-width: 720px) {
+      .main { flex-direction: column-reverse; overflow: visible; }
+      .panel { width: 100%; border-right: none; border-top: 1px solid #141414; padding: 24px 18px; }
+      .canvas-area { padding: 16px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="lesson-header">
+  <div class="header-left">
+    <a class="back-link" href="/training">← Training</a>
+    <span class="lesson-id">LESSON 04</span>
+    <span class="lesson-title-h">Zoom &amp; Pan</span>
+  </div>
+  <div class="progress-dots" id="progressDots"></div>
+</header>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Left: explanation -->
+  <aside class="panel">
+    <div class="stage-num" id="stageNum">STAGE 1 / 4</div>
+    <h2 class="stage-title" id="stageTitle"></h2>
+    <div class="rule-box" id="ruleBox" style="display:none"></div>
+    <div class="stage-text" id="stageText"></div>
+    <button class="example-btn" id="exampleBtn" style="display:none"></button>
+    <div class="stage-nav">
+      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
+      <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
+    </div>
+  </aside>
+
+  <!-- Right: canvas + controls -->
+  <section class="canvas-area">
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+      <button class="ctrl-btn" onclick="resetView()">⊙ Reset View</button>
+    </div>
+
+    <div style="display:flex;gap:20px">
+      <div class="zoom-display">zoom <span id="zoomNum">1.0×</span></div>
+      <div class="gen-display">gen <span id="genNum">0</span></div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Footer -->
+<footer class="lesson-footer">
+  <a class="foot-btn" href="/training/lesson3">← Lesson 3</a>
+  <a class="foot-btn hi" href="/training/lesson5">Lesson 5: Zone Tool →</a>
+</footer>
+
+<script>
+/* ── Grid ────────────────────────────────────────── */
+const COLS = 28, ROWS = 18;
+const BASE_CELL = 22;
+
+let grid       = new Uint8Array(COLS * ROWS);
+let generation = 0;
+let running    = false;
+let rafId      = null;
+let lastStep   = 0;
+const INTERVAL = 160;
+
+function idx(c, r) { return r * COLS + c; }
+
+function countNeighbors(c, r) {
+  let n = 0;
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nc = c + dc, nr = r + dr;
+      if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) n += grid[idx(nc, nr)];
+    }
+  return n;
+}
+
+/* ── Viewport ────────────────────────────────────── */
+const canvasWrap = document.getElementById('canvasWrap');
+const canvas     = document.getElementById('canvas');
+const ctx        = canvas.getContext('2d');
+
+let zoom = 1, panX = 0, panY = 0;
+const ZOOM_MIN = 0.4, ZOOM_MAX = 4;
+
+function computeWrapSize() {
+  const area = canvasWrap.parentElement;
+  const areaW = area.clientWidth - 48;
+  const areaH = area.clientHeight - 90;
+  const w = Math.min(areaW, COLS * BASE_CELL);
+  const h = Math.min(areaH, ROWS * BASE_CELL);
+  return { w: Math.max(200, w), h: Math.max(140, h) };
+}
+
+function sizeWrap() {
+  const { w, h } = computeWrapSize();
+  canvasWrap.style.width  = w + 'px';
+  canvasWrap.style.height = h + 'px';
+  canvas.width  = COLS * BASE_CELL;
+  canvas.height = ROWS * BASE_CELL;
+  canvas.style.width  = canvas.width  + 'px';
+  canvas.style.height = canvas.height + 'px';
+  canvas.style.transformOrigin = '0 0';
+  applyTransform();
+}
+
+function applyTransform() {
+  canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+  document.getElementById('zoomNum').textContent = zoom.toFixed(1) + '×';
+}
+
+function clampPan() {
+  const { w: ww, h: wh } = computeWrapSize();
+  const scaledW = canvas.width  * zoom;
+  const scaledH = canvas.height * zoom;
+  panX = Math.min(0, Math.max(ww - scaledW, panX));
+  panY = Math.min(0, Math.max(wh - scaledH, panY));
+}
+
+function resetView() {
+  zoom = 1; panX = 0; panY = 0;
+  applyTransform();
+}
+
+/* ── Zoom (wheel) ────────────────────────────────── */
+canvasWrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect  = canvasWrap.getBoundingClientRect();
+  const mx    = e.clientX - rect.left;
+  const my    = e.clientY - rect.top;
+  const delta = e.deltaY < 0 ? 1.12 : 0.89;
+  const newZ  = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * delta));
+  // zoom toward mouse
+  panX = mx - (mx - panX) * (newZ / zoom);
+  panY = my - (my - panY) * (newZ / zoom);
+  zoom = newZ;
+  clampPan();
+  applyTransform();
+}, { passive: false });
+
+/* ── Pan (drag on empty cells) ───────────────────── */
+let panning = false, panStart = null;
+
+canvasWrap.addEventListener('mousedown', e => {
+  // check if clicking on an empty cell
+  const { c, r } = cellAtWrap(e);
+  if (c >= 0 && c < COLS && r >= 0 && r < ROWS && grid[idx(c, r)] === 0) {
+    panning   = true;
+    panStart  = { x: e.clientX - panX, y: e.clientY - panY };
+    canvasWrap.style.cursor = 'grab';
+  }
+});
+window.addEventListener('mousemove', e => {
+  if (!panning) return;
+  panX = e.clientX - panStart.x;
+  panY = e.clientY - panStart.y;
+  clampPan();
+  applyTransform();
+});
+window.addEventListener('mouseup', () => {
+  panning = false;
+  canvasWrap.style.cursor = 'crosshair';
+});
+
+/* ── Pinch zoom (touch) ──────────────────────────── */
+let lastPinchDist = null;
+canvasWrap.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) {
+    lastPinchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+}, { passive: true });
+canvasWrap.addEventListener('touchmove', e => {
+  if (e.touches.length === 2 && lastPinchDist) {
+    e.preventDefault();
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const delta = dist / lastPinchDist;
+    zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * delta));
+    lastPinchDist = dist;
+    clampPan();
+    applyTransform();
+  }
+}, { passive: false });
+canvasWrap.addEventListener('touchend', () => { lastPinchDist = null; });
+
+/* ── Cell drawing ────────────────────────────────── */
+function cellAtWrap(e) {
+  const rect = canvasWrap.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) - panX) / zoom;
+  const y = ((e.clientY - rect.top)  - panY) / zoom;
+  return { c: Math.floor(x / BASE_CELL), r: Math.floor(y / BASE_CELL) };
+}
+
+let painting = false, paintVal = 1;
+canvasWrap.addEventListener('mousedown', e => {
+  if (panning) return;
+  const { c, r } = cellAtWrap(e);
+  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+  paintVal = grid[idx(c, r)] ? 0 : 1;
+  painting = true;
+  grid[idx(c, r)] = paintVal;
+  draw();
+});
+window.addEventListener('mousemove', e => {
+  if (!painting || panning) return;
+  const { c, r } = cellAtWrap(e);
+  if (c >= 0 && c < COLS && r >= 0 && r < ROWS) { grid[idx(c, r)] = paintVal; draw(); }
+});
+window.addEventListener('mouseup', () => { painting = false; });
+
+/* ── Draw ────────────────────────────────────────── */
+function draw() {
+  const CELL = BASE_CELL;
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = '#181818';
+  ctx.lineWidth = 1;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
+  }
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const alive = grid[idx(c, r)];
+      const n     = countNeighbors(c, r);
+      const willLive = alive ? (n === 2 || n === 3) : (n === 3);
+      const cx = c * CELL, cy = r * CELL;
+      if (alive) {
+        ctx.fillStyle = willLive ? '#1db954' : '#c0392b';
+        ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+      } else if (n === 3) {
+        ctx.fillStyle = '#3a3a3a';
+        ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+      }
+    }
+  }
+
+  document.getElementById('genNum').textContent = generation;
+}
+
+/* ── Simulation ──────────────────────────────────── */
+function stepGrid() {
+  const next = new Uint8Array(COLS * ROWS);
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      const n = countNeighbors(c, r);
+      const alive = grid[idx(c, r)];
+      next[idx(c, r)] = alive ? (n === 2 || n === 3 ? 1 : 0) : (n === 3 ? 1 : 0);
+    }
+  grid = next;
+  generation++;
+  draw();
+}
+
+function loop(ts) {
+  if (!running) return;
+  if (ts - lastStep >= INTERVAL) { stepGrid(); lastStep = ts; }
+  rafId = requestAnimationFrame(loop);
+}
+
+function togglePlay() {
+  running = !running;
+  const btn = document.getElementById('playBtn');
+  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.classList.toggle('active', running);
+  if (running) rafId = requestAnimationFrame(loop);
+  else if (rafId) cancelAnimationFrame(rafId);
+}
+
+/* ── Patterns ────────────────────────────────────── */
+function loadGlider(offC, offR) {
+  [[-1,1],[0,-1],[0,1],[1,0],[1,1]].forEach(([dc, dr]) => {
+    const c = offC + dc, r = offR + dr;
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+  });
+}
+
+function loadLwss(offC, offR) {
+  [[-2,0],[-1,-1],[2,-1],[-2,1],[2,1],[-1,2],[0,2],[1,2]].forEach(([dc, dr]) => {
+    const c = offC + dc, r = offR + dr;
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+  });
+}
+
+/* ── Stage definitions ──────────────────────────── */
+function _setup(fn) {
+  return () => { if (running) togglePlay(); grid.fill(0); generation = 0; fn(); draw(); };
+}
+
+const STAGES = [
+  {
+    title: 'Zoom',
+    text: `Scroll your mouse wheel (or pinch on mobile) to zoom in and out. The pattern stays in place — only your view changes.<br><br>A Glider is loaded in the center. Zoom in to see individual cells clearly. Zoom out to see the full grid at once.`,
+    setup: _setup(() => { resetView(); loadGlider(Math.floor(COLS/2), Math.floor(ROWS/2)); }),
+    resetLabel: '⊙ Reset View',
+  },
+  {
+    title: 'Pan',
+    text: `Drag on any <b>empty cell</b> to move around the canvas. Try zooming in first, then dragging to explore.<br><br>Two patterns are loaded — a Glider near the top-left and a LWSS near the bottom-right. Pan around to find both.`,
+    setup: _setup(() => {
+      resetView();
+      loadGlider(4, 4);
+      loadLwss(COLS - 6, ROWS - 5);
+    }),
+    resetLabel: '⊙ Reset View',
+  },
+  {
+    title: 'Reset View',
+    text: `Lost your place? Click <b>Reset View</b> to return to zoom 1× and the default position.<br><br>Try zooming and panning to a different corner, then click Reset View to snap back. This works at any time during playback.`,
+    setup: _setup(() => { resetView(); loadGlider(Math.floor(COLS/2), Math.floor(ROWS/2)); }),
+    resetLabel: '⊙ Reset View',
+  },
+  {
+    title: 'Try It',
+    text: `In the main game the canvas is much larger. Zoom and pan let you navigate it freely.<br><br>Draw something here with zoom enabled — try placing cells while zoomed in for precision. When ready, head to <b>Lesson 5</b>.`,
+    setup: _setup(() => { resetView(); }),
+    resetLabel: '⊙ Reset View',
+    final: true,
+  },
+];
+
+/* ── Stage system ────────────────────────────────── */
+let currentStage = 0;
+
+function buildDots() {
+  const container = document.getElementById('progressDots');
+  container.innerHTML = '';
+  STAGES.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < currentStage ? ' done' : i === currentStage ? ' active' : '');
+    d.title = STAGES[i].title;
+    d.onclick = () => goToStage(i);
+    container.appendChild(d);
+  });
+}
+
+function renderStage() {
+  const s = STAGES[currentStage];
+  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
+  document.getElementById('stageTitle').textContent = s.title;
+  document.getElementById('stageText').innerHTML    = s.text;
+  const rb = document.getElementById('ruleBox');
+  if (s.rule) {
+    rb.style.display = '';
+    rb.innerHTML = s.rule;
+    rb.className = 'rule-box' + (s.ruleClass ? ' ' + s.ruleClass : '');
+  } else { rb.style.display = 'none'; }
+
+  const exBtn = document.getElementById('exampleBtn');
+  if (s.resetLabel) {
+    exBtn.style.display = '';
+    exBtn.textContent   = s.resetLabel;
+    exBtn.onclick       = s.resetLabel === '⊙ Reset View' ? resetView : () => s.setup && s.setup();
+  } else {
+    exBtn.style.display = 'none';
+  }
+
+  document.getElementById('backBtn').disabled = currentStage === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  if (currentStage === STAGES.length - 1) {
+    nextBtn.textContent = 'Finish ✓';
+    nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
+  } else {
+    nextBtn.textContent = 'Continue →';
+    nextBtn.onclick     = nextStage;
+  }
+
+  if (s.setup) s.setup();
+  buildDots();
+}
+
+function goToStage(i) { currentStage = i; renderStage(); }
+function nextStage()   { if (currentStage < STAGES.length - 1) { currentStage++; renderStage(); } }
+function prevStage()   { if (currentStage > 0) { currentStage--; renderStage(); } }
+
+/* ── Visited tracking ───────────────────────────── */
+function markVisited() {
+  try {
+    const key  = 'lifegame_training_visited';
+    const set  = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+    set.add(4);
+    localStorage.setItem(key, JSON.stringify([...set]));
+  } catch {}
+}
+markVisited();
+
+/* ── Resize ─────────────────────────────────────── */
+window.addEventListener('resize', () => {
+  sizeWrap();
+  draw();
+});
+
+/* ── Init ────────────────────────────────────────── */
+sizeWrap();
+renderStage();
+</script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lesson 7: Challenges — Life Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      color: #ccc;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Header ─────────────────────────────────── */
+    .lesson-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid #141414;
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .back-link { font-size: 0.7rem; color: #1db954; }
+    .back-link:hover { text-decoration: underline; }
+    .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
+    .lesson-title-h { font-size: 0.85rem; color: #888; }
+
+    .progress-dots { display: flex; gap: 5px; }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .dot.active { background: #1db954; }
+    .dot.done   { background: #1a3a22; }
+
+    /* ── Main layout ─────────────────────────────── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Left: explanation panel ─────────────────── */
+    .panel {
+      width: 320px;
+      flex-shrink: 0;
+      border-right: 1px solid #141414;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 28px;
+      overflow-y: auto;
+    }
+
+    .stage-num { font-size: 0.58rem; color: #2a2a2a; letter-spacing: 2px; margin-bottom: 10px; }
+    .stage-title { font-size: 1.1rem; color: #eee; margin-bottom: 16px; font-weight: normal; }
+    .stage-text {
+      font-size: 0.74rem;
+      color: #666;
+      line-height: 1.85;
+      flex: 1;
+    }
+    .stage-text b { color: #aaa; font-weight: normal; }
+    .stage-text .hi-green { color: #1db954; }
+
+    .rule-box {
+      background: #0d0d0d;
+      border-left: 3px solid #1db954;
+      padding: 11px 14px;
+      margin: 18px 0 4px;
+      font-size: 0.78rem;
+      line-height: 2;
+      color: #999;
+    }
+    .rule-box b { color: #eee; font-weight: normal; }
+    .rule-box.casual { border-left-color: #2a2a2a; color: #555; line-height: 2.3; font-size: 0.76rem; }
+    .rule-box.casual b { color: #888; }
+
+    .example-btn {
+      margin-top: 22px;
+      padding: 8px 14px;
+      background: none;
+      border: 1px solid #1a3a22;
+      color: #1db954;
+      font-family: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+      border-radius: 3px;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .example-btn:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+
+    .go-btn {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 11px 20px;
+      background: none;
+      border: 1px solid #1a3a22;
+      color: #1db954;
+      font-family: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+      border-radius: 3px;
+      text-decoration: none;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .go-btn:hover { background: rgba(29,185,84,0.08); border-color: #1db954; }
+
+    .stage-nav {
+      display: flex;
+      gap: 8px;
+      margin-top: 28px;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 9px 0;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #555;
+      font-family: inherit;
+      font-size: 0.72rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .nav-btn:hover { border-color: #333; color: #888; }
+    .nav-btn.primary { border-color: #1a3a22; color: #1db954; }
+    .nav-btn.primary:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+    .nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+    /* ── Right: canvas area ──────────────────────── */
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 24px;
+      gap: 16px;
+    }
+
+    canvas {
+      display: block;
+      border: 1px solid #141414;
+      cursor: default;
+    }
+
+    .controls {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .ctrl-btn {
+      padding: 6px 14px;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #555;
+      font-family: inherit;
+      font-size: 0.68rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .ctrl-btn:hover { border-color: #333; color: #888; }
+    .ctrl-btn.active { border-color: #1db954; color: #1db954; }
+
+    .gen-display {
+      font-size: 0.62rem;
+      color: #2a2a2a;
+      letter-spacing: 1px;
+    }
+
+    /* ── Footer nav ──────────────────────────────── */
+    .lesson-footer {
+      border-top: 1px solid #141414;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .foot-btn {
+      padding: 7px 16px;
+      background: none;
+      border: 1px solid #1e1e1e;
+      color: #333;
+      font-family: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+      border-radius: 3px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .foot-btn:hover { border-color: #333; color: #666; }
+    .foot-btn.hi { border-color: #1a3a22; color: #1db954; }
+    .foot-btn.hi:hover { background: rgba(29,185,84,0.06); border-color: #1db954; }
+
+    /* ── Mobile ──────────────────────────────────── */
+    @media (max-width: 720px) {
+      .main { flex-direction: column-reverse; overflow: visible; }
+      .panel { width: 100%; border-right: none; border-top: 1px solid #141414; padding: 24px 18px; }
+      .canvas-area { padding: 16px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="lesson-header">
+  <div class="header-left">
+    <a class="back-link" href="/training">← Training</a>
+    <span class="lesson-id">LESSON 07</span>
+    <span class="lesson-title-h">Challenges</span>
+  </div>
+  <div class="progress-dots" id="progressDots"></div>
+</header>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Left: explanation -->
+  <aside class="panel">
+    <div class="stage-num" id="stageNum">STAGE 1 / 4</div>
+    <h2 class="stage-title" id="stageTitle"></h2>
+    <div class="rule-box" id="ruleBox" style="display:none"></div>
+    <div class="stage-text" id="stageText"></div>
+    <div id="goBtnWrap"></div>
+    <div class="stage-nav">
+      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
+      <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
+    </div>
+  </aside>
+
+  <!-- Right: decorative canvas + controls -->
+  <section class="canvas-area">
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+    </div>
+
+    <div class="gen-display">gen <span id="genNum">0</span></div>
+  </section>
+
+</div>
+
+<!-- Footer -->
+<footer class="lesson-footer">
+  <a class="foot-btn" href="/training/lesson6">← Lesson 6</a>
+  <a class="foot-btn hi" href="/">Go Play →</a>
+</footer>
+
+<script>
+/* ── Decorative canvas — Glider gun region ───────── */
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+const COLS   = 18;
+const ROWS   = 13;
+
+function computeCell() {
+  const maxW = Math.min(window.innerWidth <= 720 ? window.innerWidth - 56 : 560, 560);
+  return Math.max(22, Math.floor(maxW / COLS));
+}
+let CELL = computeCell();
+canvas.width  = COLS * CELL;
+canvas.height = ROWS * CELL;
+
+let grid       = new Uint8Array(COLS * ROWS);
+let generation = 0;
+let running    = false;
+let rafId      = null;
+let lastStep   = 0;
+const INTERVAL = 160;
+
+function idx(c, r) { return r * COLS + c; }
+
+function countNeighbors(c, r) {
+  let n = 0;
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nc = c + dc, nr = r + dr;
+      if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) n += grid[idx(nc, nr)];
+    }
+  return n;
+}
+
+function draw() {
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = '#181818';
+  ctx.lineWidth = 1;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
+  }
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const alive = grid[idx(c, r)];
+      const n     = countNeighbors(c, r);
+      const willLive = alive ? (n === 2 || n === 3) : (n === 3);
+      const cx = c * CELL, cy = r * CELL;
+      if (alive) {
+        ctx.fillStyle = willLive ? '#1db954' : '#c0392b';
+        ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+      } else if (n === 3) {
+        ctx.fillStyle = '#3a3a3a';
+        ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+      }
+    }
+  }
+
+  document.getElementById('genNum').textContent = generation;
+}
+
+function stepGrid() {
+  const next = new Uint8Array(COLS * ROWS);
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      const n = countNeighbors(c, r);
+      const alive = grid[idx(c, r)];
+      next[idx(c, r)] = alive ? (n === 2 || n === 3 ? 1 : 0) : (n === 3 ? 1 : 0);
+    }
+  grid = next;
+  generation++;
+  draw();
+}
+
+function loop(ts) {
+  if (!running) return;
+  if (ts - lastStep >= INTERVAL) { stepGrid(); lastStep = ts; }
+  rafId = requestAnimationFrame(loop);
+}
+
+function togglePlay() {
+  running = !running;
+  const btn = document.getElementById('playBtn');
+  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.classList.toggle('active', running);
+  if (running) rafId = requestAnimationFrame(loop);
+  else if (rafId) cancelAnimationFrame(rafId);
+}
+
+/* ── Load a decorative multi-glider pattern ──────── */
+function loadDecoration() {
+  grid.fill(0);
+  generation = 0;
+  // Three gliders spread around the canvas
+  const stamp = (offC, offR, cells) => {
+    cells.forEach(([dc, dr]) => {
+      const c = offC + dc, r = offR + dr;
+      if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+    });
+  };
+  const glider = [[-1,1],[0,-1],[0,1],[1,0],[1,1]];
+  stamp(3, 3, glider);
+  stamp(9, 6, glider);
+  stamp(14, 2, glider);
+  // Blinker
+  [[0,-1],[0,0],[0,1]].forEach(([dc, dr]) => {
+    const c = 15 + dc, r = 10 + dr;
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+  });
+  // Block
+  [[-1,-1],[0,-1],[-1,0],[0,0]].forEach(([dc, dr]) => {
+    const c = 3 + dc, r = 10 + dr;
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
+  });
+  draw();
+}
+
+/* ── Stage definitions ──────────────────────────── */
+const STAGES = [
+  {
+    title: 'What Are Challenges',
+    rule: `11 built-in objectives<br>each gives a goal · limited time or gens`,
+    ruleClass: 'casual',
+    text: `The main game has 11 built-in challenges. Each one gives you a specific goal — keep cells alive, fill a zone, send a pattern from A to B.<br><br>Find the <b>challenge bar</b> at the bottom of the main game screen. Click any challenge to activate it.`,
+  },
+  {
+    title: 'How to Play',
+    text: `After activating a challenge:<br><br>1. The goal appears in the bar (e.g. "25 cells in zone B").<br>2. Draw your starting pattern on the canvas.<br>3. Hit <b>Play</b>. The bar shows live progress toward the goal.<br><br>You can pause at any time, adjust your pattern, and restart.`,
+  },
+  {
+    title: 'Win &amp; Fail',
+    text: `If the win condition is met — for example 25 cells inside zone B, or a Glider reaching zone B — the bar turns <span class="hi-green">green</span> and the challenge is marked complete.<br><br>If all cells die, or the generation limit runs out, the bar turns red. Hit <b>Reset</b> to retry with a new starting pattern. Unlimited attempts.`,
+  },
+  {
+    title: 'Go Play',
+    text: `Try <b>Challenge 1: First Steps</b> — keep at least one cell alive for 20 generations. It sounds simple, but a lone cell won't make it.<br><br>Hint: you need at least a stable structure (a Block) or an oscillator (a Blinker) to survive.<br><br>Head to the main game and open the Challenges tab.`,
+    final: true,
+    showGoBtn: true,
+  },
+];
+
+/* ── Stage system ────────────────────────────────── */
+let currentStage = 0;
+
+function buildDots() {
+  const container = document.getElementById('progressDots');
+  container.innerHTML = '';
+  STAGES.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < currentStage ? ' done' : i === currentStage ? ' active' : '');
+    d.title = STAGES[i].title;
+    d.onclick = () => goToStage(i);
+    container.appendChild(d);
+  });
+}
+
+function renderStage() {
+  const s = STAGES[currentStage];
+  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
+  document.getElementById('stageTitle').innerHTML   = s.title;
+  document.getElementById('stageText').innerHTML    = s.text;
+  const rb = document.getElementById('ruleBox');
+  if (s.rule) {
+    rb.style.display = '';
+    rb.innerHTML = s.rule;
+    rb.className = 'rule-box' + (s.ruleClass ? ' ' + s.ruleClass : '');
+  } else { rb.style.display = 'none'; }
+
+  const goBtnWrap = document.getElementById('goBtnWrap');
+  if (s.showGoBtn) {
+    goBtnWrap.innerHTML = `<a class="go-btn" href="/">▶ Open Main Game</a>`;
+  } else {
+    goBtnWrap.innerHTML = '';
+  }
+
+  document.getElementById('backBtn').disabled = currentStage === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  if (currentStage === STAGES.length - 1) {
+    nextBtn.textContent = 'Finish ✓';
+    nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
+  } else {
+    nextBtn.textContent = 'Continue →';
+    nextBtn.onclick     = nextStage;
+  }
+
+  buildDots();
+}
+
+function goToStage(i) { currentStage = i; renderStage(); }
+function nextStage()   { if (currentStage < STAGES.length - 1) { currentStage++; renderStage(); } }
+function prevStage()   { if (currentStage > 0) { currentStage--; renderStage(); } }
+
+/* ── Visited tracking ───────────────────────────── */
+function markVisited() {
+  try {
+    const key  = 'lifegame_training_visited';
+    const set  = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+    set.add(7);
+    localStorage.setItem(key, JSON.stringify([...set]));
+  } catch {}
+}
+markVisited();
+
+/* ── Resize ─────────────────────────────────────── */
+window.addEventListener('resize', () => {
+  CELL = computeCell();
+  canvas.width  = COLS * CELL;
+  canvas.height = ROWS * CELL;
+  draw();
+});
+
+/* ── Init ────────────────────────────────────────── */
+renderStage();
+loadDecoration();
+// Auto-play the decorative canvas
+togglePlay();
+</script>
+</body>
+</html>
