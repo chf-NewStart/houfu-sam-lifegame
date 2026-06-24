@@ -464,13 +464,12 @@
         <button class="pbtn has-thumb" draggable="true" data-preset="diehard"><img class="pbtn-thumb" src="patterns/diehard.png" alt="" draggable="false"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
         <button class="pbtn has-thumb" draggable="true" data-preset="lwss"   ><img class="pbtn-thumb" src="patterns/lwss.png" alt="" draggable="false"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
       </div>
-      <button class="btn" onclick="openSaves()" data-en="💾 My Blueprints" data-zh="💾 我的蓝图" title="Click to save the current pattern as a blueprint, or load a saved one" style="width:100%;margin-top:8px;border-color:#1a3a22;color:#1db954">💾 My Blueprints</button>
+      <div class="brow" style="margin-top:8px">
+        <button class="btn" onclick="openSaves()" data-en="💾 My Blueprints" data-zh="💾 我的蓝图" title="Click to save the current pattern as a blueprint, or load a saved one" style="flex:1;border-color:#1a3a22;color:#1db954">💾 My Blueprints</button>
+        <button class="btn" onclick="openPatternPicker()" title="Add a saved blueprint as a draggable pattern tile" style="flex-shrink:0;border-color:#1a3a22;color:#1db954" data-en="+ add" data-zh="+ 上传">+ add</button>
+      </div>
       <!-- Saved/imported pattern tiles (mobile) -->
       <div id="customPatternsMobile" style="display:none;margin-top:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="dev-header" style="margin:0" data-en="// saved patterns" data-zh="// 存档图案">// saved patterns</div>
-          <button class="btn" onclick="openPatternPicker()" style="padding:2px 8px;font-size:0.6rem;border-color:#1a3a22;color:#1db954" data-en="+ add" data-zh="+ 上传">+ add</button>
-        </div>
         <div id="customPatternGridMobile" class="preset-grid"></div>
       </div>
     </div>
@@ -638,12 +637,9 @@
       </div>
       <div class="brow" style="margin-top:8px">
         <button class="btn" onclick="openSaves()" data-en="💾 My Blueprints" data-zh="💾 我的蓝图" title="Click to save the current pattern as a blueprint, or load a saved one" style="flex:1;border-color:#1a3a22;color:#1db954">💾 My Blueprints</button>
+        <button class="btn" onclick="openPatternPicker()" title="Add a saved blueprint as a draggable pattern tile" style="flex-shrink:0;border-color:#1a3a22;color:#1db954" data-en="+ add" data-zh="+ 上传">+ add</button>
       </div>
       <div id="customPatternsSection">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="dev-header" style="margin:0" data-en="// saved patterns" data-zh="// 存档图案">// saved patterns</div>
-          <button class="btn" onclick="openPatternPicker()" style="padding:2px 8px;font-size:0.6rem;border-color:#1a3a22;color:#1db954" data-en="+ add" data-zh="+ 上传">+ add</button>
-        </div>
         <div id="customPatternGrid" class="preset-grid"></div>
         <div style="color:#333;font-size:0.58rem;margin-top:5px" data-en="drag to stamp · R / F to rotate/flip" data-zh="拖拽放置 · R/F 旋转/翻转">drag to stamp · R / F to rotate/flip</div>
       </div>
