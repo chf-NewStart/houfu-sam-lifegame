@@ -2424,7 +2424,7 @@ function showWin(ch, cells) {
   document.getElementById('winSubmit').style.display = 'block';
   document.getElementById('winSubmitted').style.display = 'none';
   const btn = document.getElementById('submitScoreBtn');
-  btn.disabled = false; btn.textContent = 'Submit';
+  btn.disabled = false; btn.textContent = t('Submit', '提交');
   document.getElementById('nicknameInput').value = localStorage.getItem('lifegame_nick') || '';
 
   document.getElementById('winOverlay').classList.add('show');
