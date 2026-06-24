@@ -175,7 +175,7 @@
     .btn.danger:hover { border-color: #f44336; color: #f44336; }
     /* "disabled" look via class — keeps the button tappable so it works on
        iOS Safari (a button enabled from the disabled attr can swallow taps) */
-    .btn.dis { opacity: 0.32; }
+    .btn.dis { opacity: 0.32; pointer-events: none; }
     .btn.dis:hover { border-color: #3d3d3d; color: #aaa; }
 
     /* First-run nudge — points new visitors at the Watch button */
@@ -1362,6 +1362,7 @@ function updateUI() {
     const prefix = status.classList.contains('won') ? '✓ ' : '▶ ';
     status.textContent = prefix + t(ch.goal, ch.goalZh);
   }
+  _syncMusicBtn();   // keep the Music ⏵/⏸ Sound button correct after a language switch
 }
 
 /* ── Mouse / touch drawing ────────────────────────── */
@@ -2618,7 +2619,7 @@ function _renderCustomPatternBtns() {
     const section = document.getElementById(secId);
     const grid = document.getElementById(gridId);
     if (!section || !grid) continue;
-    if (!customPatternList.length) { section.style.display = 'none'; continue; }
+    if (!customPatternList.length) { section.style.display = 'none'; grid.innerHTML = ''; continue; }
     section.style.display = 'block';
     grid.innerHTML = html;
     grid.querySelectorAll('.pbtn[data-preset]').forEach(_attachPBtnListeners);
