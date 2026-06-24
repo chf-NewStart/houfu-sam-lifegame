@@ -464,6 +464,7 @@
         <button class="pbtn has-thumb" draggable="true" data-preset="diehard"><img class="pbtn-thumb" src="patterns/diehard.png" alt="" draggable="false"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
         <button class="pbtn has-thumb" draggable="true" data-preset="lwss"   ><img class="pbtn-thumb" src="patterns/lwss.png" alt="" draggable="false"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
       </div>
+      <button class="btn" onclick="openSaves()" data-en="💾 My Blueprints" data-zh="💾 我的蓝图" title="Click to save the current pattern as a blueprint, or load a saved one" style="width:100%;margin-top:8px;border-color:#1a3a22;color:#1db954">💾 My Blueprints</button>
       <!-- Saved/imported pattern tiles (mobile) -->
       <div id="customPatternsMobile" style="display:none;margin-top:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -604,8 +605,7 @@
           <button class="btn" onclick="openGallery()" data-en="🖼️ Gallery" data-zh="🖼️ 图库">🖼️ Gallery</button>
         </div>
         <div class="brow">
-          <button class="btn" onclick="openSaves()" data-en="💾 My Saves" data-zh="💾 我的存档">💾 My Saves</button>
-          <button class="btn" onclick="openImgModal()" data-en="📷 Image" data-zh="📷 图片">📷 Image</button>
+          <button class="btn" onclick="openImgModal()" data-en="📷 Image" data-zh="📷 图片" style="flex:1">📷 Image</button>
         </div>
         <div class="brow">
           <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board" data-zh="🏆 榜单">🏆 Board</button>
@@ -636,6 +636,9 @@
       <div class="brow">
         <button class="btn" id="rotBtn"  onclick="rotateStamp()" title="Press R to rotate">↻ <span id="rotLabel">0°</span> <span style="color:#444;font-size:0.55rem">[R]</span></button>
         <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press F to flip">⟺ <span id="flipLabel">normal</span> <span style="color:#444;font-size:0.55rem">[F]</span></button>
+      </div>
+      <div class="brow" style="margin-top:8px">
+        <button class="btn" onclick="openSaves()" data-en="💾 My Blueprints" data-zh="💾 我的蓝图" title="Click to save the current pattern as a blueprint, or load a saved one" style="flex:1;border-color:#1a3a22;color:#1db954">💾 My Blueprints</button>
       </div>
       <div id="customPatternsSection">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -755,16 +758,16 @@
 
 <div id="savesOverlay">
   <div class="lb-box">
-    <div class="lb-title">💾 My Saves</div>
-    <div style="color:#666;font-size:0.72rem;margin-bottom:12px">Saved locally in your browser — private, never shared.</div>
+    <div class="lb-title" data-en="💾 My Blueprints" data-zh="💾 我的蓝图">💾 My Blueprints</div>
+    <div style="color:#666;font-size:0.72rem;margin-bottom:12px" data-en="Saved locally in your browser — private, never shared." data-zh="保存在你的浏览器本地 — 私密，绝不分享。">Saved locally in your browser — private, never shared.</div>
     <div style="display:flex;gap:6px;margin-bottom:16px">
-      <input id="savesNameInput" type="text" placeholder="Name this blueprint…" maxlength="40"
+      <input id="savesNameInput" type="text" placeholder="Name this blueprint…" data-ph-en="Name this blueprint…" data-ph-zh="给这个蓝图起个名…" maxlength="40"
         style="flex:1;background:#1a1a1a;border:1px solid #333;color:#eee;padding:7px 10px;font-family:inherit;font-size:0.8rem;outline:none;min-width:0"
         onkeydown="if(event.key==='Enter')onSaveBlueprint()">
-      <button class="btn" onclick="onSaveBlueprint()" style="flex-shrink:0">Save</button>
+      <button class="btn" onclick="onSaveBlueprint()" style="flex-shrink:0" data-en="Save" data-zh="保存">Save</button>
     </div>
     <div id="savesList"></div>
-    <button class="btn" onclick="closeSaves()" style="margin-top:16px;width:100%">Close</button>
+    <button class="btn" onclick="closeSaves()" style="margin-top:16px;width:100%" data-en="Close" data-zh="关闭">Close</button>
   </div>
 </div>
 
@@ -801,6 +804,9 @@ function applyLang() {
   document.querySelectorAll('.lang-opt').forEach(b => b.classList.toggle('active', b.dataset.setlang === lang));
   document.querySelectorAll('[data-en]').forEach(el => {
     el.textContent = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  document.querySelectorAll('[data-ph-en]').forEach(el => {
+    el.placeholder = lang === 'zh' ? el.dataset.phZh : el.dataset.phEn;
   });
   updateUI();
 }
