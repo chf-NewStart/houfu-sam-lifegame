@@ -2558,14 +2558,20 @@ function doResize() {
     applySeed(urlSeed);
   } else if (liveCells.length > 0) {
     liveCells.forEach(([c, r]) => { if (c < COLS && r < ROWS) grid[idx(c, r)] = 1; });
-  } else {
-    loadDefault();
   }
+  // else: grid was empty (e.g. user cleared) — keep it empty; never
+  // re-spawn the LIFE GAME splash on a resize.
 
   draw(); refreshDevPanel();
   if (wasRunning) togglePlay();
 }
+let _lastW = window.innerWidth;
 window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  // On mobile, the address bar showing/hiding during scroll fires resize with
+  // only a height change — ignore those so we don't rebuild the grid mid-scroll.
+  if (w <= 700 && w === _lastW) return;
+  _lastW = w;
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(doResize, 120);
 });
