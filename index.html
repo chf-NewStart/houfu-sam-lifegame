@@ -339,6 +339,9 @@
         <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share" data-zh="⎘ 分享">⎘ Share</button>
       </div>
       <div class="brow">
+        <button class="btn" id="auraBtn" onclick="toggleAura()" data-en="✦ Aura" data-zh="✦ 光晕" title="Color cells by age — green→violet as they survive" style="flex:1">✦ Aura</button>
+      </div>
+      <div class="brow">
         <button class="btn" onclick="resetView()"       data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
         <button class="btn" id="selModeBtn" onclick="toggleSelMode()" data-en="⬚ Zone" data-zh="⬚ 区域" title="Draw a focus zone · Esc to cancel">⬚ Zone</button>
         <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board"   data-zh="🏆 榜单">🏆 Board</button>
@@ -579,6 +582,8 @@ function initGrid() {
   canvas.height = ROWS * CELL;
   grid = new Uint8Array(COLS * ROWS);
   next = new Uint8Array(COLS * ROWS);
+  age     = new Uint16Array(COLS * ROWS);
+  nextAge = new Uint16Array(COLS * ROWS);
 }
 
 function idx(c, r) { return r * COLS + c; }
@@ -589,6 +594,39 @@ const RED       = '#f44336';
 const GHOST     = '#3a3a3a';
 const BG        = '#0a0a0a';
 const GRID_LINE = '#1e1e1e';
+
+/* ── Cell-age "Aura" coloring ─────────────────────── */
+// age[i] = how many generations cell i has been continuously alive.
+// In Aura mode cells are colored by age: bright green (newborn) →
+// cyan → blue → violet (ancient). Gives stable structures a glow that
+// distinguishes them from churning newborns.
+let age, nextAge;
+let auraMode = (localStorage.getItem('lifegame_aura') ?? '1') === '1';
+
+const AURA_STEPS = 40;
+const AURA_PALETTE = [];
+for (let i = 0; i < AURA_STEPS; i++) {
+  const p = i / (AURA_STEPS - 1);
+  const hue = 145 + p * 140;          // 145 (green) → 285 (violet)
+  const sat = 72 - p * 6;             // stay vivid
+  const lig = 45 + p * 12;            // brighten slightly with age
+  AURA_PALETTE[i] = `hsl(${hue.toFixed(0)}, ${sat.toFixed(0)}%, ${lig.toFixed(0)}%)`;
+}
+function auraColor(a) {
+  if (a < 1) return AURA_PALETTE[0];
+  const i = Math.min(AURA_STEPS - 1, Math.floor((a - 1) / 2)); // ~2 gens per band
+  return AURA_PALETTE[i];
+}
+// Keeps age[] consistent with manual edits (paint / stamp / load / clear)
+// without having to touch every mutation site: a live cell with no age
+// is treated as newly placed (age 1); a dead cell has age 0.
+function syncAges() {
+  if (!age) return;
+  for (let i = 0; i < grid.length; i++) {
+    if (grid[i]) { if (!age[i]) age[i] = 1; }
+    else if (age[i]) age[i] = 0;
+  }
+}
 
 /* ── Zoom / pan state ─────────────────────────────── */
 let zoom = 1, panX = 0, panY = 0;
@@ -625,18 +663,21 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
   }
 
+  syncAges();
   let live = 0, nextLive = 0;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      const alive = grid[idx(c, r)];
+      const i = idx(c, r);
+      const alive = grid[i];
       const n = neighbors(c, r);
       const willLive = alive ? (n === 2 || n === 3) : (n === 3);
       if (willLive) nextLive++;
       if (alive) {
         live++;
-        ctx.fillStyle = (n === 2 || n === 3) ? GREEN : RED;
+        ctx.fillStyle = auraMode ? auraColor(age[i]) : ((n === 2 || n === 3) ? GREEN : RED);
         ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
-      } else if (n === 3) {
+      } else if (n === 3 && !auraMode) {
+        // next-gen birth preview — predict mode only (cleaner art look in Aura)
         ctx.fillStyle = GHOST;
         ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
       }
@@ -817,12 +858,17 @@ function step() {
   pushHistory('step');
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
+      const i = idx(c, r);
       const n = neighbors(c, r);
-      const alive = grid[idx(c, r)];
-      next[idx(c, r)] = (alive ? (n === 2 || n === 3) : (n === 3)) ? 1 : 0;
+      const alive = grid[i];
+      const willLive = alive ? (n === 2 || n === 3) : (n === 3);
+      next[i] = willLive ? 1 : 0;
+      // age: survivor keeps counting, newborn starts at 1, dead resets to 0
+      nextAge[i] = willLive ? (alive ? Math.min(age[i] + 1, 65000) : 1) : 0;
     }
   }
   [grid, next] = [next, grid];
+  [age, nextAge] = [nextAge, age];
   generation++;
   document.getElementById('genCount').textContent = generation;
   if (activeChallenge >= 0) doChallengeTick();
@@ -858,6 +904,14 @@ function togglePlay() {
 }
 
 function stepOnce() { if (running) togglePlay(); step(); draw(); refreshDevPanel(); }
+
+function toggleAura() {
+  auraMode = !auraMode;
+  localStorage.setItem('lifegame_aura', auraMode ? '1' : '0');
+  const btn = document.getElementById('auraBtn');
+  if (btn) btn.classList.toggle('active', auraMode);
+  draw();
+}
 
 /* ── Dev mode lookahead ───────────────────────────── */
 let devMode = false;
@@ -2079,6 +2133,10 @@ window.addEventListener('resize', () => {
 /* ── Init ─────────────────────────────────────────── */
 initGrid();
 if (!loadSeedParam()) loadDefault();
+{
+  const _ab = document.getElementById('auraBtn');
+  if (_ab) _ab.classList.toggle('active', auraMode);
+}
 </script>
 </body>
 </html>
