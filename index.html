@@ -160,7 +160,7 @@
     /* ── Right panel ──────────────────────────────────── */
     .right-panel {
       width: 220px; min-width: 180px; flex-shrink: 1; border-left: 1px solid #2e2e2e;
-      overflow-y: auto; padding: 6px 12px; display: flex; flex-direction: column; gap: 0;
+      overflow-y: auto; overflow-x: hidden; padding: 6px 12px; display: flex; flex-direction: column; gap: 0;
     }
     .pcard { padding: 9px 2px; border-bottom: 1px solid #1e1e1e; }
     .pcard:last-child { border-bottom: none; }
@@ -224,13 +224,23 @@
     .pbtn:hover { border-color: #aaa; color: #ccc; }
     .pbtn:active { cursor: grabbing; }
     .pbtn-desc { display: block; font-size: 0.53rem; color: #666; margin-top: 1px; }
-    /* Preset tiles with a shape thumbnail: image at left, name+desc stacked at right */
-    .pbtn.has-thumb { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-content: center; }
+    /* Pattern tiles: name on top, cropped shape screenshot below (full width).
+       The description shows as a tooltip on hover, kept inside the tile so the
+       panel's overflow can't clip it (and so it never widens the layout). */
+    .pbtn.has-thumb { display: flex; flex-direction: column; gap: 4px; position: relative; text-align: center; }
+    .pbtn.has-thumb .pbtn-name { order: -1; overflow-wrap: break-word; }
     .pbtn-thumb {
-      grid-row: 1 / span 2; width: 42px; height: 42px;
+      width: 100%; height: 48px; box-sizing: border-box;
       object-fit: contain; background: #0a0a0a;
       border: 1px solid #242424; border-radius: 2px;
       image-rendering: pixelated; pointer-events: none;
+    }
+    .pbtn.has-thumb .pbtn-desc { display: none; }
+    .pbtn.has-thumb:hover .pbtn-desc {
+      display: block; position: absolute; left: 3px; right: 3px; bottom: 3px;
+      background: rgba(8,8,8,0.95); border: 1px solid rgba(29,185,84,0.4);
+      color: #ccc; padding: 4px 5px; border-radius: 2px;
+      font-size: 0.52rem; line-height: 1.3; z-index: 5; overflow-wrap: break-word;
     }
     .drag-hint { font-size: 0.57rem; color: #555; margin-top: 5px; margin-bottom: 5px; }
 
@@ -253,10 +263,9 @@
     /* ── Mobile patterns (above canvas) ──────────────── */
     .patterns-mobile { display: none; width: 100%; }
     .patterns-mobile .preset-grid { grid-template-columns: repeat(4, 1fr); }
-    .patterns-mobile .pbtn-desc { display: none; }
-    /* On the narrow mobile tiles, stack the thumbnail above the name */
-    .patterns-mobile .pbtn.has-thumb { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
-    .patterns-mobile .pbtn-thumb { width: 40px; height: 40px; }
+    /* Mobile has no hover, so just show name on top + screenshot below (base layout);
+       keep the image a touch shorter on the small tiles. */
+    .patterns-mobile .pbtn-thumb { height: 40px; }
 
     /* ── Dev mode lookahead strip ────────────────────── */
     #devPanel { width: 100%; margin-top: 6px; }
