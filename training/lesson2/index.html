@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Lesson 2: Drawing &amp; Playing — Life Game</title>
+  <title>第 2 课：绘制与播放 — 生命游戏</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -32,6 +32,12 @@
     .back-link:hover { text-decoration: underline; }
     .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
     .lesson-title-h { font-size: 0.85rem; color: #888; }
+    .lang-btn {
+      margin-left: auto; background: transparent; border: 1px solid #1db954;
+      color: #1db954; font-family: inherit; font-size: 0.7rem; padding: 4px 10px;
+      cursor: pointer; border-radius: 3px;
+    }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
     .progress-dots { display: flex; gap: 5px; }
     .dot {
@@ -205,11 +211,12 @@
 <!-- Header -->
 <header class="lesson-header">
   <div class="header-left">
-    <a class="back-link" href="/training">← Training</a>
-    <span class="lesson-id">LESSON 02</span>
-    <span class="lesson-title-h">Drawing &amp; Playing</span>
+    <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
+    <span class="lesson-id" data-en="LESSON 02" data-zh="第 02 课">LESSON 02</span>
+    <span class="lesson-title-h" data-en="Drawing &amp; Playing" data-zh="绘制与播放">Drawing &amp; Playing</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </header>
 
 <!-- Main -->
@@ -223,8 +230,8 @@
     <div class="stage-text" id="stageText"></div>
     <button class="example-btn" id="exampleBtn" style="display:none"></button>
     <div class="stage-nav">
-      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
-      <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
+      <button class="nav-btn" id="backBtn" onclick="prevStage()" data-en="← Back" data-zh="← 返回">← Back</button>
+      <button class="nav-btn primary" id="nextBtn" onclick="nextStage()" data-en="Continue →" data-zh="继续 →">Continue →</button>
     </div>
   </aside>
 
@@ -233,24 +240,29 @@
     <canvas id="canvas"></canvas>
 
     <div class="controls">
-      <button class="ctrl-btn" onclick="clearGrid()">↺ Clear</button>
-      <button class="ctrl-btn" onclick="undoDraw()">↩ Undo</button>
-      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
-      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+      <button class="ctrl-btn" onclick="clearGrid()" data-en="↺ Clear" data-zh="↺ 清空">↺ Clear</button>
+      <button class="ctrl-btn" onclick="undoDraw()" data-en="↩ Undo" data-zh="↩ 撤销">↩ Undo</button>
+      <button class="ctrl-btn" onclick="stepGrid()" data-en="⊙ Step" data-zh="⊙ 单步">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" data-en="▶ Play" data-zh="▶ 播放">▶ Play</button>
     </div>
 
-    <div class="gen-display">gen <span id="genNum">0</span></div>
+    <div class="gen-display"><span data-en="gen" data-zh="第">gen</span> <span id="genNum">0</span><span data-en="" data-zh=" 代"></span></div>
   </section>
 
 </div>
 
 <!-- Footer -->
 <footer class="lesson-footer">
-  <a class="foot-btn" href="/training/lesson1">← Lesson 1</a>
-  <a class="foot-btn hi" href="/training/lesson3">Lesson 3: Patterns →</a>
+  <a class="foot-btn" href="/training/lesson1" data-en="← Lesson 1" data-zh="← 第 1 课">← Lesson 1</a>
+  <a class="foot-btn hi" href="/training/lesson3" data-en="Lesson 3: Patterns →" data-zh="第 3 课：图案 →">Lesson 3: Patterns →</a>
 </footer>
 
 <script>
+/* ── i18n (shared with the main app via localStorage) ── */
+const LANG_KEY = 'lifegame_lang';
+let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+function t(en, zh) { return lang === 'zh' ? zh : en; }
+
 /* ── Stage definitions ──────────────────────────── */
 const CC = 9, CR = 6;
 
@@ -261,27 +273,38 @@ function _setup(fn) {
 const STAGES = [
   {
     title: 'Click to Draw',
+    titleZh: '点击绘制',
     text: `Click any cell to bring it <span class="hi-green">alive</span>. Click an alive cell to erase it.<br><br>Hold and drag to paint a line of cells.<br><br>Try scribbling something — anything at all. When you're satisfied, move on.`,
+    textZh: `点击任意格子让它<span class="hi-green">活</span>过来。点击一个活细胞即可擦除它。<br><br>按住并拖拽可以绘制一连串细胞。<br><br>随意涂画些什么吧 — 什么都行。画到满意之后，就继续往下走。`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
+    resetLabelZh: '↺ 清空',
   },
   {
     title: 'Step',
+    titleZh: '单步',
     text: `This is a <b>Blinker</b> — the simplest oscillating pattern.<br><br>Click <b>Step</b> once. Watch it rotate 90°. Step again — it's back.<br><br>Each step advances exactly one generation of the rules.`,
+    textZh: `这是一个<b>闪光灯</b> — 最简单的振荡图案。<br><br>点一次<b>单步</b>，看它旋转 90°。再单步一次 — 它又转回来了。<br><br>每次单步都会按照规则精确地推进一代。`,
     setup: _setup(() => loadPattern('blinker')),
     resetLabel: '↺ Reload Blinker',
-    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#ffb400', pulse: true, label: 'watch this pattern' }],
+    resetLabelZh: '↺ 重载闪光灯',
+    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#ffb400', pulse: true, label: 'watch this pattern', labelZh: '看这个图案' }],
   },
   {
     title: 'Play &amp; Pause',
+    titleZh: '播放与暂停',
     text: `Click <b>Play</b> to let the simulation run on its own. The Blinker will keep oscillating.<br><br>Click <b>Pause</b> to stop. The <b>gen</b> counter at the bottom shows how many steps have elapsed.<br><br>Hit Reset to start fresh and try again.`,
+    textZh: `点击<b>播放</b>，让模拟自动运行。闪光灯会一直振荡下去。<br><br>点击<b>暂停</b>即可停下。底部的<b>代数</b>计数会显示已经经过了多少步。<br><br>点一下重载就能从头再来，再试一次。`,
     setup: _setup(() => loadPattern('blinker')),
     resetLabel: '↺ Reload Blinker',
-    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#1db954', pulse: true, label: 'press Play to watch it loop' }],
+    resetLabelZh: '↺ 重载闪光灯',
+    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#1db954', pulse: true, label: 'press Play to watch it loop', labelZh: '按播放看它循环' }],
   },
   {
     title: 'Undo',
+    titleZh: '撤销',
     text: `A small cluster is preloaded. Draw a few more cells anywhere.<br><br>Made a mistake? Click <b>Undo</b> to remove your last brush stroke. You can undo multiple times.<br><br><b>Ctrl+Z</b> (or Cmd+Z on Mac) also works.`,
+    textZh: `这里预先放好了一小簇细胞。在任意位置再多画几个。<br><br>画错了？点击<b>撤销</b>就能移除你上一笔。可以连续多次撤销。<br><br>用<b>Ctrl+Z</b>（Mac 上是 Cmd+Z）也行。`,
     setup: _setup(() => {
       // 3×3 block centered
       [[-1,-1],[0,-1],[1,-1],[-1,0],[0,0],[1,0],[-1,1],[0,1],[1,1]].forEach(([dc,dr]) => {
@@ -290,12 +313,16 @@ const STAGES = [
       });
     }),
     resetLabel: '↺ Reload Cluster',
+    resetLabelZh: '↺ 重载细胞簇',
   },
   {
     title: 'Try It',
+    titleZh: '动手试试',
     text: `You know how to draw and play. Build something interesting — anything you like.<br><br>Try making a pattern that survives for many generations, or one that loops. Experiment freely.<br><br>Head to <b>Lesson 3</b> when you're ready.`,
+    textZh: `现在你已经会绘制和播放了。来搭点有意思的东西吧 — 喜欢什么都行。<br><br>试着做一个能存活很多代的图案，或者一个会循环的图案。尽情实验。<br><br>准备好之后，就前往<b>第 3 课</b>。`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
+    resetLabelZh: '↺ 清空',
     final: true,
   },
 ];
@@ -383,7 +410,8 @@ function drawGuides(highlights) {
   const offset  = -(now / 28) % (dashLen * 2);   // marching ants
   const pulse   = 0.5 + 0.5 * Math.sin(now / 480); // 0..1 breathing
 
-  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label }) => {
+  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label, labelZh }) => {
+    if (lang === 'zh' && labelZh) label = labelZh;
     const x = c0 * CELL;
     const y = r0 * CELL;
     const w = (c1 - c0 + 1) * CELL;
@@ -490,7 +518,7 @@ function loop(ts) {
 function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
-  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.textContent = running ? t('⏸ Pause', '⏸ 暂停') : t('▶ Play', '▶ 播放');
   btn.classList.toggle('active', running);
   if (running) rafId = requestAnimationFrame(loop);
   else if (rafId) cancelAnimationFrame(rafId);
@@ -599,7 +627,7 @@ function buildDots() {
   STAGES.forEach((_, i) => {
     const d = document.createElement('div');
     d.className = 'dot' + (i < currentStage ? ' done' : i === currentStage ? ' active' : '');
-    d.title = STAGES[i].title;
+    d.title = lang === 'zh' ? STAGES[i].titleZh : STAGES[i].title;
     d.onclick = () => goToStage(i);
     container.appendChild(d);
   });
@@ -607,9 +635,9 @@ function buildDots() {
 
 function renderStage() {
   const s = STAGES[currentStage];
-  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
-  document.getElementById('stageTitle').innerHTML   = s.title;
-  document.getElementById('stageText').innerHTML    = s.text;
+  document.getElementById('stageNum').textContent   = t(`STAGE ${currentStage + 1} / ${STAGES.length}`, `阶段 ${currentStage + 1} / ${STAGES.length}`);
+  document.getElementById('stageTitle').innerHTML   = lang === 'zh' ? s.titleZh : s.title;
+  document.getElementById('stageText').innerHTML    = lang === 'zh' ? s.textZh : s.text;
   const rb = document.getElementById('ruleBox');
   if (s.rule) {
     rb.style.display = '';
@@ -620,7 +648,7 @@ function renderStage() {
   const exBtn = document.getElementById('exampleBtn');
   if (s.resetLabel) {
     exBtn.style.display = '';
-    exBtn.textContent   = s.resetLabel;
+    exBtn.textContent   = (lang === 'zh' && s.resetLabelZh) ? s.resetLabelZh : s.resetLabel;
     exBtn.onclick       = () => s.setup && s.setup();
   } else {
     exBtn.style.display = 'none';
@@ -629,10 +657,10 @@ function renderStage() {
   document.getElementById('backBtn').disabled = currentStage === 0;
   const nextBtn = document.getElementById('nextBtn');
   if (currentStage === STAGES.length - 1) {
-    nextBtn.textContent = 'Finish ✓';
+    nextBtn.textContent = t('Finish ✓', '完成 ✓');
     nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
   } else {
-    nextBtn.textContent = 'Continue →';
+    nextBtn.textContent = t('Continue →', '继续 →');
     nextBtn.onclick     = nextStage;
   }
 
@@ -663,8 +691,29 @@ window.addEventListener('resize', () => {
   draw();
 });
 
+/* ── i18n apply / toggle ─────────────────────────── */
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+  document.title = t('Lesson 2: Drawing & Playing — Life Game', '第 2 课：绘制与播放 — 生命游戏');
+  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  renderStage();
+  if (running) {
+    const btn = document.getElementById('playBtn');
+    btn.textContent = t('⏸ Pause', '⏸ 暂停');
+  }
+}
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  applyLang();
+}
+
 /* ── Init ────────────────────────────────────────── */
 renderStage();
+applyLang();
 </script>
 </body>
 </html>

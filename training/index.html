@@ -25,6 +25,12 @@
     }
     .topnav a { color: #1db954; }
     .topnav a:hover { text-decoration: underline; }
+    .lang-btn {
+      margin-left: auto; background: transparent; border: 1px solid #1db954;
+      color: #1db954; font-family: inherit; font-size: 0.7rem; padding: 4px 10px;
+      cursor: pointer;
+    }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
     h1 {
       font-size: 1.5rem;
@@ -76,27 +82,6 @@
       color: #1db954;
       margin-top: 4px;
     }
-    .card-soon {
-      font-size: 0.58rem;
-      color: #222;
-      margin-top: 4px;
-    }
-
-    .manual-link {
-      border: 1px dashed #1e1e1e;
-      border-radius: 5px;
-      padding: 18px 22px;
-      max-width: 380px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .manual-link:hover { border-color: #333; }
-    .manual-icon { font-size: 1.5rem; flex-shrink: 0; }
-    .manual-title { font-size: 0.85rem; color: #ddd; margin-bottom: 4px; }
-    .manual-desc { font-size: 0.68rem; color: #333; line-height: 1.5; }
 
     footer {
       margin-top: 64px;
@@ -108,29 +93,34 @@
 <body>
 
   <nav class="topnav">
-    <a href="/">← Life Game</a>
+    <a href="/" data-en="← Life Game" data-zh="← 生命游戏">← Life Game</a>
     <span>/</span>
-    <span style="color:#555">training</span>
+    <span style="color:#555" data-en="training" data-zh="教程">training</span>
+    <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </nav>
 
-  <h1>// training</h1>
-  <div class="subtitle">learn the rules · master the tools · build something alive</div>
+  <h1 data-en="// training" data-zh="// 教程">// training</h1>
+  <div class="subtitle" data-en="learn the rules · master the tools · build something alive" data-zh="学习规则 · 掌握工具 · 创造生命">learn the rules · master the tools · build something alive</div>
 
-  <div class="section-label">// lessons</div>
+  <div class="section-label" data-en="// lessons" data-zh="// 课程">// lessons</div>
   <div class="grid" id="lessonGrid"></div>
 
   <footer>lifegameproject.com / training</footer>
 
 <script>
+/* ── i18n (shared with the main app via localStorage) ── */
+const LANG_KEY = 'lifegame_lang';
+let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+
 const LESSONS = [
-  { id: 1, title: 'The Rules',          desc: 'B3/S23 — birth, survival, death. Watch the logic play out cell by cell with a live overlay.' },
-  { id: 2, title: 'Drawing & Playing',  desc: 'Click to paint cells. Play, step, pause, undo. Get comfortable with the core controls.' },
-  { id: 3, title: 'Patterns',           desc: 'Drag built-in patterns onto the canvas. Rotate with R or scroll, flip with F, then stamp.' },
-  { id: 4, title: 'Zoom & Pan',         desc: 'Navigate a larger world. Pinch, scroll, or drag to explore — reset view with ⊙.' },
-  { id: 5, title: 'Zone Tool',          desc: 'Draw a focus area with ⬚ Zone. Track live cell counts inside your boundary in real time.' },
-  { id: 6, title: 'Bridge',             desc: 'Draw in zone A. Get 5 cells into zone B. Needs a moving pattern — hint: try a Glider.' },
-  { id: 7, title: 'Challenges',         desc: 'Eleven built-in objectives — from First Steps to Bridge. Can you beat them all?' },
-  { id: 8, title: 'Dev Mode',           desc: 'Lookahead strip showing 7 future states. Saved blueprint tiles. Advanced tools for builders.' },
+  { id: 1, title: 'The Rules',         titleZh: '规则',        desc: 'B3/S23 — birth, survival, death. Watch the logic play out cell by cell with a live overlay.',                  descZh: 'B3/S23 — 诞生、存活、死亡。通过实时叠加层逐个细胞地观察逻辑演化。' },
+  { id: 2, title: 'Drawing & Playing', titleZh: '绘制与播放',  desc: 'Click to paint cells. Play, step, pause, undo. Get comfortable with the core controls.',                       descZh: '点击绘制细胞。播放、单步、暂停、撤销。熟悉核心控制。' },
+  { id: 3, title: 'Patterns',          titleZh: '图案',        desc: 'Drag built-in patterns onto the canvas. Rotate with R or scroll, flip with F, then stamp.',                   descZh: '将内置图案拖到画布上。用 R 或滚轮旋转，用 F 翻转，然后放置。' },
+  { id: 4, title: 'Zoom & Pan',        titleZh: '缩放与平移',  desc: 'Navigate a larger world. Pinch, scroll, or drag to explore — reset view with ⊙.',                              descZh: '探索更大的世界。捏合、滚动或拖拽来浏览 — 用 ⊙ 重置视图。' },
+  { id: 5, title: 'Zone Tool',         titleZh: '区域工具',    desc: 'Draw a focus area with ⬚ Zone. Track live cell counts inside your boundary in real time.',                    descZh: '用 ⬚ 区域绘制一个聚焦区域。实时跟踪边界内的活细胞数量。' },
+  { id: 6, title: 'Bridge',            titleZh: '信使',        desc: 'Draw in zone A. Get 5 cells into zone B. Needs a moving pattern — hint: try a Glider.',                       descZh: '在 A 区绘制。将 5 个细胞送入 B 区。需要会移动的图案 — 提示：试试滑翔机。' },
+  { id: 7, title: 'Challenges',        titleZh: '挑战',        desc: 'Eleven built-in objectives — from First Steps to Bridge. Can you beat them all?',                             descZh: '十一个内置目标 — 从初步到信使。你能全部通关吗？' },
+  { id: 8, title: 'Dev Mode',          titleZh: '开发模式',    desc: 'Lookahead strip showing 7 future states. Saved blueprint tiles. Advanced tools for builders.',                descZh: '预测条显示 7 个未来状态。存档图案磁贴。为创造者准备的高级工具。' },
 ];
 
 const VISITED_KEY = 'lifegame_training_visited';
@@ -142,19 +132,42 @@ function getVisited() {
 const visited = getVisited();
 const grid = document.getElementById('lessonGrid');
 
-LESSONS.forEach(l => {
-  const done = visited.has(l.id);
-  const card = document.createElement('a');
-  card.href = `/training/lesson${l.id}`;
-  card.className = 'card' + (done ? ' visited' : '');
-  card.innerHTML = `
-    <div class="card-num">LESSON ${String(l.id).padStart(2,'0')}</div>
-    <div class="card-title">${l.title}</div>
-    <div class="card-desc">${l.desc}</div>
-    ${done ? '<div class="card-badge">✓ visited</div>' : ''}
-  `;
-  grid.appendChild(card);
-});
+function renderLessons() {
+  grid.innerHTML = '';
+  LESSONS.forEach(l => {
+    const done = visited.has(l.id);
+    const card = document.createElement('a');
+    card.href = `/training/lesson${l.id}`;
+    card.className = 'card' + (done ? ' visited' : '');
+    const title = lang === 'zh' ? l.titleZh : l.title;
+    const desc  = lang === 'zh' ? l.descZh  : l.desc;
+    const lessonLbl = lang === 'zh' ? `第 ${String(l.id).padStart(2, '0')} 课` : `LESSON ${String(l.id).padStart(2, '0')}`;
+    const badge = lang === 'zh' ? '✓ 已学' : '✓ visited';
+    card.innerHTML = `
+      <div class="card-num">${lessonLbl}</div>
+      <div class="card-title">${title}</div>
+      <div class="card-desc">${desc}</div>
+      ${done ? `<div class="card-badge">${badge}</div>` : ''}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.textContent = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  renderLessons();
+}
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  applyLang();
+}
+
+applyLang();
 </script>
 </body>
 </html>

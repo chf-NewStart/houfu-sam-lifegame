@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Lesson 4: Zoom &amp; Pan — Life Game</title>
+  <title data-en="Lesson 4: Zoom &amp; Pan — Life Game" data-zh="第 4 课：缩放与平移 — 生命游戏">Lesson 4: Zoom &amp; Pan — Life Game</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -30,6 +30,12 @@
     .header-left { display: flex; align-items: center; gap: 14px; }
     .back-link { font-size: 0.7rem; color: #1db954; }
     .back-link:hover { text-decoration: underline; }
+    .lang-btn {
+      margin-left: auto; background: transparent; border: 1px solid #1db954;
+      color: #1db954; font-family: inherit; font-size: 0.7rem; padding: 4px 10px;
+      cursor: pointer;
+    }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
     .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
     .lesson-title-h { font-size: 0.85rem; color: #888; }
 
@@ -217,9 +223,10 @@
 <!-- Header -->
 <header class="lesson-header">
   <div class="header-left">
-    <a class="back-link" href="/training">← Training</a>
-    <span class="lesson-id">LESSON 04</span>
-    <span class="lesson-title-h">Zoom &amp; Pan</span>
+    <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
+    <button class="lang-btn" id="langBtn" onclick="toggleLang()" style="margin-left:0">中文</button>
+    <span class="lesson-id" data-en="LESSON 04" data-zh="第 04 课">LESSON 04</span>
+    <span class="lesson-title-h" data-en="Zoom &amp; Pan" data-zh="缩放与平移">Zoom &amp; Pan</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
 </header>
@@ -235,8 +242,8 @@
     <div class="stage-text" id="stageText"></div>
     <button class="example-btn" id="exampleBtn" style="display:none"></button>
     <div class="stage-nav">
-      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
-      <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
+      <button class="nav-btn" id="backBtn" onclick="prevStage()" data-en="← Back" data-zh="← 返回">← Back</button>
+      <button class="nav-btn primary" id="nextBtn" onclick="nextStage()" data-en="Continue →" data-zh="继续 →">Continue →</button>
     </div>
   </aside>
 
@@ -247,14 +254,14 @@
     </div>
 
     <div class="controls">
-      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
-      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
-      <button class="ctrl-btn" onclick="resetView()">⊙ Reset View</button>
+      <button class="ctrl-btn" onclick="stepGrid()" data-en="⊙ Step" data-zh="⊙ 单步">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" data-en="▶ Play" data-zh="▶ 播放">▶ Play</button>
+      <button class="ctrl-btn" onclick="resetView()" data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
     </div>
 
     <div style="display:flex;gap:20px">
-      <div class="zoom-display">zoom <span id="zoomNum">1.0×</span></div>
-      <div class="gen-display">gen <span id="genNum">0</span></div>
+      <div class="zoom-display"><span data-en="zoom" data-zh="缩放">zoom</span> <span id="zoomNum">1.0×</span></div>
+      <div class="gen-display"><span data-en="gen" data-zh="代">gen</span> <span id="genNum">0</span></div>
     </div>
   </section>
 
@@ -262,11 +269,15 @@
 
 <!-- Footer -->
 <footer class="lesson-footer">
-  <a class="foot-btn" href="/training/lesson3">← Lesson 3</a>
-  <a class="foot-btn hi" href="/training/lesson5">Lesson 5: Zone Tool →</a>
+  <a class="foot-btn" href="/training/lesson3" data-en="← Lesson 3" data-zh="← 第 3 课">← Lesson 3</a>
+  <a class="foot-btn hi" href="/training/lesson5" data-en="Lesson 5: Zone Tool →" data-zh="第 5 课：区域工具 →">Lesson 5: Zone Tool →</a>
 </footer>
 
 <script>
+/* ── i18n (shared with the main app via localStorage) ── */
+const LANG_KEY = 'lifegame_lang';
+let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+
 /* ── Grid ────────────────────────────────────────── */
 const COLS = 28, ROWS = 18;
 const BASE_CELL = 22;
@@ -477,7 +488,8 @@ function drawGuides(highlights) {
   const offset  = -(now / 28) % (dashLen * 2);   // marching ants
   const pulse   = 0.5 + 0.5 * Math.sin(now / 480); // 0..1 breathing
 
-  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label }) => {
+  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label: labelEn, labelZh }) => {
+    const label = lang === 'zh' && labelZh ? labelZh : labelEn;
     const x = c0 * CELL;
     const y = r0 * CELL;
     const w = (c1 - c0 + 1) * CELL;
@@ -584,7 +596,9 @@ function loop(ts) {
 function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
-  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.textContent = running
+    ? (lang === 'zh' ? '⏸ 暂停' : '⏸ Pause')
+    : (lang === 'zh' ? '▶ 播放' : '▶ Play');
   btn.classList.toggle('active', running);
   if (running) rafId = requestAnimationFrame(loop);
   else if (rafId) cancelAnimationFrame(rafId);
@@ -613,32 +627,44 @@ function _setup(fn) {
 const STAGES = [
   {
     title: 'Zoom',
+    titleZh: '缩放',
     text: `Scroll your mouse wheel (or pinch on mobile) to zoom in and out. The pattern stays in place — only your view changes.<br><br>A Glider is loaded in the center. Zoom in to see individual cells clearly. Zoom out to see the full grid at once.`,
+    textZh: `滚动鼠标滚轮（手机上用捏合手势）来放大和缩小。图案保持原位 — 只有你的视图发生变化。<br><br>中央放置了一只滑翔机。放大可以清楚地看到每个细胞。缩小可以一次看到整个网格。`,
     setup: _setup(() => { resetView(); loadGlider(Math.floor(COLS/2), Math.floor(ROWS/2)); }),
     resetLabel: '⊙ Reset View',
-    highlights: [{ c0: Math.floor(COLS/2)-2, r0: Math.floor(ROWS/2)-2, c1: Math.floor(COLS/2)+2, r1: Math.floor(ROWS/2)+2, color: '#ffb400', pulse: true, label: 'zoom in on this' }],
+    resetLabelZh: '⊙ 重置视图',
+    highlights: [{ c0: Math.floor(COLS/2)-2, r0: Math.floor(ROWS/2)-2, c1: Math.floor(COLS/2)+2, r1: Math.floor(ROWS/2)+2, color: '#ffb400', pulse: true, label: 'zoom in on this', labelZh: '放大这里' }],
   },
   {
     title: 'Pan',
+    titleZh: '平移',
     text: `Drag on any <b>empty cell</b> to move around the canvas. Try zooming in first, then dragging to explore.<br><br>Two patterns are loaded — a Glider near the top-left and a LWSS near the bottom-right. Pan around to find both.`,
+    textZh: `在任意<b>空格</b>上拖拽来移动画布。试着先放大，再拖拽探索。<br><br>这里放置了两个图案 — 左上角附近有一只滑翔机，右下角附近有一艘轻型飞船（LWSS）。平移浏览，把两个都找出来。`,
     setup: _setup(() => {
       resetView();
       loadGlider(4, 4);
       loadLwss(COLS - 6, ROWS - 5);
     }),
     resetLabel: '⊙ Reset View',
+    resetLabelZh: '⊙ 重置视图',
   },
   {
     title: 'Reset View',
+    titleZh: '重置视图',
     text: `Lost your place? Click <b>Reset View</b> to return to zoom 1× and the default position.<br><br>Try zooming and panning to a different corner, then click Reset View to snap back. This works at any time during playback.`,
+    textZh: `找不到位置了？点击<b>重置视图</b>即可回到 1× 缩放和默认位置。<br><br>试着缩放、平移到另一个角落，然后点击重置视图快速回到原位。这在播放过程中随时都能用。`,
     setup: _setup(() => { resetView(); loadGlider(Math.floor(COLS/2), Math.floor(ROWS/2)); }),
     resetLabel: '⊙ Reset View',
+    resetLabelZh: '⊙ 重置视图',
   },
   {
     title: 'Try It',
+    titleZh: '试一试',
     text: `In the main game the canvas is much larger. Zoom and pan let you navigate it freely.<br><br>Draw something here with zoom enabled — try placing cells while zoomed in for precision. When ready, head to <b>Lesson 5</b>.`,
+    textZh: `在主游戏里画布要大得多。缩放和平移让你自由地浏览它。<br><br>在这里放大着画点什么 — 放大后放置细胞会更精准。准备好后，就前往<b>第 5 课</b>吧。`,
     setup: _setup(() => { resetView(); }),
     resetLabel: '⊙ Reset View',
+    resetLabelZh: '⊙ 重置视图',
     final: true,
   },
 ];
@@ -652,7 +678,7 @@ function buildDots() {
   STAGES.forEach((_, i) => {
     const d = document.createElement('div');
     d.className = 'dot' + (i < currentStage ? ' done' : i === currentStage ? ' active' : '');
-    d.title = STAGES[i].title;
+    d.title = lang === 'zh' && STAGES[i].titleZh ? STAGES[i].titleZh : STAGES[i].title;
     d.onclick = () => goToStage(i);
     container.appendChild(d);
   });
@@ -660,9 +686,11 @@ function buildDots() {
 
 function renderStage() {
   const s = STAGES[currentStage];
-  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
-  document.getElementById('stageTitle').textContent = s.title;
-  document.getElementById('stageText').innerHTML    = s.text;
+  document.getElementById('stageNum').textContent   = lang === 'zh'
+    ? `阶段 ${currentStage + 1} / ${STAGES.length}`
+    : `STAGE ${currentStage + 1} / ${STAGES.length}`;
+  document.getElementById('stageTitle').textContent = lang === 'zh' && s.titleZh ? s.titleZh : s.title;
+  document.getElementById('stageText').innerHTML    = lang === 'zh' && s.textZh ? s.textZh : s.text;
   const rb = document.getElementById('ruleBox');
   if (s.rule) {
     rb.style.display = '';
@@ -673,7 +701,7 @@ function renderStage() {
   const exBtn = document.getElementById('exampleBtn');
   if (s.resetLabel) {
     exBtn.style.display = '';
-    exBtn.textContent   = s.resetLabel;
+    exBtn.textContent   = lang === 'zh' && s.resetLabelZh ? s.resetLabelZh : s.resetLabel;
     exBtn.onclick       = s.resetLabel === '⊙ Reset View' ? resetView : () => s.setup && s.setup();
   } else {
     exBtn.style.display = 'none';
@@ -682,10 +710,10 @@ function renderStage() {
   document.getElementById('backBtn').disabled = currentStage === 0;
   const nextBtn = document.getElementById('nextBtn');
   if (currentStage === STAGES.length - 1) {
-    nextBtn.textContent = 'Finish ✓';
+    nextBtn.textContent = lang === 'zh' ? '完成 ✓' : 'Finish ✓';
     nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
   } else {
-    nextBtn.textContent = 'Continue →';
+    nextBtn.textContent = lang === 'zh' ? '继续 →' : 'Continue →';
     nextBtn.onclick     = nextStage;
   }
 
@@ -714,9 +742,24 @@ window.addEventListener('resize', () => {
   draw();
 });
 
+/* ── i18n apply / toggle ─────────────────────────── */
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  renderStage();
+}
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  applyLang();
+}
+
 /* ── Init ────────────────────────────────────────── */
 sizeWrap();
-renderStage();
+applyLang();
 </script>
 </body>
 </html>

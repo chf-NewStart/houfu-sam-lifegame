@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Lesson 7: Challenges — Life Game</title>
+  <style id="langStyle">
+    .lang-btn {
+      margin-left: auto; background: transparent; border: 1px solid #1db954;
+      color: #1db954; font-family: 'Courier New', Courier, monospace; font-size: 0.7rem;
+      padding: 4px 10px; cursor: pointer;
+    }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
+  </style>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -221,11 +229,12 @@
 <!-- Header -->
 <header class="lesson-header">
   <div class="header-left">
-    <a class="back-link" href="/training">← Training</a>
+    <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
     <span class="lesson-id">LESSON 07</span>
-    <span class="lesson-title-h">Challenges</span>
+    <span class="lesson-title-h" data-en="Challenges" data-zh="挑战">Challenges</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </header>
 
 <!-- Main -->
@@ -239,7 +248,7 @@
     <div class="stage-text" id="stageText"></div>
     <div id="goBtnWrap"></div>
     <div class="stage-nav">
-      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
+      <button class="nav-btn" id="backBtn" onclick="prevStage()" data-en="← Back" data-zh="← 返回">← Back</button>
       <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
     </div>
   </aside>
@@ -249,22 +258,26 @@
     <canvas id="canvas"></canvas>
 
     <div class="controls">
-      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
+      <button class="ctrl-btn" onclick="stepGrid()" data-en="⊙ Step" data-zh="⊙ 单步">⊙ Step</button>
       <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
     </div>
 
-    <div class="gen-display">gen <span id="genNum">0</span></div>
+    <div class="gen-display" data-en="gen <span id=&quot;genNum&quot;>0</span>" data-zh="第 <span id=&quot;genNum&quot;>0</span> 代">gen <span id="genNum">0</span></div>
   </section>
 
 </div>
 
 <!-- Footer -->
 <footer class="lesson-footer">
-  <a class="foot-btn" href="/training/lesson6">← Lesson 6</a>
-  <a class="foot-btn hi" href="/">Go Play →</a>
+  <a class="foot-btn" href="/training/lesson6" data-en="← Lesson 6" data-zh="← 第 6 课">← Lesson 6</a>
+  <a class="foot-btn hi" href="/" data-en="Go Play →" data-zh="去玩 →">Go Play →</a>
 </footer>
 
 <script>
+/* ── i18n (shared with the main app via localStorage) ── */
+const LANG_KEY = 'lifegame_lang';
+let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+
 /* ── Decorative canvas — Glider gun region ───────── */
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
@@ -353,7 +366,7 @@ function loop(ts) {
 function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
-  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.textContent = running ? (lang === 'zh' ? '⏸ 暂停' : '⏸ Pause') : (lang === 'zh' ? '▶ 播放' : '▶ Play');
   btn.classList.toggle('active', running);
   if (running) rafId = requestAnimationFrame(loop);
   else if (rafId) cancelAnimationFrame(rafId);
@@ -391,21 +404,30 @@ function loadDecoration() {
 const STAGES = [
   {
     title: 'What Are Challenges',
+    titleZh: '什么是挑战',
     rule: `11 built-in objectives<br>each gives a goal · limited time or gens`,
+    ruleZh: `11 个内置目标<br>每个都有一个目标 · 有限的时间或代数`,
     ruleClass: 'casual',
     text: `The main game has 11 built-in challenges. Each one gives you a specific goal — keep cells alive, fill a zone, send a pattern from A to B.<br><br>Find the <b>challenge bar</b> at the bottom of the main game screen. Click any challenge to activate it.`,
+    textZh: `主游戏里有 11 个内置挑战。每个都给你一个具体的目标 — 让细胞存活、填满一个区域、把图案从 A 送到 B。<br><br>在主游戏画面底部找到<b>挑战栏</b>。点击任意挑战即可激活它。`,
   },
   {
     title: 'How to Play',
+    titleZh: '如何游玩',
     text: `After activating a challenge:<br><br>1. The goal appears in the bar (e.g. "25 cells in zone B").<br>2. Draw your starting pattern on the canvas.<br>3. Hit <b>Play</b>. The bar shows live progress toward the goal.<br><br>You can pause at any time, adjust your pattern, and restart.`,
+    textZh: `激活一个挑战后：<br><br>1. 目标会出现在挑战栏里（例如"B 区里有 25 个细胞"）。<br>2. 在画布上绘制你的初始图案。<br>3. 点击<b>播放</b>。挑战栏会实时显示朝目标前进的进度。<br><br>你可以随时暂停、调整图案并重新开始。`,
   },
   {
     title: 'Win &amp; Fail',
+    titleZh: '胜利与失败',
     text: `If the win condition is met — for example 25 cells inside zone B, or a Glider reaching zone B — the bar turns <span class="hi-green">green</span> and the challenge is marked complete.<br><br>If all cells die, or the generation limit runs out, the bar turns red. Hit <b>Reset</b> to retry with a new starting pattern. Unlimited attempts.`,
+    textZh: `如果满足胜利条件 — 例如 B 区里有 25 个细胞，或者一架滑翔机抵达 B 区 — 挑战栏会变成<span class="hi-green">绿色</span>，该挑战即标记为完成。<br><br>如果所有细胞都死亡，或者代数上限用尽，挑战栏会变红。点击<b>重置</b>，用新的初始图案再试一次。可无限次尝试。`,
   },
   {
     title: 'Go Play',
+    titleZh: '去玩吧',
     text: `Try <b>Challenge 1: First Steps</b> — keep at least one cell alive for 20 generations. It sounds simple, but a lone cell won't make it.<br><br>Hint: you need at least a stable structure (a Block) or an oscillator (a Blinker) to survive.<br><br>Head to the main game and open the Challenges tab.`,
+    textZh: `试试<b>挑战 1：初步</b> — 让至少一个细胞存活 20 代。听起来很简单，但孤零零的一个细胞活不下来。<br><br>提示：要想存活，你至少需要一个稳定结构（方块），或者一个振荡器（闪光灯）。<br><br>前往主游戏，打开挑战标签页。`,
     final: true,
     showGoBtn: true,
   },
@@ -420,7 +442,7 @@ function buildDots() {
   STAGES.forEach((_, i) => {
     const d = document.createElement('div');
     d.className = 'dot' + (i < currentStage ? ' done' : i === currentStage ? ' active' : '');
-    d.title = STAGES[i].title;
+    d.title = lang === 'zh' ? (STAGES[i].titleZh || STAGES[i].title) : STAGES[i].title;
     d.onclick = () => goToStage(i);
     container.appendChild(d);
   });
@@ -428,19 +450,20 @@ function buildDots() {
 
 function renderStage() {
   const s = STAGES[currentStage];
-  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
-  document.getElementById('stageTitle').innerHTML   = s.title;
-  document.getElementById('stageText').innerHTML    = s.text;
+  document.getElementById('stageNum').textContent   = lang === 'zh' ? `阶段 ${currentStage + 1} / ${STAGES.length}` : `STAGE ${currentStage + 1} / ${STAGES.length}`;
+  document.getElementById('stageTitle').innerHTML   = lang === 'zh' ? (s.titleZh || s.title) : s.title;
+  document.getElementById('stageText').innerHTML    = lang === 'zh' ? (s.textZh  || s.text)  : s.text;
   const rb = document.getElementById('ruleBox');
   if (s.rule) {
     rb.style.display = '';
-    rb.innerHTML = s.rule;
+    rb.innerHTML = lang === 'zh' ? (s.ruleZh || s.rule) : s.rule;
     rb.className = 'rule-box' + (s.ruleClass ? ' ' + s.ruleClass : '');
   } else { rb.style.display = 'none'; }
 
   const goBtnWrap = document.getElementById('goBtnWrap');
   if (s.showGoBtn) {
-    goBtnWrap.innerHTML = `<a class="go-btn" href="/">▶ Open Main Game</a>`;
+    const goLbl = lang === 'zh' ? '▶ 打开主游戏' : '▶ Open Main Game';
+    goBtnWrap.innerHTML = `<a class="go-btn" href="/">${goLbl}</a>`;
   } else {
     goBtnWrap.innerHTML = '';
   }
@@ -448,10 +471,10 @@ function renderStage() {
   document.getElementById('backBtn').disabled = currentStage === 0;
   const nextBtn = document.getElementById('nextBtn');
   if (currentStage === STAGES.length - 1) {
-    nextBtn.textContent = 'Finish ✓';
+    nextBtn.textContent = lang === 'zh' ? '完成 ✓' : 'Finish ✓';
     nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
   } else {
-    nextBtn.textContent = 'Continue →';
+    nextBtn.textContent = lang === 'zh' ? '继续 →' : 'Continue →';
     nextBtn.onclick     = nextStage;
   }
 
@@ -481,8 +504,26 @@ window.addEventListener('resize', () => {
   draw();
 });
 
+/* ── i18n apply / toggle ─────────────────────────── */
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  renderStage();
+}
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  applyLang();
+  // Keep the play button label in sync with current language
+  const btn = document.getElementById('playBtn');
+  btn.textContent = running ? (lang === 'zh' ? '⏸ 暂停' : '⏸ Pause') : (lang === 'zh' ? '▶ 播放' : '▶ Play');
+}
+
 /* ── Init ────────────────────────────────────────── */
-renderStage();
+applyLang();
 loadDecoration();
 // Auto-play the decorative canvas
 togglePlay();

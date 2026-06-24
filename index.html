@@ -786,15 +786,20 @@
 
 <script>
 /* ── i18n ─────────────────────────────────────────── */
-let lang = 'en';
+let lang = (function () { try { return localStorage.getItem('lifegame_lang') || 'en'; } catch { return 'en'; } })();
 function t(en, zh) { return lang === 'zh' ? zh : en; }
-function toggleLang() {
-  lang = lang === 'en' ? 'zh' : 'en';
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
   document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
   document.querySelectorAll('[data-en]').forEach(el => {
     el.textContent = lang === 'zh' ? el.dataset.zh : el.dataset.en;
   });
   updateUI();
+}
+function toggleLang() {
+  lang = lang === 'en' ? 'zh' : 'en';
+  try { localStorage.setItem('lifegame_lang', lang); } catch {}
+  applyLang();
 }
 
 /* ── Canvas / grid setup ──────────────────────────── */
@@ -2919,6 +2924,7 @@ if (!_hadSeed) loadDefault();
   if (_ab) _ab.classList.toggle('active', auraMode);
 }
 _applyPenMode();   // reflect default Draw mode (on for desktop, off for mobile)
+applyLang();       // apply saved language (synced with the /training pages)
 // First-run nudge only on the default landing (not when opening a shared seed)
 if (!_hadSeed) maybeShowNudge();
 </script>

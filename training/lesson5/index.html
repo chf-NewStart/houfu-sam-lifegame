@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Lesson 5: Zone Tool — Life Game</title>
+  <title data-en="Lesson 5: Zone Tool — Life Game" data-zh="第 5 课：区域工具 — 生命游戏">Lesson 5: Zone Tool — Life Game</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -32,6 +32,12 @@
     .back-link:hover { text-decoration: underline; }
     .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
     .lesson-title-h { font-size: 0.85rem; color: #888; }
+    .lang-btn {
+      margin-left: auto; background: transparent; border: 1px solid #1db954;
+      color: #1db954; font-family: inherit; font-size: 0.7rem; padding: 4px 10px;
+      cursor: pointer;
+    }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
     .progress-dots { display: flex; gap: 5px; }
     .dot {
@@ -211,10 +217,11 @@
 <!-- Header -->
 <header class="lesson-header">
   <div class="header-left">
-    <a class="back-link" href="/training">← Training</a>
-    <span class="lesson-id">LESSON 05</span>
-    <span class="lesson-title-h">Zone Tool</span>
+    <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
+    <span class="lesson-id" data-en="LESSON 05" data-zh="第 05 课">LESSON 05</span>
+    <span class="lesson-title-h" data-en="Zone Tool" data-zh="区域工具">Zone Tool</span>
   </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   <div class="progress-dots" id="progressDots"></div>
 </header>
 
@@ -239,24 +246,28 @@
     <canvas id="canvas"></canvas>
 
     <div class="controls">
-      <button class="ctrl-btn" onclick="clearZone()">✕ Clear Zone</button>
-      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
-      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+      <button class="ctrl-btn" onclick="clearZone()" data-en="✕ Clear Zone" data-zh="✕ 清除区域">✕ Clear Zone</button>
+      <button class="ctrl-btn" onclick="stepGrid()" data-en="⊙ Step" data-zh="⊙ 单步">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" data-en="▶ Play" data-zh="▶ 播放">▶ Play</button>
     </div>
 
     <div class="status-bar" id="statusBar">drag on canvas to draw a zone</div>
-    <div class="gen-display">gen <span id="genNum">0</span></div>
+    <div class="gen-display"><span data-en="gen" data-zh="代">gen</span> <span id="genNum">0</span></div>
   </section>
 
 </div>
 
 <!-- Footer -->
 <footer class="lesson-footer">
-  <a class="foot-btn" href="/training/lesson4">← Lesson 4</a>
-  <a class="foot-btn hi" href="/training/lesson6">Lesson 6: Bridge →</a>
+  <a class="foot-btn" href="/training/lesson4" data-en="← Lesson 4" data-zh="← 第 4 课">← Lesson 4</a>
+  <a class="foot-btn hi" href="/training/lesson6" data-en="Lesson 6: Bridge →" data-zh="第 6 课：信使 →">Lesson 6: Bridge →</a>
 </footer>
 
 <script>
+/* ── i18n (shared with the main app via localStorage) ── */
+const LANG_KEY = 'lifegame_lang';
+let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+
 /* ── Grid setup ──────────────────────────────────── */
 const canvas  = document.getElementById('canvas');
 const ctx     = canvas.getContext('2d');
@@ -328,14 +339,16 @@ function normaliseRect(rect) {
 function updateStatus() {
   const bar = document.getElementById('statusBar');
   if (!selRect) {
-    bar.textContent = 'drag on canvas to draw a zone';
+    bar.textContent = lang === 'zh' ? '在画布上拖拽来绘制一个区域' : 'drag on canvas to draw a zone';
     return;
   }
   const nr = normaliseRect(selRect);
   const w  = nr.c1 - nr.c0 + 1;
   const h  = nr.r1 - nr.r0 + 1;
   const n  = cellsInZone();
-  bar.textContent = `zone ${w}×${h} · ${n} live cell${n !== 1 ? 's' : ''} inside`;
+  bar.textContent = lang === 'zh'
+    ? `区域 ${w}×${h} · 内含 ${n} 个活细胞`
+    : `zone ${w}×${h} · ${n} live cell${n !== 1 ? 's' : ''} inside`;
 }
 
 /* ── Drawing ─────────────────────────────────────── */
@@ -433,7 +446,8 @@ function drawGuides(highlights) {
   const offset  = -(now / 28) % (dashLen * 2);   // marching ants
   const pulse   = 0.5 + 0.5 * Math.sin(now / 480); // 0..1 breathing
 
-  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label }) => {
+  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label: labelEn, labelZh }) => {
+    const label = lang === 'zh' && labelZh ? labelZh : labelEn;
     const x = c0 * CELL;
     const y = r0 * CELL;
     const w = (c1 - c0 + 1) * CELL;
@@ -540,7 +554,9 @@ function loop(ts) {
 function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
-  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.textContent = running
+    ? (lang === 'zh' ? '⏸ 暂停' : '⏸ Pause')
+    : (lang === 'zh' ? '▶ 播放' : '▶ Play');
   btn.classList.toggle('active', running);
   if (running) rafId = requestAnimationFrame(loop);
   else if (rafId) cancelAnimationFrame(rafId);
@@ -653,20 +669,28 @@ function _setup(fn) {
 const STAGES = [
   {
     title: 'Zones',
+    titleZh: '区域',
     text: `A zone lets you focus on a specific area of the grid.<br><br>Click and drag on the canvas to draw a rectangular zone. The area outside dims slightly, and a <span class="hi-green">green count badge</span> shows how many live cells are inside.<br><br>A Glider is loaded — draw a zone around it and watch the count.`,
+    textZh: `区域让你能专注于网格中某个特定的部分。<br><br>在画布上点击并拖拽来绘制一个矩形区域。区域外的部分会稍微变暗，<span class="hi-green">绿色计数标记</span>会显示区域内有多少个活细胞。<br><br>已经放好了一个滑翔机 — 围绕它画一个区域，观察计数。`,
     setup: _setup(() => loadPattern('glider')),
     resetLabel: '↺ Reload Glider',
-    highlights: [{ c0: 7, r0: 4, c1: 11, r1: 8, color: '#ffb400', pulse: true, label: 'drag a zone around here' }],
+    resetLabelZh: '↺ 重新加载滑翔机',
+    highlights: [{ c0: 7, r0: 4, c1: 11, r1: 8, color: '#ffb400', pulse: true, label: 'drag a zone around here', labelZh: '在这里拖拽画一个区域' }],
   },
   {
     title: 'Counting',
+    titleZh: '计数',
     text: `A 3×3 block is loaded. Draw a zone around it — the badge shows <b>9</b>.<br><br>Now draw the zone to only include part of the block. The count updates in real time as you resize.<br><br>Cells outside the zone are still alive and evolving — the zone just focuses your measurement.`,
+    textZh: `已经放好了一个 3×3 的方块。围绕它画一个区域 — 标记会显示 <b>9</b>。<br><br>现在试着画一个只包含方块一部分的区域。当你调整大小时，计数会实时更新。<br><br>区域外的细胞依然存活、依然在演化 — 区域只是帮你聚焦测量的范围。`,
     setup: _setup(() => loadPattern('block')),
     resetLabel: '↺ Reload Block',
+    resetLabelZh: '↺ 重新加载方块',
   },
   {
     title: 'Watching Evolution',
+    titleZh: '观察演化',
     text: `A Blinker is loaded. Draw a zone around it.<br><br>Hit <b>Play</b> and watch the count badge pulse between values — the Blinker alternates between 2 and 3 cells depending on its orientation inside the zone.<br><br>In the main game, zones track live cells continuously during playback.`,
+    textZh: `已经放好了一个闪光灯。围绕它画一个区域。<br><br>点击 <b>播放</b>，观察计数标记在不同数字间跳动 — 闪光灯会随着方向变化，在区域内的活细胞数在 2 和 3 之间交替。<br><br>在主游戏里，区域会在播放过程中持续跟踪活细胞的数量。`,
     setup: _setup(() => {
       loadPattern('blinker');
       // Pre-set a zone around center
@@ -675,12 +699,16 @@ const STAGES = [
       zoneActive = true;
     }),
     resetLabel: '↺ Reload Blinker',
+    resetLabelZh: '↺ 重新加载闪光灯',
   },
   {
     title: 'Try It',
+    titleZh: '动手试试',
     text: `You know how to draw and use zones. In the main game the zone tool is used in several challenges — including one that requires getting 5 cells into zone B.<br><br>Head to <b>Lesson 6</b> to try the Bridge challenge.`,
+    textZh: `你已经学会了如何绘制和使用区域。在主游戏里，区域工具被用在好几个挑战中 — 其中一个需要把 5 个细胞送入 B 区。<br><br>前往<b>第 6 课</b>来挑战「信使」吧。`,
     setup: _setup(() => {}),
     resetLabel: '✕ Clear Zone',
+    resetLabelZh: '✕ 清除区域',
     final: true,
   },
 ];
@@ -702,22 +730,24 @@ function buildDots() {
 
 function renderStage() {
   const s = STAGES[currentStage];
-  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
-  document.getElementById('stageTitle').textContent = s.title;
-  document.getElementById('stageText').innerHTML    = s.text;
+  document.getElementById('stageNum').textContent   = lang === 'zh'
+    ? `阶段 ${currentStage + 1} / ${STAGES.length}`
+    : `STAGE ${currentStage + 1} / ${STAGES.length}`;
+  document.getElementById('stageTitle').textContent = lang === 'zh' && s.titleZh ? s.titleZh : s.title;
+  document.getElementById('stageText').innerHTML    = lang === 'zh' && s.textZh ? s.textZh : s.text;
   const rb = document.getElementById('ruleBox');
   if (s.rule) {
     rb.style.display = '';
-    rb.innerHTML = s.rule;
+    rb.innerHTML = lang === 'zh' && s.ruleZh ? s.ruleZh : s.rule;
     rb.className = 'rule-box' + (s.ruleClass ? ' ' + s.ruleClass : '');
   } else { rb.style.display = 'none'; }
 
   const exBtn = document.getElementById('exampleBtn');
   if (s.resetLabel) {
     exBtn.style.display = '';
-    exBtn.textContent   = s.resetLabel;
+    exBtn.textContent   = lang === 'zh' && s.resetLabelZh ? s.resetLabelZh : s.resetLabel;
     exBtn.onclick       = () => {
-      if (s.resetLabel === '✕ Clear Zone') clearZone();
+      if (s.final) clearZone();
       else s.setup && s.setup();
     };
   } else {
@@ -725,12 +755,13 @@ function renderStage() {
   }
 
   document.getElementById('backBtn').disabled = currentStage === 0;
+  document.getElementById('backBtn').textContent = lang === 'zh' ? '← 返回' : '← Back';
   const nextBtn = document.getElementById('nextBtn');
   if (currentStage === STAGES.length - 1) {
-    nextBtn.textContent = 'Finish ✓';
+    nextBtn.textContent = lang === 'zh' ? '完成 ✓' : 'Finish ✓';
     nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
   } else {
-    nextBtn.textContent = 'Continue →';
+    nextBtn.textContent = lang === 'zh' ? '继续 →' : 'Continue →';
     nextBtn.onclick     = nextStage;
   }
 
@@ -761,8 +792,28 @@ window.addEventListener('resize', () => {
   draw();
 });
 
+/* ── i18n apply / toggle ─────────────────────────── */
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  // playBtn carries data-en/data-zh but its live label depends on run state
+  const playBtn = document.getElementById('playBtn');
+  if (playBtn) playBtn.textContent = running
+    ? (lang === 'zh' ? '⏸ 暂停' : '⏸ Pause')
+    : (lang === 'zh' ? '▶ 播放' : '▶ Play');
+  renderStage();
+}
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  applyLang();
+}
+
 /* ── Init ────────────────────────────────────────── */
-renderStage();
+applyLang();
 </script>
 </body>
 </html>

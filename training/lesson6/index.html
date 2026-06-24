@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Lesson 6: Bridge — Life Game</title>
+  <title data-en="Lesson 6: Bridge — Life Game" data-zh="第 6 课：信使 — 生命游戏">Lesson 6: Bridge — Life Game</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0a0a0a; color: #ccc; font-family: 'Courier New', Courier, monospace; min-height: 100vh; display: flex; flex-direction: column; }
@@ -13,6 +13,12 @@
     .header-left { display: flex; align-items: center; gap: 14px; }
     .back-link { font-size: 0.7rem; color: #1db954; }
     .back-link:hover { text-decoration: underline; }
+    .lang-btn {
+      margin-left: auto; background: transparent; border: 1px solid #1db954;
+      color: #1db954; font-family: inherit; font-size: 0.7rem; padding: 4px 10px;
+      cursor: pointer;
+    }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
     .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
     .lesson-title-h { font-size: 0.85rem; color: #888; }
     .progress-dots { display: flex; gap: 5px; }
@@ -79,11 +85,12 @@
 
 <header class="lesson-header">
   <div class="header-left">
-    <a class="back-link" href="/training">← Training</a>
-    <span class="lesson-id">LESSON 06</span>
-    <span class="lesson-title-h">Bridge</span>
+    <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
+    <span class="lesson-id" data-en="LESSON 06" data-zh="第 06 课">LESSON 06</span>
+    <span class="lesson-title-h" data-en="Bridge" data-zh="信使">Bridge</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </header>
 
 <div class="main">
@@ -103,48 +110,63 @@
   <section class="canvas-area">
     <canvas id="canvas"></canvas>
     <div class="controls">
-      <button class="ctrl-btn" id="resetBtn" onclick="resetChallenge()">↺ Reset</button>
-      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
-      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+      <button class="ctrl-btn" id="resetBtn" onclick="resetChallenge()" data-en="↺ Reset" data-zh="↺ 重置">↺ Reset</button>
+      <button class="ctrl-btn" onclick="stepGrid()" data-en="⊙ Step" data-zh="⊙ 单步">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" data-en="▶ Play" data-zh="▶ 播放">▶ Play</button>
     </div>
-    <div class="status-bar" id="statusBar">draw in zone A · get cells to zone B</div>
+    <div class="status-bar" id="statusBar" data-en="draw in zone A · get cells to zone B" data-zh="在 A 区绘制 · 让细胞抵达 B 区">draw in zone A · get cells to zone B</div>
     <div class="legend">
-      <div class="legend-item"><div class="legend-swatch" style="background:none;border:1px dashed rgba(29,185,84,0.8)"></div><span>A — draw here</span></div>
-      <div class="legend-item"><div class="legend-swatch" style="background:none;border:1px dashed rgba(255,165,0,0.8)"></div><span>B — target</span></div>
-      <div class="legend-item"><div class="legend-swatch" style="background:#1db954"></div><span>alive · survives</span></div>
-      <div class="legend-item"><div class="legend-swatch" style="background:#c0392b"></div><span>alive · dies</span></div>
-      <div class="legend-item"><div class="legend-swatch" style="background:#3a3a3a"></div><span>dead · born next</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:none;border:1px dashed rgba(29,185,84,0.8)"></div><span data-en="A — draw here" data-zh="A — 在此绘制">A — draw here</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:none;border:1px dashed rgba(255,165,0,0.8)"></div><span data-en="B — target" data-zh="B — 目标">B — target</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#1db954"></div><span data-en="alive · survives" data-zh="活 · 存活">alive · survives</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#c0392b"></div><span data-en="alive · dies" data-zh="活 · 死亡">alive · dies</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#3a3a3a"></div><span data-en="dead · born next" data-zh="空 · 下一代诞生">dead · born next</span></div>
     </div>
-    <div class="gen-display">gen <span id="genNum">0</span></div>
+    <div class="gen-display" data-en="gen <span id=&quot;genNum&quot;>0</span>" data-zh="第 <span id=&quot;genNum&quot;>0</span> 代">gen <span id="genNum">0</span></div>
   </section>
 </div>
 
 <footer class="lesson-footer">
-  <a class="foot-btn" href="/training/lesson5">← Lesson 5</a>
-  <a class="foot-btn hi" href="/training/lesson7">Lesson 7: Challenges →</a>
+  <a class="foot-btn" href="/training/lesson5" data-en="← Lesson 5" data-zh="← 第 5 课">← Lesson 5</a>
+  <a class="foot-btn hi" href="/training/lesson7" data-en="Lesson 7: Challenges →" data-zh="第 7 课：挑战 →">Lesson 7: Challenges →</a>
 </footer>
 
 <script>
+/* ── i18n (shared with the main app via localStorage) ── */
+const LANG_KEY = 'lifegame_lang';
+let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+
 const STAGES = [
   {
     title: 'Two Zones',
+    titleZh: '两个区域',
     text: `The canvas has two bounded zones:<br><br><b style="color:#1db954">Zone A</b> (green) — your draw area. You can only place cells inside it.<br><br><b style="color:#ffb400">Zone B</b> (amber) — the target. You need to get cells in there.<br><br>The gap between them is open space. Cells can travel through it.`,
+    textZh: `画布上有两个划定的区域：<br><br><b style="color:#1db954">A 区</b>（绿色）— 你的绘制区域。你只能在里面放置细胞。<br><br><b style="color:#ffb400">B 区</b>（琥珀色）— 目标区域。你需要让细胞进入这里。<br><br>它们之间的空隙是开放空间，细胞可以穿过它。`,
   },
   {
     title: 'Moving Patterns',
+    titleZh: '会移动的图案',
     rule: `Some patterns move across the grid.<br>The Glider travels diagonally one cell every 4 generations.`,
+    ruleZh: `有些图案会在网格上移动。<br>滑翔机每 4 代沿对角线移动一格。`,
     text: `A Glider placed in zone A will naturally travel toward zone B — if you aim it right.<br><br>Try loading the Glider and clicking <b>Play</b> to watch it move. Then <b>Reset</b> to try placing it yourself.`,
+    textZh: `放在 A 区的滑翔机会自然地朝 B 区移动 — 只要你瞄准对了方向。<br><br>试着加载滑翔机并点击<b>播放</b>，看它移动。然后<b>重置</b>，自己试着放置它。`,
     example: 'glider_aimed',
     exampleLabel: '↺ Load aimed Glider',
+    exampleLabelZh: '↺ 加载瞄准的滑翔机',
   },
   {
     title: 'The Challenge',
+    titleZh: '挑战',
     hint: `Hint: place a Glider in zone A aimed toward zone B. You need <b>1 cell</b> to reach zone B to complete this lesson version. The main game challenge requires 5.`,
+    hintZh: `提示：在 A 区放置一个朝 B 区瞄准的滑翔机。在本课中，只需 <b>1 个细胞</b>抵达 B 区即可完成。正式游戏的挑战需要 5 个。`,
     text: `Draw inside zone A. Hit <b>Play</b> and watch what happens.<br><br>The challenge resets automatically if all cells die. You have unlimited attempts here.`,
+    textZh: `在 A 区内绘制。点击<b>播放</b>，看看会发生什么。<br><br>如果所有细胞都死亡，挑战会自动重置。在这里你有无限次尝试机会。`,
   },
   {
     title: 'You Did It!',
+    titleZh: '你做到了！',
     text: `A pattern born in zone A reached zone B — carried by the rules alone, no direct control after you hit Play.<br><br>This is the core idea behind many Life Game structures: <b>design the initial state</b>, then let the rules do the work.<br><br>Head to <b>Lesson 7</b> to tackle the full set of built-in challenges.`,
+    textZh: `在 A 区诞生的图案抵达了 B 区 — 仅仅靠规则的推动，在你点击播放之后没有任何直接操控。<br><br>这正是许多生命游戏结构背后的核心思想：<b>设计好初始状态</b>，然后让规则去完成工作。<br><br>前往<b>第 7 课</b>，挑战全套内置目标。`,
     final: true,
   },
 ];
@@ -285,8 +307,8 @@ function draw() {
     ctx.fillText(label, chipX + padX, chipY + padY);
     ctx.restore();
   };
-  drawZone(ZONE_A, 'rgba(29,185,84,0.8)',  'A · draw here', true,  '#7dffa8');
-  drawZone(ZONE_B, 'rgba(255,165,0,0.8)',  'B · target',    false, '#ffe08a');
+  drawZone(ZONE_A, 'rgba(29,185,84,0.8)',  lang === 'zh' ? 'A · 在此绘制' : 'A · draw here', true,  '#7dffa8');
+  drawZone(ZONE_B, 'rgba(255,165,0,0.8)',  lang === 'zh' ? 'B · 目标'     : 'B · target',    false, '#ffe08a');
 
   document.getElementById('genNum').textContent = generation;
   checkWin();
@@ -310,7 +332,9 @@ function checkWin() {
   if (generation > 0 && bc >= 1) {
     if (running) togglePlay();
     won = true;
-    bar.textContent = `✓ ${bc} cell${bc>1?'s':''} reached zone B! — gen ${generation}`;
+    bar.textContent = lang === 'zh'
+      ? `✓ ${bc} 个细胞抵达了 B 区！— 第 ${generation} 代`
+      : `✓ ${bc} cell${bc>1?'s':''} reached zone B! — gen ${generation}`;
     bar.className = 'status-bar win';
     if (currentStage === 2) {
       currentStage = 3; renderStage();
@@ -320,13 +344,13 @@ function checkWin() {
   const tc = totalCells();
   if (generation > 3 && tc === 0) {
     if (running) togglePlay();
-    bar.textContent = 'All cells died — reset and try again';
+    bar.textContent = lang === 'zh' ? '所有细胞都死亡了 — 重置后再试一次' : 'All cells died — reset and try again';
     bar.className = 'status-bar fail';
     return;
   }
   bar.textContent = generation === 0
-    ? 'draw in zone A · press Play'
-    : `gen ${generation} · ${bc} cell${bc===1?'':'s'} in B`;
+    ? (lang === 'zh' ? '在 A 区绘制 · 按播放' : 'draw in zone A · press Play')
+    : (lang === 'zh' ? `第 ${generation} 代 · B 区有 ${bc} 个细胞` : `gen ${generation} · ${bc} cell${bc===1?'':'s'} in B`);
   bar.className = 'status-bar';
 }
 
@@ -350,7 +374,7 @@ function loop(ts) {
 function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
-  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.textContent = running ? (lang === 'zh' ? '⏸ 暂停' : '⏸ Pause') : (lang === 'zh' ? '▶ 播放' : '▶ Play');
   btn.classList.toggle('active', running);
   if (running) rafId = requestAnimationFrame(loop);
   else if (rafId) cancelAnimationFrame(rafId);
@@ -359,7 +383,7 @@ function togglePlay() {
 function resetChallenge() {
   if (running) togglePlay();
   grid.fill(0); generation = 0; won = false;
-  document.getElementById('statusBar').textContent = 'draw in zone A · press Play';
+  document.getElementById('statusBar').textContent = lang === 'zh' ? '在 A 区绘制 · 按播放' : 'draw in zone A · press Play';
   document.getElementById('statusBar').className = 'status-bar';
   draw();
 }
@@ -375,7 +399,7 @@ const PATTERNS = {
       const gc=c+dc, gr=r+dr;
       if (gc>=0&&gc<COLS&&gr>=0&&gr<ROWS) grid[idx(gc,gr)]=1;
     });
-    document.getElementById('statusBar').textContent = 'glider loaded — hit Play to watch it go';
+    document.getElementById('statusBar').textContent = lang === 'zh' ? '滑翔机已加载 — 点击播放看它出发' : 'glider loaded — hit Play to watch it go';
     document.getElementById('statusBar').className = 'status-bar';
     draw();
   },
@@ -432,29 +456,31 @@ function buildDots() {
 
 function renderStage() {
   const s = STAGES[currentStage];
-  document.getElementById('stageNum').textContent   = `STAGE ${currentStage+1} / ${STAGES.length}`;
-  document.getElementById('stageTitle').textContent = s.title;
-  document.getElementById('stageText').innerHTML    = s.text;
+  const zh = lang === 'zh';
+  document.getElementById('stageNum').textContent   = zh ? `阶段 ${currentStage+1} / ${STAGES.length}` : `STAGE ${currentStage+1} / ${STAGES.length}`;
+  document.getElementById('stageTitle').textContent = zh ? s.titleZh : s.title;
+  document.getElementById('stageText').innerHTML    = zh ? s.textZh : s.text;
 
   const rb = document.getElementById('ruleBox');
-  if (s.rule) { rb.style.display=''; rb.innerHTML=s.rule; } else rb.style.display='none';
+  if (s.rule) { rb.style.display=''; rb.innerHTML = zh ? s.ruleZh : s.rule; } else rb.style.display='none';
   const hb = document.getElementById('hintBox');
-  if (s.hint) { hb.style.display=''; hb.innerHTML=s.hint; } else hb.style.display='none';
+  if (s.hint) { hb.style.display=''; hb.innerHTML = zh ? s.hintZh : s.hint; } else hb.style.display='none';
 
   const exBtn = document.getElementById('exampleBtn');
   if (s.example) {
     exBtn.style.display='';
-    exBtn.textContent = s.exampleLabel || '↺ Load example';
+    exBtn.textContent = (zh ? s.exampleLabelZh : s.exampleLabel) || (zh ? '↺ 加载示例' : '↺ Load example');
     exBtn.onclick = () => { if (PATTERNS[s.example]) PATTERNS[s.example](); };
   } else { exBtn.style.display='none'; }
 
   document.getElementById('backBtn').disabled = currentStage === 0;
+  document.getElementById('backBtn').textContent = zh ? '← 返回' : '← Back';
   const nextBtn = document.getElementById('nextBtn');
   if (currentStage === STAGES.length - 1) {
-    nextBtn.textContent = 'Finish ✓';
+    nextBtn.textContent = zh ? '完成 ✓' : 'Finish ✓';
     nextBtn.onclick = () => { markVisited(); window.location.href = '/training'; };
   } else {
-    nextBtn.textContent = 'Continue →';
+    nextBtn.textContent = zh ? '继续 →' : 'Continue →';
     nextBtn.onclick = nextStage;
   }
   buildDots();
@@ -482,8 +508,23 @@ function guideTick() {
 }
 requestAnimationFrame(guideTick);
 
-renderStage();
-draw();
+/* ── i18n apply / toggle ──────────────────────────── */
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  renderStage();
+  draw();
+}
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  applyLang();
+}
+
+applyLang();
 </script>
 </body>
 </html>

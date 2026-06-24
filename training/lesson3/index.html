@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Lesson 3: Patterns — Life Game</title>
+  <title data-en="Lesson 3: Patterns — Life Game" data-zh="第 3 课：图案 — 生命游戏">Lesson 3: Patterns — Life Game</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -30,6 +30,12 @@
     .header-left { display: flex; align-items: center; gap: 14px; }
     .back-link { font-size: 0.7rem; color: #1db954; }
     .back-link:hover { text-decoration: underline; }
+    .lang-btn {
+      margin-left: auto; background: transparent; border: 1px solid #1db954;
+      color: #1db954; font-family: inherit; font-size: 0.7rem; padding: 4px 10px;
+      cursor: pointer;
+    }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
     .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
     .lesson-title-h { font-size: 0.85rem; color: #888; }
 
@@ -225,11 +231,12 @@
 <!-- Header -->
 <header class="lesson-header">
   <div class="header-left">
-    <a class="back-link" href="/training">← Training</a>
-    <span class="lesson-id">LESSON 03</span>
-    <span class="lesson-title-h">Patterns</span>
+    <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
+    <span class="lesson-id" data-en="LESSON 03" data-zh="第 03 课">LESSON 03</span>
+    <span class="lesson-title-h" data-en="Patterns" data-zh="图案">Patterns</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </header>
 
 <!-- Main -->
@@ -238,12 +245,13 @@
   <!-- Left: explanation -->
   <aside class="panel">
     <div class="stage-num" id="stageNum">STAGE 1 / 5</div>
+    <!-- stageNum text set by JS (renderStage) -->
     <h2 class="stage-title" id="stageTitle"></h2>
     <div class="rule-box" id="ruleBox" style="display:none"></div>
     <div class="stage-text" id="stageText"></div>
     <button class="example-btn" id="exampleBtn" style="display:none"></button>
     <div class="stage-nav">
-      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
+      <button class="nav-btn" id="backBtn" onclick="prevStage()" data-en="← Back" data-zh="← 返回">← Back</button>
       <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
     </div>
   </aside>
@@ -253,34 +261,39 @@
 
     <!-- Pattern stamp buttons -->
     <div class="pattern-row" id="patternRow">
-      <button class="pbtn" data-p="glider">Glider</button>
-      <button class="pbtn" data-p="blinker">Blinker</button>
-      <button class="pbtn" data-p="block">Block</button>
-      <button class="pbtn" data-p="lwss">LWSS</button>
+      <button class="pbtn" data-p="glider" data-en="Glider" data-zh="滑翔机">Glider</button>
+      <button class="pbtn" data-p="blinker" data-en="Blinker" data-zh="闪烁灯">Blinker</button>
+      <button class="pbtn" data-p="block" data-en="Block" data-zh="方块">Block</button>
+      <button class="pbtn" data-p="lwss" data-en="LWSS" data-zh="轻型飞船">LWSS</button>
     </div>
 
     <canvas id="canvas"></canvas>
 
     <div class="controls">
-      <button class="ctrl-btn" onclick="clearGrid()">↺ Clear</button>
-      <button class="ctrl-btn" onclick="rotatePattern()">↻ Rotate</button>
-      <button class="ctrl-btn" onclick="flipPattern()">⇄ Flip</button>
-      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
-      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+      <button class="ctrl-btn" onclick="clearGrid()" data-en="↺ Clear" data-zh="↺ 清空">↺ Clear</button>
+      <button class="ctrl-btn" onclick="rotatePattern()" data-en="↻ Rotate" data-zh="↻ 旋转">↻ Rotate</button>
+      <button class="ctrl-btn" onclick="flipPattern()" data-en="⇄ Flip" data-zh="⇄ 翻转">⇄ Flip</button>
+      <button class="ctrl-btn" onclick="stepGrid()" data-en="⊙ Step" data-zh="⊙ 单步">⊙ Step</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" data-en="▶ Play" data-zh="▶ 播放">▶ Play</button>
     </div>
 
-    <div class="gen-display">gen <span id="genNum">0</span></div>
+    <div class="gen-display"><span data-en="gen" data-zh="代">gen</span> <span id="genNum">0</span></div>
   </section>
 
 </div>
 
 <!-- Footer -->
 <footer class="lesson-footer">
-  <a class="foot-btn" href="/training/lesson2">← Lesson 2</a>
-  <a class="foot-btn hi" href="/training/lesson4">Lesson 4: Zoom &amp; Pan →</a>
+  <a class="foot-btn" href="/training/lesson2" data-en="← Lesson 2" data-zh="← 第 2 课">← Lesson 2</a>
+  <a class="foot-btn hi" href="/training/lesson4" data-en="Lesson 4: Zoom &amp; Pan →" data-zh="第 4 课：缩放与平移 →">Lesson 4: Zoom &amp; Pan →</a>
 </footer>
 
 <script>
+/* ── i18n (shared with the main app via localStorage) ── */
+const LANG_KEY = 'lifegame_lang';
+let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+function t(en, zh) { return lang === 'zh' ? zh : en; }
+
 /* ── Patterns (center-relative [dc, dr]) ─────────── */
 const BASE_PATTERNS = {
   glider:  [[-1,1],[0,-1],[0,1],[1,0],[1,1]],
@@ -345,35 +358,51 @@ function _setup(fn) {
 const STAGES = [
   {
     title: 'Patterns',
+    titleZh: '图案',
     text: `Patterns are named configurations with known behaviors.<br><br>Click a pattern button above the canvas to stamp it centered. Try clicking <b>Glider</b> then <b>Play</b> to watch it travel diagonally across the grid.<br><br>Explore the others too — each behaves differently.`,
+    textZh: `图案是有名字、行为已知的细胞配置。<br><br>点击画布上方的图案按钮，就能把它居中放置到网格里。试试点击 <b>滑翔机</b>，再点 <b>播放</b>，看它沿对角线穿过网格。<br><br>也来试试其他图案吧 — 每一个的行为都不一样。`,
     setup: _setup(() => stampCurrentPattern()),
     resetLabel: '↺ Clear',
+    resetLabelZh: '↺ 清空',
   },
   {
     title: 'The Glider',
+    titleZh: '滑翔机',
     rule: `The Glider travels diagonally.<br>Every <b>4 generations</b> it moves one cell.`,
+    ruleZh: `滑翔机沿对角线移动。<br>每 <b>4 代</b> 移动一个细胞的距离。`,
     text: `The Glider is the simplest moving pattern in Life. It cycles through 4 shapes before returning to its original form, shifted one cell diagonally.<br><br>Click <b>Glider</b> above to load one, then hit <b>Play</b> and watch it travel.`,
+    textZh: `滑翔机是生命游戏里最简单的会移动的图案。它会循环经过 4 种形状，然后回到最初的样子，但已沿对角线平移了一个细胞。<br><br>点击上方的 <b>滑翔机</b> 载入一个，再点 <b>播放</b>，看它滑行。`,
     setup: _setup(() => { currentPatternName = 'glider'; stampCurrentPattern(); }),
     resetLabel: '↺ Reload Glider',
-    highlights: [{ c0: 8, r0: 5, c1: 10, r1: 7, color: '#ffb400', pulse: true, label: 'watch this travel' }],
+    resetLabelZh: '↺ 重新载入滑翔机',
+    highlights: [{ c0: 8, r0: 5, c1: 10, r1: 7, color: '#ffb400', pulse: true, label: 'watch this travel', labelZh: '看它滑行' }],
   },
   {
     title: 'Rotate',
+    titleZh: '旋转',
     text: `Click <b>Blinker</b> above to load a Blinker — normally horizontal.<br><br>Click <b>Rotate</b> to spin it 90°. It becomes vertical. Rotate again to go back.<br><br>Rotation applies before stamping, so you can aim a pattern in any of 4 orientations before it lands on the canvas.`,
+    textZh: `点击上方的 <b>闪烁灯</b> 载入一个闪烁灯 — 默认是横着的。<br><br>点击 <b>旋转</b> 把它转 90°，它就变成竖着的了。再点一次旋转就转回来。<br><br>旋转是在放置之前生效的，所以你可以在图案落到画布上之前，先把它对准 4 个方向中的任意一个。`,
     setup: _setup(() => { currentPatternName = 'blinker'; stampCurrentPattern(); }),
     resetLabel: '↺ Reload Blinker',
+    resetLabelZh: '↺ 重新载入闪烁灯',
   },
   {
     title: 'Flip',
+    titleZh: '翻转',
     text: `Load a <b>Glider</b> and click <b>Flip</b> — it mirrors left-to-right. Combined with Rotate, you get all 8 orientations.<br><br>This matters for aimed patterns: a Glider travels in a direction determined by its orientation. Rotate + Flip let you point it anywhere.<br><br>Try it: stamp a Glider, Flip it, Play — it now travels a different direction.`,
+    textZh: `载入一个 <b>滑翔机</b> 再点击 <b>翻转</b> — 它会左右镜像。配合旋转，你就能得到全部 8 种朝向。<br><br>这对有方向的图案很重要：滑翔机滑行的方向由它的朝向决定。旋转 + 翻转让你能把它指向任意方向。<br><br>试一试：放置一个滑翔机，翻转它，播放 — 它现在朝另一个方向滑行了。`,
     setup: _setup(() => { currentPatternName = 'glider'; stampCurrentPattern(); }),
     resetLabel: '↺ Reload Glider',
+    resetLabelZh: '↺ 重新载入滑翔机',
   },
   {
     title: 'Try It',
+    titleZh: '动手试试',
     text: `Combine patterns to build bigger structures. Try placing multiple patterns — what happens when a Glider runs into a Block?<br><br>In the main game you can drag patterns directly onto the canvas from the side panel, with live rotation and flip.<br><br>Head to <b>Lesson 4</b> when ready.`,
+    textZh: `把图案组合起来，搭建更大的结构。试着放置多个图案 — 当滑翔机撞上方块时会发生什么？<br><br>在正式的游戏里，你可以从侧边栏把图案直接拖到画布上，并实时旋转和翻转。<br><br>准备好后，就前往 <b>第 4 课</b> 吧。`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
+    resetLabelZh: '↺ 清空',
     final: true,
   },
 ];
@@ -458,7 +487,8 @@ function drawGuides(highlights) {
   const offset  = -(now / 28) % (dashLen * 2);   // marching ants
   const pulse   = 0.5 + 0.5 * Math.sin(now / 480); // 0..1 breathing
 
-  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label }) => {
+  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label: labelEn, labelZh }) => {
+    const label = lang === 'zh' && labelZh ? labelZh : labelEn;
     const x = c0 * CELL;
     const y = r0 * CELL;
     const w = (c1 - c0 + 1) * CELL;
@@ -565,7 +595,7 @@ function loop(ts) {
 function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
-  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.textContent = running ? t('⏸ Pause', '⏸ 暂停') : t('▶ Play', '▶ 播放');
   btn.classList.toggle('active', running);
   if (running) rafId = requestAnimationFrame(loop);
   else if (rafId) cancelAnimationFrame(rafId);
@@ -654,20 +684,20 @@ function buildDots() {
 
 function renderStage() {
   const s = STAGES[currentStage];
-  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
-  document.getElementById('stageTitle').textContent = s.title;
-  document.getElementById('stageText').innerHTML    = s.text;
+  document.getElementById('stageNum').textContent   = t(`STAGE ${currentStage + 1} / ${STAGES.length}`, `阶段 ${currentStage + 1} / ${STAGES.length}`);
+  document.getElementById('stageTitle').textContent = t(s.title, s.titleZh);
+  document.getElementById('stageText').innerHTML    = t(s.text, s.textZh);
   const rb = document.getElementById('ruleBox');
   if (s.rule) {
     rb.style.display = '';
-    rb.innerHTML = s.rule;
+    rb.innerHTML = t(s.rule, s.ruleZh);
     rb.className = 'rule-box' + (s.ruleClass ? ' ' + s.ruleClass : '');
   } else { rb.style.display = 'none'; }
 
   const exBtn = document.getElementById('exampleBtn');
   if (s.resetLabel) {
     exBtn.style.display = '';
-    exBtn.textContent   = s.resetLabel;
+    exBtn.textContent   = t(s.resetLabel, s.resetLabelZh);
     exBtn.onclick       = () => s.setup && s.setup();
   } else {
     exBtn.style.display = 'none';
@@ -676,10 +706,10 @@ function renderStage() {
   document.getElementById('backBtn').disabled = currentStage === 0;
   const nextBtn = document.getElementById('nextBtn');
   if (currentStage === STAGES.length - 1) {
-    nextBtn.textContent = 'Finish ✓';
+    nextBtn.textContent = t('Finish ✓', '完成 ✓');
     nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
   } else {
-    nextBtn.textContent = 'Continue →';
+    nextBtn.textContent = t('Continue →', '继续 →');
     nextBtn.onclick     = nextStage;
   }
 
@@ -710,8 +740,23 @@ window.addEventListener('resize', () => {
   draw();
 });
 
+/* ── i18n apply / toggle ─────────────────────────── */
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  renderStage();
+}
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  applyLang();
+}
+
 /* ── Init ────────────────────────────────────────── */
-renderStage();
+applyLang();
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Lesson 1: The Rules — Life Game</title>
+  <title data-en="Lesson 1: The Rules — Life Game" data-zh="第 1 课：规则 — 生命游戏">Lesson 1: The Rules — Life Game</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -32,6 +32,13 @@
     .back-link:hover { text-decoration: underline; }
     .lesson-id { font-size: 0.62rem; color: #2a2a2a; letter-spacing: 1px; }
     .lesson-title-h { font-size: 0.85rem; color: #888; }
+
+    .lang-btn {
+      margin-left: auto; background: transparent; border: 1px solid #1db954;
+      color: #1db954; font-family: inherit; font-size: 0.7rem; padding: 4px 10px;
+      cursor: pointer;
+    }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
     .progress-dots { display: flex; gap: 5px; }
     .dot {
@@ -220,11 +227,12 @@
 <!-- Header -->
 <header class="lesson-header">
   <div class="header-left">
-    <a class="back-link" href="/training">← Training</a>
-    <span class="lesson-id">LESSON 01</span>
-    <span class="lesson-title-h">The Rules</span>
+    <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
+    <span class="lesson-id" data-en="LESSON 01" data-zh="第 01 课">LESSON 01</span>
+    <span class="lesson-title-h" data-en="The Rules" data-zh="规则">The Rules</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </header>
 
 <!-- Main -->
@@ -238,7 +246,7 @@
     <div class="stage-text" id="stageText"></div>
     <button class="example-btn" id="exampleBtn" style="display:none"></button>
     <div class="stage-nav">
-      <button class="nav-btn" id="backBtn" onclick="prevStage()">← Back</button>
+      <button class="nav-btn" id="backBtn" onclick="prevStage()" data-en="← Back" data-zh="← 返回">← Back</button>
       <button class="nav-btn primary" id="nextBtn" onclick="nextStage()">Continue →</button>
     </div>
   </aside>
@@ -248,38 +256,43 @@
     <canvas id="canvas"></canvas>
 
     <div class="controls">
-      <button class="ctrl-btn" onclick="stepGrid()">⊙ Step</button>
+      <button class="ctrl-btn" onclick="stepGrid()" data-en="⊙ Step" data-zh="⊙ 单步">⊙ Step</button>
       <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
-      <button class="ctrl-btn" id="countsBtn" onclick="toggleCounts()">＃ Counts</button>
+      <button class="ctrl-btn" id="countsBtn" onclick="toggleCounts()" data-en="＃ Counts" data-zh="＃ 计数">＃ Counts</button>
     </div>
 
     <div class="legend">
       <div class="legend-item">
         <div class="legend-swatch" style="background:#1db954"></div>
-        <span>alive · will survive</span>
+        <span data-en="alive · will survive" data-zh="活 · 将存活">alive · will survive</span>
       </div>
       <div class="legend-item">
         <div class="legend-swatch" style="background:#c0392b"></div>
-        <span>alive · will die</span>
+        <span data-en="alive · will die" data-zh="活 · 将死亡">alive · will die</span>
       </div>
       <div class="legend-item">
         <div class="legend-swatch" style="background:#3a3a3a"></div>
-        <span>dead · will be born</span>
+        <span data-en="dead · will be born" data-zh="空 · 将诞生">dead · will be born</span>
       </div>
     </div>
 
-    <div class="gen-display">gen <span id="genNum">0</span></div>
+    <div class="gen-display"><span data-en="gen" data-zh="代">gen</span> <span id="genNum">0</span></div>
   </section>
 
 </div>
 
 <!-- Footer -->
 <footer class="lesson-footer">
-  <a class="foot-btn" href="/training">↑ All Lessons</a>
-  <a class="foot-btn hi" href="/training/lesson2">Lesson 2: Drawing & Playing →</a>
+  <a class="foot-btn" href="/training" data-en="↑ All Lessons" data-zh="↑ 所有课程">↑ All Lessons</a>
+  <a class="foot-btn hi" href="/training/lesson2" data-en="Lesson 2: Drawing &amp; Playing →" data-zh="第 2 课：绘制与播放 →">Lesson 2: Drawing &amp; Playing →</a>
 </footer>
 
 <script>
+/* ── i18n (shared with the main app via localStorage) ── */
+const LANG_KEY = 'lifegame_lang';
+let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+function t(en, zh) { return lang === 'zh' ? zh : en; }
+
 /* ── Stage definitions ──────────────────────────── */
 // center of the 18×13 grid
 const CC = 9, CR = 6;
@@ -289,33 +302,47 @@ function _setup(fn) { return () => { if (running) togglePlay(); grid.fill(0); ge
 const STAGES = [
   {
     title: 'The Grid',
+    titleZh: '网格',
     rule: `too lonely (0–1 neighbors) → <b>dies</b><br>too crowded (4+ neighbors) → <b>dies</b><br>2 or 3 around a live cell → <b>survives</b><br>exactly 3 around a dead cell → <b>born</b>`,
+    ruleZh: `太孤独（0–1 个邻居）→ <b>死亡</b><br>太拥挤（4 个以上邻居）→ <b>死亡</b><br>活细胞周围有 2 或 3 个 → <b>存活</b><br>死细胞周围正好有 3 个 → <b>诞生</b>`,
     ruleClass: 'casual',
     text: `Each cell is either <span class="hi-green">alive</span> or <span style="color:#333">dead (empty)</span>. Those four rules are everything — the next screens let you trigger each one yourself.<br><br><b>Click any cell to draw.</b>`,
+    textZh: `每个细胞要么<span class="hi-green">活着</span>，要么<span style="color:#333">死了（空的）</span>。这四条规则就是全部 —— 接下来的几屏会让你亲手触发每一条。<br><br><b>点击任意格子即可绘制。</b>`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
+    resetLabelZh: '↺ 清空',
   },
   {
     title: 'The 8 Neighbors',
+    titleZh: '8 个邻居',
     text: `Every cell's fate depends on how many of its <b>8 surrounding cells</b> are alive — left, right, up, down, and all four diagonals.<br><br><b>Draw a few cells, then hover over any cell</b> to see its 8 neighbors light up yellow. The number (toggle Counts) is its live neighbor count.<br><br>That single count drives all the rules.`,
+    textZh: `每个细胞的命运取决于它<b>周围 8 个格子</b>里有多少个是活的 —— 上、下、左、右，以及四个对角方向。<br><br><b>先画几个细胞，然后把鼠标悬停在任意格子上</b>，就能看到它的 8 个邻居亮起黄色。那个数字（打开「计数」）就是它的活邻居数。<br><br>所有规则都由这一个数字决定。`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
+    resetLabelZh: '↺ 清空',
     hoverMode: true,
   },
   {
     title: 'Death — too lonely',
+    titleZh: '死亡 —— 太孤独',
     rule: `<b>0–1</b> neighbors → <b style="color:#c0392b">dies</b> (lonely)`,
+    ruleZh: `<b>0–1</b> 个邻居 → <b style="color:#c0392b">死亡</b>（孤独）`,
     text: `This cell has no neighbors — <span class="hi-red">shown red, it will die</span>.<br><br>Hit <b>Step</b> to watch it vanish from loneliness.<br><br>Or add 2–3 cells next to it first — it turns green and survives instead.`,
+    textZh: `这个细胞没有邻居 —— <span class="hi-red">显示为红色，它将会死亡</span>。<br><br>点击<b>单步</b>，看它因孤独而消失。<br><br>或者先在它旁边加上 2–3 个细胞 —— 它会变绿，转而存活下来。`,
     setup: _setup(() => {
       grid[idx(CC, CR)] = 1;
     }),
     resetLabel: '↺ Reset isolated cell',
-    highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#e05252', pulse: true, label: '0 nbrs · will die' }],
+    resetLabelZh: '↺ 重置孤立细胞',
+    highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#e05252', pulse: true, label: '0 nbrs · will die', labelZh: '0 邻居 · 将死亡' }],
   },
   {
     title: 'Death — too crowded',
+    titleZh: '死亡 —— 太拥挤',
     rule: `<b>4+</b> neighbors → <b style="color:#c0392b">dies</b> (crowded)`,
+    ruleZh: `<b>4 个以上</b>邻居 → <b style="color:#c0392b">死亡</b>（拥挤）`,
     text: `The centre cell has 3 neighbors — just enough to survive (green).<br><br>Add one more cell touching it to push past 3. Watch it flip red — too crowded.<br><br>Then hit <b>Step</b> to watch it die.`,
+    textZh: `中间的细胞有 3 个邻居 —— 刚好够存活（绿色）。<br><br>再在它旁边加一个相邻的细胞，使邻居数超过 3。看它变成红色 —— 太拥挤了。<br><br>然后点击<b>单步</b>，看它死去。`,
     setup: _setup(() => {
       grid[idx(CC,   CR  )] = 1;
       grid[idx(CC-1, CR-1)] = 1;
@@ -323,12 +350,16 @@ const STAGES = [
       grid[idx(CC+1, CR-1)] = 1;
     }),
     resetLabel: '↺ Reset',
-    highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#ffb400', pulse: true, label: 'add 1 more neighbor' }],
+    resetLabelZh: '↺ 重置',
+    highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#ffb400', pulse: true, label: 'add 1 more neighbor', labelZh: '再加 1 个邻居' }],
   },
   {
     title: 'Survival — staying alive',
+    titleZh: '存活 —— 保持生命',
     rule: `<b>2 or 3</b> live neighbors → <b style="color:#1db954">survives</b>`,
+    ruleZh: `<b>2 或 3</b> 个活邻居 → <b style="color:#1db954">存活</b>`,
     text: `This is a 2×2 block — every cell has exactly 3 live neighbors, so all four <span class="hi-green">stay alive</span> (green).<br><br>It never changes — hit <b>Step</b> and nothing moves. A perfectly stable shape.<br><br>Erase a cell to break it, and the rest start to die.`,
+    textZh: `这是一个 2×2 的方块 —— 每个细胞都正好有 3 个活邻居，所以四个都<span class="hi-green">保持存活</span>（绿色）。<br><br>它永远不会变 —— 点击<b>单步</b>，什么都不会动。一个完全稳定的形状。<br><br>擦掉一个细胞来打破它，剩下的就会开始死亡。`,
     setup: _setup(() => {
       grid[idx(CC,   CR  )] = 1;
       grid[idx(CC+1, CR  )] = 1;
@@ -336,28 +367,40 @@ const STAGES = [
       grid[idx(CC+1, CR+1)] = 1;
     }),
     resetLabel: '↺ Reset block',
-    highlights: [{ c0: CC, r0: CR, c1: CC+1, r1: CR+1, color: '#1db954', pulse: true, label: 'all 4 survive' }],
+    resetLabelZh: '↺ 重置方块',
+    highlights: [{ c0: CC, r0: CR, c1: CC+1, r1: CR+1, color: '#1db954', pulse: true, label: 'all 4 survive', labelZh: '四个都存活' }],
   },
   {
     title: 'Birth — a new cell appears',
+    titleZh: '诞生 —— 新细胞出现',
     rule: `exactly <b>3</b> live neighbors around a dead cell → <b style="color:#1db954">born</b>`,
+    ruleZh: `死细胞周围正好有 <b>3</b> 个活邻居 → <b style="color:#1db954">诞生</b>`,
     text: `Draw 3 live cells that all touch the same empty space. That empty cell immediately glows <span style="color:#555">grey</span> — it has exactly 3 neighbors and will be born.<br><br>The grey appears <b>live as you draw</b>. Once you see it, hit <b>Step</b> to watch it come alive.`,
+    textZh: `画 3 个都挨着同一个空格的活细胞。那个空格会立即亮起<span style="color:#555">灰色</span> —— 它正好有 3 个邻居，将会诞生。<br><br>灰色会<b>随着你绘制实时出现</b>。一看到它，就点击<b>单步</b>，看它活过来。`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
-    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#ffb400', pulse: true, label: 'a cell will be born here' }],
+    resetLabelZh: '↺ 清空',
+    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#ffb400', pulse: true, label: 'a cell will be born here', labelZh: '这里将诞生一个细胞' }],
   },
   {
     title: 'B3 / S23',
+    titleZh: 'B3 / S23',
     rule: `<b>B3</b> — born with exactly 3 neighbors<br><b>S2</b> — survives with 2 neighbors<br><b>S3</b> — survives with 3 neighbors<br><span style="color:#333">everything else → dies</span>`,
+    ruleZh: `<b>B3</b> —— 正好 3 个邻居时诞生<br><b>S2</b> —— 有 2 个邻居时存活<br><b>S3</b> —— 有 3 个邻居时存活<br><span style="color:#333">其余情况 → 死亡</span>`,
     text: `Three conditions — that's the entire ruleset, abbreviated <b>B3/S23</b>.<br><br>From these rules, patterns emerge that move, grow, and self-replicate. The Glider is the simplest moving pattern — watch it travel diagonally.`,
+    textZh: `三个条件 —— 这就是全部规则，简写为 <b>B3/S23</b>。<br><br>由这些规则，会涌现出能移动、生长、甚至自我复制的图案。滑翔机是最简单的会移动的图案 —— 看它沿对角线飞行。`,
     setup: _setup(() => loadPattern('glider')),
     resetLabel: '↺ Reload glider',
+    resetLabelZh: '↺ 重新加载滑翔机',
   },
   {
     title: 'Try It Yourself',
+    titleZh: '亲手试试',
     text: `You know all the rules. Draw anything, toggle <b>Counts</b>, hit <b>Play</b>.<br><br>Can you build something stable? Something that loops forever? Something that moves?<br><br>Head to <b>Lesson 2</b> when you're ready.`,
+    textZh: `你已经掌握了所有规则。随便画点什么，打开<b>计数</b>，点击<b>播放</b>。<br><br>你能造出稳定的东西吗？能永远循环的东西？能移动的东西？<br><br>准备好了就前往<b>第 2 课</b>。`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
+    resetLabelZh: '↺ 清空',
     final: true,
   },
 ];
@@ -494,7 +537,8 @@ function drawGuides(highlights) {
   const offset  = -(now / 28) % (dashLen * 2);   // marching ants
   const pulse   = 0.5 + 0.5 * Math.sin(now / 480); // 0..1 breathing
 
-  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label }) => {
+  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label, labelZh }) => {
+    if (lang === 'zh' && labelZh) label = labelZh;
     const x = c0 * CELL;
     const y = r0 * CELL;
     const w = (c1 - c0 + 1) * CELL;
@@ -603,7 +647,7 @@ function loop(ts) {
 function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
-  btn.textContent = running ? '⏸ Pause' : '▶ Play';
+  btn.textContent = running ? t('⏸ Pause', '⏸ 暂停') : t('▶ Play', '▶ 播放');
   btn.classList.toggle('active', running);
   if (running) rafId = requestAnimationFrame(loop);
   else if (rafId) cancelAnimationFrame(rafId);
@@ -687,7 +731,7 @@ function buildDots() {
   STAGES.forEach((_, i) => {
     const d = document.createElement('div');
     d.className = 'dot' + (i < currentStage ? ' done' : i === currentStage ? ' active' : '');
-    d.title = STAGES[i].title;
+    d.title = lang === 'zh' ? STAGES[i].titleZh : STAGES[i].title;
     d.onclick = () => goToStage(i);
     container.appendChild(d);
   });
@@ -695,20 +739,20 @@ function buildDots() {
 
 function renderStage() {
   const s = STAGES[currentStage];
-  document.getElementById('stageNum').textContent   = `STAGE ${currentStage + 1} / ${STAGES.length}`;
-  document.getElementById('stageTitle').textContent = s.title;
-  document.getElementById('stageText').innerHTML    = s.text;
+  document.getElementById('stageNum').textContent   = t(`STAGE ${currentStage + 1} / ${STAGES.length}`, `阶段 ${currentStage + 1} / ${STAGES.length}`);
+  document.getElementById('stageTitle').textContent = lang === 'zh' ? s.titleZh : s.title;
+  document.getElementById('stageText').innerHTML    = lang === 'zh' ? s.textZh : s.text;
   const rb = document.getElementById('ruleBox');
   if (s.rule) {
     rb.style.display = '';
-    rb.innerHTML = s.rule;
+    rb.innerHTML = lang === 'zh' ? s.ruleZh : s.rule;
     rb.className = 'rule-box' + (s.ruleClass ? ' ' + s.ruleClass : '');
   } else { rb.style.display = 'none'; }
 
   const exBtn = document.getElementById('exampleBtn');
   if (s.resetLabel) {
     exBtn.style.display = '';
-    exBtn.textContent   = s.resetLabel;
+    exBtn.textContent   = lang === 'zh' ? s.resetLabelZh : s.resetLabel;
     exBtn.onclick       = () => s.setup && s.setup();
   } else {
     exBtn.style.display = 'none';
@@ -717,10 +761,10 @@ function renderStage() {
   document.getElementById('backBtn').disabled = currentStage === 0;
   const nextBtn = document.getElementById('nextBtn');
   if (currentStage === STAGES.length - 1) {
-    nextBtn.textContent = 'Finish ✓';
+    nextBtn.textContent = t('Finish ✓', '完成 ✓');
     nextBtn.onclick     = () => { markVisited(); window.location.href = '/training'; };
   } else {
-    nextBtn.textContent = 'Continue →';
+    nextBtn.textContent = t('Continue →', '继续 →');
     nextBtn.onclick     = nextStage;
   }
 
@@ -762,9 +806,26 @@ window.addEventListener('resize', () => {
   draw();
 });
 
+/* ── i18n apply / toggle ─────────────────────────── */
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'zh' ? el.dataset.zh : el.dataset.en;
+  });
+  // Play/Pause button text is set dynamically — keep it in sync with current state
+  document.getElementById('playBtn').textContent = running ? t('⏸ Pause', '⏸ 暂停') : t('▶ Play', '▶ 播放');
+  renderStage();
+}
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  applyLang();
+}
+
 /* ── Init ────────────────────────────────────────── */
 document.getElementById('countsBtn').classList.add('active');
-renderStage();
+applyLang();
 </script>
 </body>
 </html>
