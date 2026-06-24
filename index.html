@@ -129,6 +129,7 @@
     body.theater .patterns-mobile,
     body.theater #devPanel,
     body.theater .canvas-hud,
+    body.theater .rules-bar,
     body.theater .pg-footer { display: none !important; }
     body.theater .main-layout { display: block; }
     body.theater .canvas-col {
@@ -228,6 +229,18 @@
     /* ── Rules ────────────────────────────────────────── */
     .rule-info { font-size: 0.64rem; color: #777; line-height: 1.9; }
     .rule-info b { color: #aaa; }
+    /* Horizontal rules strip above the grid */
+    .rules-bar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px;
+      width: 100%; box-sizing: border-box;
+      padding: 7px 11px; margin-bottom: 9px;
+      border: 1px solid #1e1e1e; background: #0c0c0c;
+      font-size: 0.62rem; color: #777; line-height: 1.5;
+    }
+    .rules-lbl { color: #1db954; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
+    .rules-item { white-space: nowrap; }
+    .rules-bar b { color: #b8b8b8; font-weight: 600; }
+    .rules-note { color: #555; }
 
     /* ── Mobile patterns (above canvas) ──────────────── */
     .patterns-mobile { display: none; width: 100%; }
@@ -336,6 +349,7 @@
       .canvas-wrap canvas { width: 100% !important; height: auto !important; }
 
       .patterns-mobile { display: block; width: 100%; max-width: 520px; margin: 0 auto; }
+      .rules-bar { max-width: 520px; margin: 0 auto 9px; }
 
       .right-panel {
         width: 100%; max-width: 520px; margin: 0 auto;
@@ -418,6 +432,15 @@
       <button class="btn" id="addSavedBtnMobile" onclick="openPatternPicker()" style="display:none;width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
     </div>
 
+    <!-- Rules (B3/S23) — horizontal strip right above the grid -->
+    <div class="rules-bar">
+      <span class="rules-lbl" data-en="// rules" data-zh="// 规则">// rules</span>
+      <span class="rules-item"><b style="color:#1db954">■</b> <b data-en="Survive" data-zh="存活">Survive</b> <span data-en="live, 2–3 neighbours" data-zh="活，2–3邻居">live, 2–3 neighbours</span></span>
+      <span class="rules-item"><b style="color:#f44336">■</b> <b data-en="Die" data-zh="死亡">Die</b> <span data-en="live, &lt;2 or &gt;3" data-zh="活，&lt;2 或 &gt;3 邻居">live, &lt;2 or &gt;3</span></span>
+      <span class="rules-item"><b style="color:#9a9a9a">■</b> <b data-en="Born" data-zh="诞生">Born</b> <span data-en="dead, exactly 3" data-zh="死，恰好3邻居">dead, exactly 3</span></span>
+      <span class="rules-note" data-en="· B3/S23 · cells die at the border" data-zh="· B3/S23 · 细胞在边界消亡">· B3/S23 · cells die at the border</span>
+    </div>
+
     <div class="canvas-wrap">
       <canvas id="canvas"></canvas>
       <div class="canvas-hud">
@@ -449,6 +472,9 @@
       <div class="pcard-title" data-en="// play" data-zh="// 播放">// play</div>
       <div class="brow">
         <button class="btn primary" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放" style="flex:1">⏵ Play</button>
+      </div>
+      <div class="brow sb-only">
+        <button class="btn dis" id="restartBtn" onclick="restartFromPlay()" data-en="↺ Back a play" data-zh="↺ 退回一次播放" title="Back to the board before your last Play — hit again to step back through earlier plays" style="flex:1">↺ Back a play</button>
       </div>
       <div class="brow">
         <button class="btn dis" id="stepBkBtn" onclick="undoStep()" data-en="← Step" data-zh="← 后退">← Step</button>
@@ -555,18 +581,6 @@
         <button class="btn" onclick="openPatternPicker()" style="flex:1;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
       </div>
     </div>
-
-    <!-- Rules -->
-    <div class="pcard">
-      <div class="pcard-title" data-en="// rules (B3/S23)" data-zh="// 规则 (B3/S23)">// rules (B3/S23)</div>
-      <div class="rule-info">
-        <b style="color:#1db954">■</b> <b data-en="Survive" data-zh="存活">Survive</b> <span data-en="— live, 2–3 neighbours" data-zh="— 活细胞，2–3邻居">— live, 2–3 neighbours</span><br>
-        <b style="color:#f44336">■</b> <b data-en="Die" data-zh="死亡">Die</b> <span data-en="— live, &lt;2 or &gt;3 neighbours" data-zh="— 活细胞，少于2或多于3邻居">— live, &lt;2 or &gt;3 neighbours</span><br>
-        <b style="color:#3a3a3a">■</b> <b data-en="Born next" data-zh="下代诞生">Born next</b> <span data-en="— dead, exactly 3 neighbours" data-zh="— 死细胞，恰好3邻居">— dead, exactly 3 neighbours</span><br>
-        <span style="color:#555;margin-top:4px;display:block" data-en="Cells die at the border." data-zh="细胞在边界消亡。">Cells die at the border.</span>
-      </div>
-    </div>
-
 
   </div>
 </div>
@@ -1093,6 +1107,8 @@ function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
   if (running) {
+    // Push the board as it is right now so Restart can step back to it (sandbox only).
+    if (appMode === 'sandbox') pushPlaySnapshot();
     const _n = document.getElementById('firstNudge');
     if (_n && _n.classList.contains('show')) dismissNudge();
     btn.textContent = t('⏸ Pause', '⏸ 暂停');
@@ -1214,6 +1230,39 @@ function setCellSize(v) {
 function clearHistory() {
   stepHistory = []; redoHistory = [];
   setUndoRedoBtns();
+  clearPlayStack();   // a cleared/reloaded/resized board has no "previous play" to return to
+}
+
+/* ── Restart: step back through the stack of "board at each Play press" ─
+   Each Play pushes a snapshot; each Restart pops one, so hitting it again
+   returns to the previous play, then the play before that, and so on.
+   Sandbox-only — in Challenges the retry is re-selecting the challenge. */
+const PLAY_STACK_MAX = 25;
+let playStack = [];
+function setRestartBtn() {
+  const b = document.getElementById('restartBtn');
+  if (b) b.classList.toggle('dis', playStack.length === 0);
+}
+function pushPlaySnapshot() {
+  playStack.push({ grid: grid.slice(), gen: generation });
+  if (playStack.length > PLAY_STACK_MAX) playStack.shift();
+  setRestartBtn();
+}
+function clearPlayStack() { playStack = []; setRestartBtn(); }
+function restartFromPlay() {
+  // pop the most recent play-start that still fits the current grid (resize-safe)
+  let snap = null;
+  while (playStack.length) { const s = playStack.pop(); if (s.grid.length === grid.length) { snap = s; break; } }
+  setRestartBtn();
+  if (!snap) return;
+  if (running) togglePlay();                      // stop (stop-branch never re-snapshots)
+  grid.set(snap.grid);
+  generation = snap.gen;
+  document.getElementById('genCount').textContent = generation;
+  syncAges();
+  if (trail) trail.fill(0);                        // drop any Aura ghost-trails from the run
+  stepHistory = []; redoHistory = []; setUndoRedoBtns();
+  draw(); refreshDevPanel();
 }
 
 function clearGrid() {
