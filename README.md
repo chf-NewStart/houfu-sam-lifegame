@@ -14,7 +14,7 @@ Switch from the toggle in the header:
 
 - **✦ Sandbox** — free play: draw, stamp patterns, and watch them evolve
 - **🏆 Challenges** — goal-based puzzles with a global leaderboard
-- **🎵 Music** — turn the simulation into a sequencer (see below)
+- **🎶 Symphony** — turn the simulation into a sequencer (see below)
 
 ---
 
@@ -38,7 +38,7 @@ Switch from the toggle in the header:
 - **Aura** — colour cells by age (green → violet as they survive)
 - **Save image** — export the current pattern as a PNG
 
-### 🎵 Music mode
+### 🎶 Symphony mode
 The grid becomes a **sweep sequencer**: a playhead scans the columns left→right, and the live cells under it play notes — **row = pitch** (high at the top, low at the bottom), snapped to a major-pentatonic scale so it always sounds in tune.
 
 - **Pause** loops your pattern as a repeating riff; **press Play** and the tune evolves with the simulation
