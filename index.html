@@ -224,6 +224,14 @@
     .pbtn:hover { border-color: #aaa; color: #ccc; }
     .pbtn:active { cursor: grabbing; }
     .pbtn-desc { display: block; font-size: 0.53rem; color: #666; margin-top: 1px; }
+    /* Preset tiles with a shape thumbnail: image at left, name+desc stacked at right */
+    .pbtn.has-thumb { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-content: center; }
+    .pbtn-thumb {
+      grid-row: 1 / span 2; width: 42px; height: 42px;
+      object-fit: contain; background: #0a0a0a;
+      border: 1px solid #242424; border-radius: 2px;
+      image-rendering: pixelated; pointer-events: none;
+    }
     .drag-hint { font-size: 0.57rem; color: #555; margin-top: 5px; margin-bottom: 5px; }
 
     /* ── Rules ────────────────────────────────────────── */
@@ -246,6 +254,9 @@
     .patterns-mobile { display: none; width: 100%; }
     .patterns-mobile .preset-grid { grid-template-columns: repeat(4, 1fr); }
     .patterns-mobile .pbtn-desc { display: none; }
+    /* On the narrow mobile tiles, stack the thumbnail above the name */
+    .patterns-mobile .pbtn.has-thumb { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+    .patterns-mobile .pbtn-thumb { width: 40px; height: 40px; }
 
     /* ── Dev mode lookahead strip ────────────────────── */
     #devPanel { width: 100%; margin-top: 6px; }
@@ -420,14 +431,14 @@
     <!-- Patterns: shown above canvas on mobile only -->
     <div class="patterns-mobile">
       <div class="preset-grid">
-        <button class="pbtn" draggable="true" data-preset="glider" ><span class="pbtn-name" data-en="Glider"      data-zh="滑翔机">Glider</span><span class="pbtn-desc" data-en="classic mover"       data-zh="经典移动体">classic mover</span></button>
-        <button class="pbtn" draggable="true" data-preset="blinker"><span class="pbtn-name" data-en="Blinker"     data-zh="闪烁体">Blinker</span><span class="pbtn-desc" data-en="period-2"            data-zh="周期2">period-2</span></button>
-        <button class="pbtn" draggable="true" data-preset="pulsar" ><span class="pbtn-name" data-en="Pulsar"      data-zh="脉冲星">Pulsar</span><span class="pbtn-desc" data-en="period-3"            data-zh="周期3">period-3</span></button>
-        <button class="pbtn" draggable="true" data-preset="rpento" ><span class="pbtn-name" data-en="R-pentomino" data-zh="R五格">R-pentomino</span><span class="pbtn-desc" data-en="chaotic"        data-zh="混沌型">chaotic</span></button>
-        <button class="pbtn" draggable="true" data-preset="gun"    ><span class="pbtn-name" data-en="Gosper Gun"  data-zh="高斯帕枪">Gosper Gun</span><span class="pbtn-desc" data-en="glider factory"  data-zh="滑翔机工厂">glider factory</span></button>
-        <button class="pbtn" draggable="true" data-preset="acorn"  ><span class="pbtn-name" data-en="Acorn"       data-zh="橡子">Acorn</span><span class="pbtn-desc" data-en="5206 gens"         data-zh="5206代">5206 gens</span></button>
-        <button class="pbtn" draggable="true" data-preset="diehard"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
-        <button class="pbtn" draggable="true" data-preset="lwss"   ><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="glider" ><img class="pbtn-thumb" src="patterns/glider.png" alt="" draggable="false"><span class="pbtn-name" data-en="Glider"      data-zh="滑翔机">Glider</span><span class="pbtn-desc" data-en="classic mover"       data-zh="经典移动体">classic mover</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="blinker"><img class="pbtn-thumb" src="patterns/blinker.png" alt="" draggable="false"><span class="pbtn-name" data-en="Blinker"     data-zh="闪烁体">Blinker</span><span class="pbtn-desc" data-en="period-2"            data-zh="周期2">period-2</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="pulsar" ><img class="pbtn-thumb" src="patterns/pulsar.png" alt="" draggable="false"><span class="pbtn-name" data-en="Pulsar"      data-zh="脉冲星">Pulsar</span><span class="pbtn-desc" data-en="period-3"            data-zh="周期3">period-3</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="rpento" ><img class="pbtn-thumb" src="patterns/r-pentomino.png" alt="" draggable="false"><span class="pbtn-name" data-en="R-pentomino" data-zh="R五格">R-pentomino</span><span class="pbtn-desc" data-en="chaotic"        data-zh="混沌型">chaotic</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="gun"    ><img class="pbtn-thumb" src="patterns/Gosper%20Gun.png" alt="" draggable="false"><span class="pbtn-name" data-en="Gosper Gun"  data-zh="高斯帕枪">Gosper Gun</span><span class="pbtn-desc" data-en="glider factory"  data-zh="滑翔机工厂">glider factory</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="acorn"  ><img class="pbtn-thumb" src="patterns/acorn.png" alt="" draggable="false"><span class="pbtn-name" data-en="Acorn"       data-zh="橡子">Acorn</span><span class="pbtn-desc" data-en="5206 gens"         data-zh="5206代">5206 gens</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="diehard"><img class="pbtn-thumb" src="patterns/diehard.png" alt="" draggable="false"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="lwss"   ><img class="pbtn-thumb" src="patterns/lwss.png" alt="" draggable="false"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
       </div>
       <button class="btn" id="addSavedBtnMobile" onclick="openPatternPicker()" style="display:none;width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
     </div>
@@ -555,14 +566,14 @@
     <div class="pcard patterns-desktop">
       <div class="pcard-title" data-en="// patterns" data-zh="// 预设图案">// patterns</div>
       <div class="preset-grid" id="presetGrid">
-        <button class="pbtn" draggable="true" data-preset="glider" ><span class="pbtn-name" data-en="Glider"      data-zh="滑翔机">Glider</span><span class="pbtn-desc" data-en="classic mover"           data-zh="经典移动体">classic mover</span></button>
-        <button class="pbtn" draggable="true" data-preset="blinker"><span class="pbtn-name" data-en="Blinker"     data-zh="闪烁体">Blinker</span><span class="pbtn-desc" data-en="period-2 oscillator"   data-zh="周期2振荡体">period-2 oscillator</span></button>
-        <button class="pbtn" draggable="true" data-preset="pulsar" ><span class="pbtn-name" data-en="Pulsar"      data-zh="脉冲星">Pulsar</span><span class="pbtn-desc" data-en="period-3 oscillator"   data-zh="周期3振荡体">period-3 oscillator</span></button>
-        <button class="pbtn" draggable="true" data-preset="rpento" ><span class="pbtn-name" data-en="R-pentomino" data-zh="R五格">R-pentomino</span><span class="pbtn-desc" data-en="chaotic, ~1k gens"    data-zh="混沌型，约千代">chaotic, ~1k gens</span></button>
-        <button class="pbtn" draggable="true" data-preset="gun"    ><span class="pbtn-name" data-en="Gosper Gun"  data-zh="高斯帕枪">Gosper Gun</span><span class="pbtn-desc" data-en="infinite glider factory" data-zh="无限滑翔机工厂">infinite glider factory</span></button>
-        <button class="pbtn" draggable="true" data-preset="acorn"  ><span class="pbtn-name" data-en="Acorn"       data-zh="橡子">Acorn</span><span class="pbtn-desc" data-en="5206 gen lifespan"    data-zh="寿命5206代">5206 gen lifespan</span></button>
-        <button class="pbtn" draggable="true" data-preset="diehard"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies at gen 130"     data-zh="第130代消亡">dies at gen 130</span></button>
-        <button class="pbtn" draggable="true" data-preset="lwss"   ><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="lightweight spaceship"   data-zh="轻型宇宙飞船">lightweight spaceship</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="glider" ><img class="pbtn-thumb" src="patterns/glider.png" alt="" draggable="false"><span class="pbtn-name" data-en="Glider"      data-zh="滑翔机">Glider</span><span class="pbtn-desc" data-en="classic mover"           data-zh="经典移动体">classic mover</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="blinker"><img class="pbtn-thumb" src="patterns/blinker.png" alt="" draggable="false"><span class="pbtn-name" data-en="Blinker"     data-zh="闪烁体">Blinker</span><span class="pbtn-desc" data-en="period-2 oscillator"   data-zh="周期2振荡体">period-2 oscillator</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="pulsar" ><img class="pbtn-thumb" src="patterns/pulsar.png" alt="" draggable="false"><span class="pbtn-name" data-en="Pulsar"      data-zh="脉冲星">Pulsar</span><span class="pbtn-desc" data-en="period-3 oscillator"   data-zh="周期3振荡体">period-3 oscillator</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="rpento" ><img class="pbtn-thumb" src="patterns/r-pentomino.png" alt="" draggable="false"><span class="pbtn-name" data-en="R-pentomino" data-zh="R五格">R-pentomino</span><span class="pbtn-desc" data-en="chaotic, ~1k gens"    data-zh="混沌型，约千代">chaotic, ~1k gens</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="gun"    ><img class="pbtn-thumb" src="patterns/Gosper%20Gun.png" alt="" draggable="false"><span class="pbtn-name" data-en="Gosper Gun"  data-zh="高斯帕枪">Gosper Gun</span><span class="pbtn-desc" data-en="infinite glider factory" data-zh="无限滑翔机工厂">infinite glider factory</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="acorn"  ><img class="pbtn-thumb" src="patterns/acorn.png" alt="" draggable="false"><span class="pbtn-name" data-en="Acorn"       data-zh="橡子">Acorn</span><span class="pbtn-desc" data-en="5206 gen lifespan"    data-zh="寿命5206代">5206 gen lifespan</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="diehard"><img class="pbtn-thumb" src="patterns/diehard.png" alt="" draggable="false"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies at gen 130"     data-zh="第130代消亡">dies at gen 130</span></button>
+        <button class="pbtn has-thumb" draggable="true" data-preset="lwss"   ><img class="pbtn-thumb" src="patterns/lwss.png" alt="" draggable="false"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="lightweight spaceship"   data-zh="轻型宇宙飞船">lightweight spaceship</span></button>
       </div>
       <div class="drag-hint" data-en="drag to stamp · scroll to rotate · R / F keys" data-zh="拖拽放置 · 滚轮旋转 · R/F键">drag to stamp · scroll to rotate · R / F keys</div>
       <div class="brow">
