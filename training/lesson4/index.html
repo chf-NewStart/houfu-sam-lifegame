@@ -500,13 +500,53 @@ function drawGuides(highlights) {
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
 
-    // Secondary text label, above the box
+    // Secondary text label — legible chip with background behind text
     if (label) {
-      ctx.fillStyle = color;
-      ctx.font = `${Math.max(9, Math.floor(CELL * 0.34))}px 'Courier New', monospace`;
+      const fontPx = Math.max(13, Math.floor(CELL * 0.42));
+      ctx.save();
+      ctx.font = `bold ${fontPx}px 'Courier New', monospace`;
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(label, x + w / 2, y - 4);
+      ctx.textBaseline = 'middle';
+
+      const padX = 8, padY = 5, radius = 4;
+      const tw = ctx.measureText(label).width;
+      const chipW = tw + padX * 2;
+      const chipH = fontPx + padY * 2;
+      const chipCX = x + w / 2;
+      const chipBottom = y - 4;            // sit just above the box
+      const chipX = chipCX - chipW / 2;
+      const chipY = chipBottom - chipH;
+
+      // Rounded-rect chip background
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(chipX, chipY, chipW, chipH, radius);
+      } else {
+        const rr = Math.min(radius, chipW / 2, chipH / 2);
+        ctx.moveTo(chipX + rr, chipY);
+        ctx.lineTo(chipX + chipW - rr, chipY);
+        ctx.arcTo(chipX + chipW, chipY, chipX + chipW, chipY + rr, rr);
+        ctx.lineTo(chipX + chipW, chipY + chipH - rr);
+        ctx.arcTo(chipX + chipW, chipY + chipH, chipX + chipW - rr, chipY + chipH, rr);
+        ctx.lineTo(chipX + rr, chipY + chipH);
+        ctx.arcTo(chipX, chipY + chipH, chipX, chipY + chipH - rr, rr);
+        ctx.lineTo(chipX, chipY + rr);
+        ctx.arcTo(chipX, chipY, chipX + rr, chipY, rr);
+        ctx.closePath();
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(8,8,8,0.85)';
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+
+      // Bright label text on top
+      const LABEL_TINT = { '#ffb400': '#ffe08a', '#1db954': '#7dffa8', '#e05252': '#ff9d9d', '#c0392b': '#ff9d9d' };
+      const tint = LABEL_TINT[color] || '#ffffff';
+      ctx.fillStyle = tint;
+      ctx.fillText(label, chipCX, chipY + chipH / 2 + 0.5);
+      ctx.restore();
     }
   });
 }

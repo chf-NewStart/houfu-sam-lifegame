@@ -231,7 +231,7 @@ function draw() {
   const dashLen = 5;
   const offset  = -(now / 28) % (dashLen + 4) * 2;   // marching ants
   const pulse   = 0.5 + 0.5 * Math.sin(now / 480);   // 0..1 breathing
-  const drawZone = (z, color, label, glow) => {
+  const drawZone = (z, color, label, glow, tint) => {
     const { c0, r0, c1, r1 } = z;
     const x = c0*CELL+1, y = r0*CELL+1;
     const w = (c1-c0+1)*CELL-2, h = (r1-r0+1)*CELL-2;
@@ -249,13 +249,44 @@ function draw() {
     ctx.strokeRect(x, y, w, h);
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
-    ctx.fillStyle = color;
-    ctx.font = `bold ${Math.max(9, Math.floor(CELL*0.35))}px monospace`;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText(label, c0*CELL + 4, r0*CELL + 4);
+    // Legible label chip — solid background behind text
+    ctx.save();
+    const fontPx = Math.max(13, Math.floor(CELL * 0.42));
+    ctx.font = `bold ${fontPx}px monospace`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    const padX = 8, padY = 5, radius = 4;
+    const tw = ctx.measureText(label).width;
+    const chipX = c0*CELL + 4, chipY = r0*CELL + 4;
+    const chipW = tw + padX * 2, chipH = fontPx + padY * 2;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(chipX, chipY, chipW, chipH, radius);
+    } else {
+      const rr = Math.min(radius, chipW / 2, chipH / 2);
+      ctx.moveTo(chipX + rr, chipY);
+      ctx.lineTo(chipX + chipW - rr, chipY);
+      ctx.arcTo(chipX + chipW, chipY, chipX + chipW, chipY + rr, rr);
+      ctx.lineTo(chipX + chipW, chipY + chipH - rr);
+      ctx.arcTo(chipX + chipW, chipY + chipH, chipX + chipW - rr, chipY + chipH, rr);
+      ctx.lineTo(chipX + rr, chipY + chipH);
+      ctx.arcTo(chipX, chipY + chipH, chipX, chipY + chipH - rr, rr);
+      ctx.lineTo(chipX, chipY + rr);
+      ctx.arcTo(chipX, chipY, chipX + rr, chipY, rr);
+      ctx.closePath();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(8,8,8,0.85)';
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.fillStyle = tint;
+    ctx.fillText(label, chipX + padX, chipY + padY);
+    ctx.restore();
   };
-  drawZone(ZONE_A, 'rgba(29,185,84,0.8)',  'A · draw here', true);
-  drawZone(ZONE_B, 'rgba(255,165,0,0.8)',  'B · target',    false);
+  drawZone(ZONE_A, 'rgba(29,185,84,0.8)',  'A · draw here', true,  '#7dffa8');
+  drawZone(ZONE_B, 'rgba(255,165,0,0.8)',  'B · target',    false, '#ffe08a');
 
   document.getElementById('genNum').textContent = generation;
   checkWin();

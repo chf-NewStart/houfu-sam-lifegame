@@ -289,7 +289,7 @@ function _setup(fn) { return () => { if (running) togglePlay(); grid.fill(0); ge
 const STAGES = [
   {
     title: 'The Grid',
-    rule: `too crowded (4+ neighbors) → <b>dies</b><br>too lonely (0–1 neighbors) → <b>dies</b><br>exactly 3 around a dead cell → <b>born</b><br>2 or 3 around a live cell → <b>stays alive</b>`,
+    rule: `too lonely (0–1 neighbors) → <b>dies</b><br>too crowded (4+ neighbors) → <b>dies</b><br>2 or 3 around a live cell → <b>survives</b><br>exactly 3 around a dead cell → <b>born</b>`,
     ruleClass: 'casual',
     text: `Each cell is either <span class="hi-green">alive</span> or <span style="color:#333">dead (empty)</span>. Those four rules are everything — the next screens let you trigger each one yourself.<br><br><b>Click any cell to draw.</b>`,
     setup: _setup(() => {}),
@@ -297,34 +297,15 @@ const STAGES = [
   },
   {
     title: 'The 8 Neighbors',
-    text: `Every cell's fate depends on how many of its <b>8 surrounding cells</b> are alive — left, right, up, down, and all four diagonals.<br><br><b>Hover over any cell</b> to see its 8 neighbors light up yellow. The number (toggle Counts) is its live neighbor count.<br><br>That single count drives all the rules.`,
-    setup: _setup(() => loadPattern('blinker')),
-    resetLabel: '↺ Reload blinker',
-    hoverMode: true,
-  },
-  {
-    title: 'Birth — draw 3 around a gap',
-    rule: `exactly <b>3</b> live neighbors around a dead cell → <b style="color:#1db954">born</b>`,
-    text: `Draw 3 live cells that all touch the same empty space. That empty cell immediately glows <span style="color:#555">grey</span> — it has exactly 3 neighbors and will be born.<br><br>The grey appears <b>live as you draw</b>. Once you see it, hit <b>Step</b> to watch it come alive.`,
+    text: `Every cell's fate depends on how many of its <b>8 surrounding cells</b> are alive — left, right, up, down, and all four diagonals.<br><br><b>Draw a few cells, then hover over any cell</b> to see its 8 neighbors light up yellow. The number (toggle Counts) is its live neighbor count.<br><br>That single count drives all the rules.`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
-    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#ffb400', pulse: true, label: 'draw 3 around a gap here' }],
-  },
-  {
-    title: 'Survival — save the cell',
-    rule: `<b>2 or 3</b> live neighbors → <b style="color:#1db954">stays alive</b>`,
-    text: `The centre cell has 1 neighbor right now — <span class="hi-red">shown red, it will die</span>.<br><br>Add 1 or 2 more cells touching it. At 2–3 neighbors it turns green (saved). Push to 4+ and it goes red again — too crowded.<br><br>Get it green, then hit <b>Step</b>.`,
-    setup: _setup(() => {
-      grid[idx(CC, CR)]   = 1;
-      grid[idx(CC-1, CR)] = 1;
-    }),
-    resetLabel: '↺ Reset',
-    highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#1db954', pulse: true, label: 'save this cell' }],
+    hoverMode: true,
   },
   {
     title: 'Death — too lonely',
     rule: `<b>0–1</b> neighbors → <b style="color:#c0392b">dies</b> (lonely)`,
-    text: `This cell has no neighbors — <span class="hi-red">shown red</span>. Hit <b>Step</b> to watch it vanish from loneliness.<br><br>Or add 2–3 cells next to it first — it turns green and survives instead.`,
+    text: `This cell has no neighbors — <span class="hi-red">shown red, it will die</span>.<br><br>Hit <b>Step</b> to watch it vanish from loneliness.<br><br>Or add 2–3 cells next to it first — it turns green and survives instead.`,
     setup: _setup(() => {
       grid[idx(CC, CR)] = 1;
     }),
@@ -334,7 +315,7 @@ const STAGES = [
   {
     title: 'Death — too crowded',
     rule: `<b>4+</b> neighbors → <b style="color:#c0392b">dies</b> (crowded)`,
-    text: `The centre cell has 3 neighbors — just enough to survive (green). Add one more cell touching it to push past 3.<br><br>Watch it flip red — too crowded. Hit <b>Step</b> to watch it die.`,
+    text: `The centre cell has 3 neighbors — just enough to survive (green).<br><br>Add one more cell touching it to push past 3. Watch it flip red — too crowded.<br><br>Then hit <b>Step</b> to watch it die.`,
     setup: _setup(() => {
       grid[idx(CC,   CR  )] = 1;
       grid[idx(CC-1, CR-1)] = 1;
@@ -343,6 +324,27 @@ const STAGES = [
     }),
     resetLabel: '↺ Reset',
     highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#ffb400', pulse: true, label: 'add 1 more neighbor' }],
+  },
+  {
+    title: 'Survival — staying alive',
+    rule: `<b>2 or 3</b> live neighbors → <b style="color:#1db954">survives</b>`,
+    text: `This is a 2×2 block — every cell has exactly 3 live neighbors, so all four <span class="hi-green">stay alive</span> (green).<br><br>It never changes — hit <b>Step</b> and nothing moves. A perfectly stable shape.<br><br>Erase a cell to break it, and the rest start to die.`,
+    setup: _setup(() => {
+      grid[idx(CC,   CR  )] = 1;
+      grid[idx(CC+1, CR  )] = 1;
+      grid[idx(CC,   CR+1)] = 1;
+      grid[idx(CC+1, CR+1)] = 1;
+    }),
+    resetLabel: '↺ Reset block',
+    highlights: [{ c0: CC, r0: CR, c1: CC+1, r1: CR+1, color: '#1db954', pulse: true, label: 'all 4 survive' }],
+  },
+  {
+    title: 'Birth — a new cell appears',
+    rule: `exactly <b>3</b> live neighbors around a dead cell → <b style="color:#1db954">born</b>`,
+    text: `Draw 3 live cells that all touch the same empty space. That empty cell immediately glows <span style="color:#555">grey</span> — it has exactly 3 neighbors and will be born.<br><br>The grey appears <b>live as you draw</b>. Once you see it, hit <b>Step</b> to watch it come alive.`,
+    setup: _setup(() => {}),
+    resetLabel: '↺ Clear',
+    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#ffb400', pulse: true, label: 'a cell will be born here' }],
   },
   {
     title: 'B3 / S23',
@@ -515,13 +517,53 @@ function drawGuides(highlights) {
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
 
-    // Secondary text label, above the box
+    // Secondary text label — legible chip with background behind text
     if (label) {
-      ctx.fillStyle = color;
-      ctx.font = `${Math.max(9, Math.floor(CELL * 0.34))}px 'Courier New', monospace`;
+      const fontPx = Math.max(13, Math.floor(CELL * 0.42));
+      ctx.save();
+      ctx.font = `bold ${fontPx}px 'Courier New', monospace`;
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(label, x + w / 2, y - 4);
+      ctx.textBaseline = 'middle';
+
+      const padX = 8, padY = 5, radius = 4;
+      const tw = ctx.measureText(label).width;
+      const chipW = tw + padX * 2;
+      const chipH = fontPx + padY * 2;
+      const chipCX = x + w / 2;
+      const chipBottom = y - 4;            // sit just above the box
+      const chipX = chipCX - chipW / 2;
+      const chipY = chipBottom - chipH;
+
+      // Rounded-rect chip background
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(chipX, chipY, chipW, chipH, radius);
+      } else {
+        const rr = Math.min(radius, chipW / 2, chipH / 2);
+        ctx.moveTo(chipX + rr, chipY);
+        ctx.lineTo(chipX + chipW - rr, chipY);
+        ctx.arcTo(chipX + chipW, chipY, chipX + chipW, chipY + rr, rr);
+        ctx.lineTo(chipX + chipW, chipY + chipH - rr);
+        ctx.arcTo(chipX + chipW, chipY + chipH, chipX + chipW - rr, chipY + chipH, rr);
+        ctx.lineTo(chipX + rr, chipY + chipH);
+        ctx.arcTo(chipX, chipY + chipH, chipX, chipY + chipH - rr, rr);
+        ctx.lineTo(chipX, chipY + rr);
+        ctx.arcTo(chipX, chipY, chipX + rr, chipY, rr);
+        ctx.closePath();
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(8,8,8,0.85)';
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+
+      // Bright label text on top
+      const LABEL_TINT = { '#ffb400': '#ffe08a', '#1db954': '#7dffa8', '#e05252': '#ff9d9d', '#c0392b': '#ff9d9d' };
+      const tint = LABEL_TINT[color] || '#ffffff';
+      ctx.fillStyle = tint;
+      ctx.fillText(label, chipCX, chipY + chipH / 2 + 0.5);
+      ctx.restore();
     }
   });
 }
@@ -721,9 +763,8 @@ window.addEventListener('resize', () => {
 });
 
 /* ── Init ────────────────────────────────────────── */
-renderStage();
 document.getElementById('countsBtn').classList.add('active');
-loadPattern('blinker');
+renderStage();
 </script>
 </body>
 </html>
