@@ -88,6 +88,7 @@
     canvas {
       display: block; background: #0a0a0a;
       border: 1px solid #333; cursor: crosshair; image-rendering: pixelated;
+      touch-action: pan-y;   /* vertical swipe scrolls the page; we handle tap/draw/pinch */
     }
     canvas.running { border-color: #1db954; animation: pulse-border 2s ease-in-out infinite; }
     canvas.drag-over { border-color: #1db954; cursor: copy; }
@@ -265,27 +266,26 @@
     @media (max-width: 700px) {
       .main-layout { flex-direction: column; overflow: visible; }
 
-      /* keep the grid + controls narrow and centered so there are wide,
-         empty side gutters to swipe-scroll the page (large thumbs!) */
-      .canvas-col { padding: 14px 34px 8px; align-items: center; gap: 10px; }
-      .canvas-wrap { width: 100%; max-width: 320px; margin: 0 auto; display: block; }
+      /* Full-width grid + controls (vertical swipe scrolls thanks to the
+         canvas touch-action; no need for narrow gutters anymore) */
+      .canvas-col { padding: 12px 12px 8px; align-items: center; gap: 10px; }
+      .canvas-wrap { width: 100%; max-width: 520px; margin: 0 auto; display: block; }
       .canvas-wrap canvas { width: 100% !important; height: auto !important; }
 
-      .patterns-mobile { display: block; width: 100%; max-width: 320px; margin: 0 auto; }
+      .patterns-mobile { display: block; width: 100%; max-width: 520px; margin: 0 auto; }
 
       .right-panel {
-        width: 100%; max-width: 320px; margin: 0 auto;
+        width: 100%; max-width: 520px; margin: 0 auto;
         border-left: none; border-top: 1px solid #2e2e2e;
-        padding: 8px 34px 40px; overflow-y: visible;
+        padding: 8px 12px 28px; overflow-y: visible;
       }
       /* hide patterns in right panel on mobile — they're above canvas */
       .patterns-desktop { display: none; }
 
-      .stats-bar { padding: 6px 16px; gap: 10px; flex-wrap: wrap; justify-content: center; }
-      .stat-item:not(:last-child) { border-right: none; margin-right: 0; padding-right: 10px; }
-      .btn { padding: 8px 4px; font-size: 0.7rem; }
-      .pbtn { padding: 7px 5px; }
-      .brow { gap: 5px; margin-bottom: 5px; }
+      .stats-bar { padding: 6px 12px; gap: 12px; flex-wrap: wrap; }
+      .stat-item:not(:last-child) { border-right: none; margin-right: 0; padding-right: 12px; }
+      .btn { padding: 10px 5px; font-size: 0.72rem; }
+      .pbtn { padding: 8px 6px; }
     }
     /* ── Credits ──────────────────────────────────────── */
     .credits-list { font-size: 0.65rem; color: #666; line-height: 2; }
@@ -646,8 +646,8 @@ function initGrid() {
   const mobile = window.innerWidth <= 700;
   let maxW, maxH;
   if (mobile) {
-    maxW = Math.min(window.innerWidth - 24, 360);
-    maxH = Math.round(window.innerHeight * 0.34);
+    maxW = window.innerWidth - 24;
+    maxH = Math.round(window.innerHeight * 0.42);
   } else {
     const col = document.querySelector('.canvas-col');
     maxW = (col ? col.clientWidth : 600) - 26;
@@ -1241,18 +1241,42 @@ canvas.addEventListener('wheel', e => {
   draw();
 }, { passive: false });
 
-/* ── Touch: draw (1 finger) + pinch/pan (2 fingers) ─ */
+/* ── Touch: tap/drag draws, vertical swipe scrolls the page ─
+   Like Instagram: a vertical swipe past the canvas scrolls instead of
+   drawing. We wait a few px to decide intent — a tap or sideways drag
+   draws (preventDefault), a vertical drag is left to the browser. */
 let lastPinchDist = null, lastPinchMid = null;
+let touchStart = null;     // {x, y} of the single-finger start
+let touchMode = null;      // null (undecided) | 'draw' | 'scroll'
+const TOUCH_SLOP = 10;     // px to move before committing to draw vs scroll
+
+function _toggleCellAt(clientX, clientY) {
+  const [c, r] = cellAt({ touches: [{ clientX, clientY }] });
+  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+  if (activeChallenge === BRIDGE_IDX && generation === 0 && !_inZoneA(c, r)) return;
+  pushHistory();
+  paintVal = grid[idx(c, r)] ? 0 : 1;
+  grid[idx(c, r)] = paintVal;
+  draw();
+}
 
 canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  if (e.touches.length === 1) { if (drawLocked()) return; pushHistory(); painting = true; paint(e); }
-  else { painting = false; lastPinchDist = null; lastPinchMid = null; }
+  if (e.touches.length === 1) {
+    // don't draw or block scroll yet — wait for touchmove/touchend to decide
+    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchMode = null; painting = false;
+    lastPinchDist = null; lastPinchMid = null;
+  } else {
+    e.preventDefault();
+    touchStart = null; touchMode = null; painting = false;
+    lastPinchDist = null; lastPinchMid = null;
+  }
 }, { passive: false });
+
 canvas.addEventListener('touchmove', e => {
-  e.preventDefault();
   if (e.touches.length === 2) {
-    painting = false;
+    e.preventDefault();
+    painting = false; touchStart = null; touchMode = null;
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1271,10 +1295,35 @@ canvas.addEventListener('touchmove', e => {
     lastPinchDist = dist; lastPinchMid = { x: mx, y: my };
     return;
   }
-  lastPinchDist = null; lastPinchMid = null;
-  if (painting) paint(e);
+  if (!touchStart) return;
+  const dx = e.touches[0].clientX - touchStart.x;
+  const dy = e.touches[0].clientY - touchStart.y;
+  if (touchMode === null) {
+    if (Math.abs(dx) < TOUCH_SLOP && Math.abs(dy) < TOUCH_SLOP) return;   // not enough yet
+    if (Math.abs(dy) > Math.abs(dx)) {
+      touchMode = 'scroll';                 // vertical → let the page scroll
+    } else if (!drawLocked()) {
+      touchMode = 'draw';                   // sideways → draw a stroke
+      const [c, r] = cellAt({ touches: [{ clientX: touchStart.x, clientY: touchStart.y }] });
+      paintVal = (c >= 0 && c < COLS && r >= 0 && r < ROWS && grid[idx(c, r)]) ? 0 : 1;
+      pushHistory(); painting = true;
+    } else {
+      touchMode = 'scroll';
+    }
+  }
+  if (touchMode === 'draw') { e.preventDefault(); if (painting) paint(e); }
+  // 'scroll' → do nothing; the browser scrolls the page
 }, { passive: false });
-canvas.addEventListener('touchend', () => { painting = false; lastPinchDist = null; lastPinchMid = null; refreshDevPanel(); });
+
+canvas.addEventListener('touchend', e => {
+  // a tap (no decisive movement) toggles the cell under the finger
+  if (touchMode === null && touchStart && !drawLocked()) {
+    _toggleCellAt(touchStart.x, touchStart.y);
+  }
+  painting = false; touchStart = null; touchMode = null;
+  lastPinchDist = null; lastPinchMid = null;
+  refreshDevPanel();
+});
 
 /* ── Presets ──────────────────────────────────────── */
 function place(cells, offC, offR) {
