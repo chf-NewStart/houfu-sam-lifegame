@@ -764,7 +764,9 @@ const GRID_LINE = '#1e1e1e';
 // cyan → blue → violet (ancient). Gives stable structures a glow that
 // distinguishes them from churning newborns.
 let age, nextAge;
-let auraMode = (localStorage.getItem('lifegame_aura') ?? '0') === '1';
+// Always start with Aura OFF on load — the static splash looks better plain;
+// the age colors only shine once the simulation is running.
+let auraMode = false;
 
 /* ── Fade trails ──────────────────────────────────── */
 // trail[i] counts down from TRAIL_MAX after a cell dies, leaving a
@@ -1099,7 +1101,6 @@ function updateAuraLure() {
 
 function toggleAura() {
   auraMode = !auraMode;
-  localStorage.setItem('lifegame_aura', auraMode ? '1' : '0');
   const btn = document.getElementById('auraBtn');
   if (btn) btn.classList.toggle('active', auraMode);
   updateAuraLure();
