@@ -2654,7 +2654,7 @@ function openPatternPicker() {
   const saves = _getSaves();
   const list = document.getElementById('patternPickerList');
   if (!saves.length) {
-    list.innerHTML = '<div class="lb-empty" style="padding:20px 0">No saves yet — save a blueprint first via 💾 My Saves.</div>';
+    list.innerHTML = '<div class="lb-empty" style="padding:20px 0">' + t('No blueprints yet — save one first via 💾 My Blueprints.', '还没有蓝图 — 先用 💾 我的蓝图 保存一个。') + '</div>';
   } else {
     const existingIds = new Set(customPatternList.map(p => p.name));
     list.innerHTML = saves.map((s, i) => `
