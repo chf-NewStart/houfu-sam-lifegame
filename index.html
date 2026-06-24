@@ -111,6 +111,26 @@
     .btn.dis { opacity: 0.32; }
     .btn.dis:hover { border-color: #3d3d3d; color: #aaa; }
 
+    /* First-run nudge — points new visitors at the Watch button */
+    @keyframes nudgeIn { from { opacity: 0; transform: translate(-50%, 14px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    #firstNudge {
+      display: none; position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+      z-index: 200; align-items: center; gap: 12px;
+      background: #0d0d0d; border: 1px solid #1db954; border-radius: 8px;
+      padding: 12px 16px; box-shadow: 0 6px 28px rgba(0,0,0,0.6), 0 0 16px rgba(29,185,84,0.18);
+      font-size: 0.78rem; color: #ccc; max-width: 92vw;
+      animation: nudgeIn 0.4s ease-out;
+    }
+    #firstNudge.show { display: flex; }
+    #firstNudge b { color: #1db954; }
+    #firstNudge button {
+      flex-shrink: 0; background: rgba(29,185,84,0.12); border: 1px solid #1db954; color: #1db954;
+      font-family: inherit; font-size: 0.74rem; padding: 6px 12px; border-radius: 5px; cursor: pointer;
+    }
+    #firstNudge button:hover { background: rgba(29,185,84,0.22); }
+    @keyframes watchPulse { 0%,100% { box-shadow: 0 0 0 rgba(29,185,84,0); } 50% { box-shadow: 0 0 12px rgba(29,185,84,0.6); } }
+    #watchBtn.nudging { border-color: #1db954; color: #1db954; animation: watchPulse 1.4s ease-in-out infinite; }
+
     /* Aura button — animated gradient glow to lure clicks (when inactive) */
     @keyframes auraLure {
       0%   { border-color: #1db954; box-shadow: 0 0 5px rgba(29,185,84,0.35);  color: #2fd06a; }
@@ -364,7 +384,7 @@
         <button class="btn" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放" style="flex:1">⏵ Play</button>
       </div>
       <div class="brow">
-        <button class="btn" onclick="watchRandom()" data-en="✦ Watch" data-zh="✦ 观赏" title="Load a random scene and play it" style="flex:2">✦ Watch</button>
+        <button class="btn" id="watchBtn" onclick="watchRandom()" data-en="✦ Watch" data-zh="✦ 观赏" title="Load a random scene and play it" style="flex:2">✦ Watch</button>
         <button class="btn" onclick="openScenes()" data-en="🎬 Scenes" data-zh="🎬 场景" style="flex:1">🎬 Scenes</button>
       </div>
       <div class="brow">
@@ -520,6 +540,12 @@
     <div id="galleryList"><div class="lb-empty">Loading…</div></div>
     <button class="btn" onclick="closeGallery()" style="margin-top:18px;width:100%">Close</button>
   </div>
+</div>
+
+<!-- First-run nudge -->
+<div id="firstNudge">
+  <span><span data-en="👋 New here? Tap" data-zh="👋 第一次来？点">👋 New here? Tap</span> <b data-en="✦ Watch" data-zh="✦ 观赏">✦ Watch</b> <span data-en="to see a pattern come alive." data-zh="看图案活起来。">to see a pattern come alive.</span></span>
+  <button onclick="dismissNudge()" data-en="Got it" data-zh="知道了">Got it</button>
 </div>
 
 <div id="sceneOverlay">
@@ -960,6 +986,8 @@ function togglePlay() {
   running = !running;
   const btn = document.getElementById('playBtn');
   if (running) {
+    const _n = document.getElementById('firstNudge');
+    if (_n && _n.classList.contains('show')) dismissNudge();
     btn.textContent = t('⏸ Pause', '⏸ 暂停');
     btn.classList.add('active');
     canvas.classList.add('running');
@@ -1303,9 +1331,9 @@ const SCENES = [
   {
     id: 'soccer', cat: 'World Cup 2026',
     name: 'Soccer Ball', nameZh: '足球',
-    desc: 'A football, panels and all. Hit play and watch it burst apart under the rules of Life.',
-    descZh: '一颗足球，连拼块都有。点击播放，看它在生命游戏规则下炸裂解体。',
-    cells: [[5,1],[6,1],[7,1],[8,1],[10,1],[11,1],[12,1],[13,1],[4,2],[5,2],[6,2],[7,2],[8,2],[10,2],[11,2],[12,2],[13,2],[14,2],[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[10,3],[11,3],[12,3],[13,3],[14,3],[15,3],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[10,4],[11,4],[12,4],[13,4],[14,4],[15,4],[16,4],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[10,5],[11,5],[12,5],[13,5],[14,5],[15,5],[16,5],[17,5],[2,6],[3,6],[4,6],[5,6],[6,6],[7,6],[8,6],[10,6],[11,6],[12,6],[13,6],[14,6],[15,6],[16,6],[5,7],[6,7],[7,7],[11,7],[12,7],[13,7],[1,8],[2,8],[3,8],[4,8],[14,8],[15,8],[16,8],[17,8],[0,9],[1,9],[2,9],[3,9],[4,9],[5,9],[12,9],[13,9],[14,9],[15,9],[16,9],[17,9],[18,9],[1,10],[2,10],[3,10],[4,10],[5,10],[6,10],[11,10],[12,10],[13,10],[14,10],[15,10],[16,10],[17,10],[1,11],[2,11],[3,11],[4,11],[5,11],[6,11],[12,11],[13,11],[14,11],[15,11],[16,11],[17,11],[1,12],[2,12],[3,12],[4,12],[5,12],[6,12],[8,12],[9,12],[10,12],[12,12],[13,12],[14,12],[15,12],[16,12],[17,12],[1,13],[2,13],[3,13],[4,13],[5,13],[7,13],[8,13],[9,13],[10,13],[11,13],[13,13],[14,13],[15,13],[16,13],[17,13],[2,14],[3,14],[4,14],[7,14],[8,14],[9,14],[10,14],[11,14],[14,14],[15,14],[16,14],[3,15],[6,15],[7,15],[8,15],[9,15],[10,15],[11,15],[12,15],[15,15],[5,16],[6,16],[7,16],[8,16],[9,16],[10,16],[11,16],[12,16],[13,16],[5,17],[6,17],[7,17],[8,17],[9,17],[10,17],[11,17],[12,17],[13,17],[9,18]],
+    desc: 'A football — circle, centre pentagon and seams. The thin outline holds its shape a while before breaking up.',
+    descZh: '一颗足球 — 圆形轮廓、中央五边形与缝线。细线会维持一段时间才逐渐解体。',
+    cells: [[7,0],[8,0],[9,0],[10,0],[11,0],[12,0],[13,0],[5,1],[6,1],[10,1],[14,1],[15,1],[4,2],[5,2],[10,2],[15,2],[16,2],[3,3],[10,3],[17,3],[2,4],[10,4],[18,4],[1,5],[2,5],[10,5],[18,5],[19,5],[1,6],[10,6],[19,6],[0,7],[1,7],[2,7],[9,7],[10,7],[11,7],[18,7],[19,7],[20,7],[0,8],[2,8],[3,8],[4,8],[5,8],[8,8],[9,8],[11,8],[12,8],[15,8],[16,8],[17,8],[18,8],[20,8],[0,9],[6,9],[7,9],[13,9],[14,9],[20,9],[0,10],[7,10],[13,10],[20,10],[0,11],[7,11],[8,11],[12,11],[13,11],[20,11],[0,12],[8,12],[12,12],[20,12],[0,13],[8,13],[9,13],[10,13],[11,13],[12,13],[20,13],[1,14],[7,14],[13,14],[19,14],[1,15],[2,15],[6,15],[7,15],[13,15],[14,15],[18,15],[19,15],[2,16],[5,16],[6,16],[14,16],[15,16],[18,16],[3,17],[5,17],[15,17],[17,17],[4,18],[5,18],[15,18],[16,18],[5,19],[6,19],[14,19],[15,19],[7,20],[8,20],[9,20],[10,20],[11,20],[12,20],[13,20]],
   },
   {
     id: 'maple', cat: 'World Cup 2026',
@@ -1313,6 +1341,34 @@ const SCENES = [
     desc: 'Canada, co-host of the 2026 World Cup. The leaf outline slowly erodes into drifting cells over 100+ generations.',
     descZh: '加拿大，2026世界杯东道主之一。枫叶轮廓在百代以上缓缓侵蚀、飘散成细胞。',
     cells: [[16,0],[17,0],[15,1],[16,1],[17,1],[18,1],[15,2],[16,2],[17,2],[18,2],[10,3],[14,3],[15,3],[18,3],[19,3],[23,3],[24,3],[10,4],[11,4],[12,4],[13,4],[14,4],[19,4],[20,4],[21,4],[22,4],[23,4],[24,4],[10,5],[11,5],[12,5],[13,5],[14,5],[19,5],[20,5],[21,5],[22,5],[23,5],[10,6],[23,6],[10,7],[11,7],[22,7],[23,7],[10,8],[11,8],[22,8],[23,8],[6,9],[7,9],[11,9],[22,9],[26,9],[27,9],[0,10],[1,10],[6,10],[7,10],[8,10],[11,10],[22,10],[25,10],[26,10],[27,10],[32,10],[33,10],[0,11],[1,11],[2,11],[3,11],[4,11],[5,11],[6,11],[8,11],[9,11],[11,11],[12,11],[22,11],[24,11],[25,11],[27,11],[28,11],[29,11],[30,11],[31,11],[32,11],[33,11],[1,12],[5,12],[6,12],[9,12],[10,12],[11,12],[12,12],[21,12],[22,12],[23,12],[24,12],[27,12],[28,12],[32,12],[1,13],[10,13],[11,13],[12,13],[21,13],[22,13],[23,13],[32,13],[1,14],[2,14],[10,14],[11,14],[22,14],[23,14],[31,14],[32,14],[1,15],[2,15],[31,15],[32,15],[2,16],[31,16],[32,16],[0,17],[1,17],[2,17],[31,17],[32,17],[33,17],[0,18],[1,18],[32,18],[33,18],[1,19],[2,19],[31,19],[32,19],[2,20],[3,20],[30,20],[31,20],[3,21],[4,21],[5,21],[28,21],[29,21],[30,21],[4,22],[5,22],[6,22],[27,22],[28,22],[29,22],[5,23],[6,23],[7,23],[26,23],[27,23],[28,23],[7,24],[8,24],[25,24],[26,24],[8,25],[9,25],[24,25],[25,25],[8,26],[16,26],[17,26],[25,26],[7,27],[8,27],[9,27],[10,27],[11,27],[12,27],[13,27],[14,27],[15,27],[16,27],[17,27],[18,27],[19,27],[20,27],[21,27],[22,27],[23,27],[24,27],[25,27],[26,27],[7,28],[8,28],[9,28],[10,28],[16,28],[17,28],[23,28],[24,28],[25,28],[26,28],[16,29],[17,29],[16,30],[17,30],[16,31],[17,31],[16,32],[17,32],[16,33],[17,33],[16,34],[17,34],[16,35],[17,35]],
+  },
+  {
+    id: 'heart', cat: 'Shapes',
+    name: 'Heart', nameZh: '爱心',
+    desc: 'A heart outline. Play it and watch it pulse and break apart — share the result.',
+    descZh: '一颗爱心轮廓。播放它，看它跳动、碎裂 — 把结果分享出去。',
+    cells: [[2,0],[3,0],[4,0],[8,0],[9,0],[10,0],[1,1],[5,1],[7,1],[11,1],[0,2],[6,2],[12,2],[0,3],[12,3],[0,4],[12,4],[1,5],[11,5],[2,6],[10,6],[3,7],[9,7],[4,8],[8,8],[5,9],[7,9],[6,10]],
+  },
+  {
+    id: 'pulsar', cat: 'Oscillators',
+    name: 'Pulsar', nameZh: '脉冲星',
+    desc: 'The most common period-3 oscillator. 48 cells that pulse forever — hypnotic to watch.',
+    descZh: '最常见的周期3振荡器。48个细胞永远脉动 — 看着令人入神。',
+    cells: PRESETS.pulsar,
+  },
+  {
+    id: 'penta', cat: 'Oscillators',
+    name: 'Pentadecathlon', nameZh: '十五周期振荡器',
+    desc: 'A period-15 oscillator — it stretches, pinches and folds through fifteen frames before repeating.',
+    descZh: '周期15的振荡器 — 历经十五帧的拉伸、收缩与折叠后才重复。',
+    cells: [[2,0],[7,0],[0,1],[1,1],[3,1],[4,1],[5,1],[6,1],[8,1],[9,1],[2,2],[7,2]],
+  },
+  {
+    id: 'fleet', cat: 'Spaceships',
+    name: 'Glider Fleet', nameZh: '滑翔机编队',
+    desc: 'Six gliders flying in formation, drifting diagonally across the grid together.',
+    descZh: '六架滑翔机编队飞行，一同沿对角线穿越网格。',
+    cells: [[1,0],[2,1],[0,2],[1,2],[2,2],[8,0],[9,1],[7,2],[8,2],[9,2],[15,0],[16,1],[14,2],[15,2],[16,2],[1,7],[2,8],[0,9],[1,9],[2,9],[8,7],[9,8],[7,9],[8,9],[9,9],[15,7],[16,8],[14,9],[15,9],[16,9]],
   },
   {
     id: 'gun', cat: 'Guns',
@@ -1327,6 +1383,13 @@ const SCENES = [
     desc: 'Just 5 cells — yet it churns chaotically for 1103 generations before finally settling. The classic methuselah.',
     descZh: '仅5个细胞，却会混乱演化1103代才最终稳定。经典的"玛士撒拉"长寿模式。',
     cells: PRESETS.rpento,
+  },
+  {
+    id: 'acorn', cat: 'Methuselahs',
+    name: 'Acorn', nameZh: '橡果',
+    desc: 'Seven cells that explode into chaos for 5206 generations, scattering gliders across the whole grid.',
+    descZh: '七个细胞引爆出长达5206代的混乱，将滑翔机撒满整个网格。',
+    cells: PRESETS.acorn,
   },
   {
     id: 'worldmap', cat: 'Chaos',
@@ -1384,9 +1447,33 @@ function loadScene(id, autoplay = true) {
 }
 
 function watchRandom() {
+  dismissNudge();
   closeScenes();
   const s = SCENES[Math.floor(Math.random() * SCENES.length)];
   loadScene(s.id, true);
+}
+
+/* ── First-run nudge ──────────────────────────────── */
+const NUDGE_KEY = 'lifegame_seen_nudge';
+function dismissNudge() {
+  const n = document.getElementById('firstNudge');
+  if (n) n.classList.remove('show');
+  const w = document.getElementById('watchBtn');
+  if (w) w.classList.remove('nudging');
+  try { localStorage.setItem(NUDGE_KEY, '1'); } catch {}
+}
+function maybeShowNudge() {
+  let seen = false;
+  try { seen = localStorage.getItem(NUDGE_KEY) === '1'; } catch {}
+  if (seen) return;
+  setTimeout(() => {
+    // bail if they already started interacting
+    if (running || generation > 0) { dismissNudge(); return; }
+    const n = document.getElementById('firstNudge');
+    const w = document.getElementById('watchBtn');
+    if (n) n.classList.add('show');
+    if (w) w.classList.add('nudging');
+  }, 1400);
 }
 
 function openScenes() {
@@ -2327,11 +2414,14 @@ window.addEventListener('resize', () => {
 
 /* ── Init ─────────────────────────────────────────── */
 initGrid();
-if (!loadSeedParam()) loadDefault();
+const _hadSeed = loadSeedParam();
+if (!_hadSeed) loadDefault();
 {
   const _ab = document.getElementById('auraBtn');
   if (_ab) _ab.classList.toggle('active', auraMode);
 }
+// First-run nudge only on the default landing (not when opening a shared seed)
+if (!_hadSeed) maybeShowNudge();
 </script>
 <script>
 /* Register the service worker (installable PWA + offline). No-op on file://. */
