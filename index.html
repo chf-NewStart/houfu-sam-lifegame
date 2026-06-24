@@ -92,8 +92,18 @@
     }
     canvas.running { border-color: #1db954; animation: pulse-border 2s ease-in-out infinite; }
     canvas.drag-over { border-color: #1db954; cursor: copy; }
-    /* Draw-lock: capture all touch so you can draw any direction (no scroll) */
-    canvas.pen-lock { touch-action: none; border-color: #1db954; border-style: dashed; }
+    /* Draw mode: capture all touch so you can draw any direction (no scroll) */
+    canvas.pen-lock { touch-action: none; }
+
+    /* Primary action (Play) — subtly emphasized */
+    .btn.primary { border-color: #1a5e30; color: #1db954; background: rgba(29,185,84,0.07); font-weight: 600; }
+    .btn.primary:hover { border-color: #1db954; background: rgba(29,185,84,0.13); }
+
+    /* Collapsible "// more" section */
+    .pcard-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+    .pcard-toggle:hover { color: #2fd06a; }
+    #moreChevron { font-size: 0.7rem; transition: transform 0.2s; }
+    .pcard-toggle.open #moreChevron { transform: rotate(180deg); }
 
     /* ── Theater mode: immersive fullscreen viewing ───── */
     body.theater { overflow: hidden; }
@@ -414,60 +424,81 @@
   <!-- Right panel -->
   <div class="right-panel">
 
-    <!-- Controls -->
+    <!-- Play -->
     <div class="pcard">
-      <div class="pcard-title" data-en="// controls" data-zh="// 控制">// controls</div>
+      <div class="pcard-title" data-en="// play" data-zh="// 播放">// play</div>
       <div class="brow">
-        <button class="btn" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放" style="flex:1">⏵ Play</button>
+        <button class="btn primary" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放" style="flex:1">⏵ Play</button>
       </div>
       <div class="brow">
-        <button class="btn" id="watchBtn" onclick="watchRandom()" data-en="✦ Watch" data-zh="✦ 观赏" title="Load a random scene and play it" style="flex:2">✦ Watch</button>
-        <button class="btn" onclick="openScenes()" data-en="🎬 Scenes" data-zh="🎬 场景" style="flex:1">🎬 Scenes</button>
-      </div>
-      <div class="brow">
-        <button class="btn dis" id="stepBkBtn" onclick="undoStep()"  data-en="← Step" data-zh="← 后退">← Step</button>
-        <button class="btn" id="stepBtn"   onclick="stepOnce()"  data-en="Step →" data-zh="步进 →">Step →</button>
-      </div>
-      <div class="brow">
-        <button class="btn dis" id="undoBtn" onclick="undoDraw()" data-en="↩ Undo" data-zh="↩ 撤销">↩ Undo</button>
-        <button class="btn dis" id="redoBtn" onclick="redoStep()" data-en="↻ Redo" data-zh="↻ 重做">↻ Redo</button>
-      </div>
-      <div class="brow">
-        <button class="btn danger" onclick="clearGrid()"    data-en="⬜ Clear"  data-zh="⬜ 清空">⬜ Clear</button>
-        <button class="btn"        onclick="randomize(0.2)" data-en="⚄ Random" data-zh="⚄ 随机">⚄ Random</button>
-        <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share" data-zh="⎘ 分享">⎘ Share</button>
-      </div>
-      <div class="brow">
-        <button class="btn" id="auraBtn" onclick="toggleAura()" data-en="🔮 Aura" data-zh="🔮 光晕" title="Color cells by age — green→violet as they survive" style="flex:1">🔮 Aura</button>
-        <button class="btn" id="penBtn" onclick="togglePen()" data-en="✏️ Draw" data-zh="✏️ 画笔" title="Draw mode: drag across the grid to paint (scroll is disabled). Off: drag scrolls the page, tap toggles a single cell." style="flex:1">✏️ Draw</button>
-      </div>
-      <div class="brow">
-        <button class="btn" onclick="enterTheater()" data-en="⛶ Theater" data-zh="⛶ 影院" title="Immersive full-screen view — just the pattern" style="flex:1">⛶ Theater</button>
-      </div>
-      <div class="brow">
-        <button class="btn" onclick="resetView()"       data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
-        <button class="btn" id="selModeBtn" onclick="toggleSelMode()" data-en="⬚ Zone" data-zh="⬚ 区域" title="Draw a focus zone · Esc to cancel">⬚ Zone</button>
-        <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board"   data-zh="🏆 榜单">🏆 Board</button>
-        <a class="btn" href="/training" style="display:block;text-align:center;text-decoration:none" data-en="📖 Learn" data-zh="📖 教程">📖 Learn</a>
-      </div>
-      <div class="brow">
-        <button class="btn" onclick="openGallerySubmit()" data-en="📤 Share Shape" data-zh="📤 分享形状">📤 Share Shape</button>
-        <button class="btn" onclick="openGallery()"       data-en="🖼️ Gallery"    data-zh="🖼️ 图库">🖼️ Gallery</button>
-        <button class="btn" onclick="openSaves()"         data-en="💾 My Saves"   data-zh="💾 我的存档">💾 My Saves</button>
-      </div>
-      <div class="brow">
-        <button class="btn" onclick="openImgModal()" data-en="📷 Image → Cells" data-zh="📷 图片转细胞">📷 Image → Cells</button>
-        <button class="btn" id="devModeBtn" onclick="toggleDevMode()" data-en="⚡ Dev" data-zh="⚡ 预测">⚡ Dev</button>
+        <button class="btn dis" id="stepBkBtn" onclick="undoStep()" data-en="← Step" data-zh="← 后退">← Step</button>
+        <button class="btn" id="stepBtn" onclick="stepOnce()" data-en="Step →" data-zh="步进 →">Step →</button>
       </div>
       <div class="slider-row">
         <span data-en="speed" data-zh="速度">speed</span>
         <input type="range" id="speedSlider" min="1" max="30" value="10" oninput="setSpeed(this.value)">
         <span id="speedLabel">10 fps</span>
       </div>
-      <div class="slider-row" style="margin-top:6px">
-        <span data-en="cell px" data-zh="格大小">cell px</span>
-        <input type="range" id="cellSizeSlider" min="4" max="16" value="8" oninput="setCellSize(this.value)">
-        <span id="cellSizeLabel">8</span>
+    </div>
+
+    <!-- Watch -->
+    <div class="pcard">
+      <div class="pcard-title" data-en="// watch" data-zh="// 观赏">// watch</div>
+      <div class="brow">
+        <button class="btn" id="watchBtn" onclick="watchRandom()" data-en="✦ Watch" data-zh="✦ 观赏" title="Load a random scene and play it" style="flex:2">✦ Watch</button>
+        <button class="btn" onclick="openScenes()" data-en="🎬 Scenes" data-zh="🎬 场景" style="flex:1">🎬 Scenes</button>
+      </div>
+      <div class="brow">
+        <button class="btn" onclick="enterTheater()" data-en="⛶ Theater" data-zh="⛶ 影院" title="Immersive full-screen view — just the pattern" style="flex:1">⛶ Theater</button>
+        <button class="btn" id="auraBtn" onclick="toggleAura()" data-en="🔮 Aura" data-zh="🔮 光晕" title="Color cells by age — green→violet as they survive" style="flex:1">🔮 Aura</button>
+      </div>
+    </div>
+
+    <!-- Edit -->
+    <div class="pcard">
+      <div class="pcard-title" data-en="// edit" data-zh="// 编辑">// edit</div>
+      <div class="brow">
+        <button class="btn" id="penBtn" onclick="togglePen()" data-en="✏️ Draw" data-zh="✏️ 画笔" title="Draw mode: drag to paint. Off: drag scrolls/pans, click toggles a single cell." style="flex:1">✏️ Draw</button>
+        <button class="btn" id="selModeBtn" onclick="toggleSelMode()" data-en="⬚ Zone" data-zh="⬚ 区域" title="Draw a focus zone · Esc to cancel" style="flex:1">⬚ Zone</button>
+      </div>
+      <div class="brow">
+        <button class="btn dis" id="undoBtn" onclick="undoDraw()" data-en="↩ Undo" data-zh="↩ 撤销">↩ Undo</button>
+        <button class="btn dis" id="redoBtn" onclick="redoStep()" data-en="↻ Redo" data-zh="↻ 重做">↻ Redo</button>
+      </div>
+      <div class="brow">
+        <button class="btn danger" onclick="clearGrid()" data-en="⬜ Clear" data-zh="⬜ 清空">⬜ Clear</button>
+        <button class="btn" onclick="randomize(0.2)" data-en="⚄ Random" data-zh="⚄ 随机">⚄ Random</button>
+        <button class="btn" onclick="resetView()" data-en="⊙ View" data-zh="⊙ 视图" title="Reset zoom &amp; pan">⊙ View</button>
+      </div>
+    </div>
+
+    <!-- More (collapsible) -->
+    <div class="pcard">
+      <div class="pcard-title pcard-toggle" id="moreToggle" onclick="toggleMore()">
+        <span data-en="// more" data-zh="// 更多">// more</span><span id="moreChevron">▾</span>
+      </div>
+      <div id="moreSection" style="display:none">
+        <div class="brow">
+          <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share link" data-zh="⎘ 分享链接">⎘ Share link</button>
+          <button class="btn" onclick="openImgModal()" data-en="📷 Image" data-zh="📷 图片">📷 Image</button>
+        </div>
+        <div class="brow">
+          <button class="btn" onclick="openGallerySubmit()" data-en="📤 Share Shape" data-zh="📤 分享形状">📤 Share Shape</button>
+          <button class="btn" onclick="openGallery()" data-en="🖼️ Gallery" data-zh="🖼️ 图库">🖼️ Gallery</button>
+        </div>
+        <div class="brow">
+          <button class="btn" onclick="openSaves()" data-en="💾 My Saves" data-zh="💾 我的存档">💾 My Saves</button>
+          <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board" data-zh="🏆 榜单">🏆 Board</button>
+        </div>
+        <div class="brow">
+          <a class="btn" href="/training" style="text-align:center;text-decoration:none" data-en="📖 Learn" data-zh="📖 教程">📖 Learn</a>
+          <button class="btn" id="devModeBtn" onclick="toggleDevMode()" data-en="⚡ Dev" data-zh="⚡ 预测">⚡ Dev</button>
+        </div>
+        <div class="slider-row" style="margin-top:6px">
+          <span data-en="cell px" data-zh="格大小">cell px</span>
+          <input type="range" id="cellSizeSlider" min="4" max="16" value="8" oninput="setCellSize(this.value)">
+          <span id="cellSizeLabel">8</span>
+        </div>
       </div>
     </div>
 
@@ -1240,7 +1271,9 @@ canvas.addEventListener('mousedown', e => {
   const [c, r] = cellAt(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
   pushHistory();
-  paintVal = grid[idx(c, r)] ? 0 : 1; painting = true; paint(e);
+  // Draw mode → drag paints (painting=true). Browse mode → click toggles a
+  // single cell only (painting stays false, so dragging doesn't paint).
+  paintVal = grid[idx(c, r)] ? 0 : 1; painting = penMode; paint(e);
 });
 canvas.addEventListener('mousemove', e => {
   if (panning) return;
@@ -1301,13 +1334,26 @@ let lastPinchDist = null, lastPinchMid = null;
 let touchStart = null;     // {x, y} of the single-finger start
 let touchMode = null;      // null (undecided) | 'draw' | 'scroll'
 const TOUCH_SLOP = 10;     // px to move before committing to draw vs scroll
-let penMode = false;       // when on, the grid captures all touch for free drawing
+// Draw mode: drag paints. Default ON for desktop (mouse, no scroll conflict),
+// OFF for touch/mobile (so a drag scrolls the page instead of drawing).
+let penMode = window.innerWidth > 700;
 
 function togglePen() {
   penMode = !penMode;
+  _applyPenMode();
+}
+function _applyPenMode() {
   const btn = document.getElementById('penBtn');
   if (btn) btn.classList.toggle('active', penMode);
   canvas.classList.toggle('pen-lock', penMode);
+}
+
+function toggleMore() {
+  const sec = document.getElementById('moreSection');
+  const toggle = document.getElementById('moreToggle');
+  const open = sec.style.display === 'none';
+  sec.style.display = open ? 'block' : 'none';
+  if (toggle) toggle.classList.toggle('open', open);
 }
 
 /* ── Theater mode: immersive full-screen viewing ──── */
@@ -2593,6 +2639,7 @@ if (!_hadSeed) loadDefault();
   const _ab = document.getElementById('auraBtn');
   if (_ab) _ab.classList.toggle('active', auraMode);
 }
+_applyPenMode();   // reflect default Draw mode (on for desktop, off for mobile)
 // First-run nudge only on the default landing (not when opening a shared seed)
 if (!_hadSeed) maybeShowNudge();
 </script>
