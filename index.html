@@ -45,8 +45,6 @@
     }
     .pg-title { color: #1db954; font-size: 1.1rem; text-transform: uppercase; letter-spacing: -1px; }
     .pg-sub   { color: #999; font-size: 0.65rem; margin-top: 2px; }
-    .pg-back  { font-size: 0.65rem; color: #1db954; text-decoration: none; }
-    .pg-back:hover { text-decoration: underline; }
     .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.7rem; padding: 5px 10px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
     /* Segmented language toggle [EN | 中文] — matches the mode switch, no basic dropdown */
     .lang-switch { display: flex; border: 1px solid #2e2e2e; flex-shrink: 0; }
@@ -416,7 +414,6 @@
   <div>
     <div class="pg-title" id="pgTitle">Conway's Game of Life</div>
     <div class="pg-sub"  id="pgSub">Click to draw · drag to paint · watch it evolve</div>
-    <a class="pg-back" href="https://houfu72.com/">← portfolio</a>
   </div>
   <div class="mode-switch" role="tablist">
     <button class="mode-btn active" data-mode="sandbox" role="tab" onclick="setMode('sandbox')" data-en="✦ Sandbox" data-zh="✦ 沙盒">✦ Sandbox</button>
