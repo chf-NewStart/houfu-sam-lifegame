@@ -48,6 +48,7 @@
     .pg-back  { font-size: 0.65rem; color: #1db954; text-decoration: none; }
     .pg-back:hover { text-decoration: underline; }
     .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.7rem; padding: 5px 10px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
+    select.lang-btn option { background: #111; color: #ddd; }
     .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
     /* ── Mode switch (Sandbox / Challenges) ───────────── */
@@ -417,7 +418,10 @@
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
     <a class="lang-btn" href="/training" style="text-decoration:none" data-en="📖 Learn" data-zh="📖 教程">📖 Learn</a>
-    <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+    <select class="lang-btn" id="langSelect" onchange="setLang(this.value)" title="Language" aria-label="Language">
+      <option value="en">English</option>
+      <option value="zh">中文</option>
+    </select>
   </div>
 </div>
 
@@ -554,7 +558,7 @@
     <div class="pcard sb-only">
       <div class="pcard-title" data-en="// watch" data-zh="// 观赏">// watch</div>
       <div class="brow">
-        <button class="btn" id="watchBtn" onclick="watchRandom()" data-en="✦ Watch" data-zh="✦ 观赏" title="Load a random scene and play it" style="flex:2">✦ Watch</button>
+        <button class="btn" id="watchBtn" onclick="watchRandom()" data-en="🎲 Watch" data-zh="🎲 随机场景" title="Load a random scene and play it" style="flex:1">🎲 Watch</button>
         <button class="btn" onclick="openScenes()" data-en="🎬 Scenes" data-zh="🎬 场景" style="flex:1">🎬 Scenes</button>
       </div>
       <div class="brow">
@@ -601,7 +605,7 @@
         </div>
         <div class="brow">
           <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board" data-zh="🏆 榜单">🏆 Board</button>
-          <button class="btn" id="devModeBtn" onclick="toggleDevMode()" data-en="⚡ Dev" data-zh="⚡ 预测">⚡ Dev</button>
+          <button class="btn" id="devModeBtn" onclick="toggleDevMode()" data-en="⚡ Dev" data-zh="⚡ 开发者">⚡ Dev</button>
         </div>
         <div class="slider-row" style="margin-top:6px">
           <span data-en="cell px" data-zh="格大小">cell px</span>
@@ -714,7 +718,7 @@
 <!-- Theater mode floating controls -->
 <div class="theater-bar" id="theaterBar">
   <button id="theaterPlayBtn" onclick="togglePlay()" title="Play / Pause">⏸</button>
-  <button onclick="watchRandom()" title="Watch a random scene">✦</button>
+  <button onclick="watchRandom()" title="Watch a random scene">🎲</button>
   <button onclick="openScenes()" title="Scenes">🎬</button>
   <button onclick="toggleAura()" title="Aura coloring">🔮</button>
   <button onclick="saveImage()" title="Save / share this frame">📸</button>
@@ -790,17 +794,19 @@ let lang = (function () { try { return localStorage.getItem('lifegame_lang') || 
 function t(en, zh) { return lang === 'zh' ? zh : en; }
 function applyLang() {
   document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
-  document.getElementById('langBtn').textContent = lang === 'en' ? '中文' : 'EN';
+  const ls = document.getElementById('langSelect');
+  if (ls) ls.value = lang;
   document.querySelectorAll('[data-en]').forEach(el => {
     el.textContent = lang === 'zh' ? el.dataset.zh : el.dataset.en;
   });
   updateUI();
 }
-function toggleLang() {
-  lang = lang === 'en' ? 'zh' : 'en';
+function setLang(v) {
+  lang = v === 'zh' ? 'zh' : 'en';
   try { localStorage.setItem('lifegame_lang', lang); } catch {}
   applyLang();
 }
+function toggleLang() { setLang(lang === 'en' ? 'zh' : 'en'); }   // kept for any other callers
 
 /* ── Canvas / grid setup ──────────────────────────── */
 const canvas = document.getElementById('canvas');
