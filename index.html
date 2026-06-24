@@ -413,7 +413,7 @@
 <div class="pg-header">
   <div>
     <div class="pg-title" id="pgTitle" data-en="Game of Life" data-zh="生命游戏">Game of Life</div>
-    <div class="pg-sub"  id="pgSub" data-en="Click to draw · drag to paint · watch it evolve" data-zh="点击绘制 · 拖拽涂画 · 看它演化">Click to draw · drag to paint · watch it evolve</div>
+    <div class="pg-sub"  id="pgSub" data-en="drag & drop, listen to the cell-symphony · create random shapes, face the challenges" data-zh="拖拽，听细胞歌唱 · 发呆，创造与挑战并存">drag &amp; drop, listen to the cell-symphony · create random shapes, face the challenges</div>
   </div>
   <div class="mode-switch" role="tablist">
     <button class="mode-btn active" data-mode="sandbox" role="tab" onclick="setMode('sandbox')" data-en="✦ Sandbox" data-zh="✦ 沙盒">✦ Sandbox</button>
@@ -518,7 +518,7 @@
         <button class="btn primary" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放" style="flex:1">⏵ Play</button>
       </div>
       <div class="brow">
-        <button class="btn dis" id="restartBtn" onclick="restartFromPlay()" data-en="↺ Back a play" data-zh="↺ 退回一次播放" title="Back to the board before your last Play — hit again to step back through earlier plays" style="flex:1">↺ Back a play</button>
+        <button class="btn dis" id="restartBtn" onclick="restartFromPlay()" data-en="↺ Back a play" data-zh="↺ 退回上次播放" title="Back to the board before your last Play — hit again to step back through earlier plays" style="flex:1">↺ Back a play</button>
       </div>
       <div class="brow">
         <button class="btn dis" id="stepBkBtn" onclick="undoStep()" data-en="← Step" data-zh="← 后退">← Step</button>
@@ -632,10 +632,10 @@
         <button class="pbtn has-thumb" draggable="true" data-preset="diehard"><img class="pbtn-thumb" src="patterns/diehard.png" alt="" draggable="false"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies at gen 130"     data-zh="第130代消亡">dies at gen 130</span></button>
         <button class="pbtn has-thumb" draggable="true" data-preset="lwss"   ><img class="pbtn-thumb" src="patterns/lwss.png" alt="" draggable="false"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="lightweight spaceship"   data-zh="轻型宇宙飞船">lightweight spaceship</span></button>
       </div>
-      <div class="drag-hint" data-en="drag to stamp · scroll to rotate · R / F keys" data-zh="拖拽放置 · 滚轮旋转 · R/F键">drag to stamp · scroll to rotate · R / F keys</div>
+      <div class="drag-hint" data-en="drag to stamp · scroll to rotate · R / M keys" data-zh="拖拽放置 · 滚轮旋转 · R/M键">drag to stamp · scroll to rotate · R / M keys</div>
       <div class="brow">
         <button class="btn" id="rotBtn"  onclick="rotateStamp()" title="Press R to rotate">↻ <span id="rotLabel">0°</span> <span style="color:#444;font-size:0.55rem">[R]</span></button>
-        <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press F to flip">⟺ <span id="flipLabel">normal</span> <span style="color:#444;font-size:0.55rem">[F]</span></button>
+        <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press M to mirror">⟺ <span data-en="Mirror" data-zh="镜面">Mirror</span> <span style="color:#444;font-size:0.55rem">[M]</span></button>
       </div>
       <div class="brow" style="margin-top:8px">
         <button class="btn" onclick="openSaves()" data-en="💾 My Blueprints" data-zh="💾 我的蓝图" title="Click to save the current pattern as a blueprint, or load a saved one" style="flex:1;border-color:#1a3a22;color:#1db954">💾 My Blueprints</button>
@@ -2001,7 +2001,6 @@ function rotateStamp() {
 
 function flipStamp() {
   stampFlipH = !stampFlipH;
-  document.getElementById('flipLabel').textContent = stampFlipH ? 'mirrored' : 'normal';
   document.getElementById('flipBtn').classList.toggle('active', stampFlipH);
   if (dragPattern && dragOff) draw();
 }
@@ -2839,7 +2838,7 @@ document.addEventListener('keydown', e => {
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) { e.preventDefault(); saveImage(); }
   if (e.key === 'r' || e.key === 'R') { rotateStamp(); if (dragPattern) draw(); }
-  if (e.key === 'f' || e.key === 'F') { flipStamp();   if (dragPattern) draw(); }
+  if (e.key === 'm' || e.key === 'M') { flipStamp();   if (dragPattern) draw(); }
   if (e.key === 'Escape') {
     if (dragPattern) {
       dragPattern = null; dragOff = null; dragCursor = null;
