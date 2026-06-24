@@ -95,6 +95,41 @@
     /* Draw-lock: capture all touch so you can draw any direction (no scroll) */
     canvas.pen-lock { touch-action: none; border-color: #1db954; border-style: dashed; }
 
+    /* ── Theater mode: immersive fullscreen viewing ───── */
+    body.theater { overflow: hidden; }
+    body.theater .pg-header,
+    body.theater .challenges-bar,
+    body.theater .right-panel,
+    body.theater .patterns-mobile,
+    body.theater #devPanel,
+    body.theater .canvas-hud,
+    body.theater .pg-footer { display: none !important; }
+    body.theater .main-layout { display: block; }
+    body.theater .canvas-col {
+      position: fixed; inset: 0; z-index: 90; margin: 0; padding: 0;   /* below modals (100) so Scenes still shows */
+      background: #000; display: flex; align-items: center; justify-content: center;
+    }
+    body.theater .canvas-wrap { width: auto !important; max-width: 100vw; max-height: 100vh; margin: 0 !important; }
+    body.theater canvas {
+      width: 100vw !important; height: 100vh !important;
+      object-fit: contain; image-rendering: pixelated; border: none !important;
+    }
+    .theater-bar {
+      position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(18px);
+      z-index: 310; display: flex; gap: 6px; align-items: center;
+      background: rgba(15,15,15,0.82); border: 1px solid #2a2a2a; border-radius: 30px;
+      padding: 7px 11px; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s; backdrop-filter: blur(6px);
+    }
+    .theater-bar.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    .theater-bar button {
+      background: none; border: none; color: #ccc; font-size: 1.05rem; cursor: pointer;
+      width: 42px; height: 42px; border-radius: 50%; transition: background 0.15s, color 0.15s;
+    }
+    .theater-bar button:hover { background: rgba(29,185,84,0.16); color: #1db954; }
+    .theater-bar .tb-exit:hover { background: rgba(244,67,54,0.16); color: #f44336; }
+    body:not(.theater) .theater-bar { display: none; }
+
     /* ── Right panel ──────────────────────────────────── */
     .right-panel {
       width: 220px; min-width: 180px; flex-shrink: 1; border-left: 1px solid #2e2e2e;
@@ -407,6 +442,9 @@
         <button class="btn" id="penBtn" onclick="togglePen()" data-en="✏️ Draw" data-zh="✏️ 画笔" title="Lock the grid for free drawing in any direction (turns off swipe-to-scroll on the canvas)" style="flex:1">✏️ Draw</button>
       </div>
       <div class="brow">
+        <button class="btn" onclick="enterTheater()" data-en="⛶ Theater" data-zh="⛶ 影院" title="Immersive full-screen view — just the pattern" style="flex:1">⛶ Theater</button>
+      </div>
+      <div class="brow">
         <button class="btn" onclick="resetView()"       data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
         <button class="btn" id="selModeBtn" onclick="toggleSelMode()" data-en="⬚ Zone" data-zh="⬚ 区域" title="Draw a focus zone · Esc to cancel">⬚ Zone</button>
         <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board"   data-zh="🏆 榜单">🏆 Board</button>
@@ -543,6 +581,15 @@
     <div id="galleryList"><div class="lb-empty">Loading…</div></div>
     <button class="btn" onclick="closeGallery()" style="margin-top:18px;width:100%">Close</button>
   </div>
+</div>
+
+<!-- Theater mode floating controls -->
+<div class="theater-bar" id="theaterBar">
+  <button id="theaterPlayBtn" onclick="togglePlay()" title="Play / Pause">⏸</button>
+  <button onclick="watchRandom()" title="Watch a random scene">✦</button>
+  <button onclick="openScenes()" title="Scenes">🎬</button>
+  <button onclick="toggleAura()" title="Aura coloring">🔮</button>
+  <button class="tb-exit" onclick="exitTheater()" title="Exit theater (Esc)">✕</button>
 </div>
 
 <!-- First-run nudge -->
@@ -1003,6 +1050,7 @@ function togglePlay() {
     refreshDevPanel();
   }
   updateAuraLure();
+  if (typeof _syncTheaterPlayBtn === 'function') _syncTheaterPlayBtn();
 }
 
 function stepOnce() { if (running) togglePlay(); step(); draw(); refreshDevPanel(); }
@@ -1173,6 +1221,7 @@ function paint(e) {
 let panning = false, panStart = null;
 
 canvas.addEventListener('mousedown', e => {
+  if (theaterMode) return;  // watching, not drawing
   if (e.button === 1 || e.button === 2) {
     e.preventDefault();
     panning = true;
@@ -1261,6 +1310,47 @@ function togglePen() {
   canvas.classList.toggle('pen-lock', penMode);
 }
 
+/* ── Theater mode: immersive full-screen viewing ──── */
+let theaterMode = false;
+let _theaterHideTimer = null;
+
+function enterTheater() {
+  theaterMode = true;
+  dismissNudge();
+  document.body.classList.add('theater');
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});  // unsupported on iPhone — CSS still immersive
+  }
+  if (!running && grid.some(v => v)) togglePlay();   // immersive: start evolving on entry
+  _syncTheaterPlayBtn();
+  showTheaterBar();
+  draw();
+}
+function exitTheater() {
+  theaterMode = false;
+  document.body.classList.remove('theater');
+  clearTimeout(_theaterHideTimer);
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  draw();
+}
+function showTheaterBar() {
+  const bar = document.getElementById('theaterBar');
+  if (!bar) return;
+  bar.classList.add('show');
+  clearTimeout(_theaterHideTimer);
+  _theaterHideTimer = setTimeout(() => bar.classList.remove('show'), 2800);
+}
+function _syncTheaterPlayBtn() {
+  const b = document.getElementById('theaterPlayBtn');
+  if (b) b.textContent = running ? '⏸' : '▶';
+}
+document.addEventListener('pointermove', () => { if (theaterMode) showTheaterBar(); });
+document.addEventListener('touchstart', () => { if (theaterMode) showTheaterBar(); }, { passive: true });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && theaterMode) exitTheater(); });
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && theaterMode) exitTheater();  // leaving fullscreen exits theater
+});
+
 function _toggleCellAt(clientX, clientY) {
   const [c, r] = cellAt({ touches: [{ clientX, clientY }] });
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
@@ -1272,6 +1362,7 @@ function _toggleCellAt(clientX, clientY) {
 }
 
 canvas.addEventListener('touchstart', e => {
+  if (theaterMode) { touchStart = null; touchMode = null; painting = false; return; }  // watching, not drawing
   if (e.touches.length === 1) {
     touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchMode = null; painting = false;
