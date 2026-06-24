@@ -270,12 +270,14 @@ const STAGES = [
     text: `This is a <b>Blinker</b> — the simplest oscillating pattern.<br><br>Click <b>Step</b> once. Watch it rotate 90°. Step again — it's back.<br><br>Each step advances exactly one generation of the rules.`,
     setup: _setup(() => loadPattern('blinker')),
     resetLabel: '↺ Reload Blinker',
+    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#ffb400', pulse: true, label: 'watch this pattern' }],
   },
   {
     title: 'Play &amp; Pause',
     text: `Click <b>Play</b> to let the simulation run on its own. The Blinker will keep oscillating.<br><br>Click <b>Pause</b> to stop. The <b>gen</b> counter at the bottom shows how many steps have elapsed.<br><br>Hit Reset to start fresh and try again.`,
     setup: _setup(() => loadPattern('blinker')),
     resetLabel: '↺ Reload Blinker',
+    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#1db954', pulse: true, label: 'press Play to watch it loop' }],
   },
   {
     title: 'Undo',
@@ -365,8 +367,65 @@ function draw() {
     }
   }
 
+  // Stage guidance — animated enclosures, shown at gen 0 only (before stepping)
+  if (generation === 0) {
+    const stage = STAGES[currentStage];
+    if (stage && stage.highlights) drawGuides(stage.highlights);
+  }
+
   document.getElementById('genNum').textContent = generation;
 }
+
+/* ── Guidance overlay (marching-ants + pulse) ────── */
+function drawGuides(highlights) {
+  const now    = performance.now();
+  const dashLen = Math.max(5, Math.floor(CELL * 0.25));
+  const offset  = -(now / 28) % (dashLen * 2);   // marching ants
+  const pulse   = 0.5 + 0.5 * Math.sin(now / 480); // 0..1 breathing
+
+  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label }) => {
+    const x = c0 * CELL;
+    const y = r0 * CELL;
+    const w = (c1 - c0 + 1) * CELL;
+    const h = (r1 - r0 + 1) * CELL;
+
+    // Pulsing glow fill
+    if (doPulse) {
+      ctx.globalAlpha = 0.06 + 0.10 * pulse;
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+      ctx.globalAlpha = 1;
+    }
+
+    // Animated dashed enclosure
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([dashLen, dashLen]);
+    ctx.lineDashOffset = offset;
+    ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+
+    // Secondary text label, above the box
+    if (label) {
+      ctx.fillStyle = color;
+      ctx.font = `${Math.max(9, Math.floor(CELL * 0.34))}px 'Courier New', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(label, x + w / 2, y - 4);
+    }
+  });
+}
+
+/* ── Always-on guidance animation (never steps) ──── */
+function guideTick() {
+  if (!running && generation === 0) {
+    const stage = STAGES[currentStage];
+    if (stage && stage.highlights) draw();
+  }
+  requestAnimationFrame(guideTick);
+}
+requestAnimationFrame(guideTick);
 
 /* ── Simulation ──────────────────────────────────── */
 function stepGrid() {

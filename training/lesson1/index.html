@@ -308,6 +308,7 @@ const STAGES = [
     text: `Draw 3 live cells that all touch the same empty space. That empty cell immediately glows <span style="color:#555">grey</span> — it has exactly 3 neighbors and will be born.<br><br>The grey appears <b>live as you draw</b>. Once you see it, hit <b>Step</b> to watch it come alive.`,
     setup: _setup(() => {}),
     resetLabel: '↺ Clear',
+    highlights: [{ c0: CC-1, r0: CR-1, c1: CC+1, r1: CR+1, color: '#ffb400', pulse: true, label: 'draw 3 around a gap here' }],
   },
   {
     title: 'Survival — save the cell',
@@ -318,7 +319,7 @@ const STAGES = [
       grid[idx(CC-1, CR)] = 1;
     }),
     resetLabel: '↺ Reset',
-    labels: [{ c: CC, r: CR, text: '← add cells here', color: '#555', pos: 'right' }],
+    highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#1db954', pulse: true, label: 'save this cell' }],
   },
   {
     title: 'Death — too lonely',
@@ -328,7 +329,7 @@ const STAGES = [
       grid[idx(CC, CR)] = 1;
     }),
     resetLabel: '↺ Reset isolated cell',
-    labels: [{ c: CC, r: CR, text: '← 0 nbrs · will die', color: '#e05252', pos: 'right' }],
+    highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#e05252', pulse: true, label: '0 nbrs · will die' }],
   },
   {
     title: 'Death — too crowded',
@@ -341,7 +342,7 @@ const STAGES = [
       grid[idx(CC+1, CR-1)] = 1;
     }),
     resetLabel: '↺ Reset',
-    labels: [{ c: CC, r: CR, text: '← add 1 more cell', color: '#555', pos: 'right' }],
+    highlights: [{ c0: CC, r0: CR, c1: CC, r1: CR, color: '#ffb400', pulse: true, label: 'add 1 more neighbor' }],
   },
   {
     title: 'B3 / S23',
@@ -475,38 +476,67 @@ function draw() {
     }
   }
 
-  // Stage labels — show at gen 0 only (before stepping)
+  // Stage guidance — animated enclosures, shown at gen 0 only (before stepping)
   if (generation === 0) {
     const stage = STAGES[currentStage];
-    const labels = stage && stage.labels;
-    if (labels) {
-      const lFont = Math.max(9, Math.floor(CELL * 0.37));
-      labels.forEach(({ c, r, text, color, pos = 'right', ring = true }) => {
-        if (ring) {
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([3, 2]);
-          ctx.strokeRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
-          ctx.setLineDash([]);
-        }
-        ctx.fillStyle = color;
-        ctx.font = `${lFont}px 'Courier New', monospace`;
-        if (pos === 'right') {
-          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          ctx.fillText(text, (c + 1) * CELL + 5, r * CELL + CELL / 2);
-        } else if (pos === 'left') {
-          ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-          ctx.fillText(text, c * CELL - 5, r * CELL + CELL / 2);
-        } else if (pos === 'above') {
-          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-          ctx.fillText(text, c * CELL + CELL / 2, r * CELL - 4);
-        }
-      });
-    }
+    if (stage && stage.highlights) drawGuides(stage.highlights);
   }
 
   document.getElementById('genNum').textContent = generation;
 }
+
+/* ── Guidance overlay (marching-ants + pulse) ────── */
+function drawGuides(highlights) {
+  const now    = performance.now();
+  const dashLen = Math.max(5, Math.floor(CELL * 0.25));
+  const offset  = -(now / 28) % (dashLen * 2);   // marching ants
+  const pulse   = 0.5 + 0.5 * Math.sin(now / 480); // 0..1 breathing
+
+  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label }) => {
+    const x = c0 * CELL;
+    const y = r0 * CELL;
+    const w = (c1 - c0 + 1) * CELL;
+    const h = (r1 - r0 + 1) * CELL;
+
+    // Pulsing glow fill
+    if (doPulse) {
+      ctx.globalAlpha = 0.06 + 0.10 * pulse;
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+      ctx.globalAlpha = 1;
+    }
+
+    // Animated dashed enclosure
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([dashLen, dashLen]);
+    ctx.lineDashOffset = offset;
+    ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+
+    // Secondary text label, above the box
+    if (label) {
+      ctx.fillStyle = color;
+      ctx.font = `${Math.max(9, Math.floor(CELL * 0.34))}px 'Courier New', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(label, x + w / 2, y - 4);
+    }
+  });
+}
+
+/* ── Always-on guidance animation (never steps) ──── */
+function guideTick() {
+  // Re-render only when an animated guide is active and the sim is idle;
+  // while playing, the play loop already redraws each frame.
+  if (!running && generation === 0) {
+    const stage = STAGES[currentStage];
+    if (stage && stage.highlights) draw();
+  }
+  requestAnimationFrame(guideTick);
+}
+requestAnimationFrame(guideTick);
 
 /* ── Simulation ──────────────────────────────────── */
 function stepGrid() {

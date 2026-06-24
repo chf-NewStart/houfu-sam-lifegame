@@ -415,9 +415,67 @@ function draw() {
     ctx.fillText(label, bx + 4, by + 2);
   }
 
+  // Stage guidance — animated enclosure, shown before stepping and before the
+  // user draws their own zone (so it doesn't fight the selection rectangle)
+  if (generation === 0 && !selRect) {
+    const stage = STAGES[currentStage];
+    if (stage && stage.highlights) drawGuides(stage.highlights);
+  }
+
   document.getElementById('genNum').textContent = generation;
   updateStatus();
 }
+
+/* ── Guidance overlay (marching-ants + pulse) ────── */
+function drawGuides(highlights) {
+  const now    = performance.now();
+  const dashLen = Math.max(5, Math.floor(CELL * 0.25));
+  const offset  = -(now / 28) % (dashLen * 2);   // marching ants
+  const pulse   = 0.5 + 0.5 * Math.sin(now / 480); // 0..1 breathing
+
+  highlights.forEach(({ c0, r0, c1, r1, color = '#ffb400', pulse: doPulse = false, label }) => {
+    const x = c0 * CELL;
+    const y = r0 * CELL;
+    const w = (c1 - c0 + 1) * CELL;
+    const h = (r1 - r0 + 1) * CELL;
+
+    // Pulsing glow fill
+    if (doPulse) {
+      ctx.globalAlpha = 0.06 + 0.10 * pulse;
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+      ctx.globalAlpha = 1;
+    }
+
+    // Animated dashed enclosure
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([dashLen, dashLen]);
+    ctx.lineDashOffset = offset;
+    ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+
+    // Secondary text label, above the box
+    if (label) {
+      ctx.fillStyle = color;
+      ctx.font = `${Math.max(9, Math.floor(CELL * 0.34))}px 'Courier New', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(label, x + w / 2, y - 4);
+    }
+  });
+}
+
+/* ── Always-on guidance animation (never steps) ──── */
+function guideTick() {
+  if (!running && generation === 0 && !selRect) {
+    const stage = STAGES[currentStage];
+    if (stage && stage.highlights) draw();
+  }
+  requestAnimationFrame(guideTick);
+}
+requestAnimationFrame(guideTick);
 
 /* ── Simulation ──────────────────────────────────── */
 function stepGrid() {
@@ -558,6 +616,7 @@ const STAGES = [
     text: `A zone lets you focus on a specific area of the grid.<br><br>Click and drag on the canvas to draw a rectangular zone. The area outside dims slightly, and a <span class="hi-green">green count badge</span> shows how many live cells are inside.<br><br>A Glider is loaded — draw a zone around it and watch the count.`,
     setup: _setup(() => loadPattern('glider')),
     resetLabel: '↺ Reload Glider',
+    highlights: [{ c0: 7, r0: 4, c1: 11, r1: 8, color: '#ffb400', pulse: true, label: 'drag a zone around here' }],
   },
   {
     title: 'Counting',
