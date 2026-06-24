@@ -473,7 +473,6 @@
         </div>
         <div id="customPatternGridMobile" class="preset-grid"></div>
       </div>
-      <button class="btn" id="addSavedBtnMobile" onclick="openPatternPicker()" style="display:none;width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
     </div>
 
     <!-- Rules (B3/S23) — horizontal strip right above the grid -->
@@ -588,6 +587,9 @@
         <button class="btn" onclick="randomize(0.2)" data-en="⚄ Random" data-zh="⚄ 随机">⚄ Random</button>
         <button class="btn" onclick="resetView()" data-en="⊙ View" data-zh="⊙ 视图" title="Reset zoom &amp; pan">⊙ View</button>
       </div>
+      <div class="brow">
+        <button class="btn" id="devModeBtn" onclick="toggleDevMode()" data-en="⚡ Lookahead" data-zh="⚡ 预测" title="Show a preview strip of future generations" style="flex:1">⚡ Lookahead</button>
+      </div>
     </div>
 
     <!-- More (collapsible) -->
@@ -605,11 +607,8 @@
           <button class="btn" onclick="openGallery()" data-en="🖼️ Gallery" data-zh="🖼️ 图库">🖼️ Gallery</button>
         </div>
         <div class="brow">
-          <button class="btn" onclick="openImgModal()" data-en="📷 Image" data-zh="📷 图片" style="flex:1">📷 Image</button>
-        </div>
-        <div class="brow">
+          <button class="btn" onclick="openImgModal()" data-en="📷 Image" data-zh="📷 图片">📷 Image</button>
           <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board" data-zh="🏆 榜单">🏆 Board</button>
-          <button class="btn" id="devModeBtn" onclick="toggleDevMode()" data-en="⚡ Dev" data-zh="⚡ 开发者">⚡ Dev</button>
         </div>
         <div class="slider-row" style="margin-top:6px">
           <span data-en="cell px" data-zh="格大小">cell px</span>
@@ -647,9 +646,6 @@
         </div>
         <div id="customPatternGrid" class="preset-grid"></div>
         <div style="color:#333;font-size:0.58rem;margin-top:5px" data-en="drag to stamp · R / F to rotate/flip" data-zh="拖拽放置 · R/F 旋转/翻转">drag to stamp · R / F to rotate/flip</div>
-      </div>
-      <div class="brow" id="addSavedBtnDesktop" style="display:none;margin-top:6px">
-        <button class="btn" onclick="openPatternPicker()" style="flex:1;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
       </div>
     </div>
 
@@ -1225,8 +1221,6 @@ function toggleDevMode() {
   devMode = !devMode;
   document.getElementById('devPanel').style.display = devMode ? '' : 'none';
   document.getElementById('devModeBtn').classList.toggle('active', devMode);
-  document.getElementById('addSavedBtnDesktop').style.display = devMode ? 'flex' : 'none';
-  document.getElementById('addSavedBtnMobile').style.display  = devMode ? 'block' : 'none';
   _renderCustomPatternBtns();
   if (devMode) refreshDevPanel();
 }
