@@ -1338,6 +1338,22 @@ const SCENES = [
   },
 ];
 
+// Scale a scene's cells down to fit the current grid (with a small margin)
+// so wide scenes like the World Map are fully visible on small phone grids.
+function fitCellsToGrid(cells, margin = 2) {
+  const maxC = Math.max(...cells.map(([c]) => c));
+  const maxR = Math.max(...cells.map(([, r]) => r));
+  const scale = Math.min(1, (COLS - 2 * margin) / (maxC + 1), (ROWS - 2 * margin) / (maxR + 1));
+  if (scale >= 1) return cells;            // already fits — leave full resolution
+  const seen = new Set(), out = [];
+  for (const [c, r] of cells) {
+    const nc = Math.round(c * scale), nr = Math.round(r * scale);
+    const k = nc + ',' + nr;
+    if (!seen.has(k)) { seen.add(k); out.push([nc, nr]); }
+  }
+  return out;
+}
+
 function loadScene(id, autoplay = true) {
   const s = SCENES.find(x => x.id === id);
   if (!s) return;
@@ -1355,7 +1371,7 @@ function loadScene(id, autoplay = true) {
       for (let c = 0; c < w; c++)
         if (Math.random() < s.soup) grid[idx(oc + c, or + r)] = 1;
   } else {
-    const cells = s.cells;
+    const cells = fitCellsToGrid(s.cells);
     const maxC = Math.max(...cells.map(([c]) => c));
     const maxR = Math.max(...cells.map(([, r]) => r));
     place(cells, Math.floor((COLS - maxC) / 2), Math.floor((ROWS - maxR) / 2));
