@@ -584,6 +584,7 @@ function initGrid() {
   next = new Uint8Array(COLS * ROWS);
   age     = new Uint16Array(COLS * ROWS);
   nextAge = new Uint16Array(COLS * ROWS);
+  trail   = new Uint8Array(COLS * ROWS);
 }
 
 function idx(c, r) { return r * COLS + c; }
@@ -602,6 +603,12 @@ const GRID_LINE = '#1e1e1e';
 // distinguishes them from churning newborns.
 let age, nextAge;
 let auraMode = (localStorage.getItem('lifegame_aura') ?? '1') === '1';
+
+/* ── Fade trails ──────────────────────────────────── */
+// trail[i] counts down from TRAIL_MAX after a cell dies, leaving a
+// dim afterglow that fades over a few generations. Aura mode only.
+let trail;
+const TRAIL_MAX = 6;
 
 const AURA_STEPS = 40;
 const AURA_PALETTE = [];
@@ -664,6 +671,7 @@ function draw() {
   }
 
   syncAges();
+  if (generation === 0 && trail) trail.fill(0);   // no afterglow on a fresh board
   let live = 0, nextLive = 0;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -676,6 +684,12 @@ function draw() {
         live++;
         ctx.fillStyle = auraMode ? auraColor(age[i]) : ((n === 2 || n === 3) ? GREEN : RED);
         ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
+      } else if (auraMode && trail[i] > 0) {
+        // fading afterglow of a recently-dead cell (cool blue, fades out)
+        ctx.globalAlpha = (trail[i] / TRAIL_MAX) * 0.5;
+        ctx.fillStyle = '#3a7bd5';
+        ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
+        ctx.globalAlpha = 1;
       } else if (n === 3 && !auraMode) {
         // next-gen birth preview — predict mode only (cleaner art look in Aura)
         ctx.fillStyle = GHOST;
@@ -865,6 +879,11 @@ function step() {
       next[i] = willLive ? 1 : 0;
       // age: survivor keeps counting, newborn starts at 1, dead resets to 0
       nextAge[i] = willLive ? (alive ? Math.min(age[i] + 1, 65000) : 1) : 0;
+      // trail: a cell that just died gets full afterglow; existing trails
+      // fade by one each step; living cells clear their trail
+      if (willLive)        trail[i] = 0;
+      else if (alive)      trail[i] = TRAIL_MAX;       // just died
+      else if (trail[i])   trail[i]--;                 // decay
     }
   }
   [grid, next] = [next, grid];
