@@ -40,6 +40,7 @@
     /* ── Header ───────────────────────────────────────── */
     .pg-header {
       display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 8px 12px;
       padding: 10px 18px; border-bottom: 1px solid #2e2e2e; flex-shrink: 0;
     }
     .pg-title { color: #1db954; font-size: 1.1rem; text-transform: uppercase; letter-spacing: -1px; }
@@ -48,6 +49,21 @@
     .pg-back:hover { text-decoration: underline; }
     .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.7rem; padding: 5px 10px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
     .lang-btn:hover { background: rgba(29,185,84,0.1); }
+
+    /* ── Mode switch (Sandbox / Challenges) ───────────── */
+    .mode-switch { display: flex; border: 1px solid #2e2e2e; flex-shrink: 0; }
+    .mode-btn {
+      background: transparent; border: none; color: #888;
+      font-family: Consolas, monospace; font-size: 0.72rem;
+      padding: 6px 15px; cursor: pointer; transition: all 0.1s; white-space: nowrap;
+    }
+    .mode-btn:hover { color: #ccc; }
+    .mode-btn.active { background: rgba(29,185,84,0.12); color: #1db954; }
+    .mode-btn + .mode-btn { border-left: 1px solid #2e2e2e; }
+    /* Mode-scoped visibility: each element keeps its natural display in its
+       own mode and is hidden in the other. Mirrors the body.theater pattern. */
+    body.mode-sandbox    .ch-only { display: none !important; }
+    body.mode-challenges .sb-only { display: none !important; }
 
     /* ── Challenges bar (top) ─────────────────────────── */
     .challenges-bar {
@@ -357,11 +373,15 @@
     <div class="pg-sub"  id="pgSub">Click to draw · drag to paint · watch it evolve</div>
     <a class="pg-back" href="https://houfu72.com/">← portfolio</a>
   </div>
+  <div class="mode-switch" role="tablist">
+    <button class="mode-btn active" data-mode="sandbox" role="tab" onclick="setMode('sandbox')" data-en="✦ Sandbox" data-zh="✦ 沙盒">✦ Sandbox</button>
+    <button class="mode-btn" data-mode="challenges" role="tab" onclick="setMode('challenges')" data-en="🏆 Challenges" data-zh="🏆 挑战">🏆 Challenges</button>
+  </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
 
 <!-- Challenges bar -->
-<div class="challenges-bar">
+<div class="challenges-bar ch-only">
   <div class="challenges-row">
     <span class="challenges-label" data-en="// challenges" data-zh="// 挑战">// challenges</span>
     <button class="cbtn" data-challenge="0" onclick="startChallenge(0)"><span data-en="First Steps" data-zh="初步">First Steps</span><small data-en="survive 20 gens" data-zh="存活20代">survive 20 gens</small></button>
@@ -441,8 +461,8 @@
       </div>
     </div>
 
-    <!-- Watch -->
-    <div class="pcard">
+    <!-- Watch (sandbox only) -->
+    <div class="pcard sb-only">
       <div class="pcard-title" data-en="// watch" data-zh="// 观赏">// watch</div>
       <div class="brow">
         <button class="btn" id="watchBtn" onclick="watchRandom()" data-en="✦ Watch" data-zh="✦ 观赏" title="Load a random scene and play it" style="flex:2">✦ Watch</button>
@@ -459,7 +479,7 @@
       <div class="pcard-title" data-en="// edit" data-zh="// 编辑">// edit</div>
       <div class="brow">
         <button class="btn" id="penBtn" onclick="togglePen()" data-en="✏️ Draw" data-zh="✏️ 画笔" title="Draw mode: drag to paint. Off: drag scrolls/pans, click toggles a single cell." style="flex:1">✏️ Draw</button>
-        <button class="btn" id="selModeBtn" onclick="toggleSelMode()" data-en="⬚ Zone" data-zh="⬚ 区域" title="Draw a focus zone · Esc to cancel" style="flex:1">⬚ Zone</button>
+        <button class="btn ch-only" id="selModeBtn" onclick="toggleSelMode()" data-en="⬚ Zone" data-zh="⬚ 区域" title="Draw a focus zone · Esc to cancel" style="flex:1">⬚ Zone</button>
       </div>
       <div class="brow">
         <button class="btn dis" id="undoBtn" onclick="undoDraw()" data-en="↩ Undo" data-zh="↩ 撤销">↩ Undo</button>
@@ -1358,6 +1378,43 @@ function toggleMore() {
   const open = sec.style.display === 'none';
   sec.style.display = open ? 'block' : 'none';
   if (toggle) toggle.classList.toggle('open', open);
+}
+
+/* ── Top-level mode: Sandbox (free play) vs Challenges ─
+   Sandbox is the clean default; Challenges surfaces the challenge bar +
+   Zone tool. Mode only changes which UI is visible — it never clears the
+   grid or stops the sim (only picking a challenge does that). */
+let appMode = 'sandbox';
+function setMode(m) {
+  if (m === appMode) return;
+  appMode = m;
+  document.body.classList.remove('mode-sandbox', 'mode-challenges');
+  document.body.classList.add('mode-' + m);
+  document.querySelectorAll('.mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === m));
+
+  if (m === 'sandbox') {
+    // Leaving Challenges: abandon any in-progress challenge so its zones /
+    // shrinking-arena dimming stop rendering, but keep the user's pattern.
+    if (activeChallenge >= 0) {
+      activeChallenge = -1;
+      document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
+    }
+    selRect = null; zoneA = null; zoneB = null;
+    if (selMode) toggleSelMode();           // Zone is a challenges-only tool
+    canvas.style.cursor = '';
+    const st = document.getElementById('challengeStatus');
+    if (st) { st.textContent = ''; st.classList.remove('won'); }
+  } else {
+    // Entering Challenges: neutral competitive view — drop sandbox-only Aura
+    // (its toggle is hidden here) and reset the prompt if idle.
+    if (auraMode) toggleAura();
+    const st = document.getElementById('challengeStatus');
+    if (st && activeChallenge < 0)
+      st.textContent = t('select a challenge · draw your pattern · press play',
+                         '选择挑战 · 绘制图案 · 按播放');
+  }
+  draw();
 }
 
 /* ── Theater mode: immersive full-screen viewing ──── */
@@ -2698,6 +2755,7 @@ window.addEventListener('resize', () => {
 
 /* ── Init ─────────────────────────────────────────── */
 initGrid();
+document.body.classList.add('mode-sandbox');   // always open in Sandbox (no persistence)
 const _hadSeed = loadSeedParam();
 if (!_hadSeed) loadDefault();
 {
