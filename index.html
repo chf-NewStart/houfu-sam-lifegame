@@ -62,8 +62,10 @@
     .mode-btn + .mode-btn { border-left: 1px solid #2e2e2e; }
     /* Mode-scoped visibility: each element keeps its natural display in its
        own mode and is hidden in the other. Mirrors the body.theater pattern. */
-    body.mode-sandbox    .ch-only { display: none !important; }
-    body.mode-challenges .sb-only { display: none !important; }
+    body:not(.mode-challenges) .ch-only    { display: none !important; }
+    body:not(.mode-sandbox)    .sb-only    { display: none !important; }
+    body:not(.mode-music)      .music-only { display: none !important; }
+    .slider-row select { flex: 1; background: #1a1a1a; border: 1px solid #333; color: #ccc; font-family: Consolas, monospace; font-size: 0.7rem; padding: 3px 4px; outline: none; }
 
     /* ── Challenges bar (top) ─────────────────────────── */
     .challenges-bar {
@@ -410,6 +412,7 @@
   <div class="mode-switch" role="tablist">
     <button class="mode-btn active" data-mode="sandbox" role="tab" onclick="setMode('sandbox')" data-en="✦ Sandbox" data-zh="✦ 沙盒">✦ Sandbox</button>
     <button class="mode-btn" data-mode="challenges" role="tab" onclick="setMode('challenges')" data-en="🏆 Challenges" data-zh="🏆 挑战">🏆 Challenges</button>
+    <button class="mode-btn" data-mode="music" role="tab" onclick="setMode('music')" data-en="🎵 Music" data-zh="🎵 音乐">🎵 Music</button>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -513,6 +516,34 @@
         <input type="range" id="speedSlider" min="1" max="30" value="10" oninput="setSpeed(this.value)">
         <span id="speedLabel">10 fps</span>
       </div>
+    </div>
+
+    <!-- Music (music mode only) -->
+    <div class="pcard music-only">
+      <div class="pcard-title" data-en="// music" data-zh="// 音乐">// music</div>
+      <div class="brow">
+        <button class="btn primary" id="musicBtn" onclick="toggleMusic()" style="flex:1" data-en="⏸ Sound" data-zh="⏸ 声音">⏸ Sound</button>
+      </div>
+      <div class="slider-row">
+        <span data-en="tempo" data-zh="速度">tempo</span>
+        <input type="range" id="musicTempoSlider" min="3" max="24" value="9" oninput="setMusicTempo(this.value)">
+        <span id="musicTempoLabel">9/s</span>
+      </div>
+      <div class="slider-row">
+        <span data-en="volume" data-zh="音量">volume</span>
+        <input type="range" id="musicVolSlider" min="0" max="100" value="50" oninput="setMusicVol(this.value)">
+        <span id="musicVolLabel">50</span>
+      </div>
+      <div class="slider-row">
+        <span data-en="tone" data-zh="音色">tone</span>
+        <select id="musicWaveSelect" onchange="setMusicWave(this.value)">
+          <option value="triangle" data-en="soft" data-zh="柔和">soft</option>
+          <option value="sine" data-en="pure" data-zh="纯净">pure</option>
+          <option value="square" data-en="retro" data-zh="复古">retro</option>
+          <option value="sawtooth" data-en="sharp" data-zh="尖锐">sharp</option>
+        </select>
+      </div>
+      <div class="rule-info" style="margin-top:5px" data-en="A line sweeps the grid — live cells play notes by row (a pentatonic scale). Draw or stamp shapes, then press ⏵ Play to evolve the tune." data-zh="扫描线扫过网格 — 活细胞按行发声（五声音阶）。绘制或放置图案，按 ⏵ 播放让旋律演化。">A line sweeps the grid — live cells play notes by row (a pentatonic scale). Draw or stamp shapes, then press ⏵ Play to evolve the tune.</div>
     </div>
 
     <!-- Watch (sandbox only) -->
@@ -977,6 +1008,15 @@ function draw() {
     };
     if (zoneA) drawZone(zoneA, 'rgba(29,185,84,0.85)',  'A · draw here');
     if (zoneB) drawZone(zoneB, 'rgba(255,165,0,0.85)',  'B · target');
+  }
+
+  // Music mode: the sweep playhead (column tint + leading line)
+  if (musicMode && musicPhase >= 0) {
+    const y0 = vr0 * CELL, hgt = (vr1 - vr0) * CELL;
+    ctx.fillStyle = 'rgba(29,185,84,0.10)';
+    ctx.fillRect(Math.floor(musicPhase) * CELL, y0, CELL, hgt);
+    ctx.fillStyle = 'rgba(29,185,84,0.85)';
+    ctx.fillRect(musicPhase * CELL, y0, Math.max(1.2 / zoom, 0.5), hgt);
   }
 
   ctx.restore();
@@ -1462,14 +1502,24 @@ function toggleMore() {
 let appMode = 'sandbox';
 function setMode(m) {
   if (m === appMode) return;
+  if (appMode === 'music') stopMusic();      // leaving Music: silence the sweep
   appMode = m;
-  document.body.classList.remove('mode-sandbox', 'mode-challenges');
+  musicMode = (m === 'music');
+  document.body.classList.remove('mode-sandbox', 'mode-challenges', 'mode-music');
   document.body.classList.add('mode-' + m);
   document.querySelectorAll('.mode-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.mode === m));
 
-  if (m === 'sandbox') {
-    // Leaving Challenges: abandon any in-progress challenge so its zones /
+  if (m === 'challenges') {
+    // Entering Challenges: neutral competitive view — drop sandbox-only Aura
+    // (its toggle is hidden here) and reset the prompt if idle.
+    if (auraMode) toggleAura();
+    const st = document.getElementById('challengeStatus');
+    if (st && activeChallenge < 0)
+      st.textContent = t('select a challenge · draw your pattern · press play',
+                         '选择挑战 · 绘制图案 · 按播放');
+  } else {
+    // Sandbox or Music: abandon any in-progress challenge so its zones /
     // shrinking-arena dimming stop rendering, but keep the user's pattern.
     if (activeChallenge >= 0) {
       activeChallenge = -1;
@@ -1480,17 +1530,99 @@ function setMode(m) {
     canvas.style.cursor = '';
     const st = document.getElementById('challengeStatus');
     if (st) { st.textContent = ''; st.classList.remove('won'); }
-  } else {
-    // Entering Challenges: neutral competitive view — drop sandbox-only Aura
-    // (its toggle is hidden here) and reset the prompt if idle.
-    if (auraMode) toggleAura();
-    const st = document.getElementById('challengeStatus');
-    if (st && activeChallenge < 0)
-      st.textContent = t('select a challenge · draw your pattern · press play',
-                         '选择挑战 · 绘制图案 · 按播放');
+    if (m === 'music') {
+      if (auraMode) toggleAura();           // neutral visuals while listening
+      startMusic();                         // this click is the audio-unlock gesture
+    }
   }
   draw();
 }
+
+/* ── Music mode: Game of Life as a sweep sequencer ───
+   A playhead sweeps the columns at a tempo; the live cells in the column
+   under the playhead sound as notes (row → pitch on a pentatonic scale).
+   The sweep sonifies whatever's on the grid — press ⏵ Play to evolve it. */
+let musicMode = false, musicOn = false, musicPhase = -1;  // musicPhase = float sweep column (-1 = off)
+let audioCtx = null, musicMaster = null;
+let musicTempo = 9, musicVol = 0.5, musicWave = 'triangle';
+let _musicRAF = null, _musicLastT = 0, _musicLastCol = -1;
+const MUSIC_MAX_NOTES = 6;            // cap notes per column so dense rows don't turn to mush
+const PENTA = [0, 2, 4, 7, 9];        // major pentatonic (pleasant, no wrong notes)
+const MUSIC_OCTAVES = 3, MUSIC_BASE_MIDI = 48;  // C3 up
+
+function _initAudio() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    musicMaster = audioCtx.createGain();
+    musicMaster.gain.value = musicVol;
+    const comp = audioCtx.createDynamicsCompressor();   // tame peaks when many notes hit
+    musicMaster.connect(comp).connect(audioCtx.destination);
+  } catch (e) { audioCtx = null; }   // unsupported → silent (visual sweep still runs)
+}
+function _rowToFreq(r) {
+  const totalDeg = PENTA.length * MUSIC_OCTAVES;
+  const idx = Math.round((1 - r / Math.max(1, ROWS - 1)) * (totalDeg - 1));  // top row = highest
+  const midi = MUSIC_BASE_MIDI + Math.floor(idx / PENTA.length) * 12 + PENTA[idx % PENTA.length];
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+function _playTone(freq, dur, vel) {
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+  osc.type = musicWave; osc.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vel, t + 0.008);     // quick attack
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);    // decay
+  osc.connect(g).connect(musicMaster);
+  osc.start(t); osc.stop(t + dur + 0.03);
+}
+function _triggerColumn(c) {
+  if (!musicOn || !audioCtx || c < 0 || c >= COLS) return;
+  const rows = [];
+  for (let r = 0; r < ROWS; r++) if (grid[idx(c, r)]) rows.push(r);
+  if (!rows.length) return;
+  let picks = rows;
+  if (rows.length > MUSIC_MAX_NOTES) {                      // thin out dense columns evenly
+    picks = [];
+    for (let i = 0; i < MUSIC_MAX_NOTES; i++) picks.push(rows[Math.floor(i * rows.length / MUSIC_MAX_NOTES)]);
+  }
+  const vel = Math.min(0.5, 0.65 / Math.sqrt(picks.length));
+  const dur = 0.16 + 0.8 / musicTempo;
+  for (const r of picks) _playTone(_rowToFreq(r), dur, vel);
+}
+function _musicTick(ts) {
+  if (!musicMode || !musicOn) { _musicRAF = null; return; }
+  if (!_musicLastT) _musicLastT = ts;
+  const dt = Math.min(0.1, (ts - _musicLastT) / 1000);     // clamp big tab-switch gaps
+  _musicLastT = ts;
+  musicPhase += dt * musicTempo;
+  if (musicPhase >= COLS) musicPhase -= COLS;              // wrap the sweep
+  const col = Math.floor(musicPhase);
+  if (col !== _musicLastCol) { _musicLastCol = col; _triggerColumn(col); }
+  draw();
+  _musicRAF = requestAnimationFrame(_musicTick);
+}
+function startMusic() {
+  _initAudio();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  musicOn = true; musicPhase = 0; _musicLastT = 0; _musicLastCol = -1;
+  if (!_musicRAF) _musicRAF = requestAnimationFrame(_musicTick);
+  _syncMusicBtn();
+}
+function stopMusic() {
+  musicOn = false; musicPhase = -1;
+  if (_musicRAF) { cancelAnimationFrame(_musicRAF); _musicRAF = null; }
+  if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+  _syncMusicBtn(); draw();
+}
+function toggleMusic() { musicOn ? stopMusic() : startMusic(); }
+function _syncMusicBtn() {
+  const b = document.getElementById('musicBtn');
+  if (b) { b.textContent = musicOn ? t('⏸ Sound', '⏸ 声音') : t('⏵ Sound', '⏵ 声音'); b.classList.toggle('active', musicOn); }
+}
+function setMusicTempo(v) { musicTempo = +v; document.getElementById('musicTempoLabel').textContent = v + '/s'; }
+function setMusicVol(v) { musicVol = v / 100; if (musicMaster) musicMaster.gain.value = musicVol; document.getElementById('musicVolLabel').textContent = v; }
+function setMusicWave(v) { musicWave = v; }
 
 /* ── Theater mode: immersive full-screen viewing ──── */
 let theaterMode = false;
