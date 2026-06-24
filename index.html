@@ -2546,18 +2546,30 @@ function doResize() {
   const wasRunning = running;
   if (running) togglePlay();
 
-  // Preserve whatever is on canvas across resize
+  // Preserve whatever is on the grid, tracking its bounding box so we can
+  // re-center it on the new grid (otherwise the pattern drifts off-center).
   const liveCells = [];
+  let minC = Infinity, minR = Infinity, maxC = -Infinity, maxR = -Infinity;
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++)
-      if (grid[idx(c, r)]) liveCells.push([c, r]);
+      if (grid[idx(c, r)]) {
+        liveCells.push([c, r]);
+        if (c < minC) minC = c; if (c > maxC) maxC = c;
+        if (r < minR) minR = r; if (r > maxR) maxR = r;
+      }
 
   clearHistory(); zoom = 1; panX = 0; panY = 0; initGrid();
 
   if (urlSeed !== null) {
     applySeed(urlSeed);
   } else if (liveCells.length > 0) {
-    liveCells.forEach(([c, r]) => { if (c < COLS && r < ROWS) grid[idx(c, r)] = 1; });
+    // re-center the pattern's bounding box on the resized grid
+    const offC = Math.floor((COLS - 1 - (maxC - minC)) / 2) - minC;
+    const offR = Math.floor((ROWS - 1 - (maxR - minR)) / 2) - minR;
+    liveCells.forEach(([c, r]) => {
+      const nc = c + offC, nr = r + offR;
+      if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) grid[idx(nc, nr)] = 1;
+    });
   }
   // else: grid was empty (e.g. user cleared) — keep it empty; never
   // re-spawn the LIFE GAME splash on a resize.
@@ -2567,6 +2579,9 @@ function doResize() {
 }
 let _lastW = window.innerWidth;
 window.addEventListener('resize', () => {
+  // In theater the canvas is just scaled by object-fit — don't rebuild the
+  // grid (entering/exiting fullscreen fires resize and would shift the pattern).
+  if (theaterMode) return;
   const w = window.innerWidth;
   // On mobile, the address bar showing/hiding during scroll fires resize with
   // only a height change — ignore those so we don't rebuild the grid mid-scroll.
