@@ -479,7 +479,7 @@
       </div>
       <div id="moreSection" style="display:none">
         <div class="brow">
-          <button class="btn" onclick="saveImage()" data-en="📸 Save image" data-zh="📸 保存图片" title="Save / share the current pattern as a PNG">📸 Save image</button>
+          <button class="btn" onclick="saveImage()" data-en="📸 Save image" data-zh="📸 保存图片" title="Save / share the current pattern as a PNG  (shortcut: S)">📸 Save image</button>
           <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share link" data-zh="⎘ 分享链接">⎘ Share link</button>
         </div>
         <div class="brow">
@@ -2597,6 +2597,7 @@ document.addEventListener('keydown', e => {
   if (e.key === '0' && !e.ctrlKey && !e.metaKey) resetView();
   const tag = document.activeElement?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) { e.preventDefault(); saveImage(); }
   if (e.key === 'r' || e.key === 'R') { rotateStamp(); if (dragPattern) draw(); }
   if (e.key === 'f' || e.key === 'F') { flipStamp();   if (dragPattern) draw(); }
   if (e.key === 'Escape') {
