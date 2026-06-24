@@ -106,6 +106,10 @@
     .btn:hover { border-color: #1db954; color: #1db954; }
     .btn.active { border-color: #1db954; color: #1db954; background: rgba(29,185,84,0.08); }
     .btn.danger:hover { border-color: #f44336; color: #f44336; }
+    /* "disabled" look via class — keeps the button tappable so it works on
+       iOS Safari (a button enabled from the disabled attr can swallow taps) */
+    .btn.dis { opacity: 0.32; }
+    .btn.dis:hover { border-color: #3d3d3d; color: #aaa; }
 
     /* Aura button — animated gradient glow to lure clicks (when inactive) */
     @keyframes auraLure {
@@ -241,23 +245,27 @@
     @media (max-width: 700px) {
       .main-layout { flex-direction: column; overflow: visible; }
 
-      .canvas-col { padding: 10px 10px 6px; align-items: stretch; }
-      .canvas-wrap { width: 100%; display: block; }
+      /* center the grid with side gutters so there's empty space to
+         swipe-scroll past without drawing or hitting buttons */
+      .canvas-col { padding: 16px 20px 10px; align-items: center; gap: 12px; }
+      .canvas-wrap { width: 100%; max-width: 460px; margin: 0 auto; display: block; }
       .canvas-wrap canvas { width: 100% !important; height: auto !important; }
 
-      .patterns-mobile { display: block; }
+      .patterns-mobile { display: block; width: 100%; max-width: 460px; margin: 0 auto; }
 
       .right-panel {
-        width: 100%; border-left: none; border-top: 1px solid #2e2e2e;
-        padding: 6px 10px; overflow-y: visible;
+        width: 100%; max-width: 460px; margin: 0 auto;
+        border-left: none; border-top: 1px solid #2e2e2e;
+        padding: 10px 20px 36px; overflow-y: visible;
       }
       /* hide patterns in right panel on mobile — they're above canvas */
       .patterns-desktop { display: none; }
 
-      .stats-bar { padding: 6px 12px; gap: 12px; flex-wrap: wrap; }
+      .stats-bar { padding: 8px 16px; gap: 12px; flex-wrap: wrap; justify-content: center; }
       .stat-item:not(:last-child) { border-right: none; margin-right: 0; padding-right: 12px; }
-      .btn { padding: 9px 5px; font-size: 0.72rem; }
+      .btn { padding: 11px 5px; font-size: 0.74rem; }   /* bigger tap targets */
       .pbtn { padding: 8px 6px; }
+      .brow { gap: 6px; margin-bottom: 6px; }
     }
     /* ── Credits ──────────────────────────────────────── */
     .credits-list { font-size: 0.65rem; color: #666; line-height: 2; }
@@ -360,12 +368,12 @@
         <button class="btn" onclick="openScenes()" data-en="🎬 Scenes" data-zh="🎬 场景" style="flex:1">🎬 Scenes</button>
       </div>
       <div class="brow">
-        <button class="btn" id="stepBkBtn" onclick="undoStep()"  data-en="← Step" data-zh="← 后退" disabled>← Step</button>
+        <button class="btn dis" id="stepBkBtn" onclick="undoStep()"  data-en="← Step" data-zh="← 后退">← Step</button>
         <button class="btn" id="stepBtn"   onclick="stepOnce()"  data-en="Step →" data-zh="步进 →">Step →</button>
       </div>
       <div class="brow">
-        <button class="btn" id="undoBtn" onclick="undoDraw()" data-en="↩ Undo" data-zh="↩ 撤销" disabled>↩ Undo</button>
-        <button class="btn" id="redoBtn" onclick="redoStep()" data-en="↻ Redo" data-zh="↻ 重做" disabled>↻ Redo</button>
+        <button class="btn dis" id="undoBtn" onclick="undoDraw()" data-en="↩ Undo" data-zh="↩ 撤销">↩ Undo</button>
+        <button class="btn dis" id="redoBtn" onclick="redoStep()" data-en="↻ Redo" data-zh="↻ 重做">↻ Redo</button>
       </div>
       <div class="brow">
         <button class="btn danger" onclick="clearGrid()"    data-en="⬜ Clear"  data-zh="⬜ 清空">⬜ Clear</button>
@@ -857,9 +865,9 @@ const MAX_HISTORY = 50;
 function setUndoRedoBtns() {
   const hasDrawUndo = stepHistory.some(e => e.type === 'draw');
   const hasStepUndo = stepHistory.length > 0;
-  document.getElementById('undoBtn').disabled    = !hasDrawUndo;
-  document.getElementById('stepBkBtn').disabled  = !hasStepUndo;
-  document.getElementById('redoBtn').disabled    = redoHistory.length === 0;
+  document.getElementById('undoBtn').classList.toggle('dis',   !hasDrawUndo);
+  document.getElementById('stepBkBtn').classList.toggle('dis', !hasStepUndo);
+  document.getElementById('redoBtn').classList.toggle('dis',   redoHistory.length === 0);
 }
 
 function pushHistory(type = 'draw') {
