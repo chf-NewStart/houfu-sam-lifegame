@@ -48,7 +48,12 @@
     .pg-back  { font-size: 0.65rem; color: #1db954; text-decoration: none; }
     .pg-back:hover { text-decoration: underline; }
     .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.7rem; padding: 5px 10px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
-    select.lang-btn option { background: #111; color: #ddd; }
+    /* Segmented language toggle [EN | 中文] — matches the mode switch, no basic dropdown */
+    .lang-switch { display: flex; border: 1px solid #2e2e2e; flex-shrink: 0; }
+    .lang-opt { background: transparent; border: none; color: #888; font-family: Consolas, monospace; font-size: 0.7rem; padding: 5px 11px; cursor: pointer; transition: all 0.1s; }
+    .lang-opt:hover { color: #ccc; }
+    .lang-opt.active { background: rgba(29,185,84,0.12); color: #1db954; }
+    .lang-opt + .lang-opt { border-left: 1px solid #2e2e2e; }
     .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
     /* ── Mode switch (Sandbox / Challenges) ───────────── */
@@ -418,10 +423,10 @@
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
     <a class="lang-btn" href="/training" style="text-decoration:none" data-en="📖 Learn" data-zh="📖 教程">📖 Learn</a>
-    <select class="lang-btn" id="langSelect" onchange="setLang(this.value)" title="Language" aria-label="Language">
-      <option value="en">English</option>
-      <option value="zh">中文</option>
-    </select>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button class="lang-opt" data-setlang="en" onclick="setLang('en')">EN</button>
+      <button class="lang-opt" data-setlang="zh" onclick="setLang('zh')">中文</button>
+    </div>
   </div>
 </div>
 
@@ -474,7 +479,7 @@
     <!-- Rules (B3/S23) — horizontal strip right above the grid -->
     <div class="rules-bar">
       <span class="rules-lbl" data-en="// rules" data-zh="// 规则">// rules</span>
-      <span class="rules-item"><b style="color:#1db954">■</b> <b data-en="Survive" data-zh="存活">Survive</b> <span data-en="live, 2–3 neighbours" data-zh="存活时，2–3 邻居">live, 2–3 neighbours</span></span>
+      <span class="rules-item"><b style="color:#1db954">■</b> <b data-en="Survive" data-zh="幸存">Survive</b> <span data-en="live, 2–3 neighbours" data-zh="存活时，2–3 邻居">live, 2–3 neighbours</span></span>
       <span class="rules-item"><b style="color:#f44336">■</b> <b data-en="Die" data-zh="死亡">Die</b> <span data-en="live, &lt;2 or &gt;3" data-zh="存活时，&lt;2 或 &gt;3 邻居">live, &lt;2 or &gt;3</span></span>
       <span class="rules-item"><b style="color:#9a9a9a">■</b> <b data-en="Born" data-zh="诞生">Born</b> <span data-en="dead, exactly 3" data-zh="非存活时，恰好 3 邻居">dead, exactly 3</span></span>
       <span class="rules-note" data-en="· B3/S23 · cells die at the border" data-zh="· B3/S23 · 细胞在边界消亡">· B3/S23 · cells die at the border</span>
@@ -558,7 +563,7 @@
     <div class="pcard sb-only">
       <div class="pcard-title" data-en="// watch" data-zh="// 观赏">// watch</div>
       <div class="brow">
-        <button class="btn" id="watchBtn" onclick="watchRandom()" data-en="🎲 Watch" data-zh="🎲 随机场景" title="Load a random scene and play it" style="flex:1">🎲 Watch</button>
+        <button class="btn" id="watchBtn" onclick="watchRandom()" data-en="🎲 Random" data-zh="🎲 随机场景" title="Load a random scene and play it" style="flex:1">🎲 Random</button>
         <button class="btn" onclick="openScenes()" data-en="🎬 Scenes" data-zh="🎬 场景" style="flex:1">🎬 Scenes</button>
       </div>
       <div class="brow">
@@ -794,8 +799,7 @@ let lang = (function () { try { return localStorage.getItem('lifegame_lang') || 
 function t(en, zh) { return lang === 'zh' ? zh : en; }
 function applyLang() {
   document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
-  const ls = document.getElementById('langSelect');
-  if (ls) ls.value = lang;
+  document.querySelectorAll('.lang-opt').forEach(b => b.classList.toggle('active', b.dataset.setlang === lang));
   document.querySelectorAll('[data-en]').forEach(el => {
     el.textContent = lang === 'zh' ? el.dataset.zh : el.dataset.en;
   });
