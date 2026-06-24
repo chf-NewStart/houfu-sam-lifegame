@@ -239,7 +239,7 @@
       width: 100%; height: 48px; box-sizing: border-box;
       object-fit: contain; background: #0a0a0a;
       border: 1px solid #242424; border-radius: 2px;
-      image-rendering: pixelated; pointer-events: none;
+      image-rendering: auto; pointer-events: none;   /* smooth scaling — pixelated made cells uneven on high-DPI phones */
     }
     .pbtn.has-thumb .pbtn-desc { display: none; }
     .pbtn.has-thumb:hover .pbtn-desc {
@@ -2601,6 +2601,17 @@ function patternThumb(cells) {
   return cv.toDataURL('image/png');
 }
 
+// Built-in pattern tiles: draw each thumbnail from its cell data (robust on
+// every device — never clipped, always centered, crisp). The PNG src stays as
+// a fallback if the canvas/data-URL isn't available.
+function _renderBuiltinThumbs() {
+  document.querySelectorAll('.pbtn[data-preset]').forEach(b => {
+    const img = b.querySelector('.pbtn-thumb');
+    const cells = PRESETS[b.dataset.preset];
+    if (img && cells && cells.length) { const u = patternThumb(cells); if (u) img.src = u; }
+  });
+}
+
 // Shared: register cells as a draggable custom pattern tile.
 function _addCustomPattern(name, cells) {
   const id = 'custom_' + Date.now();
@@ -2675,6 +2686,7 @@ document.getElementById('patternPickerList').addEventListener('click', e => {
 });
 
 _loadCustomPatternData();
+_renderBuiltinThumbs();   // draw built-in thumbnails from cell data (replaces the PNG screenshots)
 
 /* ── My Saves (localStorage) ──────────────────────── */
 const SAVES_KEY = 'lifegame_saves';
