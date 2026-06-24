@@ -1,7 +1,7 @@
 {
-  "name": "Life Game — Conway's Game of Life",
-  "short_name": "Life Game",
-  "description": "Draw patterns and watch them evolve. Curated scenes, challenges, and interactive lessons for Conway's Game of Life.",
+  "name": "Game of Life",
+  "short_name": "Game of Life",
+  "description": "Draw patterns and watch them evolve. Curated scenes, challenges, and interactive lessons for the Game of Life.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
