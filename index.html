@@ -439,7 +439,7 @@
       </div>
       <div class="brow">
         <button class="btn" id="auraBtn" onclick="toggleAura()" data-en="🔮 Aura" data-zh="🔮 光晕" title="Color cells by age — green→violet as they survive" style="flex:1">🔮 Aura</button>
-        <button class="btn" id="penBtn" onclick="togglePen()" data-en="✏️ Draw" data-zh="✏️ 画笔" title="Lock the grid for free drawing in any direction (turns off swipe-to-scroll on the canvas)" style="flex:1">✏️ Draw</button>
+        <button class="btn" id="penBtn" onclick="togglePen()" data-en="✏️ Draw" data-zh="✏️ 画笔" title="Draw mode: drag across the grid to paint (scroll is disabled). Off: drag scrolls the page, tap toggles a single cell." style="flex:1">✏️ Draw</button>
       </div>
       <div class="brow">
         <button class="btn" onclick="enterTheater()" data-en="⛶ Theater" data-zh="⛶ 影院" title="Immersive full-screen view — just the pattern" style="flex:1">⛶ Theater</button>
@@ -1409,16 +1409,10 @@ canvas.addEventListener('touchmove', e => {
   const dy = e.touches[0].clientY - touchStart.y;
   if (touchMode === null) {
     if (Math.abs(dx) < TOUCH_SLOP && Math.abs(dy) < TOUCH_SLOP) return;   // not enough yet
-    if (Math.abs(dy) > Math.abs(dx)) {
-      touchMode = 'scroll';                 // vertical → let the page scroll
-    } else if (!drawLocked()) {
-      touchMode = 'draw';                   // sideways → draw a stroke
-      const [c, r] = cellAt({ touches: [{ clientX: touchStart.x, clientY: touchStart.y }] });
-      paintVal = (c >= 0 && c < COLS && r >= 0 && r < ROWS && grid[idx(c, r)]) ? 0 : 1;
-      pushHistory(); painting = true;
-    } else {
-      touchMode = 'scroll';
-    }
+    // Normal mode: any drag scrolls/does nothing — never draws. (penMode set
+    // 'draw' back in touchstart.) So the rule is simple: drag = scroll,
+    // tap = toggle a cell, ✏️ Draw = paint by dragging.
+    touchMode = 'scroll';
   }
   if (touchMode === 'draw') { e.preventDefault(); if (painting) paint(e); }
   // 'scroll' → do nothing; the browser scrolls the page
