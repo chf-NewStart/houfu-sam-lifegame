@@ -302,10 +302,10 @@
     .win-submitted { color: #1db954; font-size: 0.78rem; margin-bottom: 8px; }
 
     /* ── Shared overlay base ─────────────────────────── */
-    #lbOverlay, #gallerySubmitOverlay, #galleryOverlay, #imgOverlay, #savesOverlay, #importPatternOverlay, #patternPickerOverlay, #sceneOverlay {
+    #lbOverlay, #gallerySubmitOverlay, #galleryOverlay, #imgOverlay, #savesOverlay, #patternPickerOverlay, #sceneOverlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center;
     }
-    #lbOverlay.show, #gallerySubmitOverlay.show, #galleryOverlay.show, #imgOverlay.show, #savesOverlay.show, #importPatternOverlay.show, #patternPickerOverlay.show, #sceneOverlay.show { display: flex; }
+    #lbOverlay.show, #gallerySubmitOverlay.show, #galleryOverlay.show, #imgOverlay.show, #savesOverlay.show, #patternPickerOverlay.show, #sceneOverlay.show { display: flex; }
 
     /* Scene gallery cards */
     .scene-cat { color: #1db954; font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; margin: 14px 0 8px; }
@@ -439,6 +439,14 @@
         <button class="pbtn has-thumb" draggable="true" data-preset="acorn"  ><img class="pbtn-thumb" src="patterns/acorn.png" alt="" draggable="false"><span class="pbtn-name" data-en="Acorn"       data-zh="橡子">Acorn</span><span class="pbtn-desc" data-en="5206 gens"         data-zh="5206代">5206 gens</span></button>
         <button class="pbtn has-thumb" draggable="true" data-preset="diehard"><img class="pbtn-thumb" src="patterns/diehard.png" alt="" draggable="false"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
         <button class="pbtn has-thumb" draggable="true" data-preset="lwss"   ><img class="pbtn-thumb" src="patterns/lwss.png" alt="" draggable="false"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
+      </div>
+      <!-- Saved/imported pattern tiles (mobile) -->
+      <div id="customPatternsMobile" style="display:none;margin-top:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="dev-header" style="margin:0" data-en="// saved patterns" data-zh="// 存档图案">// saved patterns</div>
+          <button class="btn" onclick="openPatternPicker()" style="padding:2px 8px;font-size:0.6rem;border-color:#1a3a22;color:#1db954" data-en="+ add" data-zh="+ 添加">+ add</button>
+        </div>
+        <div id="customPatternGridMobile" class="preset-grid"></div>
       </div>
       <button class="btn" id="addSavedBtnMobile" onclick="openPatternPicker()" style="display:none;width:100%;margin-top:5px;border-color:#1a3a22;color:#1db954" data-en="⊕ Add Saved Blueprint" data-zh="⊕ 添加存档图案">⊕ Add Saved Blueprint</button>
     </div>
@@ -693,22 +701,6 @@
     <div style="color:#555;font-size:0.7rem;margin-bottom:12px">Pick a saved blueprint to add as a draggable pattern tile.</div>
     <div id="patternPickerList" style="max-height:320px;overflow-y:auto"></div>
     <button class="btn" onclick="closePatternPicker()" style="margin-top:14px;width:100%">Close</button>
-  </div>
-</div>
-
-<div id="importPatternOverlay">
-  <div class="lb-box">
-    <div class="lb-title">⊕ Import Pattern</div>
-    <div style="color:#666;font-size:0.72rem;margin-bottom:10px">Paste RLE or plaintext (.cells) from LifeWiki, Golly, or any editor.</div>
-    <textarea id="importPatternText"
-      placeholder="Paste pattern here — RLE (x = …) or plaintext (O/.)"
-      style="width:100%;height:160px;background:#1a1a1a;border:1px solid #333;color:#ccc;padding:8px 10px;font-family:Consolas,monospace;font-size:0.72rem;outline:none;resize:vertical;box-sizing:border-box"
-      oninput="onImportPatternInput()"></textarea>
-    <div id="importPatternStatus" style="font-size:0.68rem;color:#666;min-height:1.4em;margin:7px 0 10px"></div>
-    <div style="display:flex;gap:6px">
-      <button class="btn" id="importPatternLoadBtn" onclick="onImportPatternLoad()" style="flex:1" disabled>Load</button>
-      <button class="btn" onclick="closeImportPattern()" style="flex:1">Cancel</button>
-    </div>
   </div>
 </div>
 
@@ -2405,15 +2397,46 @@ function _loadCustomPatternData() {
   _renderCustomPatternBtns();
 }
 
-function addSaveAsPattern(saveIdx) {
-  const save = _getSaves()[saveIdx];
-  if (!save) return;
-  const cells = JSON.parse(b64dec(save.seed));
+// Render a pattern's cells to a small "first frame" snapshot (data-URL PNG),
+// in the app's style — green cells on a dark grid. Used for custom tiles.
+function patternThumb(cells) {
+  if (!cells || !cells.length) return '';
+  let minC = Infinity, maxC = -Infinity, minR = Infinity, maxR = -Infinity;
+  for (const [c, r] of cells) {
+    if (c < minC) minC = c; if (c > maxC) maxC = c;
+    if (r < minR) minR = r; if (r > maxR) maxR = r;
+  }
+  const MARGIN = 1;                                  // one cell of breathing room
+  const gw = (maxC - minC + 1) + MARGIN * 2, gh = (maxR - minR + 1) + MARGIN * 2;
+  const px = Math.max(3, Math.min(16, Math.floor(150 / Math.max(gw, gh))));
+  const cv = document.createElement('canvas');
+  cv.width = gw * px; cv.height = gh * px;
+  const cx = cv.getContext('2d');
+  cx.fillStyle = '#0a0a0a'; cx.fillRect(0, 0, cv.width, cv.height);
+  if (px >= 4) {                                     // faint grid lines, like the built-ins
+    cx.strokeStyle = '#171717'; cx.lineWidth = 1;
+    for (let x = 0; x <= gw; x++) { cx.beginPath(); cx.moveTo(x*px + 0.5, 0); cx.lineTo(x*px + 0.5, cv.height); cx.stroke(); }
+    for (let y = 0; y <= gh; y++) { cx.beginPath(); cx.moveTo(0, y*px + 0.5); cx.lineTo(cv.width, y*px + 0.5); cx.stroke(); }
+  }
+  cx.fillStyle = '#1db954';
+  for (const [c, r] of cells)
+    cx.fillRect((c - minC + MARGIN) * px + 0.5, (r - minR + MARGIN) * px + 0.5, px - 1, px - 1);
+  return cv.toDataURL('image/png');
+}
+
+// Shared: register cells as a draggable custom pattern tile.
+function _addCustomPattern(name, cells) {
   const id = 'custom_' + Date.now();
-  customPatternList.push({ id, name: save.name, cells });
+  customPatternList.push({ id, name, cells });
   PRESETS[id] = cells;
   localStorage.setItem(CUSTOM_PATTERNS_KEY, JSON.stringify(customPatternList));
   _renderCustomPatternBtns();
+}
+
+function addSaveAsPattern(saveIdx) {
+  const save = _getSaves()[saveIdx];
+  if (!save) return;
+  _addCustomPattern(save.name, JSON.parse(b64dec(save.seed)));
   closePatternPicker();
 }
 
@@ -2425,21 +2448,28 @@ function removeCustomPattern(id) {
 }
 
 function _renderCustomPatternBtns() {
-  const section = document.getElementById('customPatternsSection');
-  const grid = document.getElementById('customPatternGrid');
-  if (!customPatternList.length || !devMode) { section.style.display = 'none'; return; }
-  section.style.display = 'block';
-  grid.innerHTML = customPatternList.map(p => `
+  const html = customPatternList.map(p => `
     <div class="custom-pbtn-wrap">
-      <button class="pbtn custom-pbtn" data-preset="${escHtml(p.id)}">
+      <button class="pbtn custom-pbtn has-thumb" data-preset="${escHtml(p.id)}">
+        <img class="pbtn-thumb" src="${patternThumb(p.cells)}" alt="" draggable="false">
         <span class="pbtn-name" style="font-size:0.65rem">${escHtml(p.name)}</span>
       </button>
       <button class="custom-del-btn" data-del-custom="${escHtml(p.id)}" title="Remove from patterns">✕</button>
     </div>`).join('');
-  grid.querySelectorAll('.pbtn[data-preset]').forEach(_attachPBtnListeners);
-  grid.querySelectorAll('.custom-del-btn').forEach(b => {
-    b.addEventListener('click', e => { e.stopPropagation(); removeCustomPattern(b.dataset.delCustom); });
-  });
+  // Render into both the desktop sidebar and the mobile patterns strip.
+  for (const [secId, gridId] of [['customPatternsSection', 'customPatternGrid'],
+                                 ['customPatternsMobile',  'customPatternGridMobile']]) {
+    const section = document.getElementById(secId);
+    const grid = document.getElementById(gridId);
+    if (!section || !grid) continue;
+    if (!customPatternList.length) { section.style.display = 'none'; continue; }
+    section.style.display = 'block';
+    grid.innerHTML = html;
+    grid.querySelectorAll('.pbtn[data-preset]').forEach(_attachPBtnListeners);
+    grid.querySelectorAll('.custom-del-btn').forEach(b => {
+      b.addEventListener('click', e => { e.stopPropagation(); removeCustomPattern(b.dataset.delCustom); });
+    });
+  }
 }
 
 /* ── Pattern picker (add saved blueprint to patterns) */
@@ -2468,97 +2498,6 @@ document.getElementById('patternPickerList').addEventListener('click', e => {
 });
 
 _loadCustomPatternData();
-
-/* ── Import Pattern (RLE / plaintext) ────────────── */
-let _importedCells = null;
-
-function openImportPattern() {
-  _importedCells = null;
-  document.getElementById('importPatternText').value = '';
-  document.getElementById('importPatternStatus').textContent = '';
-  document.getElementById('importPatternLoadBtn').disabled = true;
-  document.getElementById('importPatternOverlay').classList.add('show');
-  setTimeout(() => document.getElementById('importPatternText').focus(), 50);
-}
-function closeImportPattern() { document.getElementById('importPatternOverlay').classList.remove('show'); }
-
-function _parseRLE(text) {
-  const lines = text.split('\n');
-  const body = lines.filter(l => !l.trimStart().startsWith('#')).join('');
-  const headerMatch = body.match(/x\s*=\s*(\d+)\s*,\s*y\s*=\s*(\d+)/i);
-  if (!headerMatch) throw new Error('No RLE header (x = …, y = …) found');
-  const patStart = body.indexOf(headerMatch[0]) + headerMatch[0].length;
-  const pat = body.slice(patStart).replace(/[^0-9ob$!]/g, '');
-  const cells = []; let c = 0, r = 0, num = '';
-  for (const ch of pat) {
-    if (ch === '!') break;
-    if (ch >= '0' && ch <= '9') { num += ch; continue; }
-    const n = num ? parseInt(num) : 1; num = '';
-    if (ch === 'b') c += n;
-    else if (ch === 'o') { for (let i = 0; i < n; i++) cells.push([c++, r]); }
-    else if (ch === '$') { r += n; c = 0; }
-  }
-  return cells;
-}
-
-function _parsePlaintext(text) {
-  const cells = [];
-  const lines = text.split('\n').filter(l => !l.startsWith('!') && !l.startsWith('%'));
-  let r = 0;
-  for (const line of lines) {
-    for (let c = 0; c < line.length; c++) {
-      const ch = line[c];
-      if (ch === 'O' || ch === 'o' || ch === '*') cells.push([c, r]);
-    }
-    r++;
-  }
-  return cells;
-}
-
-function _tryParsePattern(text) {
-  const t = text.trim();
-  if (!t) return null;
-  if (/x\s*=/i.test(t)) return _parseRLE(t);
-  if (/^[.Oo*\r\n!%]/.test(t)) return _parsePlaintext(t);
-  return _parseRLE(t); // try RLE as fallback
-}
-
-function onImportPatternInput() {
-  const text = document.getElementById('importPatternText').value;
-  const status = document.getElementById('importPatternStatus');
-  const loadBtn = document.getElementById('importPatternLoadBtn');
-  _importedCells = null; loadBtn.disabled = true;
-  if (!text.trim()) { status.textContent = ''; return; }
-  try {
-    const cells = _tryParsePattern(text);
-    if (!cells || cells.length === 0) { status.style.color = '#e05'; status.textContent = '✗ No live cells found'; return; }
-    const minC = Math.min(...cells.map(([c]) => c)), maxC = Math.max(...cells.map(([c]) => c));
-    const minR = Math.min(...cells.map(([,r]) => r)), maxR = Math.max(...cells.map(([,r]) => r));
-    const fmt = /x\s*=/i.test(text.trim()) ? 'RLE' : 'plaintext';
-    status.style.color = '#1db954';
-    status.textContent = `✓ ${fmt} · ${cells.length} cells · ${maxC-minC+1}×${maxR-minR+1} bounding box`;
-    _importedCells = cells; loadBtn.disabled = false;
-  } catch (e) {
-    status.style.color = '#e05'; status.textContent = '✗ ' + e.message;
-  }
-}
-
-function onImportPatternLoad() {
-  if (!_importedCells || _importedCells.length === 0) return;
-  const cells = _importedCells;
-  const minC = Math.min(...cells.map(([c]) => c)), maxC = Math.max(...cells.map(([c]) => c));
-  const minR = Math.min(...cells.map(([,r]) => r)), maxR = Math.max(...cells.map(([,r]) => r));
-  const offC = Math.floor((COLS - (maxC - minC + 1)) / 2) - minC;
-  const offR = Math.floor((ROWS - (maxR - minR + 1)) / 2) - minR;
-  if (running) togglePlay();
-  pushHistory(); grid.fill(0); generation = 0;
-  document.getElementById('genCount').textContent = 0;
-  cells.forEach(([c, r]) => {
-    const gc = c + offC, gr = r + offR;
-    if (gc >= 0 && gc < COLS && gr >= 0 && gr < ROWS) grid[idx(gc, gr)] = 1;
-  });
-  draw(); refreshDevPanel(); closeImportPattern();
-}
 
 /* ── My Saves (localStorage) ──────────────────────── */
 const SAVES_KEY = 'lifegame_saves';
