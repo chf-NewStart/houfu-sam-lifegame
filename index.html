@@ -415,7 +415,10 @@
     <button class="mode-btn" data-mode="challenges" role="tab" onclick="setMode('challenges')" data-en="🏆 Challenges" data-zh="🏆 挑战">🏆 Challenges</button>
     <button class="mode-btn" data-mode="music" role="tab" onclick="setMode('music')" data-en="🎵 Music" data-zh="🎵 音乐">🎵 Music</button>
   </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+  <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+    <a class="lang-btn" href="/training" style="text-decoration:none" data-en="📖 Learn" data-zh="📖 教程">📖 Learn</a>
+    <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+  </div>
 </div>
 
 <!-- Challenges bar -->
@@ -598,9 +601,6 @@
         </div>
         <div class="brow">
           <button class="btn" onclick="openLeaderboard()" data-en="🏆 Board" data-zh="🏆 榜单">🏆 Board</button>
-          <a class="btn" href="/training" style="text-align:center;text-decoration:none" data-en="📖 Learn" data-zh="📖 教程">📖 Learn</a>
-        </div>
-        <div class="brow">
           <button class="btn" id="devModeBtn" onclick="toggleDevMode()" data-en="⚡ Dev" data-zh="⚡ 预测">⚡ Dev</button>
         </div>
         <div class="slider-row" style="margin-top:6px">
