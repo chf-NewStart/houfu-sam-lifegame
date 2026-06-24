@@ -4,7 +4,7 @@ An interactive browser implementation of Conway's Game of Life — zero dependen
 
 **[▶ Play it live at lifegameproject.com](https://lifegameproject.com)**
 
-![gameplay](demo/gif/lifegame.gif)
+![gameplay](demo/gif/regular.gif)
 
 ---
 
@@ -75,10 +75,6 @@ The grid becomes a **sweep sequencer**: a playhead scans the columns left→righ
 
 ### Language
 - **English / 中文** — full bilingual support, toggle in the header
-
----
-
-![drawing demo](demo/gif/rand_diy.gif)
 
 ---
 
