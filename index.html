@@ -245,27 +245,27 @@
     @media (max-width: 700px) {
       .main-layout { flex-direction: column; overflow: visible; }
 
-      /* center the grid with side gutters so there's empty space to
-         swipe-scroll past without drawing or hitting buttons */
-      .canvas-col { padding: 16px 20px 10px; align-items: center; gap: 12px; }
-      .canvas-wrap { width: 100%; max-width: 460px; margin: 0 auto; display: block; }
+      /* keep the grid + controls narrow and centered so there are wide,
+         empty side gutters to swipe-scroll the page (large thumbs!) */
+      .canvas-col { padding: 14px 34px 8px; align-items: center; gap: 10px; }
+      .canvas-wrap { width: 100%; max-width: 320px; margin: 0 auto; display: block; }
       .canvas-wrap canvas { width: 100% !important; height: auto !important; }
 
-      .patterns-mobile { display: block; width: 100%; max-width: 460px; margin: 0 auto; }
+      .patterns-mobile { display: block; width: 100%; max-width: 320px; margin: 0 auto; }
 
       .right-panel {
-        width: 100%; max-width: 460px; margin: 0 auto;
+        width: 100%; max-width: 320px; margin: 0 auto;
         border-left: none; border-top: 1px solid #2e2e2e;
-        padding: 10px 20px 36px; overflow-y: visible;
+        padding: 8px 34px 40px; overflow-y: visible;
       }
       /* hide patterns in right panel on mobile — they're above canvas */
       .patterns-desktop { display: none; }
 
-      .stats-bar { padding: 8px 16px; gap: 12px; flex-wrap: wrap; justify-content: center; }
-      .stat-item:not(:last-child) { border-right: none; margin-right: 0; padding-right: 12px; }
-      .btn { padding: 11px 5px; font-size: 0.74rem; }   /* bigger tap targets */
-      .pbtn { padding: 8px 6px; }
-      .brow { gap: 6px; margin-bottom: 6px; }
+      .stats-bar { padding: 6px 16px; gap: 10px; flex-wrap: wrap; justify-content: center; }
+      .stat-item:not(:last-child) { border-right: none; margin-right: 0; padding-right: 10px; }
+      .btn { padding: 8px 4px; font-size: 0.7rem; }
+      .pbtn { padding: 7px 5px; }
+      .brow { gap: 5px; margin-bottom: 5px; }
     }
     /* ── Credits ──────────────────────────────────────── */
     .credits-list { font-size: 0.65rem; color: #666; line-height: 2; }
@@ -620,8 +620,8 @@ function initGrid() {
   const mobile = window.innerWidth <= 700;
   let maxW, maxH;
   if (mobile) {
-    maxW = window.innerWidth - 24;
-    maxH = Math.round(window.innerHeight * 0.42);
+    maxW = Math.min(window.innerWidth - 24, 360);
+    maxH = Math.round(window.innerHeight * 0.34);
   } else {
     const col = document.querySelector('.canvas-col');
     maxW = (col ? col.clientWidth : 600) - 26;
