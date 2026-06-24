@@ -265,9 +265,10 @@
     /* ── Mobile patterns (above canvas) ──────────────── */
     .patterns-mobile { display: none; width: 100%; }
     .patterns-mobile .preset-grid { grid-template-columns: repeat(4, 1fr); }
-    /* Mobile has no hover, so just show name on top + screenshot below (base layout);
-       keep the image a touch shorter on the small tiles. */
-    .patterns-mobile .pbtn-thumb { height: 40px; }
+    /* Mobile has no hover, so just show name on top + screenshot below. Keep the
+       thumbnail a small, centered fixed size (not full tile width, which is too big). */
+    .patterns-mobile .pbtn.has-thumb { align-items: center; }
+    .patterns-mobile .pbtn-thumb { width: 46px; height: 38px; }
 
     /* ── Dev mode lookahead strip ────────────────────── */
     #devPanel { width: 100%; margin-top: 6px; }
