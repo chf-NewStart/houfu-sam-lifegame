@@ -275,6 +275,8 @@
        thumbnail a small, centered fixed size (not full tile width, which is too big). */
     .patterns-mobile .pbtn.has-thumb { align-items: center; }
     .patterns-mobile .pbtn-thumb { width: 46px; height: 38px; }
+    /* No hover on touch — never pop the description overlay (it covered the thumbnail on tap) */
+    .patterns-mobile .pbtn-desc { display: none !important; }
 
     /* ── Dev mode lookahead strip ────────────────────── */
     #devPanel { width: 100%; margin-top: 6px; }
