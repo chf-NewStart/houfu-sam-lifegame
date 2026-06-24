@@ -264,15 +264,15 @@
     <div class="legend">
       <div class="legend-item">
         <div class="legend-swatch" style="background:#1db954"></div>
-        <span data-en="alive · will survive" data-zh="活 · 将存活">alive · will survive</span>
+        <span data-en="alive · will survive" data-zh="存活时 · 将存活">alive · will survive</span>
       </div>
       <div class="legend-item">
         <div class="legend-swatch" style="background:#c0392b"></div>
-        <span data-en="alive · will die" data-zh="活 · 将死亡">alive · will die</span>
+        <span data-en="alive · will die" data-zh="存活时 · 将死亡">alive · will die</span>
       </div>
       <div class="legend-item">
         <div class="legend-swatch" style="background:#3a3a3a"></div>
-        <span data-en="dead · will be born" data-zh="空 · 将诞生">dead · will be born</span>
+        <span data-en="dead · will be born" data-zh="非存活时 · 将诞生">dead · will be born</span>
       </div>
     </div>
 
@@ -304,7 +304,7 @@ const STAGES = [
     title: 'The Grid',
     titleZh: '网格',
     rule: `too lonely (0–1 neighbors) → <b>dies</b><br>too crowded (4+ neighbors) → <b>dies</b><br>2 or 3 around a live cell → <b>survives</b><br>exactly 3 around a dead cell → <b>born</b>`,
-    ruleZh: `太孤独（0–1 个邻居）→ <b>死亡</b><br>太拥挤（4 个以上邻居）→ <b>死亡</b><br>活细胞周围有 2 或 3 个 → <b>存活</b><br>死细胞周围正好有 3 个 → <b>诞生</b>`,
+    ruleZh: `太孤独（0–1 个邻居）→ <b>死亡</b><br>太拥挤（4 个以上邻居）→ <b>死亡</b><br>存活时周围有 2 或 3 个 → <b>继续存活</b><br>非存活时周围正好有 3 个 → <b>诞生</b>`,
     ruleClass: 'casual',
     text: `Each cell is either <span class="hi-green">alive</span> or <span style="color:#333">dead (empty)</span>. Those four rules are everything — the next screens let you trigger each one yourself.<br><br><b>Click any cell to draw.</b>`,
     textZh: `每个细胞要么<span class="hi-green">活着</span>，要么<span style="color:#333">死了（空的）</span>。这四条规则就是全部 —— 接下来的几屏会让你亲手触发每一条。<br><br><b>点击任意格子即可绘制。</b>`,
@@ -374,7 +374,7 @@ const STAGES = [
     title: 'Birth — a new cell appears',
     titleZh: '诞生 —— 新细胞出现',
     rule: `exactly <b>3</b> live neighbors around a dead cell → <b style="color:#1db954">born</b>`,
-    ruleZh: `死细胞周围正好有 <b>3</b> 个活邻居 → <b style="color:#1db954">诞生</b>`,
+    ruleZh: `非存活时周围正好有 <b>3</b> 个活邻居 → <b style="color:#1db954">诞生</b>`,
     text: `Draw 3 live cells that all touch the same empty space. That empty cell immediately glows <span style="color:#555">grey</span> — it has exactly 3 neighbors and will be born.<br><br>The grey appears <b>live as you draw</b>. Once you see it, hit <b>Step</b> to watch it come alive.`,
     textZh: `画 3 个都挨着同一个空格的活细胞。那个空格会立即亮起<span style="color:#555">灰色</span> —— 它正好有 3 个邻居，将会诞生。<br><br>灰色会<b>随着你绘制实时出现</b>。一看到它，就点击<b>单步</b>，看它活过来。`,
     setup: _setup(() => {}),
