@@ -2850,7 +2850,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ── Default welcome pattern ("LIFE GAME" in cells) ─ */
+/* ── Default welcome pattern ("GAME LIFE" in cells) ─ */
 function loadDefault() {
   const FONT = {
     L: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[2,4],[3,4],[4,4]],
@@ -2867,7 +2867,7 @@ function loadDefault() {
   const scale = Math.max(1, Math.min(3, Math.floor(Math.min((COLS - 2) / imgW, (ROWS - 2) / imgH))));
   const startC = Math.floor((COLS - imgW * scale) / 2);
   const startR = Math.floor((ROWS - imgH * scale) / 2);
-  ['LIFE', 'GAME'].forEach((word, lineIdx) => {
+  ['GAME', 'LIFE'].forEach((word, lineIdx) => {
     const baseR = lineIdx * (W + LINE_GAP);
     word.split('').forEach((ch, ci) => {
       const baseC = ci * (W + GAP);
