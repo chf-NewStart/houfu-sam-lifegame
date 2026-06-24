@@ -1268,12 +1268,11 @@ canvas.addEventListener('mousedown', e => {
     draw(); return;
   }
   if (drawLocked()) return;
+  if (!penMode) return;   // browse mode — view/pan only; turn on ✏️ Draw to paint
   const [c, r] = cellAt(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
   pushHistory();
-  // Draw mode → drag paints (painting=true). Browse mode → click toggles a
-  // single cell only (painting stays false, so dragging doesn't paint).
-  paintVal = grid[idx(c, r)] ? 0 : 1; painting = penMode; paint(e);
+  paintVal = grid[idx(c, r)] ? 0 : 1; painting = true; paint(e);
 });
 canvas.addEventListener('mousemove', e => {
   if (panning) return;
