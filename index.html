@@ -98,6 +98,18 @@
     .btn.active { border-color: #1db954; color: #1db954; background: rgba(29,185,84,0.08); }
     .btn.danger:hover { border-color: #f44336; color: #f44336; }
 
+    /* Aura button — animated gradient glow to lure clicks (when inactive) */
+    @keyframes auraLure {
+      0%   { border-color: #1db954; box-shadow: 0 0 5px rgba(29,185,84,0.35);  color: #2fd06a; }
+      33%  { border-color: #1fa6c4; box-shadow: 0 0 9px rgba(31,166,196,0.45); color: #3fc6e0; }
+      66%  { border-color: #8a5cff; box-shadow: 0 0 9px rgba(138,92,255,0.45); color: #a87bff; }
+      100% { border-color: #1db954; box-shadow: 0 0 5px rgba(29,185,84,0.35);  color: #2fd06a; }
+    }
+    #auraBtn { background-image: linear-gradient(90deg, rgba(29,185,84,0.10), rgba(31,166,196,0.10), rgba(138,92,255,0.10)); }
+    #auraBtn:not(.active) { animation: auraLure 3.2s ease-in-out infinite; }
+    #auraBtn:hover { box-shadow: 0 0 11px rgba(138,92,255,0.55); }
+    #auraBtn.active { animation: none; background-image: linear-gradient(90deg, rgba(29,185,84,0.18), rgba(138,92,255,0.18)); }
+
     .slider-row { display: flex; align-items: center; gap: 6px; font-size: 0.66rem; color: #888; margin-top: 4px; }
     .slider-row input[type=range] { flex: 1; accent-color: #1db954; }
 
@@ -168,10 +180,18 @@
     .win-submitted { color: #1db954; font-size: 0.78rem; margin-bottom: 8px; }
 
     /* ── Shared overlay base ─────────────────────────── */
-    #lbOverlay, #gallerySubmitOverlay, #galleryOverlay, #imgOverlay, #savesOverlay, #importPatternOverlay, #patternPickerOverlay {
+    #lbOverlay, #gallerySubmitOverlay, #galleryOverlay, #imgOverlay, #savesOverlay, #importPatternOverlay, #patternPickerOverlay, #sceneOverlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center;
     }
-    #lbOverlay.show, #gallerySubmitOverlay.show, #galleryOverlay.show, #imgOverlay.show, #savesOverlay.show, #importPatternOverlay.show, #patternPickerOverlay.show { display: flex; }
+    #lbOverlay.show, #gallerySubmitOverlay.show, #galleryOverlay.show, #imgOverlay.show, #savesOverlay.show, #importPatternOverlay.show, #patternPickerOverlay.show, #sceneOverlay.show { display: flex; }
+
+    /* Scene gallery cards */
+    .scene-cat { color: #1db954; font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; margin: 14px 0 8px; }
+    .scene-card { display: flex; gap: 12px; align-items: flex-start; border: 1px solid #222; border-radius: 5px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .scene-card:hover { border-color: #1db954; background: #0d0d0d; }
+    .scene-card .sc-name { color: #ddd; font-size: 0.82rem; margin-bottom: 4px; }
+    .scene-card .sc-desc { color: #555; font-size: 0.66rem; line-height: 1.55; }
+    .scene-card .sc-play { color: #1db954; font-size: 0.62rem; margin-top: 6px; }
 
     /* ── Leaderboard overlay ──────────────────────────── */
     #lbOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center; }
@@ -324,6 +344,10 @@
       <div class="pcard-title" data-en="// controls" data-zh="// 控制">// controls</div>
       <div class="brow">
         <button class="btn" id="playBtn" onclick="togglePlay()" data-en="⏵ Play" data-zh="⏵ 播放" style="flex:1">⏵ Play</button>
+      </div>
+      <div class="brow">
+        <button class="btn" onclick="watchRandom()" data-en="✦ Watch" data-zh="✦ 观赏" title="Load a random scene and play it" style="flex:2">✦ Watch</button>
+        <button class="btn" onclick="openScenes()" data-en="🎬 Scenes" data-zh="🎬 场景" style="flex:1">🎬 Scenes</button>
       </div>
       <div class="brow">
         <button class="btn" id="stepBkBtn" onclick="undoStep()"  data-en="← Step" data-zh="← 后退" disabled>← Step</button>
@@ -480,6 +504,15 @@
   </div>
 </div>
 
+<div id="sceneOverlay">
+  <div class="lb-box">
+    <div class="lb-title">🎬 Scenes</div>
+    <div style="color:#555;font-size:0.7rem;margin-bottom:6px" data-en="Curated starting states — click one to load and watch it play." data-zh="精选初始形态 — 点击加载并自动播放。">Curated starting states — click one to load and watch it play.</div>
+    <div id="sceneList"></div>
+    <button class="btn" onclick="closeScenes()" style="margin-top:16px;width:100%">Close</button>
+  </div>
+</div>
+
 <div id="patternPickerOverlay">
   <div class="lb-box">
     <div class="lb-title" style="color:#1db954">⊕ Add to Patterns</div>
@@ -602,7 +635,7 @@ const GRID_LINE = '#1e1e1e';
 // cyan → blue → violet (ancient). Gives stable structures a glow that
 // distinguishes them from churning newborns.
 let age, nextAge;
-let auraMode = (localStorage.getItem('lifegame_aura') ?? '1') === '1';
+let auraMode = (localStorage.getItem('lifegame_aura') ?? '0') === '1';
 
 /* ── Fade trails ──────────────────────────────────── */
 // trail[i] counts down from TRAIL_MAX after a cell dies, leaving a
@@ -1230,6 +1263,89 @@ function loadPreset(name) {
   draw(); refreshDevPanel();
 }
 function loadCustomOrPreset(name) { loadPreset(name); }
+
+/* ── Scenes — curated "watch this" presets ────────── */
+const SCENES = [
+  {
+    id: 'dpulsar', cat: 'Interactions',
+    name: 'Double Pulsar', nameZh: '双脉冲星',
+    desc: 'Two pulsars placed edge to edge. Alone each ticks forever — together they destabilise into symmetric chaos, then resettle.',
+    descZh: '两个脉冲星紧贴放置。单独时各自永久振荡，相邻时却失稳爆发出对称的混乱，再重新稳定。',
+    cells: [[2,0],[3,0],[4,0],[8,0],[9,0],[10,0],[0,2],[5,2],[7,2],[12,2],[0,3],[5,3],[7,3],[12,3],[0,4],[5,4],[7,4],[12,4],[2,5],[3,5],[4,5],[8,5],[9,5],[10,5],[2,7],[3,7],[4,7],[8,7],[9,7],[10,7],[0,8],[5,8],[7,8],[12,8],[0,9],[5,9],[7,9],[12,9],[0,10],[5,10],[7,10],[12,10],[2,12],[3,12],[4,12],[8,12],[9,12],[10,12],[15,0],[16,0],[17,0],[21,0],[22,0],[23,0],[13,2],[18,2],[20,2],[25,2],[13,3],[18,3],[20,3],[25,3],[13,4],[18,4],[20,4],[25,4],[15,5],[16,5],[17,5],[21,5],[22,5],[23,5],[15,7],[16,7],[17,7],[21,7],[22,7],[23,7],[13,8],[18,8],[20,8],[25,8],[13,9],[18,9],[20,9],[25,9],[13,10],[18,10],[20,10],[25,10],[15,12],[16,12],[17,12],[21,12],[22,12],[23,12]],
+  },
+  {
+    id: 'gun', cat: 'Guns',
+    name: 'Glider Gun', nameZh: '滑翔机枪',
+    desc: "Gosper's glider gun — a stable factory that fires a glider every 30 generations, forever.",
+    descZh: '高斯帕滑翔机枪 — 稳定的工厂，每30代发射一架滑翔机，永不停歇。',
+    cells: PRESETS.gun,
+  },
+  {
+    id: 'rpento', cat: 'Methuselahs',
+    name: 'R-pentomino', nameZh: 'R-五连块',
+    desc: 'Just 5 cells — yet it churns chaotically for 1103 generations before finally settling. The classic methuselah.',
+    descZh: '仅5个细胞，却会混乱演化1103代才最终稳定。经典的"玛士撒拉"长寿模式。',
+    cells: PRESETS.rpento,
+  },
+  {
+    id: 'soup', cat: 'Chaos',
+    name: 'Random Soup', nameZh: '随机汤',
+    desc: 'A dense random scatter. Most of it dies off in seconds; the survivors self-organise into gliders, blinkers and still lifes.',
+    descZh: '一片密集的随机细胞。大部分会在几秒内消亡，幸存者自组织成滑翔机、振荡器和静物。',
+    soup: 0.34,
+  },
+];
+
+function loadScene(id, autoplay = true) {
+  const s = SCENES.find(x => x.id === id);
+  if (!s) return;
+  if (running) togglePlay();
+  clearHistory();
+  grid.fill(0); generation = 0;
+  document.getElementById('genCount').textContent = 0;
+  activeChallenge = -1; selRect = null;
+  document.querySelectorAll('.cbtn[data-challenge]').forEach(b => b.classList.remove('active'));
+  if (s.soup) {
+    const w = Math.min(COLS, Math.max(20, Math.round(COLS * 0.55)));
+    const h = Math.min(ROWS, Math.max(20, Math.round(ROWS * 0.55)));
+    const oc = Math.floor((COLS - w) / 2), or = Math.floor((ROWS - h) / 2);
+    for (let r = 0; r < h; r++)
+      for (let c = 0; c < w; c++)
+        if (Math.random() < s.soup) grid[idx(oc + c, or + r)] = 1;
+  } else {
+    const cells = s.cells;
+    const maxC = Math.max(...cells.map(([c]) => c));
+    const maxR = Math.max(...cells.map(([, r]) => r));
+    place(cells, Math.floor((COLS - maxC) / 2), Math.floor((ROWS - maxR) / 2));
+  }
+  resetView();
+  draw(); refreshDevPanel();
+  if (autoplay && !running) togglePlay();
+}
+
+function watchRandom() {
+  closeScenes();
+  const s = SCENES[Math.floor(Math.random() * SCENES.length)];
+  loadScene(s.id, true);
+}
+
+function openScenes() {
+  const list = document.getElementById('sceneList');
+  const cats = [...new Set(SCENES.map(s => s.cat))];
+  list.innerHTML = cats.map(cat => {
+    const cards = SCENES.filter(s => s.cat === cat).map(s => `
+      <div class="scene-card" onclick="loadScene('${s.id}', true); closeScenes();">
+        <div>
+          <div class="sc-name">${t(s.name, s.nameZh)}</div>
+          <div class="sc-desc">${t(s.desc, s.descZh || s.desc)}</div>
+          <div class="sc-play">▶ ${t('load &amp; play', '加载并播放')}</div>
+        </div>
+      </div>`).join('');
+    return `<div class="scene-cat">// ${cat}</div>${cards}`;
+  }).join('');
+  document.getElementById('sceneOverlay').classList.add('show');
+}
+function closeScenes() { document.getElementById('sceneOverlay').classList.remove('show'); }
 
 /* ── Pattern transform ────────────────────────────── */
 let stampRot = 0, stampFlipH = false;
