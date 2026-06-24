@@ -92,6 +92,8 @@
     }
     canvas.running { border-color: #1db954; animation: pulse-border 2s ease-in-out infinite; }
     canvas.drag-over { border-color: #1db954; cursor: copy; }
+    /* Draw-lock: capture all touch so you can draw any direction (no scroll) */
+    canvas.pen-lock { touch-action: none; border-color: #1db954; border-style: dashed; }
 
     /* ── Right panel ──────────────────────────────────── */
     .right-panel {
@@ -402,6 +404,7 @@
       </div>
       <div class="brow">
         <button class="btn" id="auraBtn" onclick="toggleAura()" data-en="🔮 Aura" data-zh="🔮 光晕" title="Color cells by age — green→violet as they survive" style="flex:1">🔮 Aura</button>
+        <button class="btn" id="penBtn" onclick="togglePen()" data-en="✏️ Draw" data-zh="✏️ 画笔" title="Lock the grid for free drawing in any direction (turns off swipe-to-scroll on the canvas)" style="flex:1">✏️ Draw</button>
       </div>
       <div class="brow">
         <button class="btn" onclick="resetView()"       data-en="⊙ Reset View" data-zh="⊙ 重置视图">⊙ Reset View</button>
@@ -1249,6 +1252,14 @@ let lastPinchDist = null, lastPinchMid = null;
 let touchStart = null;     // {x, y} of the single-finger start
 let touchMode = null;      // null (undecided) | 'draw' | 'scroll'
 const TOUCH_SLOP = 10;     // px to move before committing to draw vs scroll
+let penMode = false;       // when on, the grid captures all touch for free drawing
+
+function togglePen() {
+  penMode = !penMode;
+  const btn = document.getElementById('penBtn');
+  if (btn) btn.classList.toggle('active', penMode);
+  canvas.classList.toggle('pen-lock', penMode);
+}
 
 function _toggleCellAt(clientX, clientY) {
   const [c, r] = cellAt({ touches: [{ clientX, clientY }] });
@@ -1262,10 +1273,17 @@ function _toggleCellAt(clientX, clientY) {
 
 canvas.addEventListener('touchstart', e => {
   if (e.touches.length === 1) {
-    // don't draw or block scroll yet — wait for touchmove/touchend to decide
     touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchMode = null; painting = false;
     lastPinchDist = null; lastPinchMid = null;
+    if (penMode && !drawLocked()) {
+      // draw-lock: commit to drawing immediately, any direction (no scroll)
+      e.preventDefault();
+      touchMode = 'draw';
+      const [c, r] = cellAt(e);
+      paintVal = (c >= 0 && c < COLS && r >= 0 && r < ROWS && grid[idx(c, r)]) ? 0 : 1;
+      pushHistory(); painting = true; paint(e);
+    }
   } else {
     e.preventDefault();
     touchStart = null; touchMode = null; painting = false;
