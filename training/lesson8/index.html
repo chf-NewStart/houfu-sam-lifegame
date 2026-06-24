@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Lesson 8: Dev Mode — Life Game" data-zh="第 8 课：开发模式 — 生命游戏">Lesson 8: Dev Mode — Life Game</title>
+  <title data-en="Lesson 8: Lookahead — Life Game" data-zh="第 8 课：预测 — 生命游戏">Lesson 8: Lookahead — Life Game</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -167,7 +167,7 @@
       cursor: default;
     }
 
-    /* Dev mode border effect */
+    /* Lookahead border effect */
     canvas.dev-mode {
       border-color: #1db954;
       box-shadow: 0 0 0 1px rgba(29,185,84,0.2);
@@ -239,7 +239,7 @@
   <div class="header-left">
     <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
     <span class="lesson-id" data-en="LESSON 08" data-zh="第 08 课">LESSON 08</span>
-    <span class="lesson-title-h" data-en="Dev Mode" data-zh="开发模式">Dev Mode</span>
+    <span class="lesson-title-h" data-en="Lookahead" data-zh="预测">Lookahead</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
@@ -270,7 +270,7 @@
     <canvas id="canvas"></canvas>
 
     <div class="controls">
-      <button class="ctrl-btn" id="devBtn" onclick="toggleDevMode()" data-en="Dev" data-zh="开发">Dev</button>
+      <button class="ctrl-btn" id="devBtn" onclick="toggleDevMode()" data-en="⚡ Lookahead" data-zh="⚡ 预测">⚡ Lookahead</button>
       <button class="ctrl-btn" onclick="stepGrid()" data-en="⊙ Step" data-zh="⊙ 单步">⊙ Step</button>
       <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" data-en="▶ Play" data-zh="▶ 播放">▶ Play</button>
     </div>
@@ -326,7 +326,7 @@ function countNeighbors(c, r) {
   return n;
 }
 
-/* ── Dev mode toggle ─────────────────────────────── */
+/* ── Lookahead toggle ────────────────────────────── */
 function toggleDevMode() {
   devMode = !devMode;
   const btn = document.getElementById('devBtn');
@@ -431,7 +431,7 @@ function draw() {
     }
   }
 
-  // Dev mode: annotate cells with lookahead dots
+  // Lookahead: annotate cells with lookahead dots
   if (devMode) {
     ctx.fillStyle = 'rgba(29,185,84,0.18)';
     for (let r = 0; r < ROWS; r++) {
@@ -503,31 +503,31 @@ function loadDecoration() {
 /* ── Stage definitions ──────────────────────────── */
 const STAGES = [
   {
-    title: 'Enable Dev Mode',
-    titleZh: '开启开发模式',
-    rule: `click <b>Dev</b> in the controls → border turns green`,
-    ruleZh: `点击控制栏里的 <b>开发</b> → 边框变绿`,
+    title: 'Enable Lookahead',
+    titleZh: '开启预测',
+    rule: `click <b>⚡ Lookahead</b> in the Edit section → border turns green`,
+    ruleZh: `点击「编辑」区里的 <b>⚡ 预测</b> → 边框变绿`,
     ruleClass: 'casual',
-    text: `Dev Mode unlocks advanced analysis tools. In the main game, click the <b>Dev</b> button in the toolbar — the canvas border turns green to confirm it's active.<br><br>Try the <b>Dev</b> button on the right. Notice the grid changes — birth candidates are now highlighted faintly, making the next step more visible.`,
-    textZh: `开发模式会解锁高级分析工具。在主游戏里，点击工具栏的 <b>开发</b> 按钮 — 画布边框变绿就说明它已激活。<br><br>试试右边的 <b>开发</b> 按钮。注意网格的变化 — 即将诞生的细胞现在会被淡淡地高亮出来，让下一个单步看得更清楚。`,
+    text: `Lookahead is a preview tool that shows you where a pattern is heading. In the main game, find the <b>⚡ Lookahead</b> button in the <b>Edit</b> section and toggle it on — the canvas border turns green to confirm it's active.<br><br>Try the <b>⚡ Lookahead</b> button on the right. Notice the grid changes — birth candidates are now highlighted faintly, making the next step more visible.`,
+    textZh: `预测是一个预览工具，让你看清一个图案接下来要往哪儿走。在主游戏里，到 <b>编辑</b> 区找到 <b>⚡ 预测</b> 按钮并打开它 — 画布边框变绿就说明它已激活。<br><br>试试右边的 <b>⚡ 预测</b> 按钮。注意网格的变化 — 即将诞生的细胞现在会被淡淡地高亮出来，让下一个单步看得更清楚。`,
   },
   {
     title: 'Lookahead Strip',
     titleZh: '预测条',
-    text: `When Dev Mode is on, a strip of <b>7 mini-canvases</b> appears above the main canvas. Each shows the state N generations ahead, computed in real time.<br><br>Enable Dev Mode, then hit <b>Play</b> — watch the strip update with each generation. This lets you see where a pattern is heading before it gets there.`,
-    textZh: `开启开发模式后，主画布上方会出现一条由 <b>7 个小画布</b> 组成的预测条。每一个都显示往后 N 代的状态，实时计算。<br><br>开启开发模式，然后点 <b>播放</b> — 看着预测条随每一代更新。这让你在图案到达之前就能看出它要往哪儿走。`,
+    text: `When Lookahead is on, a strip of <b>7 mini-canvases</b> appears above the main canvas. Each shows the state N generations ahead, computed in real time.<br><br>Enable Lookahead, then hit <b>Play</b> — watch the strip update with each generation. This lets you see where a pattern is heading before it gets there.`,
+    textZh: `开启预测后，主画布上方会出现一条由 <b>7 个小画布</b> 组成的预测条。每一个都显示往后 N 代的状态，实时计算。<br><br>开启预测，然后点 <b>播放</b> — 看着预测条随每一代更新。这让你在图案到达之前就能看出它要往哪儿走。`,
   },
   {
-    title: 'Blueprint Tiles',
-    titleZh: '存档磁贴',
-    text: `In the main game's <b>My Saves</b> panel you can save any grid state as a named blueprint. In Dev Mode those blueprints become draggable pattern tiles you can stamp anywhere.<br><br>This turns saved experiments into reusable building blocks — helpful for constructing complex structures from tested parts.`,
-    textZh: `在主游戏的 <b>我的存档</b> 面板里，你可以把任意网格状态保存为一个命名的存档。在开发模式下，这些存档会变成可拖拽的图案磁贴，你可以把它们放置到任何地方。<br><br>这就把保存下来的实验变成了可复用的搭建模块 — 很适合用已验证的零件来构造复杂结构。`,
+    title: 'Reading the Strip',
+    titleZh: '读懂预测条',
+    text: `Each mini-canvas in the strip is labelled <b>+1</b> through <b>+7</b> — that's how many generations into the future it is. The strip recomputes live, so it always reflects the current grid.<br><br>Use it to spot what's coming: a pattern that empties out, an oscillator that loops, or a Glider drifting off across the board. It's a window into the future, not a separate workspace.`,
+    textZh: `预测条里的每个小画布都标着 <b>+1</b> 到 <b>+7</b> — 表示它是往后第几代。预测条会实时重新计算，因此它始终反映当前的网格。<br><br>用它来预判接下来会发生什么：一个会消亡的图案、一个会循环的振荡器，或是一架飘过棋盘的滑翔机。它是通向未来的一扇窗，而不是另一个工作区。`,
   },
   {
     title: 'Go Explore',
     titleZh: '去探索吧',
-    text: `Enable Dev Mode in the main game and watch the lookahead strip while running an oscillator or a Glider. Notice how the future states cycle.<br><br>Save a few patterns via My Saves, then re-open them as blueprint tiles in Dev Mode to combine them.<br><br>Head back to the main game when you're ready.`,
-    textZh: `在主游戏里开启开发模式，运行一个振荡器或一架滑翔机，同时观察预测条。注意未来状态是如何循环的。<br><br>用「我的存档」保存几个图案，然后在开发模式下把它们作为存档磁贴重新打开，组合起来。<br><br>准备好后就回到主游戏吧。`,
+    text: `Enable <b>⚡ Lookahead</b> in the Edit section of the main game and watch the strip while running an oscillator or a Glider. Notice how the future states cycle.<br><br>Try toggling it on and off while a pattern plays — the strip is a quick way to peek ahead without stepping through generation by generation.<br><br>Head back to the main game when you're ready.`,
+    textZh: `在主游戏的「编辑」区开启 <b>⚡ 预测</b>，运行一个振荡器或一架滑翔机，同时观察预测条。注意未来状态是如何循环的。<br><br>在图案播放时试着把它开开关关 — 预测条让你不必一代一代地单步，就能快速预览未来。<br><br>准备好后就回到主游戏吧。`,
     final: true,
     showGoBtn: true,
   },

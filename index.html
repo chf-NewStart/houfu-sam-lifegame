@@ -661,60 +661,60 @@
 <!-- Win overlay -->
 <div id="winOverlay">
   <div class="win-box">
-    <div class="win-title">✓ Complete</div>
+    <div class="win-title" data-en="✓ Complete" data-zh="✓ 完成">✓ Complete</div>
     <div class="win-msg"   id="winMsg"></div>
     <div class="win-stats" id="winStats"></div>
     <div id="winSubmit">
-      <div style="color:#888;font-size:0.72rem;margin-bottom:6px;text-align:left">Post your score to the leaderboard:</div>
+      <div style="color:#888;font-size:0.72rem;margin-bottom:6px;text-align:left" data-en="Post your score to the leaderboard:" data-zh="把你的分数发布到排行榜：">Post your score to the leaderboard:</div>
       <div class="win-submit">
-        <input id="nicknameInput" type="text" placeholder="Your nickname" maxlength="20" onkeydown="if(event.key==='Enter')onSubmitScore()">
-        <button class="btn" id="submitScoreBtn" onclick="onSubmitScore()">Submit</button>
+        <input id="nicknameInput" type="text" placeholder="Your nickname" data-ph-en="Your nickname" data-ph-zh="你的昵称" maxlength="20" onkeydown="if(event.key==='Enter')onSubmitScore()">
+        <button class="btn" id="submitScoreBtn" onclick="onSubmitScore()" data-en="Submit" data-zh="提交">Submit</button>
       </div>
     </div>
-    <div id="winSubmitted" class="win-submitted" style="display:none">✓ Score posted to the leaderboard!</div>
+    <div id="winSubmitted" class="win-submitted" style="display:none" data-en="✓ Score posted to the leaderboard!" data-zh="✓ 分数已发布到排行榜！">✓ Score posted to the leaderboard!</div>
     <div style="display:flex;gap:6px;margin-top:4px">
-      <button class="btn" onclick="closeWin();openLeaderboard()" style="flex:1">🏆 View Board</button>
-      <button class="btn" onclick="closeWin()" style="flex:1">Continue →</button>
+      <button class="btn" onclick="closeWin();openLeaderboard()" style="flex:1" data-en="🏆 View Board" data-zh="🏆 查看榜单">🏆 View Board</button>
+      <button class="btn" onclick="closeWin()" style="flex:1" data-en="Continue →" data-zh="继续 →">Continue →</button>
     </div>
   </div>
 </div>
 
 <div id="lbOverlay">
   <div class="lb-box">
-    <div class="lb-title">🏆 Leaderboard</div>
+    <div class="lb-title" data-en="🏆 Leaderboard" data-zh="🏆 排行榜">🏆 Leaderboard</div>
     <div class="lb-tabs" id="lbTabs"></div>
-    <div id="lbTable"><div class="lb-empty">Loading...</div></div>
-    <button class="btn" onclick="closeLb()" style="margin-top:18px;width:100%">Close</button>
+    <div id="lbTable"><div class="lb-empty" data-en="Loading..." data-zh="加载中…">Loading...</div></div>
+    <button class="btn" onclick="closeLb()" style="margin-top:18px;width:100%" data-en="Close" data-zh="关闭">Close</button>
   </div>
 </div>
 
 <div id="gallerySubmitOverlay">
   <div class="lb-box">
-    <div class="lb-title">📤 Share Shape</div>
-    <div style="color:#888;font-size:0.75rem;margin-bottom:14px">Share your current grid with the community so others can try it.</div>
+    <div class="lb-title" data-en="📤 Share Shape" data-zh="📤 分享形状">📤 Share Shape</div>
+    <div style="color:#888;font-size:0.75rem;margin-bottom:14px" data-en="Share your current grid with the community so others can try it." data-zh="把你当前的网格分享给社区，让其他人也能试试。">Share your current grid with the community so others can try it.</div>
     <div style="margin-bottom:8px">
-      <input id="galleryTitleInput" type="text" placeholder="Name your shape…" maxlength="40"
+      <input id="galleryTitleInput" type="text" placeholder="Name your shape…" data-ph-en="Name your shape…" data-ph-zh="给你的形状起个名…" maxlength="40"
         style="width:100%;box-sizing:border-box;background:#1a1a1a;border:1px solid #333;color:#eee;padding:7px 10px;font-family:inherit;font-size:0.82rem;outline:none"
         onkeydown="if(event.key==='Enter')document.getElementById('galleryNickInput').focus()">
     </div>
     <div style="margin-bottom:14px">
-      <input id="galleryNickInput" type="text" placeholder="Your nickname" maxlength="20"
+      <input id="galleryNickInput" type="text" placeholder="Your nickname" data-ph-en="Your nickname" data-ph-zh="你的昵称" maxlength="20"
         style="width:100%;box-sizing:border-box;background:#1a1a1a;border:1px solid #333;color:#eee;padding:7px 10px;font-family:inherit;font-size:0.82rem;outline:none"
         onkeydown="if(event.key==='Enter')onSubmitGallery()">
     </div>
     <div style="display:flex;gap:6px">
-      <button class="btn" id="gallerySubmitBtn" onclick="onSubmitGallery()" style="flex:1">Share</button>
-      <button class="btn" onclick="closeGallerySubmit()" style="flex:1">Cancel</button>
+      <button class="btn" id="gallerySubmitBtn" onclick="onSubmitGallery()" style="flex:1" data-en="Share" data-zh="分享">Share</button>
+      <button class="btn" onclick="closeGallerySubmit()" style="flex:1" data-en="Cancel" data-zh="取消">Cancel</button>
     </div>
-    <div id="gallerySubmitDone" class="win-submitted" style="display:none;margin-top:10px">✓ Shape shared with the community!</div>
+    <div id="gallerySubmitDone" class="win-submitted" style="display:none;margin-top:10px" data-en="✓ Shape shared with the community!" data-zh="✓ 形状已分享到社区！">✓ Shape shared with the community!</div>
   </div>
 </div>
 
 <div id="galleryOverlay">
   <div class="lb-box">
-    <div class="lb-title">🖼️ Community Gallery</div>
-    <div id="galleryList"><div class="lb-empty">Loading…</div></div>
-    <button class="btn" onclick="closeGallery()" style="margin-top:18px;width:100%">Close</button>
+    <div class="lb-title" data-en="🖼️ Community Gallery" data-zh="🖼️ 社区图库">🖼️ Community Gallery</div>
+    <div id="galleryList"><div class="lb-empty" data-en="Loading…" data-zh="加载中…">Loading…</div></div>
+    <button class="btn" onclick="closeGallery()" style="margin-top:18px;width:100%" data-en="Close" data-zh="关闭">Close</button>
   </div>
 </div>
 
@@ -745,10 +745,10 @@
 
 <div id="patternPickerOverlay">
   <div class="lb-box">
-    <div class="lb-title" style="color:#1db954">⊕ Add to Patterns</div>
-    <div style="color:#555;font-size:0.7rem;margin-bottom:12px">Pick a saved blueprint to add as a draggable pattern tile.</div>
+    <div class="lb-title" style="color:#1db954" data-en="⊕ Add to Patterns" data-zh="⊕ 添加到图案">⊕ Add to Patterns</div>
+    <div style="color:#555;font-size:0.7rem;margin-bottom:12px" data-en="Pick a saved blueprint to add as a draggable pattern tile." data-zh="选择一个已保存的蓝图，添加为可拖动的图案块。">Pick a saved blueprint to add as a draggable pattern tile.</div>
     <div id="patternPickerList" style="max-height:320px;overflow-y:auto"></div>
-    <button class="btn" onclick="closePatternPicker()" style="margin-top:14px;width:100%">Close</button>
+    <button class="btn" onclick="closePatternPicker()" style="margin-top:14px;width:100%" data-en="Close" data-zh="关闭">Close</button>
   </div>
 </div>
 
@@ -770,23 +770,23 @@
 <div id="imgOverlay">
   <div class="lb-box">
     <div class="lb-title" data-en="📷 Image → Cells" data-zh="📷 照片 → 细胞">📷 Image → Cells</div>
-    <div style="color:#888;font-size:0.75rem;margin-bottom:12px">Upload any image — dark pixels become live cells. Adjust the threshold to control density.</div>
+    <div style="color:#888;font-size:0.75rem;margin-bottom:12px" data-en="Upload any image — dark pixels become live cells. Adjust the threshold to control density." data-zh="上传任意图片 — 暗色像素会变成活细胞。调整阈值来控制密度。">Upload any image — dark pixels become live cells. Adjust the threshold to control density.</div>
     <div id="imgDropZone" onclick="document.getElementById('imgFileInput').click()">
-      Click or drop an image here
+      <span data-en="Click or drop an image here" data-zh="点击或拖放图片到此处">Click or drop an image here</span>
       <input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="onImgFile(this)">
     </div>
     <canvas id="imgPreview"></canvas>
     <div class="slider-row" id="imgControls" style="display:none;margin-top:10px">
-      <span>threshold</span>
+      <span data-en="threshold" data-zh="阈值">threshold</span>
       <input type="range" id="imgThreshold" min="0" max="255" value="128" oninput="renderImgPreview()">
       <span id="imgThresholdLabel">128</span>
     </div>
     <label id="imgInvertLabel" style="display:none;margin-top:8px;font-size:0.75rem;color:#888;cursor:pointer">
-      <input type="checkbox" id="imgInvert" onchange="renderImgPreview()"> invert (light = alive)
+      <input type="checkbox" id="imgInvert" onchange="renderImgPreview()"> <span data-en="invert (light = alive)" data-zh="反转（亮=活）">invert (light = alive)</span>
     </label>
     <div style="display:flex;gap:6px;margin-top:14px">
-      <button class="btn" id="imgStampBtn" onclick="stampImageToGrid()" style="flex:1;display:none">✓ Stamp to Canvas</button>
-      <button class="btn" onclick="closeImgModal()" style="flex:1">Cancel</button>
+      <button class="btn" id="imgStampBtn" onclick="stampImageToGrid()" style="flex:1;display:none" data-en="✓ Stamp to Canvas" data-zh="✓ 盖到画布">✓ Stamp to Canvas</button>
+      <button class="btn" onclick="closeImgModal()" style="flex:1" data-en="Cancel" data-zh="取消">Cancel</button>
     </div>
   </div>
 </div>
@@ -2164,13 +2164,13 @@ function shareSeed() {
   const btn = document.getElementById('shareBtn');
   const prev = btn.textContent;
   const flash = () => {
-    btn.textContent = '✓ Copied!'; btn.classList.add('active');
+    btn.textContent = t('✓ Copied!', '✓ 已复制！'); btn.classList.add('active');
     setTimeout(() => { btn.textContent = prev; btn.classList.remove('active'); }, 2000);
   };
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(flash).catch(() => { prompt('Copy this link:', url); });
+    navigator.clipboard.writeText(url).then(flash).catch(() => { prompt(t('Copy this link:', '复制此链接：'), url); });
   } else {
-    prompt('Copy this link:', url);
+    prompt(t('Copy this link:', '复制此链接：'), url);
   }
 }
 
@@ -2444,7 +2444,7 @@ function onSubmitScore() {
       document.getElementById('winSubmit').style.display = 'none';
       document.getElementById('winSubmitted').style.display = 'block';
     })
-    .catch(err => { btn.disabled = false; btn.textContent = 'Submit'; alert('Submit failed: ' + err.message); });
+    .catch(err => { btn.disabled = false; btn.textContent = t('Submit', '提交'); alert(t('Submit failed: ', '提交失败：') + err.message); });
 }
 
 let lbActiveCh = null;
@@ -2472,22 +2472,22 @@ async function showLbChallenge(name) {
   lbActiveCh = name;
   document.querySelectorAll('.lb-tab').forEach(t => t.classList.toggle('active', t.dataset.ch === name));
   const tb = document.getElementById('lbTable');
-  tb.innerHTML = '<div class="lb-empty">Loading…</div>';
+  tb.innerHTML = '<div class="lb-empty">' + t('Loading…','加载中…') + '</div>';
   try {
     const rows = await fetchScores(name);
-    if (!rows.length) { tb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>'; return; }
+    if (!rows.length) { tb.innerHTML = '<div class="lb-empty">' + t('No scores yet — be the first!','还没有分数 — 抢先成为第一名！') + '</div>'; return; }
     const medals = ['🥇','🥈','🥉'];
     tb.innerHTML = `<table>
-      <thead><tr><th>#</th><th>Name</th><th style="text-align:right">Gen</th><th style="text-align:right">Cells</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>${t('Name','昵称')}</th><th style="text-align:right">${t('Gen','代')}</th><th style="text-align:right">${t('Cells','细胞')}</th><th></th></tr></thead>
       <tbody>${rows.map((r,i) => `<tr>
         <td>${medals[i] || i+1}</td>
         <td>${escHtml(r.nickname)}</td>
         <td style="text-align:right">${r.generation}</td>
         <td style="text-align:right">${r.cells}</td>
-        <td>${r.seed ? `<button class="lb-try" data-seed="${escHtml(r.seed)}">▶ Try</button>` : ''}</td>
+        <td>${r.seed ? `<button class="lb-try" data-seed="${escHtml(r.seed)}">${t('▶ Try','▶ 试试')}</button>` : ''}</td>
       </tr>`).join('')}</tbody></table>`;
   } catch(e) {
-    tb.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load — check connection.</div>';
+    tb.innerHTML = '<div class="lb-empty" style="color:#e05">' + t('Failed to load — check connection.','加载失败 — 请检查网络连接。') + '</div>';
   }
 }
 
@@ -2515,7 +2515,7 @@ function openGallerySubmit() {
   overlay.classList.add('show');
   document.getElementById('gallerySubmitDone').style.display = 'none';
   const btn = document.getElementById('gallerySubmitBtn');
-  btn.disabled = false; btn.textContent = 'Share';
+  btn.disabled = false; btn.textContent = t('Share','分享');
   document.getElementById('galleryNickInput').value = localStorage.getItem('lifegame_nick') || '';
   document.getElementById('galleryTitleInput').value = '';
   setTimeout(() => document.getElementById('galleryTitleInput').focus(), 50);
@@ -2531,28 +2531,28 @@ function onSubmitGallery() {
   const btn = document.getElementById('gallerySubmitBtn');
   btn.disabled = true; btn.textContent = '…';
   submitGalleryShape(nick, title, encodeSeed())
-    .then(() => { document.getElementById('gallerySubmitDone').style.display = 'block'; btn.textContent = 'Shared!'; })
-    .catch(err => { btn.disabled = false; btn.textContent = 'Share'; alert('Failed: ' + err.message); });
+    .then(() => { document.getElementById('gallerySubmitDone').style.display = 'block'; btn.textContent = t('Shared!','已分享！'); })
+    .catch(err => { btn.disabled = false; btn.textContent = t('Share','分享'); alert(t('Failed: ','失败：') + err.message); });
 }
 
 function openGallery() {
   document.getElementById('galleryOverlay').classList.add('show');
   const list = document.getElementById('galleryList');
-  list.innerHTML = '<div class="lb-empty">Loading…</div>';
+  list.innerHTML = '<div class="lb-empty">' + t('Loading…','加载中…') + '</div>';
   fetchGallery().then(items => {
-    if (!items.length) { list.innerHTML = '<div class="lb-empty">No shapes yet — be the first to share!</div>'; return; }
+    if (!items.length) { list.innerHTML = '<div class="lb-empty">' + t('No shapes yet — be the first to share!','还没有形状 — 抢先成为第一个分享的人！') + '</div>'; return; }
     list.innerHTML = items.map(it => {
       const d = new Date(it.created_at);
       const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       return `<div class="gallery-item">
         <div class="gallery-info">
           <div class="gallery-title">${escHtml(it.title)}</div>
-          <div class="gallery-meta">by ${escHtml(it.nickname)} · ${date}</div>
+          <div class="gallery-meta">${t('by','作者')} ${escHtml(it.nickname)} · ${date}</div>
         </div>
-        ${it.seed ? `<button class="lb-try" data-seed="${escHtml(it.seed)}">▶ Load</button>` : ''}
+        ${it.seed ? `<button class="lb-try" data-seed="${escHtml(it.seed)}">${t('▶ Load','▶ 加载')}</button>` : ''}
       </div>`;
     }).join('');
-  }).catch(() => { list.innerHTML = '<div class="lb-empty" style="color:#e05">Failed to load.</div>'; });
+  }).catch(() => { list.innerHTML = '<div class="lb-empty" style="color:#e05">' + t('Failed to load.','加载失败。') + '</div>'; });
 }
 function closeGallery() { document.getElementById('galleryOverlay').classList.remove('show'); }
 
@@ -2666,9 +2666,9 @@ function openPatternPicker() {
       <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1a1a1a">
         <div style="flex:1;min-width:0">
           <div style="color:#ccc;font-size:0.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name)}</div>
-          <div style="color:#555;font-size:0.6rem">${s.cells} cells · ${new Date(s.date).toLocaleDateString()}</div>
+          <div style="color:#555;font-size:0.6rem">${s.cells} ${t('cells','细胞')} · ${new Date(s.date).toLocaleDateString()}</div>
         </div>
-        <button class="btn" data-pick-save="${i}" style="padding:4px 10px;font-size:0.65rem;flex-shrink:0;border-color:#1a3a22;color:#1db954">+ Add</button>
+        <button class="btn" data-pick-save="${i}" style="padding:4px 10px;font-size:0.65rem;flex-shrink:0;border-color:#1a3a22;color:#1db954">${t('+ Add','+ 添加')}</button>
       </div>`).join('');
   }
   document.getElementById('patternPickerOverlay').classList.add('show');
@@ -2714,14 +2714,14 @@ function _deleteBlueprint(i) {
 function _renderSaves() {
   const saves = _getSaves();
   const list = document.getElementById('savesList');
-  if (!saves.length) { list.innerHTML = '<div class="lb-empty">No saves yet.</div>'; return; }
+  if (!saves.length) { list.innerHTML = '<div class="lb-empty">' + t('No saves yet.','还没有保存。') + '</div>'; return; }
   list.innerHTML = saves.map((s, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1a1a1a">
       <div style="flex:1;min-width:0">
         <div style="color:#ccc;font-size:0.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name)}</div>
-        <div style="color:#555;font-size:0.6rem">${new Date(s.date).toLocaleDateString()} · ${s.cells} cells</div>
+        <div style="color:#555;font-size:0.6rem">${new Date(s.date).toLocaleDateString()} · ${s.cells} ${t('cells','细胞')}</div>
       </div>
-      <button class="btn" data-load-save="${i}" style="padding:4px 9px;font-size:0.65rem;flex-shrink:0">Load</button>
+      <button class="btn" data-load-save="${i}" style="padding:4px 9px;font-size:0.65rem;flex-shrink:0">${t('Load','加载')}</button>
       <button class="btn danger" data-del-save="${i}" style="padding:4px 7px;font-size:0.65rem;flex-shrink:0">✕</button>
     </div>`).join('');
 }
