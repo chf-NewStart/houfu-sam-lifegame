@@ -1,6 +1,6 @@
 /* Life Game service worker — offline app shell.
    Bump CACHE on each release so clients pick up new files. */
-const CACHE = 'lifegame-v2';
+const CACHE = 'lifegame-v3';
 const CORE = [
   '/',
   '/index.html',
@@ -37,9 +37,11 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== location.origin) return;
 
   if (req.mode === 'navigate') {
-    // Pages: network-first so updates show when online, cache as offline fallback.
+    // Pages: network-first AND bypass the HTTP cache so edits show on a normal
+    // reload (GitHub Pages sets max-age=600 on HTML, which otherwise hides updates
+    // for ~10 min). Falls back to cache only when offline.
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' })
         .then((res) => {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
