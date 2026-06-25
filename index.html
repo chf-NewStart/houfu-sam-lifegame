@@ -48,12 +48,12 @@
       flex-wrap: wrap; gap: 8px 12px;
       padding: 10px 18px; border-bottom: 1px solid #2e2e2e; flex-shrink: 0;
     }
-    .pg-title { color: #1db954; font-size: 1.1rem; text-transform: uppercase; letter-spacing: -1px; }
-    .pg-sub   { color: #999; font-size: 0.65rem; margin-top: 2px; }
-    .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.7rem; padding: 5px 10px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
+    .pg-title { color: #1db954; font-size: 1.4rem; text-transform: uppercase; letter-spacing: -1px; }
+    .pg-sub   { color: #aaa; font-size: 0.82rem; margin-top: 3px; }
+    .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.84rem; padding: 6px 11px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
     /* Segmented language toggle [EN | 中文] — matches the mode switch, no basic dropdown */
     .lang-switch { display: flex; border: 1px solid #2e2e2e; flex-shrink: 0; }
-    .lang-opt { background: transparent; border: none; color: #888; font-family: Consolas, monospace; font-size: 0.7rem; padding: 5px 11px; cursor: pointer; transition: all 0.1s; }
+    .lang-opt { background: transparent; border: none; color: #aaa; font-family: Consolas, monospace; font-size: 0.84rem; padding: 6px 12px; cursor: pointer; transition: all 0.1s; }
     .lang-opt:hover { color: #ccc; }
     .lang-opt.active { background: rgba(29,185,84,0.12); color: #1db954; }
     .lang-opt + .lang-opt { border-left: 1px solid #2e2e2e; }
@@ -62,9 +62,9 @@
     /* ── Mode switch (Sandbox / Challenges) ───────────── */
     .mode-switch { display: flex; border: 1px solid #2e2e2e; flex-shrink: 0; }
     .mode-btn {
-      background: transparent; border: none; color: #888;
-      font-family: Consolas, monospace; font-size: 0.72rem;
-      padding: 6px 15px; cursor: pointer; transition: all 0.1s; white-space: nowrap;
+      background: transparent; border: none; color: #aaa;
+      font-family: Consolas, monospace; font-size: 0.86rem;
+      padding: 7px 15px; cursor: pointer; transition: all 0.1s; white-space: nowrap;
     }
     .mode-btn:hover { color: #ccc; }
     .mode-btn.active { background: rgba(29,185,84,0.12); color: #1db954; }
@@ -264,7 +264,7 @@
       width: 100%; box-sizing: border-box;
       padding: 7px 11px; margin-bottom: 9px;
       border: 1px solid #1e1e1e; background: #0c0c0c;
-      font-size: 0.74rem; color: #a4a4a4; line-height: 1.55;
+      font-size: 0.84rem; color: #b2b2b2; line-height: 1.6;
     }
     .rules-lbl { color: #1db954; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
     .rules-item { white-space: nowrap; }
@@ -273,7 +273,8 @@
 
     /* ── Pattern tray — horizontal strip below the grid (desktop + mobile) ── */
     .patterns-mobile { display: block; width: 100%; order: 99; margin-top: 10px; border-top: 1px solid #1e1e1e; padding-top: 10px; }
-    .tray-hint { color: #1db954; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; }
+    .tray-hint { color: #1db954; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .patterns-mobile .btn { font-size: 0.82rem; padding: 9px 8px; }
     /* tiles flow in one horizontal, scrollable row */
     /* grid auto-fills the full width: built-ins span the grid, no dead space, no cap */
     .patterns-mobile .preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; width: 100%; }
@@ -347,7 +348,7 @@
     .canvas-hint.show { opacity: 0.92; }
     @keyframes playNudge { 0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0); } 50% { box-shadow: 0 0 0 4px rgba(29,185,84,0.28); } }
     #playBtn.nudge { animation: playNudge 1.6s ease-in-out infinite; }
-    .help-btn { background: transparent; border: 1px solid #2e2e2e; color: #888; width: 26px; height: 26px; cursor: pointer; font-size: 0.82rem; line-height: 1; flex-shrink: 0; }
+    .help-btn { background: transparent; border: 1px solid #2e2e2e; color: #aaa; width: 30px; height: 30px; cursor: pointer; font-size: 0.98rem; line-height: 1; flex-shrink: 0; }
     .help-btn:hover { border-color: #1db954; color: #1db954; }
 
     /* ── Shared overlay base ─────────────────────────── */
