@@ -877,7 +877,7 @@ function initGrid() {
   } else {
     const col = document.querySelector('.canvas-col');
     maxW = (col ? col.clientWidth : 600) - 26;
-    maxH = Math.min(window.innerHeight - 280, 600);
+    maxH = Math.min(window.innerHeight - 360, 500);
   }
   COLS = Math.floor(maxW / CELL);
   ROWS = Math.floor(maxH / CELL);
