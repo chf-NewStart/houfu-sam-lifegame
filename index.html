@@ -10,13 +10,13 @@
   <meta property="og:description" content="Hand-coded browser games and RL agents in training. Game of Life, Gomoku, Escape Grid and more — free to play.">
   <meta property="og:url"         content="https://lifegameproject.com/">
   <meta property="og:type"        content="website">
-  <meta property="og:image"       content="https://lifegameproject.com/gameicon.png">
+  <meta property="og:image"       content="https://lifegameproject.com/game/brand-og.png">
   <meta name="twitter:card"        content="summary">
   <meta name="twitter:title"       content="Game Arcade // houfu.xyz">
   <meta name="twitter:description" content="Hand-coded browser games and RL agents in training.">
-  <meta name="twitter:image"       content="https://lifegameproject.com/gameicon.png">
+  <meta name="twitter:image"       content="https://lifegameproject.com/game/brand-og.png">
 
-  <link rel="icon" type="image/png" href="/gameicon.png">
+  <link rel="icon" type="image/png" href="/game/brand-favicon.png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a0a0a">
   <link rel="apple-touch-icon" href="/icon-192.png">
@@ -25,10 +25,10 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Consolas, 'Courier New', monospace; background: #080808; color: #ccc; min-height: 100vh; padding: 32px 20px; }
 
-    .header { max-width: 860px; margin: 0 auto 36px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .header-left .title { color: #1db954; font-size: 1.5rem; text-transform: uppercase; letter-spacing: -1px; }
-    .header-left .sub   { color: #555; font-size: 0.72rem; margin-top: 4px; line-height: 1.7; }
-    .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; transition: background 0.1s; }
+    .header { max-width: 860px; margin: 0 auto 34px; position: relative; }
+    .hero-logo { display: block; width: 100%; max-width: 360px; height: auto; margin-bottom: 12px; }
+    .header .sub { color: #666; font-size: 0.74rem; line-height: 1.7; letter-spacing: 0.3px; }
+    .lang-btn { position: absolute; top: 0; right: 0; background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; transition: background 0.1s; }
     .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
     .grid { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
@@ -63,11 +63,9 @@
 </head>
 <body>
 <div class="header">
-  <div class="header-left">
-    <div class="title" id="pgTitle">&gt;_ Game Arcade</div>
-    <div class="sub" id="pgSub">browser games built with hand-coded JS · RL agents in training</div>
-  </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+  <img class="hero-logo" src="/game/icon.png" alt="GAME LIFE — browser game arcade" width="1032" height="616">
+  <div class="sub" id="pgSub">&gt;_ game arcade · hand-coded browser games · RL agents in training</div>
 </div>
 
 <div class="section-label" data-en="// playable now" data-zh="// 可以游玩">// playable now</div>
@@ -187,8 +185,7 @@ let lang = 'en';
 function t(en, zh) { return lang === 'zh' ? zh : en; }
 
 function applyLang() {
-  document.getElementById('pgTitle').textContent = t('>_ Game Arcade', '>_ 游戏厅');
-  document.getElementById('pgSub').textContent   = t('browser games built with hand-coded JS · RL agents in training', '手写JS构建的浏览器游戏 · RL智能体训练中');
+  document.getElementById('pgSub').textContent = t('>_ game arcade · hand-coded browser games · RL agents in training', '>_ 游戏厅 · 手写浏览器游戏 · RL智能体训练中');
   document.querySelectorAll('[data-en]').forEach(el => { el.textContent = t(el.dataset.en, el.dataset.zh); });
 }
 
