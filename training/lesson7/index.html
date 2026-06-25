@@ -270,7 +270,7 @@
 <!-- Footer -->
 <footer class="lesson-footer">
   <a class="foot-btn" href="/training/lesson6" data-en="← Lesson 6" data-zh="← 第 6 课">← Lesson 6</a>
-  <a class="foot-btn hi" href="/" data-en="Go Play →" data-zh="去玩 →">Go Play →</a>
+  <a class="foot-btn hi" href="/life.html" data-en="Go Play →" data-zh="去玩 →">Go Play →</a>
 </footer>
 
 <script>
@@ -463,7 +463,7 @@ function renderStage() {
   const goBtnWrap = document.getElementById('goBtnWrap');
   if (s.showGoBtn) {
     const goLbl = lang === 'zh' ? '▶ 打开主游戏' : '▶ Open Main Game';
-    goBtnWrap.innerHTML = `<a class="go-btn" href="/">${goLbl}</a>`;
+    goBtnWrap.innerHTML = `<a class="go-btn" href="/life.html">${goLbl}</a>`;
   } else {
     goBtnWrap.innerHTML = '';
   }

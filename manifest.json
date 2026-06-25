@@ -5,7 +5,7 @@
   "lang": "en",
   "dir": "ltr",
   "description": "Draw patterns and watch them evolve. Curated scenes, challenges, and interactive lessons for the Game of Life.",
-  "start_url": "/",
+  "start_url": "/life.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
