@@ -14,7 +14,7 @@ Switch from the toggle in the header:
 
 - **✦ Sandbox** — free play: draw, stamp patterns, and watch them evolve
 - **🏆 Challenges** — goal-based puzzles with a global leaderboard
-- **🎶 Symphony** — turn the simulation into a sequencer (see below)
+- **🎠 Music Box** — turn the simulation into a sequencer (see below)
 
 ---
 
@@ -23,8 +23,8 @@ Switch from the toggle in the header:
 | | |
 |:--:|:--:|
 | **draw & play** — draw, hit play, watch it evolve<br>![draw and play](demo/gif/regular.gif) | **🔮 Aura** — cells coloured by age<br>![aura](demo/gif/aura.gif) |
-| **⚡ Lookahead** — preview future generations<br>![lookahead](demo/gif/lookingahead.gif) | **🎶 Symphony** — patterns become music<br>![symphony](demo/gif/sound.gif) |
-| **the rules, live** — born / survive / die as you draw<br>![drawing](demo/gif/diy.gif) | 🔊 **[▶ Watch Symphony with sound](demo/symphony-with-sound.mp4)** |
+| **⚡ Lookahead** — preview future generations<br>![lookahead](demo/gif/lookingahead.gif) | **🎠 Music Box** — patterns become music<br>![symphony](demo/gif/sound.gif) |
+| **the rules, live** — born / survive / die as you draw<br>![drawing](demo/gif/diy.gif) | 🔊 **[▶ Watch the Music Box with sound](demo/symphony-with-sound.mp4)** |
 
 ---
 
@@ -34,7 +34,7 @@ Switch from the toggle in the header:
 - **Draw freely** — click or drag to paint cells; right/middle-click to pan
 - **Zoom & pan** — scroll to zoom into any point; pinch on mobile
 - **8 built-in patterns** with shape thumbnails — Glider, Blinker, Pulsar, R-pentomino, Gosper Gun, Acorn, Diehard, LWSS
-- **Drag-and-drop stamping** — drag any pattern onto the canvas with a ghost preview; rotate (R / scroll) and mirror (F) before stamping
+- **Drag-and-drop stamping** — drag any pattern onto the canvas with a ghost preview; rotate (R / scroll) and mirror (M) before stamping
 - **↺ Back a play** — jump the board back to how it was before your last Play; hit again to step back through earlier plays
 - **Undo / Redo** — full history for both drawing and simulation steps
 - **Speed & cell size** — 1–30 fps, adjustable cell size
@@ -48,7 +48,7 @@ Switch from the toggle in the header:
 - **Aura** — colour cells by age (green → violet as they survive)
 - **Save image** — export the current pattern as a PNG
 
-### 🎶 Symphony mode
+### 🎠 Music Box mode
 The grid becomes a **sweep sequencer**: a playhead scans the columns left→right, and the live cells under it play notes — **row = pitch** (high at the top, low at the bottom), snapped to a major-pentatonic scale so it always sounds in tune.
 
 - **Pause** loops your pattern as a repeating riff; **press Play** and the tune evolves with the simulation
