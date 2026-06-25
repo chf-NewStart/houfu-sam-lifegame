@@ -498,6 +498,11 @@
         <button class="pbtn has-thumb" draggable="true" data-preset="diehard"><img class="pbtn-thumb" src="patterns/diehard.png" alt="" draggable="false"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies gen 130"    data-zh="第130代消亡">dies gen 130</span></button>
         <button class="pbtn has-thumb" draggable="true" data-preset="lwss"   ><img class="pbtn-thumb" src="patterns/lwss.png" alt="" draggable="false"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="spaceship"        data-zh="宇宙飞船">spaceship</span></button>
       </div>
+      <div class="drag-hint" data-en="drag to stamp · scroll to rotate · R / M keys" data-zh="拖拽放置 · 滚轮旋转 · R/M键">drag to stamp · scroll to rotate · R / M keys</div>
+      <div class="brow">
+        <button class="btn" id="rotBtn"  onclick="rotateStamp()" title="Press R to rotate">↻ <span id="rotLabel">0°</span> <span style="color:#444;font-size:0.55rem">[R]</span></button>
+        <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press M to mirror">⟺ <span data-en="Mirror" data-zh="镜面">Mirror</span> <span style="color:#444;font-size:0.55rem">[M]</span></button>
+      </div>
       <div class="brow" style="margin-top:8px">
         <button class="btn" onclick="openSaves()" data-en="💾 My Blueprints" data-zh="💾 我的蓝图" title="Click to save the current pattern as a blueprint, or load a saved one" style="flex:1;border-color:#1a3a22;color:#1db954">💾 My Blueprints</button>
       </div>
@@ -667,11 +672,6 @@
         <button class="pbtn has-thumb" draggable="true" data-preset="diehard"><img class="pbtn-thumb" src="patterns/diehard.png" alt="" draggable="false"><span class="pbtn-name" data-en="Diehard"     data-zh="硬汉">Diehard</span><span class="pbtn-desc" data-en="dies at gen 130"     data-zh="第130代消亡">dies at gen 130</span></button>
         <button class="pbtn has-thumb" draggable="true" data-preset="lwss"   ><img class="pbtn-thumb" src="patterns/lwss.png" alt="" draggable="false"><span class="pbtn-name" data-en="LWSS"        data-zh="轻型飞船">LWSS</span><span class="pbtn-desc" data-en="lightweight spaceship"   data-zh="轻型宇宙飞船">lightweight spaceship</span></button>
       </div>
-      <div class="drag-hint" data-en="drag to stamp · scroll to rotate · R / M keys" data-zh="拖拽放置 · 滚轮旋转 · R/M键">drag to stamp · scroll to rotate · R / M keys</div>
-      <div class="brow">
-        <button class="btn" id="rotBtn"  onclick="rotateStamp()" title="Press R to rotate">↻ <span id="rotLabel">0°</span> <span style="color:#444;font-size:0.55rem">[R]</span></button>
-        <button class="btn" id="flipBtn" onclick="flipStamp()" title="Press M to mirror">⟺ <span data-en="Mirror" data-zh="镜面">Mirror</span> <span style="color:#444;font-size:0.55rem">[M]</span></button>
-      </div>
       <div class="brow" style="margin-top:8px">
         <button class="btn" onclick="openSaves()" data-en="💾 My Blueprints" data-zh="💾 我的蓝图" title="Click to save the current pattern as a blueprint, or load a saved one" style="flex:1;border-color:#1a3a22;color:#1db954">💾 My Blueprints</button>
       </div>
@@ -783,10 +783,10 @@
 
 <div id="sceneOverlay">
   <div class="lb-box">
-    <div class="lb-title">🎬 Scenes</div>
+    <div class="lb-title" data-en="🎬 Scenes" data-zh="🎬 场景">🎬 Scenes</div>
     <div style="color:#555;font-size:0.7rem;margin-bottom:6px" data-en="Curated starting states — click one to load and watch it play." data-zh="精选初始形态 — 点击加载并自动播放。">Curated starting states — click one to load and watch it play.</div>
     <div id="sceneList"></div>
-    <button class="btn" onclick="closeScenes()" style="margin-top:16px;width:100%">Close</button>
+    <button class="btn" onclick="closeScenes()" style="margin-top:16px;width:100%" data-en="Close" data-zh="关闭">Close</button>
   </div>
 </div>
 
@@ -877,7 +877,7 @@ function initGrid() {
   } else {
     const col = document.querySelector('.canvas-col');
     maxW = (col ? col.clientWidth : 600) - 26;
-    maxH = Math.min(window.innerHeight - 450, 420);
+    maxH = Math.max(200, Math.min(window.innerHeight - 450, 420));
   }
   COLS = Math.floor(maxW / CELL);
   ROWS = Math.floor(maxH / CELL);
