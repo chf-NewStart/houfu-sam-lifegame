@@ -275,9 +275,10 @@
     .patterns-mobile { display: block; width: 100%; order: 99; margin-top: 10px; border-top: 1px solid #1e1e1e; padding-top: 10px; }
     .tray-hint { color: #1db954; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; }
     /* tiles flow in one horizontal, scrollable row */
-    .patterns-mobile .preset-grid { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
-    .patterns-mobile .pbtn.has-thumb { align-items: center; flex: 1 1 0; min-width: 84px; max-width: 150px; padding: 7px 6px; }
-    .patterns-mobile .pbtn-thumb { width: 100%; height: 54px; }
+    /* grid auto-fills the full width: built-ins span the grid, no dead space, no cap */
+    .patterns-mobile .preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; width: 100%; }
+    .patterns-mobile .pbtn.has-thumb { align-items: center; padding: 8px 7px; }
+    .patterns-mobile .pbtn-thumb { width: 100%; height: 80px; }
     .patterns-mobile .pbtn-name { font-size: 0.72rem; }
     /* No hover description overlay in the tray (it covered the thumbnail on tap) */
     .patterns-mobile .pbtn-desc { display: none !important; }
