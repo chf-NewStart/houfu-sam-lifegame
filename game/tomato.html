@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grow a Tomato // houfu.xyz</title>
+<link rel="icon" type="image/png" href="/game/brand-favicon.png">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:24px 20px;}
+  a{color:#1db954;}
+  .hdr{max-width:1000px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .hdr .title{color:#1db954;font-size:1.3rem;text-transform:uppercase;letter-spacing:-1px;}
+  .hdr .sub{color:#555;font-size:0.7rem;margin-top:4px;line-height:1.6;max-width:600px;}
+  .hdr .back{color:#1db954;font-size:0.7rem;text-decoration:none;display:inline-block;margin-top:6px;}
+  .hdr .back:hover{text-decoration:underline;}
+  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.7rem;padding:5px 11px;cursor:pointer;flex-shrink:0;}
+  .lang-btn:hover{background:rgba(29,185,84,0.1);}
+
+  .layout{max-width:1000px;margin:0 auto;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;}
+  .col{flex:1;min-width:260px;}
+  .col.mid{flex:0 0 300px;}
+  .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:14px;margin-bottom:12px;}
+  .card-title{color:#1db954;font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
+
+  .slider-row{margin-bottom:14px;}
+  .slider-row .lab{display:flex;justify-content:space-between;font-size:0.69rem;margin-bottom:5px;}
+  .slider-row .lab .name{color:#bbb;}
+  .slider-row .lab .val{color:#1db954;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:4px;background:#1a1a1a;outline:none;border-radius:2px;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#1db954;cursor:pointer;}
+  input[type=range].sun::-webkit-slider-thumb{background:#ffce4d;}
+  input[type=range].n::-webkit-slider-thumb{background:#4da6ff;}
+  input[type=range].pk::-webkit-slider-thumb{background:#c77dff;}
+
+  .tip{font-size:0.64rem;color:#5a5a5a;line-height:1.55;border-left:2px solid #1db95455;padding-left:8px;margin-top:4px;}
+  .tip b{color:#1db954;}
+
+  .btn{display:block;width:100%;background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.74rem;padding:9px;cursor:pointer;margin-bottom:8px;transition:background .1s;}
+  .btn:hover{background:rgba(29,185,84,0.1);}
+  .btn.primary{background:rgba(29,185,84,0.12);}
+  .btn.ghost{border-color:#2a2a2a;color:#888;}
+  .btn.ghost:hover{background:rgba(255,255,255,0.03);}
+  .btn-row{display:flex;gap:8px;}
+  .btn-row .btn{margin-bottom:0;}
+
+  canvas{display:block;}
+  #plant{width:100%;background:linear-gradient(#0a0d12,#0c0a08);border:1px solid #161616;border-radius:3px;}
+  .daybar{height:5px;background:#141414;margin-top:8px;position:relative;}
+  .daybar .fill{position:absolute;left:0;top:0;bottom:0;background:#1db954;}
+  .phase-tag{font-size:0.62rem;color:#777;margin-top:8px;text-align:center;letter-spacing:1px;text-transform:uppercase;}
+
+  .stat-row{display:flex;justify-content:space-between;align-items:baseline;font-size:0.72rem;margin-bottom:7px;}
+  .stat-row .k{color:#555;}
+  .stat-row .v{color:#eee;}
+  .meter{height:6px;background:#141414;margin:3px 0 11px;position:relative;}
+  .meter .fill{position:absolute;left:0;top:0;bottom:0;}
+  .mlabel{display:flex;justify-content:space-between;font-size:0.64rem;color:#888;margin-bottom:2px;}
+
+  #chart{width:100%;background:#0a0a0a;border:1px solid #161616;}
+
+  .harvest{display:none;background:#0d0d0d;border:1px solid #1db95455;padding:16px;text-align:center;margin-bottom:12px;}
+  .harvest.show{display:block;}
+  .harvest .big{font-size:1.5rem;color:#1db954;margin:4px 0;}
+  .harvest .stars{font-size:1.3rem;color:#ffce4d;letter-spacing:3px;margin:6px 0;}
+  .harvest .verdict{font-size:0.74rem;color:#bbb;margin:6px 0 2px;}
+  .harvest .sc{font-size:0.66rem;color:#666;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="title" id="pgTitle">&gt;_ Grow a Tomato</div>
+    <div class="sub" id="pgSub">A tomato-growing sim distilled from a real dFBA metabolic model. Set the greenhouse — light & nutrient feed — across the season (day 8 → 53) and grow the biggest, sweetest fruit.</div>
+    <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+</div>
+
+<div class="layout">
+  <!-- LEFT: controls -->
+  <div class="col">
+    <div class="card">
+      <div class="card-title"><span data-en="// greenhouse controls" data-zh="// 温室控制">// greenhouse controls</span></div>
+      <div id="sliders"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span data-en="// this phase" data-zh="// 当前阶段">// this phase</span></div>
+      <div class="tip" id="phaseTip"></div>
+    </div>
+    <div class="card">
+      <div class="btn-row">
+        <button class="btn primary" id="btnPlay" onclick="togglePlay()" data-en="▶ Grow" data-zh="▶ 生长">▶ Grow</button>
+        <button class="btn" id="btnStep" onclick="stepOnce()" data-en="› Day" data-zh="› 一天">› Day</button>
+      </div>
+      <button class="btn ghost" onclick="newSeason()" data-en="↺ New season" data-zh="↺ 新一季">↺ New season</button>
+      <div class="slider-row" style="margin:8px 0 0;">
+        <div class="lab"><span class="name" data-en="speed" data-zh="速度">speed</span><span class="val" id="vSpeed">6</span></div>
+        <input type="range" id="speed" min="1" max="20" step="1" value="6">
+      </div>
+    </div>
+  </div>
+
+  <!-- MIDDLE: plant -->
+  <div class="col mid">
+    <div class="card">
+      <div class="card-title"><span data-en="// plant" data-zh="// 植株">// plant</span><span id="dayLabel">DPA 8</span></div>
+      <canvas id="plant" width="300" height="300"></canvas>
+      <div class="daybar"><div class="fill" id="dayFill" style="width:0%"></div></div>
+      <div class="phase-tag" id="phaseTag">establishing</div>
+    </div>
+    <div class="harvest" id="harvest">
+      <div data-en="HARVEST" data-zh="收获" style="font-size:0.62rem;letter-spacing:2px;color:#666;">HARVEST</div>
+      <div class="big" id="hvFruit">🍅</div>
+      <div class="stars" id="hvStars">★★★☆☆</div>
+      <div class="verdict" id="hvVerdict"></div>
+      <div class="sc" id="hvScore"></div>
+      <div class="sc" id="hvBest" style="margin-top:4px;color:#1db954"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: stats + chart -->
+  <div class="col">
+    <div class="card">
+      <div class="card-title"><span data-en="// fruit" data-zh="// 果实">// fruit</span><span id="scoreNow">—</span></div>
+      <div class="stat-row"><span class="k" data-en="size" data-zh="大小">size</span><span class="v" id="sSize">0.0 mmol</span></div>
+      <div class="mlabel"><span data-en="sweetness (Brix~)" data-zh="甜度 (Brix~)">sweetness (Brix~)</span><span id="sBrix">0.0</span></div>
+      <div class="meter"><div class="fill" id="mBrix" style="width:0%;background:#ffce4d"></div></div>
+      <div class="mlabel"><span data-en="ripeness (lycopene)" data-zh="成熟 (番茄红素)">ripeness (lycopene)</span><span id="sLyc">0.0</span></div>
+      <div class="meter"><div class="fill" id="mLyc" style="width:0%;background:#f0533a"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span data-en="// internal pools" data-zh="// 内部库存">// internal pools</span></div>
+      <div class="mlabel"><span data-en="sugar pool (phloem)" data-zh="糖库 (韧皮部)">sugar pool (phloem)</span><span id="sSuc">0%</span></div>
+      <div class="meter"><div class="fill" id="mSuc" style="width:0%;background:#1db954"></div></div>
+      <div class="mlabel"><span data-en="nitrogen pool (xylem)" data-zh="氮库 (木质部)">nitrogen pool (xylem)</span><span id="sN">0%</span></div>
+      <div class="meter"><div class="fill" id="mN" style="width:0%;background:#4da6ff"></div></div>
+      <div class="mlabel"><span data-en="stored starch" data-zh="储存淀粉">stored starch</span><span id="sStarch">0.0</span></div>
+      <div class="meter"><div class="fill" id="mStarch" style="width:0%;background:#9a7b4f"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span data-en="// growth" data-zh="// 生长">// growth</span></div>
+      <canvas id="chart" width="320" height="150"></canvas>
+      <div style="font-size:0.6rem;color:#444;margin-top:5px"><span style="color:#1db954">■</span> <span data-en="size" data-zh="大小">size</span> &nbsp; <span style="color:#ffce4d">■</span> <span data-en="sweetness" data-zh="甜度">sweetness</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   Tomato growth engine — a lightweight reduction of the dFBA model
+   (game/tomato/game/engine.py). No LP solving: Michaelis-Menten nutrient
+   uptake, light-driven leaf carbon, capped phloem/xylem pools, a Gompertz
+   fruit sink, DPA growth phases, and light-driven starch→sugar ripening.
+   Tuned for responsive play (un-throttled caps + ripening fix, as the
+   engine's game knobs recommend).
+   ════════════════════════════════════════════════════════════ */
+const DPA_START=8, DPA_END=53;
+const mm=(c,vmax,km)=>vmax*c/(km+c);
+function sinkStrength(d){const wmax=100,k=0.15,tm=25;const W=wmax*Math.exp(-Math.exp(-k*(d-tm)));
+  const demand=(W>0&&W<wmax)?k*W*Math.log(wmax/W):0;return Math.min(Math.max(demand/((wmax*k)/Math.E),0.05),0.90);}
+function phase(d){return d<=15?'establish':d<=35?'bulk':'ripen';}
+const CFG={capScale:3.0,kC:5.6,kN:2.3,sucCap:1.6,nCap:0.8,Lhalf:230};
+
+function newPlant(){return {dpa:DPA_START,sucPool:0.05,nPool:0.02,biomass:0.01,structural:0,starch:0,sugar:0,lyc:0,daily:0};}
+function stepDay(P,c){
+  const d=P.dpa, ph=phase(d);
+  const fbSuc=Math.max(0.5,1-0.5*Math.min(1,P.sucPool/(CFG.sucCap*CFG.capScale)));
+  const satL=c.light/(c.light+CFG.Lhalf);
+  const Csource=CFG.kC*satL*(c.photo/16)*fbSuc;
+  const upNo3=mm(c.no3,50,0.5),upNh4=mm(c.nh4,10,0.3),upPi=mm(c.pi,15,0.05),upK=mm(c.k,60,0.2);
+  const cofactor=Math.min(1,(upPi/8)*0.5+0.5)*Math.min(1,(upK/30)*0.5+0.5);
+  const Nsource=CFG.kN*(upNo3*0.15+upNh4*0.20)*cofactor;
+  P.sucPool=Math.min(P.sucPool+Csource,CFG.sucCap*CFG.capScale);
+  P.nPool  =Math.min(P.nPool+Nsource,  CFG.nCap*CFG.capScale);
+  let ss=sinkStrength(d);
+  if(ph!=='establish') ss*=(0.35+0.65*Math.min(1,P.structural/7.0));
+  const availC=P.sucPool*ss, availN=P.nPool*ss;
+  let cCost,nCost;
+  if(ph==='establish'){cCost=1.0;nCost=0.5;}
+  else if(ph==='bulk'){cCost=1.2;nCost=0.12;}
+  else {cCost=1.1;nCost=0.05;}
+  const growth=Math.max(0,Math.min(availC/cCost,availN/nCost));
+  P.sucPool=Math.max(0,P.sucPool-growth*cCost);
+  P.nPool  =Math.max(0,P.nPool-growth*nCost);
+  if(ph==='establish'){P.structural+=growth;}
+  else if(ph==='bulk'){P.starch+=growth*0.70;P.structural+=growth*0.30;}
+  else {P.sugar+=growth*0.65;P.lyc+=growth*0.15;P.structural+=growth*0.20;}
+  if(ph==='ripen'&&P.starch>1e-6){const conv=P.starch*0.11*(0.30+0.70*satL);P.starch-=conv;P.sugar+=conv;}
+  P.biomass+=growth;P.daily=growth;P.dpa++;
+}
+const brixOf=P=>12*P.sugar/(P.sugar+P.starch+1e-9);
+
+/* ── controls (sliders → engine inputs) ── */
+const SLIDERS=[
+  {key:'light',cls:'sun',min:40,max:450,step:5,def:220,en:'☀ light (PPFD)',zh:'☀ 光照 (PPFD)',unit:''},
+  {key:'photo',cls:'sun',min:10,max:20,step:0.5,def:16,en:'⏱ photoperiod (h)',zh:'⏱ 光照时长 (h)',unit:'h'},
+  {key:'n',   cls:'n', min:0,max:100,step:1,def:50,en:'🅽 nitrogen feed',zh:'🅽 氮肥',unit:'%'},
+  {key:'pk',  cls:'pk',min:0,max:100,step:1,def:50,en:'🆦 mineral feed (P·K)',zh:'🆦 磷钾肥',unit:'%'},
+];
+let ctrl={light:220,photo:16,n:50,pk:50};
+function engineInputs(){
+  return {light:ctrl.light, photo:ctrl.photo,
+    no3: ctrl.n/100*30, nh4: 0.3+ctrl.n/100*0.7,
+    pi: 0.3+ctrl.pk/100*2.7, k: 2+ctrl.pk/100*10};
+}
+
+/* ── game state ── */
+let P=newPlant(), playing=false, history=[], best=null, harvested=false;
+try{best=JSON.parse(localStorage.getItem('tomato_best')||'null');}catch(e){}
+
+function newSeason(){ playing=false; P=newPlant(); history=[]; harvested=false;
+  document.getElementById('harvest').classList.remove('show');
+  document.getElementById('btnPlay').textContent=t('▶ Grow','▶ 生长');
+  render();
+}
+function stepOnce(){ if(P.dpa>DPA_END){return;} stepDay(P, engineInputs()); history.push({d:P.dpa-1,size:P.biomass,brix:brixOf(P)});
+  if(P.dpa>DPA_END) harvest(); render(); }
+function togglePlay(){ if(P.dpa>DPA_END) return; playing=!playing;
+  document.getElementById('btnPlay').textContent=playing?t('⏸ Pause','⏸ 暂停'):t('▶ Grow','▶ 生长');
+  if(playing) loop(); }
+let _acc=0;
+function loop(ts){ if(!playing) return;
+  stepOnce(); if(P.dpa>DPA_END){ playing=false; document.getElementById('btnPlay').textContent=t('✓ Harvested','✓ 已收获'); return; }
+  const speed=+document.getElementById('speed').value;
+  setTimeout(()=>requestAnimationFrame(loop), 420/speed);
+}
+
+/* ── harvest scoring ── */
+function harvest(){
+  harvested=true;
+  const size=P.biomass, brix=brixOf(P);
+  const sweetYield=size*(brix/12);              // big AND sweet
+  const score=Math.round(sweetYield*12);
+  let stars=1; if(score>120)stars=2; if(score>240)stars=3; if(score>360)stars=4; if(score>460)stars=5;
+  let verdict;
+  if(brix>=9.5&&size>=50) verdict=t('A perfect tomato — big and candy-sweet. 🍅✨','完美番茄——又大又甜。🍅✨');
+  else if(size>=55&&brix<8.5) verdict=t('Huge, but starchy and bland — give it more light while ripening.','个头很大，但淀粉多、寡淡——成熟期多给些光。');
+  else if(brix>=9.5&&size<40) verdict=t('Lovely and sweet, just small — feed it more, earlier.','小巧而甜美，就是偏小——早点多施肥。');
+  else if(size<30) verdict=t('Undersized — it was starved of light or feed.','偏小——光照或养分不足。');
+  else verdict=t('A solid, tasty tomato. Tune the season to push for 5★.','一颗扎实可口的番茄。优化季节策略冲击5★。');
+  document.getElementById('hvStars').textContent='★★★★★'.slice(0,stars)+'☆☆☆☆☆'.slice(0,5-stars);
+  document.getElementById('hvVerdict').textContent=verdict;
+  document.getElementById('hvScore').textContent=t(`size ${size.toFixed(0)} mmol · sweetness ${brix.toFixed(1)} · score ${score}`,`大小 ${size.toFixed(0)} · 甜度 ${brix.toFixed(1)} · 得分 ${score}`);
+  if(!best||score>best.score){best={score,size:+size.toFixed(0),brix:+brix.toFixed(1)};try{localStorage.setItem('tomato_best',JSON.stringify(best));}catch(e){}}
+  document.getElementById('hvBest').textContent=t(`best score: ${best.score}`,`最佳得分：${best.score}`);
+  document.getElementById('harvest').classList.add('show');
+}
+
+/* ── render ── */
+function render(){
+  const ph=phase(Math.min(P.dpa,DPA_END));
+  const brix=brixOf(P);
+  document.getElementById('dayLabel').textContent=`DPA ${Math.min(P.dpa,DPA_END)}`;
+  document.getElementById('dayFill').style.width=(100*(Math.min(P.dpa,DPA_END)-DPA_START)/(DPA_END-DPA_START))+'%';
+  const phNames={establish:t('establishing','建立期'),bulk:t('bulking','膨大期'),ripen:t('ripening','成熟期')};
+  document.getElementById('phaseTag').textContent=phNames[ph];
+  document.getElementById('sSize').textContent=P.biomass.toFixed(1)+' mmol';
+  document.getElementById('sBrix').textContent=brix.toFixed(1);
+  document.getElementById('mBrix').style.width=Math.min(100,brix/12*100)+'%';
+  document.getElementById('sLyc').textContent=P.lyc.toFixed(2);
+  document.getElementById('mLyc').style.width=Math.min(100,P.lyc/2.4*100)+'%';
+  document.getElementById('sSuc').textContent=Math.round(P.sucPool/(CFG.sucCap*CFG.capScale)*100)+'%';
+  document.getElementById('mSuc').style.width=Math.min(100,P.sucPool/(CFG.sucCap*CFG.capScale)*100)+'%';
+  document.getElementById('sN').textContent=Math.round(P.nPool/(CFG.nCap*CFG.capScale)*100)+'%';
+  document.getElementById('mN').style.width=Math.min(100,P.nPool/(CFG.nCap*CFG.capScale)*100)+'%';
+  document.getElementById('sStarch').textContent=P.starch.toFixed(1);
+  document.getElementById('mStarch').style.width=Math.min(100,P.starch/25*100)+'%';
+  const sc=Math.round(P.biomass*(brix/12)*12);
+  document.getElementById('scoreNow').textContent=t('score '+sc,'得分 '+sc);
+  updatePhaseTip(ph);
+  drawPlant(brix);
+  drawChart();
+}
+function updatePhaseTip(ph){
+  const tips={
+    establish:t('<b>Establishing</b> (day 8–15): the fruit builds its frame. Feed <b>nitrogen</b> now — a strong frame supports all later growth.','<b>建立期</b>（第8–15天）：果实搭建框架。现在多施<b>氮肥</b>——强框架支撑后续生长。'),
+    bulk:t('<b>Bulking</b> (day 16–35): max <b>light</b> to bank energy as starch. This is where size is won.','<b>膨大期</b>（第16–35天）：拉满<b>光照</b>把能量存为淀粉。大小在此决定。'),
+    ripen:t('<b>Ripening</b> (day 36+): keep the <b>light</b> up — it converts stored starch into <b>sugar</b> (sweetness) and reddens the fruit.','<b>成熟期</b>（第36天起）：保持<b>光照</b>——把储存淀粉转化为<b>糖</b>（甜度）并使果实变红。'),
+  };
+  document.getElementById('phaseTip').innerHTML=tips[ph];
+}
+function drawPlant(brix){
+  const cv=document.getElementById('plant'),x=cv.getContext('2d'),W=cv.width,H=cv.height;
+  x.clearRect(0,0,W,H);
+  // sun (brightness by light)
+  const lf=(ctrl.light-40)/410;
+  const sx=W-44,sy=40,sr=15+lf*6;
+  x.save();x.globalAlpha=0.25+lf*0.55;
+  x.fillStyle='#ffce4d';x.beginPath();x.arc(sx,sy,sr,0,7);x.fill();
+  x.strokeStyle='#ffce4d';x.lineWidth=2;for(let i=0;i<8;i++){const a=i/8*Math.PI*2;x.beginPath();x.moveTo(sx+Math.cos(a)*(sr+4),sy+Math.sin(a)*(sr+4));x.lineTo(sx+Math.cos(a)*(sr+10+lf*6),sy+Math.sin(a)*(sr+10+lf*6));x.stroke();}
+  x.restore();
+  // pot / soil
+  x.fillStyle='#241a12';x.fillRect(W/2-46,H-34,92,30);
+  x.fillStyle='#2e2118';x.fillRect(W/2-52,H-40,104,10);
+  // stem grows with progress
+  const prog=(Math.min(P.dpa,DPA_END)-DPA_START)/(DPA_END-DPA_START);
+  const stemTop=H-40-(40+prog*120);
+  x.strokeStyle='#2f7d32';x.lineWidth=4;x.beginPath();x.moveTo(W/2,H-40);x.lineTo(W/2,stemTop);x.stroke();
+  // leaves
+  x.fillStyle='#2f7d32';
+  for(let i=0;i<3;i++){const ly=H-60-i*((H-80-stemTop)/3)*1.0; if(ly<stemTop+10)break; const side=i%2?1:-1;
+    x.save();x.translate(W/2,ly);x.rotate(side*0.5);x.beginPath();x.ellipse(side*16,0,18,7,0,0,7);x.fill();x.restore();}
+  // fruit: radius by size, colour green->red by ripeness
+  const r=Math.min(46, 6+Math.sqrt(P.biomass)*5.4);
+  const fy=stemTop+ r*0.4;
+  const ripe=Math.min(1,P.lyc/2.1);
+  const g=[ [90,150,55],[225,70,42] ];
+  const col=g[0].map((c,i)=>Math.round(c+(g[1][i]-c)*ripe));
+  if(P.biomass>0.2){
+    x.fillStyle=`rgb(${col[0]},${col[1]},${col[2]})`;
+    x.beginPath();x.arc(W/2,fy,r,0,7);x.fill();
+    // shine
+    x.fillStyle='rgba(255,255,255,0.18)';x.beginPath();x.arc(W/2-r*0.32,fy-r*0.34,r*0.28,0,7);x.fill();
+    // calyx
+    x.fillStyle='#2f7d32';for(let i=0;i<5;i++){const a=-Math.PI/2+i*1.05-0.4;x.save();x.translate(W/2,fy-r*0.92);x.rotate(a);x.beginPath();x.ellipse(0,0,3,8,0,0,7);x.fill();x.restore();}
+  }
+}
+function drawChart(){
+  const cv=document.getElementById('chart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=6;
+  x.clearRect(0,0,W,H);
+  x.strokeStyle='#161616';for(let i=0;i<=4;i++){const y=pad+(H-2*pad)*i/4;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();}
+  if(history.length<2)return;
+  const maxSize=Math.max(70,...history.map(h=>h.size));
+  const line=(key,max,col)=>{x.strokeStyle=col;x.lineWidth=2;x.beginPath();
+    history.forEach((h,i)=>{const px=pad+(W-2*pad)*(h.d-DPA_START)/(DPA_END-DPA_START);const py=H-pad-(H-2*pad)*Math.min(1,h[key]/max);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();};
+  line('size',maxSize,'#1db954');
+  line('brix',12,'#ffce4d');
+}
+
+/* ── lang ── */
+let lang='en';
+function t(en,zh){return lang==='zh'?zh:en;}
+function buildSliders(){
+  const host=document.getElementById('sliders');host.innerHTML='';
+  for(const s of SLIDERS){
+    const row=document.createElement('div');row.className='slider-row';
+    const disp=s.key==='light'?ctrl.light:s.key==='photo'?ctrl.photo:ctrl[s.key];
+    row.innerHTML=`<div class="lab"><span class="name">${lang==='zh'?s.zh:s.en}</span><span class="val" id="lv_${s.key}">${disp}${s.unit}</span></div>
+      <input type="range" class="${s.cls}" id="cs_${s.key}" min="${s.min}" max="${s.max}" step="${s.step}" value="${ctrl[s.key]}">`;
+    host.appendChild(row);
+    row.querySelector('input').addEventListener('input',e=>{ctrl[s.key]=+e.target.value;document.getElementById('lv_'+s.key).textContent=ctrl[s.key]+s.unit;render();});
+  }
+}
+function applyLang(){
+  document.getElementById('pgTitle').textContent=t('>_ Grow a Tomato','>_ 种番茄');
+  document.getElementById('pgSub').textContent=t('A tomato-growing sim distilled from a real dFBA metabolic model. Set the greenhouse — light & nutrient feed — across the season (day 8 → 53) and grow the biggest, sweetest fruit.','由真实 dFBA 代谢模型提炼的番茄种植模拟。在整季（第8→53天）调节温室——光照与施肥——种出又大又甜的果实。');
+  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=t(el.dataset.en,el.dataset.zh);});
+  buildSliders();render();
+}
+function toggleLang(){lang=lang==='en'?'zh':'en';document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();}
+document.getElementById('speed').addEventListener('input',()=>document.getElementById('vSpeed').textContent=document.getElementById('speed').value);
+buildSliders();render();
+</script>
+</body>
+</html>
