@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Train Gomoku RL // houfu.xyz</title>
+<link rel="icon" type="image/png" href="/game/brand-favicon.png">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:24px 20px;}
+  a{color:#1db954;}
+  .hdr{max-width:1000px;margin:0 auto 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .hdr .title{color:#1db954;font-size:1.3rem;text-transform:uppercase;letter-spacing:-1px;}
+  .hdr .sub{color:#555;font-size:0.7rem;margin-top:4px;line-height:1.6;max-width:560px;}
+  .hdr .back{color:#1db954;font-size:0.7rem;text-decoration:none;display:inline-block;margin-top:6px;}
+  .hdr .back:hover{text-decoration:underline;}
+  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.7rem;padding:5px 11px;cursor:pointer;flex-shrink:0;}
+  .lang-btn:hover{background:rgba(29,185,84,0.1);}
+
+  .layout{max-width:1000px;margin:0 auto;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;}
+  .col-left{flex:0 0 320px;}
+  .col-right{flex:1;min-width:300px;}
+  .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:14px;margin-bottom:12px;}
+  .card-title{color:#1db954;font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
+
+  .slider-row{margin-bottom:13px;}
+  .slider-row .lab{display:flex;justify-content:space-between;font-size:0.68rem;margin-bottom:4px;}
+  .slider-row .lab .name{color:#bbb;}
+  .slider-row .lab .val{color:#1db954;}
+  .slider-row .hint{color:#3f3f3f;font-size:0.6rem;margin-top:2px;line-height:1.4;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:4px;background:#1a1a1a;outline:none;border-radius:2px;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#1db954;cursor:pointer;}
+  input[type=range].pen::-webkit-slider-thumb{background:#f44336;}
+
+  .presets{display:flex;flex-wrap:wrap;gap:6px;}
+  .preset{flex:1 1 46%;background:transparent;border:1px solid #222;color:#888;font-family:inherit;font-size:0.64rem;padding:6px 4px;cursor:pointer;transition:all .1s;}
+  .preset:hover{border-color:#1db954;color:#1db954;}
+  .preset.sel{border-color:#1db954;color:#1db954;background:rgba(29,185,84,0.08);}
+
+  .btn{display:block;width:100%;background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.74rem;padding:9px;cursor:pointer;margin-bottom:8px;transition:background .1s;}
+  .btn:hover{background:rgba(29,185,84,0.1);}
+  .btn.primary{background:rgba(29,185,84,0.12);}
+  .btn.ghost{border-color:#2a2a2a;color:#888;}
+  .btn.ghost:hover{background:rgba(255,255,255,0.03);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .stat-row{display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:6px;}
+  .stat-row .k{color:#555;}
+  .stat-row .v{color:#ddd;}
+  .stat-row .v.green{color:#1db954;}
+
+  canvas{display:block;background:#0a0a0a;border:1px solid #161616;width:100%;}
+  .chart-wrap{position:relative;}
+  .chart-cap{font-size:0.6rem;color:#444;margin-top:6px;}
+
+  .wbars{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;}
+  .wbar{font-size:0.6rem;color:#777;}
+  .wbar .bt{display:flex;justify-content:space-between;margin-bottom:2px;}
+  .wbar .track{height:6px;background:#141414;position:relative;}
+  .wbar .fill{position:absolute;top:0;bottom:0;left:50%;}
+
+  .log{height:140px;overflow-y:auto;font-size:0.64rem;line-height:1.7;color:#666;background:#0a0a0a;border:1px solid #141414;padding:8px;}
+  .log .ep{color:#1db954;}
+  .codebox{width:100%;background:#0a0a0a;border:1px solid #1a1a1a;color:#7ad19a;font-family:inherit;font-size:0.6rem;padding:6px;resize:vertical;min-height:46px;word-break:break-all;}
+  .note{font-size:0.6rem;color:#3f3f3f;line-height:1.5;margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="title" id="pgTitle">&gt;_ Train Gomoku RL</div>
+    <div class="sub" id="pgSub">A self-play agent learns Gomoku from your reward rules. Tune the punishments, watch it improve, then load it into the game as the RL opponent.</div>
+    <a class="back" id="pgBack" href="/game/gomoku.html" data-en="← back to Gomoku" data-zh="← 返回五子棋">← back to Gomoku</a>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+</div>
+
+<div class="layout">
+  <!-- LEFT: reward sandbox + controls -->
+  <div class="col-left">
+    <div class="card">
+      <div class="card-title"><span data-en="// reward sandbox" data-zh="// 奖励沙盒">// reward sandbox</span></div>
+      <div class="presets" id="presets"></div>
+      <div style="height:12px"></div>
+      <div id="sliders"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// training" data-zh="// 训练">// training</span></div>
+      <div class="stat-row"><span class="k" data-en="episode" data-zh="回合">episode</span><span class="v" id="sEp">0 / 60</span></div>
+      <div class="stat-row"><span class="k" data-en="explore (ε)" data-zh="探索 (ε)">explore (ε)</span><span class="v" id="sEps">0.30</span></div>
+      <div class="stat-row"><span class="k" data-en="games played" data-zh="对局数">games played</span><span class="v" id="sGames">0</span></div>
+      <div class="stat-row"><span class="k" data-en="strength vs start" data-zh="相对起点强度">strength vs start</span><span class="v green" id="sWR">—</span></div>
+      <div style="height:8px"></div>
+      <button class="btn primary" id="btnTrain" onclick="toggleTrain()" data-en="▶ Start training" data-zh="▶ 开始训练">▶ Start training</button>
+      <button class="btn ghost" id="btnReset" onclick="resetAgent()" data-en="↺ Reset agent" data-zh="↺ 重置智能体">↺ Reset agent</button>
+      <div class="slider-row" style="margin-top:6px;">
+        <div class="lab"><span class="name" data-en="speed" data-zh="速度">speed</span><span class="val" id="vSpeed">2</span></div>
+        <input type="range" id="speed" min="1" max="8" step="1" value="2">
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: chart, weights, export -->
+  <div class="col-right">
+    <div class="card">
+      <div class="card-title"><span data-en="// learning curve" data-zh="// 学习曲线">// learning curve</span><span id="curvePct" style="color:#1db954">—</span></div>
+      <div class="chart-wrap"><canvas id="chart" width="620" height="200"></canvas></div>
+      <div class="chart-cap" data-en="win-rate of the current agent vs a snapshot of itself at training start (50% = no better yet, climbing = learning)" data-zh="当前智能体对阵训练起点快照的胜率（50% = 尚无提升，上升 = 正在学习）">win-rate of the current agent vs a snapshot of itself at training start (50% = no better yet, climbing = learning)</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// what it learned to value" data-zh="// 它学会重视什么">// what it learned to value</span></div>
+      <div class="wbars" id="wbars"></div>
+      <div class="note" data-en="Positive (green) = the agent seeks this for itself; negative (red) = it avoids letting you have it. Watch the bars shift as it trains and as you change the rewards." data-zh="正值（绿）= 智能体为自己追求；负值（红）= 它避免让你拥有。训练时与调整奖励时观察柱状变化。">Positive (green) = the agent seeks this for itself; negative (red) = it avoids letting you have it. Watch the bars shift as it trains and as you change the rewards.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// use your agent" data-zh="// 使用你的智能体">// use your agent</span></div>
+      <button class="btn" id="btnUse" onclick="saveForGame()" data-en="✓ Load into Gomoku (RL ▷ slot)" data-zh="✓ 加载到五子棋（RL ▷ 槽位）">✓ Load into Gomoku (RL ▷ slot)</button>
+      <button class="btn ghost" onclick="downloadJSON()" data-en="⤓ Download weights (.json)" data-zh="⤓ 下载权重 (.json)">⤓ Download weights (.json)</button>
+      <button class="btn ghost" onclick="copyCode()" data-en="⧉ Copy shareable code" data-zh="⧉ 复制分享码">⧉ Copy shareable code</button>
+      <textarea class="codebox" id="codebox" readonly placeholder="train, then copy a code to share your agent"></textarea>
+      <div class="note" data-en="Share the code so a friend can paste it into Gomoku and play your trained agent." data-zh="分享此码，好友可粘贴到五子棋中挑战你训练的智能体。">Share the code so a friend can paste it into Gomoku and play your trained agent.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// log" data-zh="// 日志">// log</span></div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   Gomoku RL engine — self-play, Monte-Carlo value regression.
+   Selection: 1-ply argmax of a linear value V(s)=w·φ(s) over pattern
+   features (p1-absolute). Training: V regresses toward the discounted
+   slot-shaped return of self-play games (no bootstrapping → stable).
+   ════════════════════════════════════════════════════════════ */
+const N=15, DIRS=[[0,1],[1,0],[1,1],[1,-1]], MAXC=12, SCALE=0.25, NF=12;
+const GAMMA=0.95, ALPHA=0.015, GAMES_PER_EP=25, MAX_EP=60;
+const inB=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
+const emptyBoard=()=>Array.from({length:N},()=>new Array(N).fill(0));
+
+function isWin(b,r,c,p){for(const[dr,dc]of DIRS){let n=1;
+  for(let d=1;d<5;d++){const nr=r+d*dr,nc=c+d*dc;if(!inB(nr,nc)||b[nr][nc]!==p)break;n++;}
+  for(let d=1;d<5;d++){const nr=r-d*dr,nc=c-d*dc;if(!inB(nr,nc)||b[nr][nc]!==p)break;n++;}
+  if(n>=5)return true;}return false;}
+
+function lineFeatures(b){const f={1:{o2:0,c2:0,o3:0,c3:0,f4:0,of4:0},2:{o2:0,c2:0,o3:0,c3:0,f4:0,of4:0}};
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const p=b[r][c];if(!p)continue;
+    for(const[dr,dc]of DIRS){const pr=r-dr,pc=c-dc;if(inB(pr,pc)&&b[pr][pc]===p)continue;
+      let len=1,er=r+dr,ec=c+dc;while(inB(er,ec)&&b[er][ec]===p){len++;er+=dr;ec+=dc;}
+      const ob=inB(pr,pc)&&b[pr][pc]===0,oa=inB(er,ec)&&b[er][ec]===0,ends=(ob?1:0)+(oa?1:0),o=f[p];
+      if(len>=5)o.of4++;else if(ends===0){}else if(len===4)ends===2?o.of4++:o.f4++;
+      else if(len===3)ends===2?o.o3++:o.c3++;else if(len===2)ends===2?o.o2++:o.c2++;}}
+  return f;}
+function psi(b){const f=lineFeatures(b),a=f[1],z=f[2];
+  return [a.o2,a.c2,a.o3,a.c3,a.f4,a.of4,z.o2,z.c2,z.o3,z.c3,z.f4,z.of4].map(x=>x*SCALE);}
+const dot=(w,x)=>{let s=0;for(let i=0;i<NF;i++)s+=w[i]*x[i];return s;};
+function neighborCount(b,r,c){let n=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const nr=r+dr,nc=c+dc;if(inB(nr,nc)&&b[nr][nc])n++;}return n;}
+function candidates(b){const seen=new Set(),out=[];let any=false;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(!b[r][c])continue;any=true;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const nr=r+dr,nc=c+dc;
+      if(!inB(nr,nc)||b[nr][nc])continue;const k=nr*N+nc;if(!seen.has(k)){seen.add(k);out.push([nr,nc]);}}}
+  if(!any)return[[7,7]];
+  if(out.length>MAXC){out.sort((p,q)=>neighborCount(b,q[0],q[1])-neighborCount(b,p[0],p[1]));out.length=MAXC;}
+  return out;}
+// shaped immediate reward (good for `mover`), driven by the reward sliders S
+function shaped(b,move,mover,S){const opp=3-mover,before=lineFeatures(b);
+  b[move[0]][move[1]]=mover;const after=lineFeatures(b);b[move[0]][move[1]]=0;
+  const d=k=>after[mover][k]-before[mover][k];
+  let rm=S.makeTwo*d('o2')+S.makeThree*d('o3')+S.makeFour*(d('f4')+d('of4'));
+  rm-=S.allowThree*after[opp].o3+S.allowFour*(after[opp].f4+after[opp].of4);
+  return rm;}
+// 1-ply value selection (p1 maximizes V, p2 minimizes); eps-greedy
+function pickMove(b,p,w,eps,rng){const c=candidates(b);
+  if(eps&&rng()<eps)return c[(rng()*c.length)|0];
+  let best=p===1?-1e18:1e18,bm=c[0];
+  for(const m of c){b[m[0]][m[1]]=p;const v=dot(w,psi(b));b[m[0]][m[1]]=0;if(p===1?v>best:v<best){best=v;bm=m;}}
+  return bm;}
+function selfPlayGame(w,S,eps,rng){const b=emptyBoard();let cur=1,moves=0;const states=[],rew=[];
+  while(true){const mv=pickMove(b,cur,w,eps,rng);const sr=shaped(b,mv,cur,S);b[mv[0]][mv[1]]=cur;states.push(psi(b));
+    let r=cur===1?sr:-sr;
+    if(isWin(b,mv[0],mv[1],cur)){r+=cur===1?S.win:-S.win;rew.push(r);break;}
+    rew.push(r);cur=3-cur;if(++moves>=N*N)break;}
+  const G=new Array(states.length);let g=0;for(let t=states.length-1;t>=0;t--){g=rew[t]+GAMMA*g;G[t]=g;}
+  return {states,G};}
+function mcUpdate(w,states,G){for(let t=0;t<states.length;t++){const v=dot(w,states[t]),d=G[t]-v;for(let k=0;k<NF;k++)w[k]+=ALPHA*d*states[t][k];}}
+// one game agent(wa) vs opp(wb); returns +1 win / -1 loss / 0 draw for agent
+function duel(wa,wb,agentColor,eps,rng){const b=emptyBoard();let cur=1,moves=0;
+  while(true){const w=(cur===agentColor)?wa:wb;const mv=pickMove(b,cur,w,eps,rng);b[mv[0]][mv[1]]=cur;
+    if(isWin(b,mv[0],mv[1],cur))return cur===agentColor?1:-1;cur=3-cur;if(++moves>=N*N)return 0;}}
+function winRateVs(wa,wb,games,rng){let s=0;for(let g=0;g<games;g++){const r=duel(wa,wb,(g%2)?2:1,0.08,rng);s+=(r>0?1:r<0?0:0.5);}return s/games;}
+
+/* ── deterministic RNG (so a session is reproducible) ── */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let rng=mulberry32(12345);
+
+/* ════════════════════════════════════════════════════════════
+   UI / training driver
+   ════════════════════════════════════════════════════════════ */
+const FEAT_LABELS=['my 2','my 2·','my 3','my 3·','my 4','my 4+','foe 2','foe 2·','foe 3','foe 3·','foe 4','foe 4+'];
+const SLIDERS=[
+  {key:'makeFour',  min:0,max:3,  def:1.0, pen:false, en:'reward: make a four',        zh:'奖励：形成四', hen:'four-in-a-row threat (one move from winning)', hzh:'四连威胁（一步制胜）'},
+  {key:'makeThree', min:0,max:1.5,def:0.4, pen:false, en:'reward: make an open three', zh:'奖励：形成活三', hen:'open three — a developing double threat', hzh:'活三——发展中的双重威胁'},
+  {key:'allowFour', min:0,max:3,  def:1.2, pen:true,  en:'penalty: let foe make a four', zh:'惩罚：让对手形成四', hen:'punishes ignoring the opponent’s winning threat', hzh:'惩罚忽视对手的制胜威胁'},
+  {key:'allowThree',min:0,max:1.5,def:0.5, pen:true,  en:'penalty: let foe make an open three', zh:'惩罚：让对手形成活三', hen:'encourages blocking before it’s too late', hzh:'鼓励及时封堵'},
+  {key:'win',       min:0,max:3,  def:1.5, pen:false, en:'reward: win the game', zh:'奖励：赢得对局', hen:'the only true goal — propagates back through the game', hzh:'唯一真正目标——沿对局回溯传播'},
+];
+const FIXED={makeTwo:0.05};
+const PRESETS={
+  Balanced:  {makeFour:1.0,makeThree:0.4,allowFour:1.2,allowThree:0.5,win:1.5},
+  Aggressive:{makeFour:1.8,makeThree:0.9,allowFour:0.4,allowThree:0.15,win:1.5},
+  Defensive: {makeFour:0.6,makeThree:0.2,allowFour:2.4,allowThree:1.1,win:1.5},
+  'Win-only':{makeFour:0.25,makeThree:0.1,allowFour:0.4,allowThree:0.2,win:3.0},
+};
+const PRESET_ZH={Balanced:'均衡',Aggressive:'激进',Defensive:'防守','Win-only':'唯胜负'};
+
+let S=Object.assign({},FIXED,PRESETS.Balanced);
+let w=new Array(NF).fill(0), wStart=null;
+let episode=0, eps=0.30, games=0, training=false, history=[], curPreset='Balanced';
+
+/* build sliders + presets */
+function buildControls(){
+  const ps=document.getElementById('presets');
+  ps.innerHTML='';
+  for(const name in PRESETS){
+    const b=document.createElement('button');
+    b.className='preset'+(name===curPreset?' sel':'');
+    b.dataset.preset=name;
+    b.textContent=lang==='zh'?PRESET_ZH[name]:name;
+    b.onclick=()=>applyPreset(name);
+    ps.appendChild(b);
+  }
+  const sl=document.getElementById('sliders');
+  sl.innerHTML='';
+  for(const s of SLIDERS){
+    const row=document.createElement('div');row.className='slider-row';
+    row.innerHTML=`<div class="lab"><span class="name">${lang==='zh'?s.zh:s.en}</span><span class="val" id="v_${s.key}">${S[s.key].toFixed(2)}</span></div>
+      <input type="range" class="${s.pen?'pen':''}" id="sl_${s.key}" min="${s.min}" max="${s.max}" step="0.05" value="${S[s.key]}">
+      <div class="hint">${lang==='zh'?s.hzh:s.hen}</div>`;
+    sl.appendChild(row);
+    row.querySelector('input').addEventListener('input',e=>{
+      S[s.key]=parseFloat(e.target.value);
+      document.getElementById('v_'+s.key).textContent=S[s.key].toFixed(2);
+      markCustom();
+    });
+  }
+}
+function applyPreset(name){curPreset=name;S=Object.assign({},FIXED,PRESETS[name]);buildControls();log(t('preset → '+name, '预设 → '+PRESET_ZH[name]));}
+function markCustom(){curPreset=null;document.querySelectorAll('.preset').forEach(b=>b.classList.remove('sel'));}
+
+/* training loop */
+function toggleTrain(){
+  training=!training;
+  document.getElementById('btnTrain').textContent=training?t('⏸ Pause','⏸ 暂停'):(episode>=MAX_EP?t('▶ Train more','▶ 继续训练'):t('▶ Start training','▶ 开始训练'));
+  if(training){ if(!wStart){wStart=w.slice();log(t('── training started ──','── 开始训练 ──'),'ep');} loop(); }
+}
+function resetAgent(){
+  training=false;w=new Array(NF).fill(0);wStart=null;episode=0;eps=0.30;games=0;history=[];
+  rng=mulberry32(12345);
+  document.getElementById('btnTrain').textContent=t('▶ Start training','▶ 开始训练');
+  document.getElementById('log').innerHTML='';
+  log(t('agent reset to zero','智能体已归零'));
+  refresh();
+}
+function loop(){
+  if(!training)return;
+  const speed=parseInt(document.getElementById('speed').value,10);
+  for(let i=0;i<speed&&episode<MAX_EP;i++){
+    for(let g=0;g<GAMES_PER_EP;g++){const r=selfPlayGame(w,S,eps,rng);mcUpdate(w,r.states,r.G);games++;}
+    episode++;eps=Math.max(0.05,0.30*Math.pow(0.95,episode));
+    const wr=winRateVs(w,wStart,24,rng);
+    history.push(wr);
+    if(episode%5===0||episode===MAX_EP)log(`ep ${episode}  ε=${eps.toFixed(2)}  vs start ${(wr*100|0)}%`,'ep');
+  }
+  refresh();
+  if(episode>=MAX_EP){training=false;document.getElementById('btnTrain').textContent=t('▶ Train more','▶ 继续训练');log(t('── reached '+MAX_EP+' episodes ──','── 已达 '+MAX_EP+' 回合 ──'),'ep');updateCode();}
+  else requestAnimationFrame(loop);
+}
+
+/* rendering */
+function refresh(){
+  document.getElementById('sEp').textContent=`${episode} / ${MAX_EP}`;
+  document.getElementById('sEps').textContent=eps.toFixed(2);
+  document.getElementById('sGames').textContent=games.toLocaleString();
+  document.getElementById('vSpeed').textContent=document.getElementById('speed').value;
+  const wr=history.length?history[history.length-1]:null;
+  document.getElementById('sWR').textContent=wr==null?'—':`${(wr*100)|0}%`;
+  document.getElementById('curvePct').textContent=wr==null?'—':`${(wr*100)|0}%`;
+  drawChart();drawWeights();
+}
+function drawChart(){
+  const cv=document.getElementById('chart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=24;
+  x.clearRect(0,0,W,H);
+  // grid + 50% line
+  x.strokeStyle='#161616';x.lineWidth=1;
+  for(let p=0;p<=1;p+=0.25){const y=H-pad-(H-2*pad)*p;x.beginPath();x.moveTo(pad,y);x.lineTo(W-6,y);x.stroke();
+    x.fillStyle='#333';x.font='9px Consolas';x.fillText((p*100)+'%',2,y+3);}
+  x.strokeStyle='#264d33';x.setLineDash([3,3]);const y50=H-pad-(H-2*pad)*0.5;x.beginPath();x.moveTo(pad,y50);x.lineTo(W-6,y50);x.stroke();x.setLineDash([]);
+  if(history.length<2)return;
+  x.strokeStyle='#1db954';x.lineWidth=2;x.beginPath();
+  const n=Math.max(history.length,MAX_EP);
+  history.forEach((v,i)=>{const px=pad+(W-pad-6)*(i/(n-1));const py=H-pad-(H-2*pad)*Math.max(0,Math.min(1,v));i?x.lineTo(px,py):x.moveTo(px,py);});
+  x.stroke();
+}
+function drawWeights(){
+  const host=document.getElementById('wbars');
+  const mx=Math.max(1,...w.map(Math.abs));
+  host.innerHTML=w.map((val,i)=>{
+    const frac=Math.min(1,Math.abs(val)/mx)*50, pos=val>=0;
+    const col=pos?'#1db954':'#f44336';
+    const fill=pos?`left:50%;width:${frac}%;background:${col};`:`right:50%;width:${frac}%;background:${col};`;
+    return `<div class="wbar"><div class="bt"><span>${FEAT_LABELS[i]}</span><span style="color:${col}">${val.toFixed(1)}</span></div>
+      <div class="track"><div class="fill" style="${fill}"></div></div></div>`;
+  }).join('');
+}
+
+/* export / share */
+function agentObj(){return {v:1,type:'gomoku-rl',scale:SCALE,nf:NF,w:w.map(x=>+x.toFixed(4)),rewards:S,episodes:episode};}
+function encodeCode(o){return 'GRL1'+btoa(JSON.stringify({w:o.w,s:SCALE}));}
+function updateCode(){document.getElementById('codebox').value=episode?encodeCode(agentObj()):'';}
+function saveForGame(){
+  if(!episode){alert(t('Train the agent first.','请先训练智能体。'));return;}
+  localStorage.setItem('gomoku_rl_agent',JSON.stringify(agentObj()));
+  log(t('✓ saved — open Gomoku and pick the RL ▷ opponent','✓ 已保存——打开五子棋并选择 RL ▷ 对手'));
+  document.getElementById('btnUse').textContent=t('✓ Loaded — open Gomoku','✓ 已加载——打开五子棋');
+  setTimeout(()=>document.getElementById('btnUse').textContent=t('✓ Load into Gomoku (RL ▷ slot)','✓ 加载到五子棋（RL ▷ 槽位）'),2200);
+}
+function downloadJSON(){
+  if(!episode){alert(t('Train the agent first.','请先训练智能体。'));return;}
+  const blob=new Blob([JSON.stringify(agentObj(),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gomoku_rl_agent.json';a.click();
+}
+function copyCode(){
+  if(!episode){alert(t('Train the agent first.','请先训练智能体。'));return;}
+  updateCode();const tx=document.getElementById('codebox');tx.select();
+  navigator.clipboard?.writeText(tx.value).then(()=>log(t('shareable code copied','分享码已复制')),()=>{});
+}
+
+/* log + lang */
+function log(msg,cls){const el=document.getElementById('log');const d=document.createElement('div');if(cls)d.className=cls;d.textContent=msg;el.appendChild(d);el.scrollTop=el.scrollHeight;}
+let lang='en';
+function t(en,zh){return lang==='zh'?zh:en;}
+function applyLang(){
+  document.getElementById('pgTitle').textContent=t('>_ Train Gomoku RL','>_ 训练五子棋RL');
+  document.getElementById('pgSub').textContent=t('A self-play agent learns Gomoku from your reward rules. Tune the punishments, watch it improve, then load it into the game as the RL opponent.','自对弈智能体根据你的奖励规则学习五子棋。调整惩罚、观察提升，再作为RL对手加载进游戏。');
+  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=t(el.dataset.en,el.dataset.zh);});
+  buildControls();
+}
+function toggleLang(){lang=lang==='en'?'zh':'en';document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();}
+
+document.getElementById('speed').addEventListener('input',()=>{document.getElementById('vSpeed').textContent=document.getElementById('speed').value;});
+buildControls();refresh();
+</script>
+</body>
+</html>

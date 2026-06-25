@@ -1,7 +1,21 @@
 # Arcade RL & Remote-Play Roadmap (Phase 2)
 
-Status: **direction locked, ready to build.** Phase 1 (arcade front page + GAME
+Status: **Milestone 1 shipped** ✅ (the Gomoku RL trainer + reward sandbox is live at
+`game/gomoku_rl.html`, and trained agents plug into Gomoku's `RL ▷` slot). Sharing
+(M3) shipped too — agents export a `GRL1…` code. Phase 1 (arcade front page + GAME
 LIFE branding, cleanup, Gomoku difficulty fix) is done and live.
+
+**What shipped (M1 + M3):** self-play Monte-Carlo value learning over pattern
+features; a reward/punishment sandbox (sliders + Balanced/Aggressive/Defensive/
+Win-only presets); a live learning curve + an interpretable "what it learned to
+value" weight panel; export to JSON / shareable code / localStorage; and a working
+`RL ▷` opponent in `gomoku.html` (loads from a code or a local training session,
+with getCandidates giving it a win/block safety net). Validated end-to-end: the agent
+teaches itself to attack and defend, and the trainer→game pipeline round-trips.
+
+**Still open:** M2's "your RL vs the minimax AI in one game" (Gomoku difficulty is
+currently global, so a single game can't pit RL against minimax — needs per-side
+opponent selection) and M4 (remote friends-in-browser polish + agent-vs-agent).
 
 ## Decisions (from the brainstorm)
 

@@ -56,7 +56,16 @@
     .tog { flex: 1; background: #0d0d0d; border: 1px solid #1e1e1e; color: #555; font-family: Consolas, monospace; font-size: 0.65rem; padding: 5px 6px; cursor: pointer; text-align: center; transition: all 0.1s; white-space: nowrap; }
     .tog:hover:not(:disabled) { border-color: #888; color: #aaa; }
     .tog.sel { border-color: #1db954; color: #1db954; background: rgba(29,185,84,0.06); }
-    .tog.rl-slot { border-color: rgba(244,67,54,0.3); color: rgba(244,67,54,0.4); cursor: not-allowed; }
+    .tog.rl-slot { border-color: rgba(244,67,54,0.35); color: rgba(244,67,54,0.7); }
+    .tog.rl-slot.locked { color: rgba(244,67,54,0.4); }
+    .tog.rl-slot.sel { border-color: #f44336; color: #f44336; background: rgba(244,67,54,0.12); }
+    #rlLoad input { width: 100%; background:#0a0a0a; border:1px solid #1e1e1e; color:#9ad6ad; font-family:Consolas,monospace; font-size:0.62rem; padding:5px 6px; margin-bottom:5px; }
+    #rlLoad .rl-row { display:flex; gap:8px; align-items:center; }
+    #rlLoad button { background:transparent; border:1px solid #f44336; color:#f44336; font-family:Consolas,monospace; font-size:0.62rem; padding:5px 10px; cursor:pointer; }
+    #rlLoad button:hover { background:rgba(244,67,54,0.1); }
+    #rlLoad a { font-size:0.62rem; color:#1db954; text-decoration:none; }
+    #rlLoad a:hover { text-decoration:underline; }
+    #rlMsg { font-size:0.6rem; color:#555; margin-top:5px; }
 
     /* Buttons */
     .brow { display: flex; gap: 5px; margin-top: 4px; }
@@ -170,7 +179,16 @@
         <button class="tog"     data-diff="easy"   onclick="setDiff('easy')"   data-en="Casual"  data-zh="休闲">Casual</button>
         <button class="tog sel" data-diff="normal" onclick="setDiff('normal')" data-en="Normal"  data-zh="普通">Normal</button>
         <button class="tog"     data-diff="hard"   onclick="setDiff('hard')"   data-en="Hard"    data-zh="困难">Hard</button>
-        <button class="tog rl-slot" disabled title="RL agent coming soon" data-en="RL ▷" data-zh="RL ▷">RL ▷</button>
+        <button class="tog rl-slot locked" id="btnRL" data-diff="rl" onclick="selectRL()" title="Your trained RL agent" data-en="RL ▷" data-zh="RL ▷">RL ▷</button>
+      </div>
+      <div id="rlLoad" style="display:none;margin-top:8px;">
+        <div style="font-size:0.62rem;color:#555;margin-bottom:5px;" data-en="No agent loaded. Paste a shared code, or train your own:" data-zh="未加载智能体。粘贴分享码，或训练你自己的：">No agent loaded. Paste a shared code, or train your own:</div>
+        <input id="rlCode" placeholder="GRL1…" spellcheck="false">
+        <div class="rl-row">
+          <button onclick="loadRLCode()" data-en="Load" data-zh="加载">Load</button>
+          <a href="/game/gomoku_rl.html" data-en="train an agent →" data-zh="训练智能体 →">train an agent →</a>
+        </div>
+        <div id="rlMsg"></div>
       </div>
     </div>
 
@@ -730,11 +748,73 @@ function minimax(board, depth, alpha, beta, isMax, lr, lc) {
   }
 }
 
+/* ── RL agent (trained in gomoku_rl.html) ─────────
+   Plays by 1-ply selection on a learned linear value over the same pattern
+   features the trainer used. getCandidates() already forces wins/blocks, so the
+   learned agent gets a safety net against outright blunders. ─────────────────── */
+let rlWeights = null;            // { w:[12], scale }
+const RL_SCALE = 0.25;
+function rlLineFeatures(b){
+  const f={1:{o2:0,c2:0,o3:0,c3:0,f4:0,of4:0},2:{o2:0,c2:0,o3:0,c3:0,f4:0,of4:0}};
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const p=b[r][c];if(!p)continue;
+    for(const[dr,dc]of dirs){const pr=r-dr,pc=c-dc;
+      if(pr>=0&&pr<N&&pc>=0&&pc<N&&b[pr][pc]===p)continue;
+      let len=1,er=r+dr,ec=c+dc;
+      while(er>=0&&er<N&&ec>=0&&ec<N&&b[er][ec]===p){len++;er+=dr;ec+=dc;}
+      const ob=(pr>=0&&pr<N&&pc>=0&&pc<N&&b[pr][pc]===0);
+      const oa=(er>=0&&er<N&&ec>=0&&ec<N&&b[er][ec]===0);
+      const ends=(ob?1:0)+(oa?1:0),o=f[p];
+      if(len>=5)o.of4++;else if(ends===0){}else if(len===4)ends===2?o.of4++:o.f4++;
+      else if(len===3)ends===2?o.o3++:o.c3++;else if(len===2)ends===2?o.o2++:o.c2++;}}
+  return f;
+}
+function rlValue(b){
+  const f=rlLineFeatures(b),a=f[1],z=f[2],s=rlWeights.scale||RL_SCALE,w=rlWeights.w;
+  const x=[a.o2,a.c2,a.o3,a.c3,a.f4,a.of4,z.o2,z.c2,z.o3,z.c3,z.f4,z.of4];
+  let v=0; for(let i=0;i<12;i++) v+=w[i]*x[i]*s; return v;
+}
+function rlMove(b, player){
+  const cands=getCandidates(b, player);
+  if(!cands.length) return null;
+  if(cands.length===1) return cands[0];
+  const max = player===1;            // value is player-1-absolute
+  let best = max?-Infinity:Infinity, bm=cands[0];
+  for(const [r,c] of cands){ b[r][c]=player; const v=rlValue(b); b[r][c]=0; if(max?v>best:v<best){best=v;bm=[r,c];} }
+  return bm;
+}
+function rlDecode(code){
+  if(!code || code.slice(0,4)!=='GRL1') return null;
+  try{ const o=JSON.parse(atob(code.slice(4))); if(Array.isArray(o.w)&&o.w.length===12) return {w:o.w, scale:o.s||RL_SCALE}; }catch(e){}
+  return null;
+}
+function rlInit(){
+  try{ const raw=localStorage.getItem('gomoku_rl_agent'); if(raw){ const o=JSON.parse(raw);
+    if(o&&Array.isArray(o.w)&&o.w.length===12) rlWeights={w:o.w, scale:o.scale||o.s||RL_SCALE}; } }catch(e){}
+  const btn=document.getElementById('btnRL');
+  if(rlWeights && btn){ btn.classList.remove('locked'); btn.title='Your trained RL agent (loaded ✓)'; }
+}
+function selectRL(){
+  if(rlWeights){ document.getElementById('rlLoad').style.display='none'; setDiff('rl'); }
+  else { const el=document.getElementById('rlLoad'); el.style.display = (el.style.display==='none') ? '' : 'none'; }
+}
+function loadRLCode(){
+  const w=rlDecode(document.getElementById('rlCode').value.trim());
+  const msg=document.getElementById('rlMsg');
+  if(!w){ msg.style.color='#f44336'; msg.textContent=t('Invalid code — copy it from the trainer.','无效分享码——请从训练页复制。'); return; }
+  rlWeights=w;
+  try{ localStorage.setItem('gomoku_rl_agent', JSON.stringify({v:1,type:'gomoku-rl',scale:w.scale,w:w.w})); }catch(e){}
+  document.getElementById('btnRL').classList.remove('locked');
+  document.getElementById('rlLoad').style.display='none';
+  setDiff('rl');
+}
+
 function getAIMove() {
   if (playerTypes[curP] === 'random') {
     const cands = getCandidates(board, curP);
     return cands.length ? cands[Math.floor(Math.random() * cands.length)] : null;
   }
+  if (diff === 'rl' && rlWeights) return rlMove(board, curP);
   return getBestMove();
 }
 
@@ -894,6 +974,7 @@ function requestNewGame() {
 function init() {
   computeLayout();
   applyLang();
+  rlInit();
   newGame();
 }
 
