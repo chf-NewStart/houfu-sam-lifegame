@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.lifegameproject.twa",
+      "sha256_cert_fingerprints": [
+        "REPLACE_ME — paste the SHA-256 signing fingerprint from PWABuilder (or Play Console → App integrity) here, then commit + push"
+      ]
+    }
+  }
+]

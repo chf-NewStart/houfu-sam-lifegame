@@ -20,3 +20,6 @@ finaldemo/
 # OS / editor junk
 .DS_Store
 *.swp
+
+# itch.io build artifact
+lifegame-itch.zip
