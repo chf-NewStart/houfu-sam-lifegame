@@ -4,7 +4,7 @@ An interactive browser implementation of Conway's Game of Life — zero dependen
 
 **[▶ Play it live at lifegameproject.com](https://lifegameproject.com)**
 
-![gameplay](demo/gif/regular.gif)
+![Game of Life — draw, evolve, and turn patterns into music](demo/gif/hero.gif)
 
 ---
 
