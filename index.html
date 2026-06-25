@@ -38,6 +38,9 @@
     .card.soon { opacity: 0.45; pointer-events: none; }
     .card.flagship { border-color: rgba(29,185,84,0.4); }
 
+    .card-thumb { display: block; width: calc(100% + 40px); height: 124px; margin: -20px -20px 14px; object-fit: cover; border-bottom: 1px solid #1c1c1c; filter: saturate(0.9) brightness(0.82); transition: filter 0.15s; }
+    .card:hover .card-thumb { filter: saturate(1.05) brightness(1); }
+
     .card-icon { color: #1db954; font-size: 1.1rem; margin-bottom: 10px; }
     .card-title { color: #ddd; font-size: 0.95rem; margin-bottom: 6px; }
     .card-desc  { color: #555; font-size: 0.7rem; line-height: 1.75; flex: 1; }
@@ -71,6 +74,7 @@
 <div class="grid">
 
   <div class="card flagship">
+    <img class="card-thumb" src="/game/thumbs/life.jpg" alt="Game of Life grid" loading="lazy" width="440" height="240">
     <div class="card-icon">[##]</div>
     <div class="card-title" data-en="game_of_life.exe" data-zh="生命游戏.exe">game_of_life.exe</div>
     <div class="card-desc" data-en="Conway's Game of Life — draw patterns, watch them evolve, and turn them into music. Sandbox, 11 leaderboard challenges, aura colouring, lookahead, image-to-cells, and a Music Box sequencer." data-zh="康威生命游戏——绘制图案、观察演化、化作音乐。沙盒、11个排行榜挑战、光环着色、预演、图像转细胞，以及八音盒音序器。">Conway's Game of Life — draw patterns, watch them evolve, and turn them into music. Sandbox, 11 leaderboard challenges, aura colouring, lookahead, image-to-cells, and a Music Box sequencer.</div>
@@ -87,6 +91,7 @@
   </div>
 
   <div class="card">
+    <img class="card-thumb" src="/game/thumbs/gomoku.jpg" alt="Gomoku board" loading="lazy" width="440" height="240">
     <div class="card-icon">[⬡]</div>
     <div class="card-title" data-en="gomoku.exe" data-zh="五子棋.exe">gomoku.exe</div>
     <div class="card-desc" data-en="Classic 5-in-a-row on a 15×15 board. Play a minimax AI at three difficulty levels, watch AI-vs-AI, or share a room code for online play against a friend. RL agent slot reserved." data-zh="经典15×15五子棋。挑战三种难度的极小化极大AI、观看AI对战，或分享房间码与好友联机对弈。RL智能体插槽预留。">Classic 5-in-a-row on a 15×15 board. Play a minimax AI at three difficulty levels, watch AI-vs-AI, or share a room code for online play against a friend. RL agent slot reserved.</div>
@@ -103,6 +108,7 @@
   </div>
 
   <div class="card">
+    <img class="card-thumb" src="/game/thumbs/escape.jpg" alt="Escape Grid board" loading="lazy" width="440" height="240">
     <div class="card-icon">[::]</div>
     <div class="card-title" data-en="escape_grid.exe" data-zh="逃脱方格.exe">escape_grid.exe</div>
     <div class="card-desc" data-en="4 participants vs 1 hunter on a 4×4 grid. Unlock doors, dodge traps, reach the exit. The hunter can be greedy pathfinding or a reinforcement-learning agent you trained yourself." data-zh="4名参与者对抗1名猎手的4×4格逃脱。解锁门道、躲避陷阱、抵达出口。猎手可用贪心寻路，或由你亲手训练的强化学习智能体驱动。">4 participants vs 1 hunter on a 4×4 grid. Unlock doors, dodge traps, reach the exit. The hunter can be greedy pathfinding or a reinforcement-learning agent you trained yourself.</div>
@@ -118,6 +124,7 @@
   </div>
 
   <div class="card">
+    <img class="card-thumb" src="/game/thumbs/greenhouse.jpg" alt="Greenhouse controls" loading="lazy" width="440" height="240">
     <div class="card-icon">[\/]</div>
     <div class="card-title" data-en="greenhouse.exe" data-zh="温室.exe">greenhouse.exe</div>
     <div class="card-desc" data-en="A greenhouse digital twin. Tune light, heat, water and CO₂, and watch a simulated crop respond in real time. A small systems sandbox rather than a game to win." data-zh="温室数字孪生。调节光照、温度、灌溉与CO₂，实时观察模拟作物的反应。这是一个系统沙盒，而非求胜的游戏。">A greenhouse digital twin. Tune light, heat, water and CO₂, and watch a simulated crop respond in real time. A small systems sandbox rather than a game to win.</div>
@@ -138,6 +145,7 @@
 <div class="grid">
 
   <div class="card">
+    <img class="card-thumb" src="/game/thumbs/train.jpg" alt="RL training dashboard" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#f44336">[RL]</div>
     <div class="card-title" data-en="train_hunter.dqn" data-zh="训练猎手.dqn">train_hunter.dqn</div>
     <div class="card-desc" data-en="Train the Escape Grid hunter in your browser with a Deep Q-Network. Watch win-rate climb episode by episode, then export the weights and load them back into the game." data-zh="在浏览器中用深度Q网络训练逃脱方格的猎手。逐回合观察胜率攀升，导出权重并加载回游戏。">Train the Escape Grid hunter in your browser with a Deep Q-Network. Watch win-rate climb episode by episode, then export the weights and load them back into the game.</div>
