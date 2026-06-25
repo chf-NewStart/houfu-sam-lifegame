@@ -271,15 +271,17 @@
     .rules-bar b { color: #b8b8b8; font-weight: 600; }
     .rules-note { color: #555; }
 
-    /* ── Mobile patterns (above canvas) ──────────────── */
-    .patterns-mobile { display: none; width: 100%; }
-    .patterns-mobile .preset-grid { grid-template-columns: repeat(4, 1fr); }
-    /* Mobile has no hover, so just show name on top + screenshot below. Keep the
-       thumbnail a small, centered fixed size (not full tile width, which is too big). */
-    .patterns-mobile .pbtn.has-thumb { align-items: center; }
+    /* ── Pattern tray — horizontal strip below the grid (desktop + mobile) ── */
+    .patterns-mobile { display: block; width: 100%; order: 99; margin-top: 10px; border-top: 1px solid #1e1e1e; padding-top: 10px; }
+    .tray-hint { color: #1db954; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; }
+    /* tiles flow in one horizontal, scrollable row */
+    .patterns-mobile .preset-grid { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+    .patterns-mobile .pbtn.has-thumb { align-items: center; flex: 0 0 auto; width: 66px; }
     .patterns-mobile .pbtn-thumb { width: 46px; height: 38px; }
-    /* No hover on touch — never pop the description overlay (it covered the thumbnail on tap) */
+    /* No hover description overlay in the tray (it covered the thumbnail on tap) */
     .patterns-mobile .pbtn-desc { display: none !important; }
+    .patterns-mobile .brow { gap: 6px; }
+    .patterns-desktop { display: none; }   /* the tray below the grid replaces the side-panel patterns card */
 
     /* ── Dev mode lookahead strip ────────────────────── */
     #devPanel { width: 100%; margin-top: 6px; }
@@ -480,8 +482,9 @@
 <div class="main-layout">
   <div class="canvas-col">
 
-    <!-- Patterns: shown above canvas on mobile only -->
+    <!-- Pattern tray: horizontal strip reordered below the grid via CSS `order` -->
     <div class="patterns-mobile">
+      <div class="tray-hint" data-en="✋ drag a pattern onto the grid" data-zh="✋ 把图案拖到网格上">✋ drag a pattern onto the grid</div>
       <div class="preset-grid">
         <button class="pbtn has-thumb" draggable="true" data-preset="glider" ><img class="pbtn-thumb" src="patterns/glider.png" alt="" draggable="false"><span class="pbtn-name" data-en="Glider"      data-zh="滑翔机">Glider</span><span class="pbtn-desc" data-en="classic mover"       data-zh="经典移动体">classic mover</span></button>
         <button class="pbtn has-thumb" draggable="true" data-preset="blinker"><img class="pbtn-thumb" src="patterns/blinker.png" alt="" draggable="false"><span class="pbtn-name" data-en="Blinker"     data-zh="闪烁体">Blinker</span><span class="pbtn-desc" data-en="period-2"            data-zh="周期2">period-2</span></button>
