@@ -2380,6 +2380,18 @@ const SB_HDR = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content
 
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// Light anti-spam for submitted text: drop control + zero-width chars, collapse whitespace, trim, cap length.
+function sanitizeText(s, maxLen) {
+  let out = '';
+  for (const ch of String(s)) {
+    const c = ch.codePointAt(0);
+    if (c < 0x20 || c === 0x7F) continue;                                                          // control chars / newlines
+    if (c === 0x200B || c === 0x200C || c === 0x200D || c === 0x2060 || c === 0xFEFF) continue;    // zero-width / invisible
+    out += ch;
+  }
+  return out.replace(/\s+/g, ' ').trim().slice(0, maxLen);
+}
+
 function loadSeedStr(seedStr) {
   try {
     if (running) togglePlay();
@@ -2433,7 +2445,7 @@ function showWin(ch, cells) {
 function closeWin() { document.getElementById('winOverlay').classList.remove('show'); }
 
 function onSubmitScore() {
-  const nick = document.getElementById('nicknameInput').value.trim().slice(0, 20);
+  const nick = sanitizeText(document.getElementById('nicknameInput').value, 20);
   if (!nick) { document.getElementById('nicknameInput').focus(); return; }
   localStorage.setItem('lifegame_nick', nick);
   const btn = document.getElementById('submitScoreBtn');
@@ -2522,8 +2534,8 @@ function openGallerySubmit() {
 function closeGallerySubmit() { document.getElementById('gallerySubmitOverlay').classList.remove('show'); }
 
 function onSubmitGallery() {
-  const title = document.getElementById('galleryTitleInput').value.trim().slice(0, 40);
-  const nick  = document.getElementById('galleryNickInput').value.trim().slice(0, 20);
+  const title = sanitizeText(document.getElementById('galleryTitleInput').value, 40);
+  const nick  = sanitizeText(document.getElementById('galleryNickInput').value, 20);
   if (!title) { document.getElementById('galleryTitleInput').focus(); return; }
   if (!nick)  { document.getElementById('galleryNickInput').focus();  return; }
   localStorage.setItem('lifegame_nick', nick);
