@@ -276,8 +276,9 @@
     .tray-hint { color: #1db954; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; }
     /* tiles flow in one horizontal, scrollable row */
     .patterns-mobile .preset-grid { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
-    .patterns-mobile .pbtn.has-thumb { align-items: center; flex: 0 0 auto; width: 66px; }
-    .patterns-mobile .pbtn-thumb { width: 46px; height: 38px; }
+    .patterns-mobile .pbtn.has-thumb { align-items: center; flex: 1 1 0; min-width: 84px; max-width: 150px; padding: 7px 6px; }
+    .patterns-mobile .pbtn-thumb { width: 100%; height: 54px; }
+    .patterns-mobile .pbtn-name { font-size: 0.72rem; }
     /* No hover description overlay in the tray (it covered the thumbnail on tap) */
     .patterns-mobile .pbtn-desc { display: none !important; }
     .patterns-mobile .brow { gap: 6px; }
@@ -874,7 +875,7 @@ function initGrid() {
   } else {
     const col = document.querySelector('.canvas-col');
     maxW = (col ? col.clientWidth : 600) - 26;
-    maxH = Math.min(window.innerHeight - 174, 700);
+    maxH = Math.min(window.innerHeight - 280, 600);
   }
   COLS = Math.floor(maxW / CELL);
   ROWS = Math.floor(maxH / CELL);
