@@ -324,6 +324,28 @@
     .win-submit input:focus { border-color: #1db954; }
     .win-submitted { color: #1db954; font-size: 0.78rem; margin-bottom: 8px; }
 
+    /* ── First-run intro + self-explanatory onboarding hints ── */
+    #introOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 120; align-items: center; justify-content: center; }
+    #introOverlay.show { display: flex; }
+    .intro-box { background: #111; border: 1px solid #1db954; padding: 28px 32px; width: min(430px, 92vw); }
+    .intro-title { color: #1db954; font-size: 1.1rem; letter-spacing: 1px; text-align: center; margin-bottom: 5px; }
+    .intro-sub { color: #777; font-size: 0.72rem; text-align: center; margin-bottom: 18px; }
+    .intro-step { display: flex; gap: 11px; align-items: baseline; margin-bottom: 11px; color: #cfcfcf; font-size: 0.82rem; line-height: 1.45; }
+    .intro-step .ic { color: #1db954; flex-shrink: 0; width: 1.3em; text-align: center; }
+    .intro-step b { color: #fff; font-weight: 600; }
+    .intro-note { color: #9a9a9a; font-size: 0.72rem; background: #0d0d0d; border-left: 2px solid #1db954; padding: 8px 11px; margin: 15px 0 18px; line-height: 1.5; }
+    .intro-go { width: 100%; background: #1db954; color: #052; border: none; padding: 11px; font-family: inherit; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; cursor: pointer; }
+    .intro-go:hover { background: #25d65f; }
+    .canvas-hint { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); pointer-events: none;
+      background: rgba(0,0,0,0.66); border: 1px solid #2a2a2a; color: #cfcfcf; font-size: 0.68rem;
+      padding: 5px 11px; border-radius: 20px; white-space: nowrap; max-width: 94%; overflow: hidden; text-overflow: ellipsis;
+      opacity: 0; transition: opacity 0.4s; }
+    .canvas-hint.show { opacity: 0.92; }
+    @keyframes playNudge { 0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0); } 50% { box-shadow: 0 0 0 4px rgba(29,185,84,0.28); } }
+    #playBtn.nudge { animation: playNudge 1.6s ease-in-out infinite; }
+    .help-btn { background: transparent; border: 1px solid #2e2e2e; color: #888; width: 26px; height: 26px; cursor: pointer; font-size: 0.82rem; line-height: 1; flex-shrink: 0; }
+    .help-btn:hover { border-color: #1db954; color: #1db954; }
+
     /* ── Shared overlay base ─────────────────────────── */
     #lbOverlay, #gallerySubmitOverlay, #galleryOverlay, #imgOverlay, #savesOverlay, #patternPickerOverlay, #sceneOverlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100; align-items: center; justify-content: center;
@@ -426,6 +448,7 @@
     <button class="mode-btn" data-mode="music" role="tab" onclick="setMode('music')" data-en="🎠 Music Box" data-zh="🎠 八音盒">🎠 Music Box</button>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+    <button class="help-btn" onclick="openIntro()" title="How to play" aria-label="How to play">?</button>
     <a class="lang-btn" href="/training" style="text-decoration:none" data-en="📖 Learn" data-zh="📖 教程">📖 Learn</a>
     <div class="lang-switch" role="group" aria-label="Language">
       <button class="lang-opt" data-setlang="en" onclick="setLang('en')">EN</button>
@@ -492,6 +515,7 @@
 
     <div class="canvas-wrap">
       <canvas id="canvas"></canvas>
+      <div class="canvas-hint" id="canvasHint" data-en="✏️ click + drag to draw  ·  ⏵ press Play to evolve" data-zh="✏️ 点击拖动绘制  ·  ⏵ 点击播放看演化">✏️ click + drag to draw  ·  ⏵ press Play to evolve</div>
       <div class="canvas-hud">
         <div><span class="hud-lbl" data-en="gen" data-zh="代">gen</span><span id="genCount">0</span></div>
         <div><span class="hud-lbl" data-en="cells" data-zh="细胞">cells</span><span id="cellCount">0</span></div>
@@ -681,6 +705,18 @@
       <button class="btn" onclick="closeWin();openLeaderboard()" style="flex:1" data-en="🏆 View Board" data-zh="🏆 查看榜单">🏆 View Board</button>
       <button class="btn" onclick="closeWin()" style="flex:1" data-en="Continue →" data-zh="继续 →">Continue →</button>
     </div>
+  </div>
+</div>
+
+<div id="introOverlay">
+  <div class="intro-box">
+    <div class="intro-title" data-en="🌱 Welcome to Game of Life" data-zh="🌱 欢迎来到生命游戏">🌱 Welcome to Game of Life</div>
+    <div class="intro-sub" data-en="A tiny universe that runs on 3 simple rules." data-zh="一个由 3 条简单规则驱动的微型宇宙。">A tiny universe that runs on 3 simple rules.</div>
+    <div class="intro-step"><span class="ic">✏️</span><span><b data-en="Draw" data-zh="绘制">Draw</b> — <span data-en="click and drag on the grid to place cells" data-zh="在网格上点击拖动来放置细胞">click and drag on the grid to place cells</span></span></div>
+    <div class="intro-step"><span class="ic">⏵</span><span><b data-en="Play" data-zh="播放">Play</b> — <span data-en="watch them live, die and multiply" data-zh="看它们存活、死亡与繁衍">watch them live, die and multiply</span></span></div>
+    <div class="intro-step"><span class="ic">🎛️</span><span><b data-en="Explore" data-zh="探索">Explore</b> — <span data-en="Challenges (puzzles) or 🎠 Music Box (music)" data-zh="挑战（解谜）或 🎠 八音盒（音乐）">Challenges (puzzles) or 🎠 Music Box (music)</span></span></div>
+    <div class="intro-note" data-en="New here? The board already shows GAME LIFE — tap below to watch it come alive." data-zh="第一次来？棋盘上已经写着 GAME LIFE — 点击下方按钮看它活起来。">New here? The board already shows GAME LIFE — tap below to watch it come alive.</div>
+    <button class="intro-go" onclick="dismissIntro(true)" data-en="Got it — let's play ⏵" data-zh="明白了，开始播放 ⏵">Got it — let's play ⏵</button>
   </div>
 </div>
 
@@ -962,6 +998,7 @@ function draw() {
   }
   document.getElementById('cellCount').textContent = live;
   document.getElementById('nextCount').textContent = nextLive;
+  updateOnboardingHints();
 
   if (dragPattern && dragOff) {
     const tCells = transformCells(PRESETS[dragPattern]);
@@ -2449,6 +2486,30 @@ function showWin(ch, cells) {
 
 function closeWin() { document.getElementById('winOverlay').classList.remove('show'); }
 
+/* ── First-run intro + self-explanatory onboarding hints ── */
+const INTRO_KEY = 'lifegame_seen_intro';
+function openIntro() { document.getElementById('introOverlay').classList.add('show'); }
+function dismissIntro(play) {
+  document.getElementById('introOverlay').classList.remove('show');
+  try { localStorage.setItem(INTRO_KEY, '1'); } catch {}
+  if (play && !running) togglePlay();
+}
+function maybeShowIntro() {
+  let seen = false;
+  try { seen = localStorage.getItem(INTRO_KEY) === '1'; } catch {}
+  if (!seen) openIntro();
+}
+let _hintShown = null;
+function updateOnboardingHints() {
+  const show = (generation === 0 && !running && !dragPattern);
+  if (show === _hintShown) return;
+  _hintShown = show;
+  const h = document.getElementById('canvasHint');
+  const p = document.getElementById('playBtn');
+  if (h) h.classList.toggle('show', show);
+  if (p) p.classList.toggle('nudge', show);
+}
+
 function onSubmitScore() {
   const nick = sanitizeText(document.getElementById('nicknameInput').value, 20);
   if (!nick) { document.getElementById('nicknameInput').focus(); return; }
@@ -2962,8 +3023,8 @@ if (!_hadSeed) loadDefault();
 }
 _applyPenMode();   // reflect default Draw mode (on for desktop, off for mobile)
 applyLang();       // apply saved language (synced with the /training pages)
-// First-run nudge only on the default landing (not when opening a shared seed)
-if (!_hadSeed) maybeShowNudge();
+// First-run intro only on the default landing (not when opening a shared seed)
+if (!_hadSeed) maybeShowIntro();
 </script>
 <script>
 /* Register the service worker (installable PWA + offline). No-op on file://. */
