@@ -121,20 +121,11 @@
 @keyframes smokeFadeB{0%,100%{opacity:.18;}45%{opacity:.48;}}
 @keyframes smokeFadeC{0%,100%{opacity:.15;}55%{opacity:.42;}}
 
-/* === Escape: ZIGZAG LIGHTNING flashes (replaces .esc-trail) === */
-.card.glow-escape{
-  transition:border-color .25s ease, box-shadow .25s ease;
-}
-.card.glow-escape:hover{
-  border-color:#2a2a2a;
-  box-shadow:0 0 22px rgba(29,185,84,.18), 0 0 36px rgba(244,67,54,.12);
-}
-/* each bolt: full-bleed SVG layer ON the surface, above content (z 3) */
-.esc-bolt{
-  position:absolute; inset:0; z-index:3; pointer-events:none;
-  opacity:0; will-change:opacity;
-}
-.esc-bolt svg{ width:100%; height:100%; display:block; }
+/* === Escape — "Escape vs Restraint" two-particle physics (Canvas) === */
+.card.glow-escape{ transition:border-color .25s ease, box-shadow .25s ease; }
+.card.glow-escape:hover{ border-color:#2c4a2c; box-shadow:0 0 22px -8px rgba(29,185,84,.4); }
+.esc-canvas{ position:absolute; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; opacity:0; transition:opacity .3s ease; }
+.card.glow-escape:hover .esc-canvas{ opacity:1; }
 
     .card-thumb { display: block; width: calc(100% + 40px); height: 124px; margin: -20px -20px 14px; object-fit: cover; border-bottom: 1px solid #1c1c1c; filter: saturate(0.9) brightness(0.82); transition: filter 0.15s; }
     .card:hover .card-thumb { filter: saturate(1.05) brightness(1); }
@@ -286,95 +277,79 @@ document.addEventListener('DOMContentLoaded', applyLang);
   card.addEventListener('mouseleave',destroy);
 })();
 
-/* Escape: zigzag lightning — gentle jag; thick/bright at edges, thin/dim across the face */
-(function(){
-  const card = document.querySelector('.card.glow-escape');
-  if(!card) return;
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  let timer = null;
-  const rnd = (a,b)=> a + Math.random()*(b-a);
+/* Escape card — "Escape vs Restraint": a green escapee strains to the boundary while a
+   red restrainer tethers it back (pulsing tug-of-war). Canvas + hand-rolled vector physics. */
+(function () {
+  const card = document.querySelector('.glow-escape');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'esc-canvas'; canvas.setAttribute('aria-hidden', 'true');
+  card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const TRAIL = 26;
+  function mkP(col) { return { x:0,y:0,vx:0,vy:0, col, tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 }; }
+  const green = mkP('29,185,84'), red = mkP('244,67,54');
+  let W=0, H=0, cx=0, cy=0, bx0=0, by0=0, bx1=0, by1=0, tphase=0, raf=0, inside=false;
+  const FE=0.40, OMEGA=0.020, SWIRL=0.05, KS=0.0018, ET=52, K2=0.00045, FS=0.010, KA=0.030, DM=0.985, MAXV=6.5, INSET=8;
+  const EDGE = () => Math.hypot(W/2, H/2);
 
-  function makeZigzag(w,h){
-    const diagonal = Math.random() < 0.4;
-    let x0,y0,x1,y1;
-    if(diagonal){
-      const dir = Math.random() < 0.5;
-      x0 = rnd(-w*0.04, w*0.05);   x1 = rnd(w*0.95, w*1.04);
-      if(dir){ y0 = rnd(h*0.10, h*0.32); y1 = rnd(h*0.68, h*0.90); }
-      else   { y0 = rnd(h*0.68, h*0.90); y1 = rnd(h*0.10, h*0.32); }
-    } else {
-      const cy = rnd(h*0.22, h*0.78);
-      x0 = rnd(-w*0.04, w*0.05);   x1 = rnd(w*0.95, w*1.04);
-      y0 = cy + rnd(-h*0.05, h*0.05);
-      y1 = cy + rnd(-h*0.05, h*0.05);
-    }
-    const segs = Math.round(rnd(6,9));
-    const dx = x1-x0, dy = y1-y0, len = Math.hypot(dx,dy) || 1;
-    const px = -dy/len, py = dx/len;
-    const amp = h * rnd(0.05, 0.11);          // LOWER magnitude than before
-    const pts = []; let sign = Math.random()<0.5 ? 1 : -1;
-    for(let i=0;i<=segs;i++){
-      const t = i/segs, bx = x0 + dx*t, by = y0 + dy*t, env = Math.sin(t*Math.PI);
-      sign = (Math.random()<0.82) ? -sign : sign;
-      const j = (i===0||i===segs) ? 0 : sign*env*amp;
-      pts.push([ bx + px*j, by + py*j ]);
-    }
-    return pts;
+  function resize() { W=card.clientWidth; H=card.clientHeight; canvas.width=W; canvas.height=H; cx=W/2; cy=H/2; bx0=INSET; by0=INSET; bx1=W-INSET; by1=H-INSET; }
+  function init() {
+    resize();
+    green.x=cx+10; green.y=cy; green.vx=1; green.vy=-2; green.tc=0;
+    red.x=cx-8; red.y=cy; red.vx=0; red.vy=1; red.tc=0;
+    for (let i=0;i<TRAIL;i++){ green.tx[i]=green.x; green.ty[i]=green.y; red.tx[i]=red.x; red.ty[i]=red.y; }
+    tphase=0;
   }
-
-  function seg(x1,y1,x2,y2,stroke,width,opacity,filt){
-    const l = document.createElementNS(SVGNS,'line');
-    l.setAttribute('x1',x1.toFixed(1)); l.setAttribute('y1',y1.toFixed(1));
-    l.setAttribute('x2',x2.toFixed(1)); l.setAttribute('y2',y2.toFixed(1));
-    l.setAttribute('stroke',stroke); l.setAttribute('stroke-width',width.toFixed(2));
-    l.setAttribute('stroke-linecap','round'); l.setAttribute('opacity',opacity.toFixed(2));
-    if(filt) l.setAttribute('filter',filt);
-    return l;
+  function clampV(p){ const s=Math.hypot(p.vx,p.vy); if(s>MAXV){ p.vx*=MAXV/s; p.vy*=MAXV/s; } }
+  function bound(p){ if(p.x<bx0){p.x=bx0; if(p.vx<0)p.vx*=-0.3;} else if(p.x>bx1){p.x=bx1; if(p.vx>0)p.vx*=-0.3;}
+                     if(p.y<by0){p.y=by0; if(p.vy<0)p.vy*=-0.3;} else if(p.y>by1){p.y=by1; if(p.vy>0)p.vy*=-0.3;} }
+  function physics() {
+    tphase++;
+    const esc = FE * (0.15 + 0.85 * (0.5 + 0.5 * Math.sin(tphase * OMEGA)));   // pulsing escape
+    let dx=green.x-cx, dy=green.y-cy, d=Math.hypot(dx,dy)||1;
+    green.vx += (dx/d)*esc;   green.vy += (dy/d)*esc;          // escape outward
+    green.vx += (-dy/d)*SWIRL; green.vy += (dx/d)*SWIRL;       // tangential swirl
+    let tx=red.x-green.x, ty=red.y-green.y, tl=Math.hypot(tx,ty)||1;
+    const pull = KS*tl + K2*Math.max(0, tl-ET)*Math.max(0, tl-ET);  // tether: linear + escalating
+    green.vx += (tx/tl)*pull; green.vy += (ty/tl)*pull;
+    red.vx += (green.x-red.x)*FS + (cx-red.x)*KA;              // red: weak chase + strong anchor
+    red.vy += (green.y-red.y)*FS + (cy-red.y)*KA;
+    green.vx*=DM; green.vy*=DM; red.vx*=DM; red.vy*=DM; clampV(green); clampV(red);
+    green.x+=green.vx; green.y+=green.vy; red.x+=red.vx; red.y+=red.vy; bound(green); bound(red);
+    green.tx[green.tc%TRAIL]=green.x; green.ty[green.tc%TRAIL]=green.y; green.tc++;
+    red.tx[red.tc%TRAIL]=red.x; red.ty[red.tc%TRAIL]=red.y; red.tc++;
+    return tl;
   }
-
-  function spawn(){
-    const w = card.clientWidth, h = card.clientHeight;
-    if(!w || !h) return;
-    const wrap = document.createElement('div'); wrap.className = 'esc-bolt';
-    const svg = document.createElementNS(SVGNS,'svg');
-    svg.setAttribute('viewBox','0 0 '+w+' '+h); svg.setAttribute('preserveAspectRatio','none');
-    const green = Math.random() < 0.62;
-    const color = green ? '#1db954' : '#f44336';
-    const glow  = green ? 'rgba(29,185,84,.85)' : 'rgba(244,67,54,.85)';
-    const fid = 'esc'+Math.random().toString(36).slice(2,8);
-    const filt = document.createElementNS(SVGNS,'filter');
-    filt.setAttribute('id',fid); filt.setAttribute('x','-30%'); filt.setAttribute('y','-30%');
-    filt.setAttribute('width','160%'); filt.setAttribute('height','160%');
-    const blur = document.createElementNS(SVGNS,'feGaussianBlur'); blur.setAttribute('stdDeviation','1.6'); blur.setAttribute('result','b');
-    const merge = document.createElementNS(SVGNS,'feMerge');
-    const m1 = document.createElementNS(SVGNS,'feMergeNode'); m1.setAttribute('in','b');
-    const m2 = document.createElementNS(SVGNS,'feMergeNode'); m2.setAttribute('in','SourceGraphic');
-    merge.appendChild(m1); merge.appendChild(m2); filt.appendChild(blur); filt.appendChild(merge); svg.appendChild(filt);
-    const url = 'url(#'+fid+')';
-    const pts = makeZigzag(w,h);
-    // k: 1 at the left/right edges, 0 across the face (centre) — beam thicker & brighter at edges
-    for(let i=0;i<pts.length-1;i++){
-      const a = pts[i], b = pts[i+1], cx = (a[0]+b[0])/2;
-      const d = Math.min(Math.max(cx,0), w);
-      const k = 1 - Math.min(1, Math.min(d, w-d) / (w*0.5));
-      const width = 0.7 + 2.8*k;
-      const op    = 0.16 + 0.74*k;
-      svg.appendChild(seg(a[0],a[1],b[0],b[1], glow, width+2.4, op*0.5, url));   // halo
-      svg.appendChild(seg(a[0],a[1],b[0],b[1], color, width, op, url));          // body
-      if(k > 0.5) svg.appendChild(seg(a[0],a[1],b[0],b[1], '#eafff0', Math.max(0.6,width*0.45), op, null)); // hot core, edges only
+  function drawTrail(p) {
+    ctx.lineCap='round';
+    for (let k=0;k<TRAIL-1;k++){
+      const i0=(p.tc-1-k+TRAIL*8)%TRAIL, i1=(p.tc-2-k+TRAIL*8)%TRAIL;
+      const a=1-k/TRAIL;
+      ctx.strokeStyle='rgba('+p.col+','+(a*a*0.55).toFixed(3)+')';
+      ctx.lineWidth=0.4+a*2.6;
+      ctx.beginPath(); ctx.moveTo(p.tx[i0],p.ty[i0]); ctx.lineTo(p.tx[i1],p.ty[i1]); ctx.stroke();
     }
-    wrap.appendChild(svg); card.appendChild(wrap);
-    const dur = rnd(300,560);
-    const anim = wrap.animate(
-      [ {opacity:0}, {opacity:1,offset:0.14}, {opacity:0.4,offset:0.32}, {opacity:0.85,offset:0.5}, {opacity:0,offset:1} ],
-      { duration:dur, easing:'ease-out' });
-    anim.onfinish = ()=> wrap.remove();
-    setTimeout(()=>{ if(wrap.parentNode) wrap.remove(); }, dur+160);
   }
-
-  function loop(){ spawn(); timer = setTimeout(loop, rnd(540,880)); }   // LOWER, varied frequency
-  card.addEventListener('mouseenter', ()=>{ if(timer) return; loop(); });
-  card.addEventListener('mouseleave', ()=>{ clearTimeout(timer); timer = null; });
+  function drawHead(p) {
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,9);
+    g.addColorStop(0,'rgba('+p.col+',0.95)'); g.addColorStop(0.4,'rgba('+p.col+',0.45)'); g.addColorStop(1,'rgba('+p.col+',0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,9,0,7); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.beginPath(); ctx.arc(p.x,p.y,1.7,0,7); ctx.fill();
+  }
+  function frame() {
+    const tl=physics();
+    ctx.clearRect(0,0,W,H);
+    const tension=Math.min(1, Math.max(0, (tl-ET)/(EDGE()-ET)));   // 0 slack → 1 taut
+    ctx.strokeStyle='rgba(244,67,54,'+(0.10+0.55*tension).toFixed(3)+')';
+    ctx.lineWidth=0.5+2.0*tension;
+    ctx.beginPath(); ctx.moveTo(red.x,red.y); ctx.lineTo(green.x,green.y); ctx.stroke();   // elastic tether
+    drawTrail(red); drawTrail(green);
+    drawHead(red); drawHead(green);
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  card.addEventListener('mouseenter', () => { if (raf) return; init(); inside=true; raf=requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside=false; });   // frame() stops itself; CSS fades the canvas out
 })();
 
 /* Gomoku card — Canvas 2D water ripple refracting the thumbnail (mousemove wake + click splash) */
