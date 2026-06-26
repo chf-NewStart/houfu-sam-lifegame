@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Labyrinth // houfu.xyz</title>
-<meta name="description" content="A torch-lit maze you explore — recursive-backtracker generation, fog-of-war line-of-sight, and an animated A* solver.">
+<meta name="description" content="An endless torch-lit descent — recursive-backtracker mazes, fog-of-war line-of-sight, and an animated A* pathfinder. Go deeper, score higher.">
 <link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -23,13 +23,13 @@
   #maze{display:block;background:#080808;border:1px solid #161616;border-radius:3px;touch-action:none;outline:none;cursor:pointer;box-shadow:0 0 40px -16px rgba(29,185,84,0.5);}
   .side{flex:1;min-width:230px;max-width:320px;}
   .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:13px 14px;margin-bottom:11px;}
-  .card-title{color:#1db954;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:11px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
+  .card-title{color:#1db954;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:11px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;align-items:center;}
+  .card-title .best{color:#36c5d0;letter-spacing:0;}
 
   .hud{display:flex;gap:8px;}
   .stat{flex:1;text-align:center;}
   .stat .k{font-size:0.56rem;text-transform:uppercase;letter-spacing:1px;color:#7a7a7a;}
-  .stat .v{font-size:1.15rem;color:#f0f0f0;margin-top:3px;font-variant-numeric:tabular-nums;}
-  .stat .v.best{color:#36c5d0;}
+  .stat .v{font-size:1.2rem;color:#f0f0f0;margin-top:3px;font-variant-numeric:tabular-nums;}
 
   .btn{display:block;width:100%;background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.74rem;padding:9px;cursor:pointer;margin-bottom:8px;transition:background .12s,color .12s;}
   .btn:hover{background:#1db954;color:#07120b;}
@@ -45,6 +45,7 @@
 
   .help{font-size:0.7rem;color:#9a9a9a;line-height:1.7;}
   .help b{color:#cfcfcf;font-weight:normal;}
+  .help > div{margin-bottom:4px;}
   .keycap{display:inline-block;border:1px solid #2a2a2a;border-radius:3px;padding:0 5px;color:#cfcfcf;font-size:0.66rem;}
   .leg{display:flex;align-items:center;gap:7px;margin-top:5px;}
   .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
@@ -54,24 +55,13 @@
   .dpad button{width:54px;height:46px;background:#0d0d0d;border:1px solid #2a2a2a;color:#1db954;font-size:1.1rem;font-family:inherit;cursor:pointer;border-radius:4px;transition:background .1s,border-color .1s;}
   .dpad button:hover{border-color:#1db954;}
   .dpad button:active{background:rgba(29,185,84,0.2);}
-
-  .win{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(4,6,4,0.82);z-index:50;padding:20px;}
-  .win.show{display:flex;}
-  .win .box{background:#0c0f0c;border:1px solid #1db95466;border-radius:5px;padding:26px 30px;text-align:center;max-width:340px;box-shadow:0 0 60px -18px rgba(29,185,84,0.7);}
-  .win .big{font-size:1.5rem;color:#1db954;letter-spacing:2px;margin-bottom:4px;}
-  .win .sub2{font-size:0.7rem;color:#8a8a8a;margin-bottom:16px;}
-  .win .res{display:flex;gap:18px;justify-content:center;margin-bottom:6px;}
-  .win .res .k{font-size:0.56rem;text-transform:uppercase;letter-spacing:1px;color:#7a7a7a;}
-  .win .res .v{font-size:1.2rem;color:#f0f0f0;}
-  .win .nb{font-size:0.72rem;color:#36c5d0;margin:8px 0 16px;min-height:1em;}
-  .win .btn{max-width:200px;margin:0 auto;}
 </style>
 </head>
 <body>
 <div class="hdr">
   <div>
     <div class="title" id="pgTitle">&gt;_ Labyrinth</div>
-    <div class="sub" id="pgSub" data-en="A torch-lit maze carved by recursive backtracking. You only see down the corridors you can reach — feel your way to the ✦ exit. Stuck? Watch A* light up the shortest path." data-zh="由递归回溯算法雕刻的火把迷宫。你只能看见自己所在走廊的尽头——摸索着走向 ✦ 出口。卡住了？看 A* 点亮最短路径。">A torch-lit maze carved by recursive backtracking. You only see down the corridors you can reach — feel your way to the ✦ exit. Stuck? Watch A* light up the shortest path.</div>
+    <div class="sub" id="pgSub" data-en="An endless torch-lit descent. You only see down the corridors you can reach — feel your way to the ✦ exit and drop to a deeper, bigger maze. Go deep, move fast, take the straightest line: that's the score." data-zh="无尽的火把下潜。你只能看见自己所在走廊的尽头——摸索着走向 ✦ 出口，然后坠入更深、更大的迷宫。下得越深、走得越快、路线越直，分数越高。">An endless torch-lit descent. You only see down the corridors you can reach — feel your way to the ✦ exit and drop to a deeper, bigger maze. Go deep, move fast, take the straightest line: that's the score.</div>
     <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
@@ -88,140 +78,125 @@
 
   <div class="side">
     <div class="card">
-      <div class="card-title"><span data-en="// run" data-zh="// 进度">// run</span></div>
+      <div class="card-title"><span data-en="// descent" data-zh="// 下潜">// descent</span><span class="best" id="vBest">best —</span></div>
       <div class="hud">
+        <div class="stat"><div class="k" data-en="depth" data-zh="深度">depth</div><div class="v" id="vDepth">1</div></div>
+        <div class="stat"><div class="k" data-en="score" data-zh="分数">score</div><div class="v" id="vScore">0</div></div>
         <div class="stat"><div class="k" data-en="time" data-zh="时间">time</div><div class="v" id="vTime">00:00.0</div></div>
-        <div class="stat"><div class="k" data-en="steps" data-zh="步数">steps</div><div class="v" id="vSteps">0</div></div>
-        <div class="stat"><div class="k" data-en="best" data-zh="最佳">best</div><div class="v best" id="vBest">—</div></div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-title"><span data-en="// controls" data-zh="// 控制">// controls</span></div>
-      <div class="seg" id="sizeSeg">
-        <button data-size="S" data-en="small" data-zh="小">small</button>
-        <button data-size="M" class="on" data-en="medium" data-zh="中">medium</button>
-        <button data-size="L" data-en="large" data-zh="大">large</button>
+      <div class="seg" id="diffSeg">
+        <button data-diff="casual" data-en="casual" data-zh="休闲">casual</button>
+        <button data-diff="normal" class="on" data-en="normal" data-zh="普通">normal</button>
+        <button data-diff="brave" data-en="brave" data-zh="勇者">brave</button>
       </div>
       <div class="row">
         <span data-en="fog of war" data-zh="战争迷雾">fog of war</span>
         <button class="toggle on" id="fogBtn" onclick="toggleFog()" data-en="on" data-zh="开">on</button>
       </div>
-      <button class="btn" id="btnNew" onclick="game.newMaze()" data-en="↺ new maze" data-zh="↺ 新迷宫">↺ new maze</button>
-      <button class="btn ghost" id="btnSolve" onclick="game.solve()" data-en="◇ solve · A*" data-zh="◇ 求解 · A*">◇ solve · A*</button>
+      <button class="btn" id="btnNew" onclick="game.newRun()" data-en="↺ new run" data-zh="↺ 新一轮">↺ new run</button>
+      <button class="btn ghost" id="btnSolve" onclick="game.solve()" data-en="◇ show path · A*" data-zh="◇ 显示路径 · A*">◇ show path · A*</button>
     </div>
 
     <div class="card help">
       <div class="card-title"><span data-en="// how" data-zh="// 玩法">// how</span></div>
-      <div data-en="Move with <b class='keycap'>W A S D</b> / arrow keys, the d-pad below, or click the maze toward the dot (swipe on touch)." data-zh="用 <b class='keycap'>W A S D</b> / 方向键、下方方向盘，或朝小绿点方向点击迷宫来移动（触屏可滑动）。">Move with <b class="keycap">W A S D</b> / arrow keys, the d-pad below, or click the maze toward the dot (swipe on touch).</div>
+      <div data-en="Reach the ✦ exit to descend — every level is bigger. Deeper, faster &amp; straighter routes score more." data-zh="抵达 ✦ 出口即可下潜——每一层都更大。越深、越快、路线越直，得分越高。">Reach the ✦ exit to descend — every level is bigger. Deeper, faster &amp; straighter routes score more.</div>
+      <div data-en="Move: <b class='keycap'>W A S D</b> / arrows, the d-pad, or click toward the dot." data-zh="移动：<b class='keycap'>W A S D</b> / 方向键、方向盘，或朝小绿点点击。">Move: <b class="keycap">W A S D</b> / arrows, the d-pad, or click toward the dot.</div>
       <div class="leg"><span class="dot" style="background:#2bff88;box-shadow:0 0 8px #2bff88"></span><span data-en="you" data-zh="你">you</span></div>
-      <div class="leg"><span class="dot" style="background:#ffd24d;box-shadow:0 0 8px #ffd24d"></span><span data-en="the exit (beacon shows direction)" data-zh="出口（光点指示方向）">the exit (beacon shows direction)</span></div>
-      <div class="leg"><span class="dot" style="background:#36c5d0"></span><span data-en="A* search frontier" data-zh="A* 搜索前沿">A* search frontier</span></div>
+      <div class="leg"><span class="dot" style="background:#ffd24d;box-shadow:0 0 8px #ffd24d"></span><span data-en="the exit — descend deeper" data-zh="出口——继续下潜">the exit — descend deeper</span></div>
     </div>
-  </div>
-</div>
-
-<div class="win" id="win">
-  <div class="box">
-    <div class="big" data-en="✦ ESCAPED ✦" data-zh="✦ 逃脱成功 ✦">✦ ESCAPED ✦</div>
-    <div class="sub2" id="winSub"></div>
-    <div class="res">
-      <div><div class="k" data-en="time" data-zh="时间">time</div><div class="v" id="winTime">—</div></div>
-      <div><div class="k" data-en="steps" data-zh="步数">steps</div><div class="v" id="winSteps">—</div></div>
-    </div>
-    <div class="nb" id="winNb"></div>
-    <button class="btn" onclick="game.newMaze()" data-en="↺ new maze" data-zh="↺ 新迷宫">↺ new maze</button>
   </div>
 </div>
 
 <script>
 /* ============================================================================
-   labyrinth.exe — recursive-backtracker maze, fog-of-war line-of-sight, A* solve
+   labyrinth.exe — endless torch-lit descent
+   recursive-backtracker mazes · fog-of-war line-of-sight · A* hint · juice
    HTML5 Canvas + vanilla JS. (c) houfu.xyz
    ============================================================================ */
 const game = (function () {
   const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0], OPP = [2, 3, 0, 1];   // N E S W
-  const SIZES = { S: { c: 13, r: 13, R: 4 }, M: { c: 19, r: 19, R: 4 }, L: { c: 27, r: 27, R: 5 } };
+  const VIS = { casual: 5, normal: 4, brave: 3 };
   const $ = (id) => document.getElementById(id);
 
-  let cols = 19, rows = 19, R_VIS = 4, sizeKey = 'M';
+  let cols = 11, rows = 11, R_VIS = 4, diff = 'normal';
   let cells = [], stateArr = [];
-  let px = 0, py = 0, ex = 0, ey = 0;
+  let px = 0, py = 0, ex = 0, ey = 0, rx = 0, ry = 0;                  // rx,ry = smooth render pos (cell coords)
   let seen, trail, visible = new Set();
-  let steps = 0, startT = 0, elapsed = 0, running = false, won = false;
-  let fog = true, revealAll = false, solveAnim = null;
+  let depth = 1, score = 0, steps = 0, runStart = 0, levelStart = 0, elapsed = 0;
+  let running = false, fog = true, revealAll = false, solveAnim = null, descending = 0;
+  let parts = [], shake = 0, toastMsg = '', toastAt = 0;
   let canvas, ctx, DPR = 1, cell = 24, cssW = 0, cssH = 0;
 
   const idx = (x, y) => y * cols + x;
   const inb = (x, y) => x >= 0 && x < cols && y >= 0 && y < rows;
   const key = (x, y) => x + ',' + y;
+  const sizeForDepth = (d) => Math.min(31, 9 + d * 2);
 
-  // ---- maze generation: recursive backtracker (iterative DFS carve) ----
+  // ---- maze: recursive backtracker ----
   function generate() {
     cells = new Array(cols * rows);
-    for (let i = 0; i < cells.length; i++) cells[i] = [true, true, true, true];   // walls N E S W
-    const visited = new Uint8Array(cols * rows);
-    const stack = [0]; visited[0] = 1;
+    for (let i = 0; i < cells.length; i++) cells[i] = [true, true, true, true];
+    const visited = new Uint8Array(cols * rows), stack = [0]; visited[0] = 1;
     while (stack.length) {
-      const cur = stack[stack.length - 1], cx = cur % cols, cy = (cur / cols) | 0;
-      const nbrs = [];
+      const cur = stack[stack.length - 1], cx = cur % cols, cy = (cur / cols) | 0, nbrs = [];
       for (let d = 0; d < 4; d++) { const nx = cx + DX[d], ny = cy + DY[d]; if (inb(nx, ny) && !visited[idx(nx, ny)]) nbrs.push(d); }
-      if (nbrs.length) {
-        const d = nbrs[(Math.random() * nbrs.length) | 0], nx = cx + DX[d], ny = cy + DY[d], ni = idx(nx, ny);
-        cells[cur][d] = false; cells[ni][OPP[d]] = false; visited[ni] = 1; stack.push(ni);
-      } else stack.pop();
+      if (nbrs.length) { const d = nbrs[(Math.random() * nbrs.length) | 0], nx = cx + DX[d], ny = cy + DY[d], ni = idx(nx, ny); cells[cur][d] = false; cells[ni][OPP[d]] = false; visited[ni] = 1; stack.push(ni); }
+      else stack.pop();
     }
   }
-
-  // ---- fog-of-war: BFS through open passages up to R steps = what you can see ----
+  // ---- fog: BFS line-of-sight through open passages ----
   function computeVision() {
     visible = new Set();
     const q = [[px, py, 0]], vis = new Set([key(px, py)]);
     while (q.length) {
-      const [x, y, dep] = q.shift();
-      visible.add(key(x, y)); seen[idx(x, y)] = 1;
+      const [x, y, dep] = q.shift(); visible.add(key(x, y)); seen[idx(x, y)] = 1;
       if (dep >= R_VIS) continue;
       const c = cells[idx(x, y)];
-      for (let d = 0; d < 4; d++) {
-        if (c[d]) continue;
-        const nx = x + DX[d], ny = y + DY[d], k = key(nx, ny);
-        if (inb(nx, ny) && !vis.has(k)) { vis.add(k); q.push([nx, ny, dep + 1]); }
-      }
+      for (let d = 0; d < 4; d++) { if (c[d]) continue; const nx = x + DX[d], ny = y + DY[d], k = key(nx, ny); if (inb(nx, ny) && !vis.has(k)) { vis.add(k); q.push([nx, ny, dep + 1]); } }
     }
   }
 
-  function newMaze() {
-    const s = SIZES[sizeKey]; cols = s.c; rows = s.r; R_VIS = s.R;
+  function buildLevel() {
+    cols = rows = sizeForDepth(depth); R_VIS = VIS[diff];
     generate();
-    px = 0; py = 0; ex = cols - 1; ey = rows - 1;
+    px = 0; py = 0; ex = cols - 1; ey = rows - 1; rx = px; ry = py;
     seen = new Uint8Array(cols * rows); trail = new Uint8Array(cols * rows); stateArr = new Uint8Array(cols * rows);
-    visible = new Set(); steps = 0; running = false; won = false; elapsed = 0; startT = 0;
-    revealAll = false; solveAnim = null; trail[idx(px, py)] = 1;
-    $('win').classList.remove('show'); $('vSteps').textContent = '0'; $('vTime').textContent = '00:00.0';
-    loadBest(); layout(); computeVision();
+    visible = new Set(); steps = 0; revealAll = false; solveAnim = null; trail[idx(px, py)] = 1;
+    levelStart = performance.now();
+    layout(); computeVision(); updateHUD();
+  }
+  function newRun() {
+    depth = 1; score = 0; running = false; elapsed = 0; runStart = 0; descending = 0; parts = []; toastAt = 0;
+    buildLevel();
   }
 
-  // ---- layout / sizing ----
   function layout() {
     const avail = Math.min(560, (canvas.parentNode.parentNode.clientWidth || 560) - 2);
     cell = Math.max(7, Math.floor(Math.min(avail / cols, 560 / rows)));
-    cssW = cell * cols; cssH = cell * rows;
-    DPR = window.devicePixelRatio || 1;
+    cssW = cell * cols; cssH = cell * rows; DPR = window.devicePixelRatio || 1;
     canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
     canvas.width = Math.round(cssW * DPR); canvas.height = Math.round(cssH * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
+  function updateHUD() {
+    $('vDepth').textContent = depth; $('vScore').textContent = score;
+    const b = loadBest(); $('vBest').textContent = b ? ('best ' + b.score) : 'best —';
+  }
 
   // ---- movement ----
   function move(d) {
-    if (won || solveAnim) return;
-    if (cells[idx(px, py)][d]) return;                 // wall in the way
+    if (descending) return;
+    if (cells[idx(px, py)][d]) { bump(d); return; }
+    if (solveAnim) solveAnim = null;                    // moving dismisses the A* hint
     px += DX[d]; py += DY[d]; steps++; trail[idx(px, py)] = 1;
-    if (!running) { running = true; startT = performance.now(); }
-    computeVision(); $('vSteps').textContent = steps;
-    if (px === ex && py === ey) finish();
+    if (!running) { running = true; runStart = performance.now() - elapsed; }
+    footstep(); computeVision();
+    if (px === ex && py === ey) reachExit();
   }
-  // click/tap a spot: step one cell toward it (dominant axis first, fall back to the other)
   function stepToward(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     const tx = Math.floor((clientX - rect.left) / cell), ty = Math.floor((clientY - rect.top) / cell);
@@ -230,33 +205,30 @@ const game = (function () {
     const order = Math.abs(dx) >= Math.abs(dy) ? h.concat(v) : v.concat(h);
     for (let n = 0; n < order.length; n++) { if (!cells[idx(px, py)][order[n]]) { move(order[n]); break; } }
   }
-
-  function finish() {
-    won = true; running = false;
-    const best = saveBest();
-    $('winTime').textContent = fmt(elapsed);
-    $('winSteps').textContent = steps;
-    $('winSub').textContent = (cols + '×' + rows) + ' · ' + sizeKey;
-    $('winNb').textContent = best.isNew ? t('★ new best time!', '★ 新纪录！') : '';
-    $('win').classList.add('show');
+  function reachExit() {
+    const levelMs = performance.now() - levelStart, optimal = (aStar(0, 0, ex, ey).path.length || 1);
+    const eff = Math.max(0, Math.min(1, optimal / Math.max(1, steps)));     // 1 = perfect route
+    const speedBonus = Math.max(0, Math.round(220 - (levelMs / 1000) * 6)); // faster = more
+    const gained = Math.round((60 + 90 * eff) * depth + speedBonus);
+    score += gained;
+    const nb = saveBest();
+    burst((ex + 0.5) * cell, (ey + 0.5) * cell, '255,210,77', 30);
+    toastMsg = '+' + gained + (nb ? '   ★ NEW BEST' : ''); toastAt = performance.now();
+    depth++; descending = performance.now(); updateHUD();
+    setTimeout(() => { descending = 0; buildLevel(); }, 1000);     // descend to the deeper maze
   }
 
-  // ---- best time (localStorage) ----
-  function bestKey() { return 'labyrinth_best_' + sizeKey; }
-  function loadBest() {
-    let b = null; try { b = JSON.parse(localStorage.getItem(bestKey())); } catch (e) {}
-    $('vBest').textContent = b ? fmt(b.ms) : '—';
-    return b;
-  }
-  function saveBest() {
-    let b = null; try { b = JSON.parse(localStorage.getItem(bestKey())); } catch (e) {}
-    const cur = { ms: elapsed, steps: steps }; let isNew = false;
-    if (!b || cur.ms < b.ms) { b = cur; isNew = true; try { localStorage.setItem(bestKey(), JSON.stringify(b)); } catch (e) {} }
-    $('vBest').textContent = fmt(b.ms);
-    return { best: b, isNew: isNew };
-  }
+  // ---- particles / juice ----
+  function footstep() { const fx = (rx + 0.5) * cell, fy = (ry + 0.5) * cell; for (let i = 0; i < 4; i++) parts.push({ x: fx, y: fy, vx: (Math.random() - 0.5) * 1.4, vy: (Math.random() - 0.5) * 1.4, life: 1, col: '43,255,136' }); }
+  function bump(d) { shake = 5; const bx = (px + 0.5 + DX[d] * 0.45) * cell, by = (py + 0.5 + DY[d] * 0.45) * cell; for (let i = 0; i < 7; i++) parts.push({ x: bx, y: by, vx: (Math.random() - 0.5) * 2.4 - DX[d] * 1.4, vy: (Math.random() - 0.5) * 2.4 - DY[d] * 1.4, life: 1, col: '244,130,70' }); }
+  function burst(x, y, col, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = 1 + Math.random() * 3.2; parts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, col: col }); } }
+  function updateParts() { for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vx *= 0.9; p.vy *= 0.9; p.vy += 0.04; p.life -= 0.035; } if (parts.length) parts = parts.filter(p => p.life > 0); }
 
-  // ---- A* solver (animated frontier + shortest path) ----
+  // ---- best (score) ----
+  function loadBest() { try { return JSON.parse(localStorage.getItem('labyrinth_run')); } catch (e) { return null; } }
+  function saveBest() { let b = loadBest(), nb = false; if (!b || score > b.score) { b = { score: score, depth: depth }; nb = true; try { localStorage.setItem('labyrinth_run', JSON.stringify(b)); } catch (e) {} } return nb; }
+
+  // ---- A* (animated search frontier + shortest path) ----
   function aStar(sx, sy, gx, gy) {
     const open = [{ x: sx, y: sy, f: Math.abs(sx - gx) + Math.abs(sy - gy) }];
     const g = {}, came = {}, closed = new Set(), order = [];
@@ -277,34 +249,28 @@ const game = (function () {
     }
     const path = []; let k = key(gx, gy);
     if (came[k] !== undefined || (sx === gx && sy === gy)) { while (k) { const p = k.split(',').map(Number); path.push(p); k = came[k]; } path.reverse(); }
-    return { order, path };
+    return { order: order, path: path };
   }
-  function solve() {
-    if (won || solveAnim) return;
-    const res = aStar(px, py, ex, ey);
-    solveAnim = { order: res.order, path: res.path, i: 0, done: false };
-    revealAll = true; running = false;
-  }
+  function solve() { if (descending || solveAnim) return; const res = aStar(0, 0, ex, ey); solveAnim = { order: res.order, path: res.path, i: 0, done: false }; revealAll = true; }
 
   // ---- render ----
   function render(t) {
-    ctx.fillStyle = '#080808'; ctx.fillRect(0, 0, cssW, cssH);
-    // floors + state
+    let ox = 0, oy = 0; if (shake > 0.25) { ox = (Math.random() - 0.5) * shake; oy = (Math.random() - 0.5) * shake; shake *= 0.84; } else shake = 0;
+    ctx.setTransform(DPR, 0, 0, DPR, ox * DPR, oy * DPR);
+    ctx.fillStyle = '#080808'; ctx.fillRect(-8, -8, cssW + 16, cssH + 16);
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
       const i = idx(x, y), k = key(x, y);
       let st = (!fog || revealAll) ? 2 : (visible.has(k) ? 2 : (seen[i] ? 1 : 0));
       stateArr[i] = st; if (st === 0) continue;
       const cx = x * cell, cy = y * cell;
       ctx.fillStyle = st === 2 ? '#0e1611' : '#0a0c0a'; ctx.fillRect(cx, cy, cell, cell);
-      if (trail[i] && !revealAll) { ctx.fillStyle = st === 2 ? 'rgba(43,255,136,0.13)' : 'rgba(43,255,136,0.06)'; const m = cell * 0.32; ctx.fillRect(cx + m, cy + m, cell - 2 * m, cell - 2 * m); }
+      if (trail[i] && !revealAll) { ctx.fillStyle = st === 2 ? 'rgba(43,255,136,0.12)' : 'rgba(43,255,136,0.06)'; const m = cell * 0.33; ctx.fillRect(cx + m, cy + m, cell - 2 * m, cell - 2 * m); }
     }
-    // walls — batched per light level (2 strokes total)
     ctx.lineWidth = Math.max(1, cell * 0.085); ctx.lineCap = 'round';
     for (let pass = 1; pass <= 2; pass++) {
       ctx.strokeStyle = pass === 2 ? '#2f9457' : '#163320'; ctx.beginPath();
       for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-        const i = idx(x, y); if (stateArr[i] !== pass) continue;
-        const c = cells[i], cx = x * cell, cy = y * cell;
+        const i = idx(x, y); if (stateArr[i] !== pass) continue; const c = cells[i], cx = x * cell, cy = y * cell;
         if (c[0]) { ctx.moveTo(cx, cy); ctx.lineTo(cx + cell, cy); }
         if (c[1]) { ctx.moveTo(cx + cell, cy); ctx.lineTo(cx + cell, cy + cell); }
         if (c[2]) { ctx.moveTo(cx, cy + cell); ctx.lineTo(cx + cell, cy + cell); }
@@ -313,90 +279,90 @@ const game = (function () {
       ctx.stroke();
     }
     if (solveAnim) drawSolve();
-    drawExit(t); drawPlayer(t);
+    drawExit(t);
+    for (const p of parts) { ctx.fillStyle = 'rgba(' + p.col + ',' + (Math.max(0, p.life) * 0.85).toFixed(3) + ')'; const s = 1.4 + (1 - p.life) * 2.2; ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s); }
+    drawPlayer(t);
+    if (fog && !revealAll) drawVignette();
+    if (descending) drawBanner();
+    if (toastAt && performance.now() - toastAt < 1500) drawToast();
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
-
   function drawSolve() {
     const a = solveAnim;
     if (!a.done) { a.i = Math.min(a.order.length, a.i + Math.max(2, ((cols * rows) / 70) | 0)); if (a.i >= a.order.length) a.done = true; }
-    for (let n = 0; n < a.i; n++) {
-      const [x, y] = a.order[n], f = n / a.order.length;
-      ctx.fillStyle = 'rgba(' + ((54 + f * 30) | 0) + ',' + ((150 + f * 70) | 0) + ',' + ((208 - f * 70) | 0) + ',0.16)';
-      ctx.fillRect(x * cell, y * cell, cell, cell);
-    }
+    for (let n = 0; n < a.i; n++) { const c = a.order[n], f = n / a.order.length; ctx.fillStyle = 'rgba(' + ((54 + f * 30) | 0) + ',' + ((150 + f * 70) | 0) + ',' + ((208 - f * 70) | 0) + ',0.16)'; ctx.fillRect(c[0] * cell, c[1] * cell, cell, cell); }
     if (a.done && a.path.length) {
-      ctx.strokeStyle = 'rgba(43,255,136,0.9)'; ctx.lineWidth = Math.max(2, cell * 0.16); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath();
-      for (let n = 0; n < a.path.length; n++) { const [x, y] = a.path[n], cx = x * cell + cell / 2, cy = y * cell + cell / 2; n ? ctx.lineTo(cx, cy) : ctx.moveTo(cx, cy); }
+      ctx.strokeStyle = 'rgba(43,255,136,0.9)'; ctx.lineWidth = Math.max(2, cell * 0.16); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+      for (let n = 0; n < a.path.length; n++) { const c = a.path[n], cx = c[0] * cell + cell / 2, cy = c[1] * cell + cell / 2; n ? ctx.lineTo(cx, cy) : ctx.moveTo(cx, cy); }
       ctx.stroke();
     }
   }
-
   function drawExit(t) {
-    const cx = ex * cell + cell / 2, cy = ey * cell + cell / 2;
-    const known = !fog || revealAll || seen[idx(ex, ey)];
-    const pulse = 0.5 + 0.5 * Math.sin(t * 0.004);
-    const a = known ? (0.75 + 0.25 * pulse) : (0.20 + 0.16 * pulse), rad = cell * (0.55 + 0.28 * pulse);
+    const cx = ex * cell + cell / 2, cy = ey * cell + cell / 2, known = !fog || revealAll || seen[idx(ex, ey)];
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.004), a = known ? (0.75 + 0.25 * pulse) : (0.20 + 0.16 * pulse), rad = cell * (0.55 + 0.28 * pulse);
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad * 1.7);
     g.addColorStop(0, 'rgba(255,210,77,' + a + ')'); g.addColorStop(1, 'rgba(255,210,77,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rad * 1.7, 0, 7); ctx.fill();
     if (known) { ctx.fillStyle = 'rgba(255,240,170,' + a + ')'; ctx.font = (cell * 0.72) + 'px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('✦', cx, cy); }
   }
   function drawPlayer(t) {
-    const cx = px * cell + cell / 2, cy = py * cell + cell / 2, pulse = 0.5 + 0.5 * Math.sin(t * 0.006), rad = cell * 0.66;
+    const cx = (rx + 0.5) * cell, cy = (ry + 0.5) * cell, pulse = 0.5 + 0.5 * Math.sin(t * 0.006), rad = cell * 0.66;
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
     g.addColorStop(0, 'rgba(43,255,136,0.95)'); g.addColorStop(0.42, 'rgba(43,255,136,' + (0.38 + 0.22 * pulse) + ')'); g.addColorStop(1, 'rgba(43,255,136,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rad, 0, 7); ctx.fill();
     ctx.fillStyle = '#eafff2'; ctx.beginPath(); ctx.arc(cx, cy, Math.max(2, cell * 0.17), 0, 7); ctx.fill();
   }
+  function drawVignette() {
+    const cx = (rx + 0.5) * cell, cy = (ry + 0.5) * cell, vr = cell * (R_VIS + 1);
+    const g = ctx.createRadialGradient(cx, cy, vr * 0.55, cx, cy, vr * 1.35);
+    g.addColorStop(0, 'rgba(6,7,6,0)'); g.addColorStop(1, 'rgba(4,6,4,0.88)');
+    ctx.fillStyle = g; ctx.fillRect(-12, -12, cssW + 24, cssH + 24);
+  }
+  function drawBanner() {
+    const e = performance.now() - descending, p = Math.min(1, e / 1000), s = Math.sin(p * Math.PI);
+    ctx.fillStyle = 'rgba(4,6,4,' + (0.55 * s).toFixed(3) + ')'; ctx.fillRect(0, 0, cssW, cssH);
+    ctx.fillStyle = 'rgba(43,255,136,' + s.toFixed(3) + ')'; ctx.font = 'bold ' + Math.round(cssW * 0.055) + 'px Consolas,monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('↓ DEPTH ' + depth, cssW / 2, cssH / 2);
+  }
+  function drawToast() {
+    const a = Math.max(0, 1 - (performance.now() - toastAt) / 1500);
+    ctx.fillStyle = 'rgba(255,232,150,' + a.toFixed(3) + ')'; ctx.font = 'bold ' + Math.round(cell * 1.0) + 'px Consolas,monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(toastMsg, cssW / 2, 8 + (1 - a) * 10);
+  }
 
   function fmt(ms) { const s = ms / 1000, m = (s / 60) | 0, r = s % 60; return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r.toFixed(1); }
 
   function loop(t) {
-    if (running && !won) { elapsed = performance.now() - startT; $('vTime').textContent = fmt(elapsed); }
+    rx += (px - rx) * 0.28; ry += (py - ry) * 0.28;                     // smooth glide
+    if (running && !descending) { elapsed = performance.now() - runStart; $('vTime').textContent = fmt(elapsed); }
+    updateParts();
     render(t);
     requestAnimationFrame(loop);
   }
-
   function t(en, zh) { return (document.documentElement.lang === 'zh') ? zh : en; }
 
-  // ---- input ----
   function bind() {
     const KMAP = { ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3 };
-    window.addEventListener('keydown', (e) => {
-      if (e.code in KMAP) { e.preventDefault(); move(KMAP[e.code]); }
-      else if (e.code === 'KeyN') newMaze();
-      else if (e.code === 'KeyF') toggleFog();
-    });
+    window.addEventListener('keydown', (e) => { if (e.code in KMAP) { e.preventDefault(); move(KMAP[e.code]); } else if (e.code === 'KeyN') newRun(); else if (e.code === 'KeyF') toggleFog(); });
     document.querySelectorAll('.dpad button').forEach(b => b.addEventListener('click', () => move(+b.dataset.dir)));
-    document.querySelectorAll('#sizeSeg button').forEach(b => b.addEventListener('click', () => {
-      sizeKey = b.dataset.size;
-      document.querySelectorAll('#sizeSeg button').forEach(o => o.classList.toggle('on', o === b));
-      newMaze();
-    }));
-    // click / tap / swipe on the maze
+    document.querySelectorAll('#diffSeg button').forEach(b => b.addEventListener('click', () => { diff = b.dataset.diff; document.querySelectorAll('#diffSeg button').forEach(o => o.classList.toggle('on', o === b)); newRun(); }));
     let sx = 0, sy = 0, sw = false, touchedAt = 0;
-    canvas.addEventListener('touchstart', (e) => { const tch = e.touches[0]; sx = tch.clientX; sy = tch.clientY; sw = true; }, { passive: true });
+    canvas.addEventListener('touchstart', (e) => { const tc = e.touches[0]; sx = tc.clientX; sy = tc.clientY; sw = true; }, { passive: true });
     canvas.addEventListener('touchend', (e) => {
       touchedAt = performance.now();
-      if (!sw) return; sw = false; const tch = e.changedTouches[0], dx = tch.clientX - sx, dy = tch.clientY - sy;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) { stepToward(tch.clientX, tch.clientY); return; }   // tap = step toward
-      if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 3); else move(dy > 0 ? 2 : 0);                  // swipe = direction
+      if (!sw) return; sw = false; const tc = e.changedTouches[0], dx = tc.clientX - sx, dy = tc.clientY - sy;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) { stepToward(tc.clientX, tc.clientY); return; }
+      if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 3); else move(dy > 0 ? 2 : 0);
     }, { passive: true });
     canvas.addEventListener('click', (e) => { canvas.focus({ preventScroll: true }); if (performance.now() - touchedAt < 600) return; stepToward(e.clientX, e.clientY); });
-    window.addEventListener('resize', () => { layout(); });
+    window.addEventListener('resize', () => layout());
   }
+  function init() { canvas = $('maze'); ctx = canvas.getContext('2d'); bind(); newRun(); requestAnimationFrame(loop); try { canvas.focus({ preventScroll: true }); } catch (e) {} }
 
-  function init() {
-    canvas = $('maze'); ctx = canvas.getContext('2d');
-    bind(); newMaze(); requestAnimationFrame(loop);
-    try { canvas.focus({ preventScroll: true }); } catch (e) {}
-  }
-
-  return { init, newMaze, solve, setFog: (v) => { fog = v; }, getFog: () => fog };
+  return { init: init, newRun: newRun, solve: solve, setFog: (v) => { fog = v; }, getFog: () => fog };
 })();
 
-/* fog toggle + language (shared with the rest of the site's pattern) */
+/* fog toggle + language */
 function toggleFog() {
   const on = !game.getFog(); game.setFog(on);
   const b = document.getElementById('fogBtn');
