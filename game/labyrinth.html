@@ -55,6 +55,8 @@
   .dpad button{width:54px;height:46px;background:#0d0d0d;border:1px solid #2a2a2a;color:#1db954;font-size:1.1rem;font-family:inherit;cursor:pointer;border-radius:4px;transition:background .1s,border-color .1s;}
   .dpad button:hover{border-color:#1db954;}
   .dpad button:active{background:rgba(29,185,84,0.2);}
+  /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch */
+  html, body, button, a, input, select, label { touch-action: manipulation; }
 </style>
 </head>
 <body>

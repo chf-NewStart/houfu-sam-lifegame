@@ -113,7 +113,9 @@
     /* Board overlay (waiting for remote opponent) */
     #boardWrap { position: relative; display: inline-block; }
     .board-overlay { position: absolute; inset: 0; background: rgba(8,8,8,0.82); display: none; align-items: center; justify-content: center; text-align: center; font-size: 0.75rem; color: #1db954; line-height: 1.8; padding: 20px; }
-  </style>
+    /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch */
+  html, body, button, a, input, select, label { touch-action: manipulation; }
+</style>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>

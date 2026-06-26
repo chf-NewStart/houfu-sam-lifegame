@@ -73,6 +73,8 @@
   .harvest .stars{font-size:1.3rem;color:#ffce4d;letter-spacing:3px;margin:6px 0;}
   .harvest .verdict{font-size:0.74rem;color:#bbb;margin:6px 0 2px;}
   .harvest .sc{font-size:0.72rem;color:#9a9a9a;}
+  /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch */
+  html, body, button, a, input, select, label { touch-action: manipulation; }
 </style>
 </head>
 <body>
