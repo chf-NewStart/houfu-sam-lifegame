@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Grow a Tomato // houfu.xyz</title>
-<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=2">
+<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:24px 20px;}
@@ -35,6 +35,10 @@
 
   .tip{font-size:0.64rem;color:#5a5a5a;line-height:1.55;border-left:2px solid #1db95455;padding-left:8px;margin-top:4px;}
   .tip b{color:#1db954;}
+
+  .badge{font-size:0.57rem;padding:2px 6px;border:1px solid #2a2a2a;color:#555;border-radius:2px;letter-spacing:.3px;}
+  .badge.on{border-color:#f0533a66;color:#f0533a;background:rgba(240,83,58,0.06);}
+  .badge.warn{border-color:#ffce4d55;color:#ffce4d;background:rgba(255,206,77,0.05);}
 
   .btn{display:block;width:100%;background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.74rem;padding:9px;cursor:pointer;margin-bottom:8px;transition:background .1s;}
   .btn:hover{background:rgba(29,185,84,0.1);}
@@ -75,7 +79,7 @@
 <div class="hdr">
   <div>
     <div class="title" id="pgTitle">&gt;_ Grow a Tomato</div>
-    <div class="sub" id="pgSub">A tomato-growing sim distilled from a real dFBA metabolic model. Set the greenhouse — light & nutrient feed — across the season (day 8 → 53) and grow the biggest, sweetest fruit.</div>
+    <div class="sub" id="pgSub">A tomato-growing optimization distilled from a real dFBA metabolic model. Every input has a sweet spot — too little starves the fruit; too much triggers photoinhibition, light injury or salt stress. Read the binding constraint and tune the season (day 8 → 53) to maximize size × sweetness.</div>
     <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
@@ -147,6 +151,13 @@
       <div class="meter"><div class="fill" id="mStarch" style="width:0%;background:#9a7b4f"></div></div>
     </div>
     <div class="card">
+      <div class="card-title"><span data-en="// FBA · objective & limits" data-zh="// FBA · 目标与约束">// FBA · objective & limits</span><span id="objZ">—</span></div>
+      <div class="stat-row"><span class="k" data-en="maximize  Z = size × sweetness" data-zh="最大化  Z = 大小 × 甜度">maximize  Z = size × sweetness</span></div>
+      <div class="mlabel" style="margin-top:6px"><span data-en="binding constraint" data-zh="紧约束">binding constraint</span><span id="limitNow">—</span></div>
+      <div id="stressBadges" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px"></div>
+      <div class="tip" id="fbaTip" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
       <div class="card-title"><span data-en="// growth" data-zh="// 生长">// growth</span></div>
       <canvas id="chart" width="320" height="150"></canvas>
       <div style="font-size:0.6rem;color:#444;margin-top:5px"><span style="color:#1db954">■</span> <span data-en="size" data-zh="大小">size</span> &nbsp; <span style="color:#ffce4d">■</span> <span data-en="sweetness" data-zh="甜度">sweetness</span></div>
@@ -168,37 +179,77 @@ const mm=(c,vmax,km)=>vmax*c/(km+c);
 function sinkStrength(d){const wmax=100,k=0.15,tm=25;const W=wmax*Math.exp(-Math.exp(-k*(d-tm)));
   const demand=(W>0&&W<wmax)?k*W*Math.log(wmax/W):0;return Math.min(Math.max(demand/((wmax*k)/Math.E),0.05),0.90);}
 function phase(d){return d<=15?'establish':d<=35?'bulk':'ripen';}
-const CFG={capScale:3.0,kC:5.6,kN:2.3,sucCap:1.6,nCap:0.8,Lhalf:230};
+const CFG={capScale:3.0,kC:5.6,kN:2.3,sucCap:1.6,nCap:0.8,Lhalf:230,
+  Lopt:340,LinhibScale:520,inhibMax:0.5,        // light: photoinhibition past the optimum PPFD
+  photoOpt:16,clRate:0.07,clMax:0.45,           // photoperiod: continuous-light injury past 16 h
+  ecThresh:1.3,saltRate:0.55,saltMax:0.45};     // root-zone salinity: stress from over-feeding
 
-function newPlant(){return {dpa:DPA_START,sucPool:0.05,nPool:0.02,biomass:0.01,structural:0,starch:0,sugar:0,lyc:0,daily:0};}
-function stepDay(P,c){
+function newPlant(){return {dpa:DPA_START,sucPool:0.05,nPool:0.02,biomass:0.01,structural:0,starch:0,sugar:0,lyc:0,daily:0,
+  saltDays:0,inhibDays:0,injDays:0,diag:null};}
+
+// One day of metabolism solved as a flux balance (no mutation): substrate uptake,
+// the BINDING constraint (carbon vs nitrogen) that sets growth, then the stress
+// penalties that make "more is not always better" — photoinhibition, continuous-
+// light injury, and root-zone salinity. computeStep() is pure so the UI can preview
+// the binding constraint live as you drag the sliders.
+function computeStep(P,c){
   const d=P.dpa, ph=phase(d);
   const fbSuc=Math.max(0.5,1-0.5*Math.min(1,P.sucPool/(CFG.sucCap*CFG.capScale)));
+  // light → carbon: a saturating gain MINUS photoinhibition past Lopt (a hump, not a ramp)
   const satL=c.light/(c.light+CFG.Lhalf);
-  const Csource=CFG.kC*satL*(c.photo/16)*fbSuc;
+  const photoinhib=Math.min(CFG.inhibMax,Math.max(0,c.light-CFG.Lopt)/CFG.LinhibScale);
+  const lightF=Math.max(0.05,satL*(1-photoinhib));
+  // photoperiod: more light-hours help, but a too-long day causes leaf chlorosis (injury) past 16 h
+  const clInjury=Math.min(CFG.clMax,Math.max(0,c.photo-CFG.photoOpt)*CFG.clRate);
+  const photoF=Math.max(0.05,(c.photo/16)*(1-clInjury));
+  const Csource=CFG.kC*lightF*photoF*fbSuc;
+  // nitrogen uptake (Michaelis–Menten, saturating)
   const upNo3=mm(c.no3,50,0.5),upNh4=mm(c.nh4,10,0.3);
   const Nsource=CFG.kN*(upNo3*0.15+upNh4*0.20);
-  // minerals (P·K) — a real, non-saturating limiter on how fast the fruit pulls in
-  // substrate (K drives phloem unloading). ~0.57 starved → 1.0 rich.
-  const mineralF=0.5+0.5*Math.min(1,(c.pi/3+c.k/12)/2);
-  P.sucPool=Math.min(P.sucPool+Csource,CFG.sucCap*CFG.capScale);
-  P.nPool  =Math.min(P.nPool+Nsource,  CFG.nCap*CFG.capScale);
+  // minerals (P·K) — non-saturating limiter; K drives phloem unloading. ~0.57 starved → 1.0 rich.
+  const pkLevel=Math.min(1,(c.pi/3+c.k/12)/2);
+  const mineralF=0.5+0.5*pkLevel;
+  // salinity: pushing BOTH feeds high raises root-zone EC and stresses the whole plant
+  const nFeed=Math.min(1,c.no3/30);
+  const ec=nFeed+pkLevel;
+  const saltStress=Math.min(CFG.saltMax,Math.max(0,ec-CFG.ecThresh)*CFG.saltRate);
+  const saltF=1-saltStress;
+  // pools after uptake (capped)
+  const sucPool=Math.min(P.sucPool+Csource,CFG.sucCap*CFG.capScale);
+  const nPool  =Math.min(P.nPool+Nsource,  CFG.nCap*CFG.capScale);
+  // the fruit sink pulls a share of each pool; growth = the binding substrate, then penalties
   let ss=sinkStrength(d);
   if(ph!=='establish') ss*=(0.35+0.65*Math.min(1,P.structural/7.0));
-  const availC=P.sucPool*ss, availN=P.nPool*ss;
+  const availC=sucPool*ss, availN=nPool*ss;
   let cCost,nCost;
   if(ph==='establish'){cCost=1.0;nCost=0.5;}
   else if(ph==='bulk'){cCost=1.2;nCost=0.12;}
   else {cCost=1.1;nCost=0.05;}
-  let growth=Math.max(0,Math.min(availC/cCost,availN/nCost));
-  growth*=mineralF;
-  P.sucPool=Math.max(0,P.sucPool-growth*cCost);
-  P.nPool  =Math.max(0,P.nPool-growth*nCost);
-  if(ph==='establish'){P.structural+=growth;}
-  else if(ph==='bulk'){P.starch+=growth*0.70;P.structural+=growth*0.30;}
-  else {P.sugar+=growth*0.65;P.lyc+=growth*0.15;P.structural+=growth*0.20;}
-  if(ph==='ripen'&&P.starch>1e-6){const conv=P.starch*0.11*(0.30+0.70*satL);P.starch-=conv;P.sugar+=conv;}
-  P.biomass+=growth;P.daily=growth;P.dpa++;
+  const gC=availC/cCost, gN=availN/nCost;
+  const growth=Math.max(0,Math.min(gC,gN))*mineralF*saltF;
+  const limit=gC<=gN?'carbon':'nitrogen';
+  return {ph,fbSuc,satL,lightF,photoF,Csource,Nsource,mineralF,saltF,pkLevel,nFeed,
+    photoinhib,clInjury,saltStress,ec,sucPool,nPool,cCost,nCost,gC,gN,growth,limit};
+}
+
+function stepDay(P,c){
+  const f=computeStep(P,c), ph=f.ph, g=f.growth, nFeed=f.nFeed, pk=f.pkLevel;
+  P.sucPool=Math.max(0,f.sucPool-g*f.cCost);
+  P.nPool  =Math.max(0,f.nPool  -g*f.nCost);
+  if(ph==='establish'){P.structural+=g;}
+  else if(ph==='bulk'){P.starch+=g*0.70;P.structural+=g*0.30;}
+  else {
+    // ripening partition: excess nitrogen keeps the fruit watery & bland (less sugar, more structure)
+    const sugarFrac=0.65-0.30*nFeed, structFrac=0.20+0.30*nFeed;
+    P.sugar+=g*sugarFrac; P.lyc+=g*0.15*(1-0.4*nFeed); P.structural+=g*structFrac;
+  }
+  if(ph==='ripen'&&P.starch>1e-6){
+    // starch → sugar: driven by light & potassium, slowed by excess nitrogen
+    const conv=P.starch*0.11*(0.30+0.70*f.satL)*(1-0.35*nFeed)*(0.7+0.3*pk);
+    P.starch-=conv;P.sugar+=conv;
+  }
+  if(f.saltStress>0.05)P.saltDays++; if(f.photoinhib>0.05)P.inhibDays++; if(f.clInjury>0.05)P.injDays++;
+  P.biomass+=g;P.daily=g;P.dpa++;P.diag=f;
 }
 const brixOf=P=>12*P.sugar/(P.sugar+P.starch+1e-9);
 
@@ -244,9 +295,12 @@ function harvest(){
   const sweetYield=size*(brix/12);              // big AND sweet
   const score=Math.round(sweetYield*12);
   let stars=1; if(score>120)stars=2; if(score>240)stars=3; if(score>360)stars=4; if(score>460)stars=5;
+  const overSalt=P.saltDays>6, overLight=(P.inhibDays+P.injDays)>8;
   let verdict;
   if(brix>=9.5&&size>=50) verdict=t('A perfect tomato — big and candy-sweet. 🍅✨','完美番茄——又大又甜。🍅✨');
-  else if(size>=55&&brix<8.5) verdict=t('Huge, but starchy and bland — give it more light while ripening.','个头很大，但淀粉多、寡淡——成熟期多给些光。');
+  else if(overSalt&&size<50) verdict=t('Over-fertilised — root-zone salt stress stunted it. Ease off nitrogen / P·K.','施肥过量——根区盐胁迫抑制了生长。减少氮/磷钾。');
+  else if(overLight&&size<50) verdict=t('Light-stressed — too much PPFD or too long a day. Aim for ~340 PPFD / 16 h.','光胁迫——光照过强或时长过长。目标约 340 PPFD / 16 小时。');
+  else if(size>=55&&brix<8.5) verdict=t('Huge, but watery and bland — cut the nitrogen while ripening to sweeten it.','个头很大，但多水寡淡——成熟期降低氮肥以增甜。');
   else if(brix>=9.5&&size<40) verdict=t('Lovely and sweet, just small — feed it more, earlier.','小巧而甜美，就是偏小——早点多施肥。');
   else if(size<30) verdict=t('Undersized — it was starved of light or feed.','偏小——光照或养分不足。');
   else verdict=t('A solid, tasty tomato. Tune the season to push for 5★.','一颗扎实可口的番茄。优化季节策略冲击5★。');
@@ -281,14 +335,40 @@ function render(){
   const sc=Math.round(P.biomass*(brix/12)*12);
   document.getElementById('scoreNow').textContent=t('score '+sc,'得分 '+sc);
   updatePhaseTip(ph);
+  renderFBA();
   renderPlant();
   drawChart();
 }
+// FBA readout: the objective, which substrate constraint is binding right now, and
+// the "too much" stress flags — the shadow-price intuition made visible.
+function renderFBA(){
+  const f=computeStep(P, engineInputs());
+  const brix=brixOf(P);
+  document.getElementById('objZ').textContent='Z = '+(P.biomass*(brix/12)).toFixed(1);
+  const limEl=document.getElementById('limitNow');
+  limEl.textContent = f.limit==='carbon' ? t('carbon (light)','碳（光照）') : t('nitrogen (feed)','氮（施肥）');
+  limEl.style.color = f.limit==='carbon' ? '#ffce4d' : '#4da6ff';
+  const mk=(on,cls,en,zh)=>`<span class="badge ${on?cls:''}">${t(en,zh)}</span>`;
+  document.getElementById('stressBadges').innerHTML=[
+    mk(f.photoinhib>0.02,'on','☀ photoinhibition','☀ 光抑制'),
+    mk(f.clInjury>0.02,'on','⏱ light injury','⏱ 连续光伤害'),
+    mk(f.saltStress>0.02,'on','🧂 salinity','🧂 盐胁迫'),
+    mk(f.fbSuc<0.95,'warn','🍬 sink full','🍬 库已满'),
+  ].join('');
+  let hint;
+  if(f.saltStress>0.05) hint=t('Root-zone is salty from over-feeding — growth is throttled. Back off nitrogen or P·K.','施肥过量使根区盐分升高——生长受抑。降低氮或磷钾。');
+  else if(f.photoinhib>0.05) hint=t('Light is past its sweet spot — extra PPFD now photoinhibits. Ease it toward ~340.','光照超过最佳点——继续加光会抑制光合。回调至约 340。');
+  else if(f.clInjury>0.05) hint=t('Day length too long — leaves are injuring. Pull the photoperiod back toward 16 h.','光照时长过长——叶片受损。将光照时长回调至约 16 小时。');
+  else if(f.ph==='ripen'&&f.nFeed>0.4) hint=t('Ripening: nitrogen is high — it dilutes sugar. Cut N to sweeten the fruit.','成熟期：氮肥偏高——会稀释糖分。降低氮以增甜。');
+  else if(f.limit==='carbon') hint=t('Growth is carbon-limited — more light / photoperiod helps, up to photoinhibition.','生长受碳限制——增加光照/时长有助，直至光抑制。');
+  else hint=t('Growth is nitrogen-limited — raise the nitrogen feed.','生长受氮限制——提高氮肥。');
+  document.getElementById('fbaTip').innerHTML=hint;
+}
 function updatePhaseTip(ph){
   const tips={
-    establish:t('<b>Establishing</b> (day 8–15): the fruit builds its frame. Feed <b>nitrogen</b> now — a strong frame supports all later growth.','<b>建立期</b>（第8–15天）：果实搭建框架。现在多施<b>氮肥</b>——强框架支撑后续生长。'),
-    bulk:t('<b>Bulking</b> (day 16–35): max <b>light</b> to bank energy as starch. This is where size is won.','<b>膨大期</b>（第16–35天）：拉满<b>光照</b>把能量存为淀粉。大小在此决定。'),
-    ripen:t('<b>Ripening</b> (day 36+): keep the <b>light</b> up — it converts stored starch into <b>sugar</b> (sweetness) and reddens the fruit.','<b>成熟期</b>（第36天起）：保持<b>光照</b>——把储存淀粉转化为<b>糖</b>（甜度）并使果实变红。'),
+    establish:t('<b>Establishing</b> (day 8–15): build a strong frame. Feed <b>nitrogen</b> and give moderate light — don\'t blast it yet.','<b>建立期</b>（第8–15天）：搭建强健框架。施<b>氮肥</b>、给适度光照——先别拉满。'),
+    bulk:t('<b>Bulking</b> (day 16–35): push <b>light</b> to bank starch — but stay near the <b>~340 PPFD / 16 h</b> sweet spot. Past it, photoinhibition and leaf injury cost you.','<b>膨大期</b>（第16–35天）：加<b>光照</b>积累淀粉——但保持在 <b>约 340 PPFD / 16 h</b> 最佳点附近。超过则光抑制与叶伤害得不偿失。'),
+    ripen:t('<b>Ripening</b> (day 36+): keep light up to turn starch → <b>sugar</b>, raise <b>P·K</b>, and <b>cut nitrogen</b> — excess N keeps the fruit watery and bland.','<b>成熟期</b>（第36天起）：保持光照把淀粉转为<b>糖</b>，提高<b>磷钾</b>，并<b>降低氮肥</b>——氮过量会让果实多水寡淡。'),
   };
   document.getElementById('phaseTip').innerHTML=tips[ph];
 }
@@ -359,7 +439,7 @@ function buildSliders(){
 }
 function applyLang(){
   document.getElementById('pgTitle').textContent=t('>_ Grow a Tomato','>_ 种番茄');
-  document.getElementById('pgSub').textContent=t('A tomato-growing sim distilled from a real dFBA metabolic model. Set the greenhouse — light & nutrient feed — across the season (day 8 → 53) and grow the biggest, sweetest fruit.','由真实 dFBA 代谢模型提炼的番茄种植模拟。在整季（第8→53天）调节温室——光照与施肥——种出又大又甜的果实。');
+  document.getElementById('pgSub').textContent=t('A tomato-growing optimization distilled from a real dFBA metabolic model. Every input has a sweet spot — too little starves the fruit; too much triggers photoinhibition, light injury or salt stress. Read the binding constraint and tune the season (day 8 → 53) to maximize size × sweetness.','由真实 dFBA 代谢模型提炼的番茄优化问题。每个输入都有最佳点——太少则果实挨饿，太多则引发光抑制、连续光伤害或盐胁迫。读取紧约束并调节整季（第8→53天），最大化 大小 × 甜度。');
   document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=t(el.dataset.en,el.dataset.zh);});
   buildSliders();render();
 }
