@@ -346,13 +346,16 @@ document.addEventListener('DOMContentLoaded', applyLang);
   function clampV(p,m){ const s=Math.hypot(p.vx,p.vy); if(s>m){ p.vx*=m/s; p.vy*=m/s; } }
   function rec(p){ p.tx[p.tc%TRAIL]=p.x; p.ty[p.tc%TRAIL]=p.y; p.tc++; }
   function anchorRed(seek){ red.vx += (green.x-red.x)*seek + (cx-red.x)*0.03; red.vy += (green.y-red.y)*seek + (cy-red.y)*0.03; red.vx*=0.88; red.vy*=0.88; clampV(red,7); red.x+=red.vx; red.y+=red.vy; }
-  function roam(p){                                          // free-roaming green: escape outward + swirl, bounce off edges
+  function roam(p){                                          // green escapee: strains outward + swirl, but red reels it back
     let dx=p.x-cx, dy=p.y-cy, d=Math.hypot(dx,dy)||1;
-    p.vx += (dx/d)*0.05 + (-dy/d)*0.045; p.vy += (dy/d)*0.05 + (dx/d)*0.045;
-    p.vx += (Math.random()-0.5)*0.07; p.vy += (Math.random()-0.5)*0.07;
-    p.vx*=0.97; p.vy*=0.97; clampV(p,3.4); p.x+=p.vx; p.y+=p.vy;
-    if(p.x<8){p.x=8;p.vx*=-0.6;} else if(p.x>W-8){p.x=W-8;p.vx*=-0.6;}
-    if(p.y<8){p.y=8;p.vy*=-0.6;} else if(p.y>H-8){p.y=H-8;p.vy*=-0.6;}
+    p.vx += (dx/d)*0.055 + (-dy/d)*0.045; p.vy += (dy/d)*0.055 + (dx/d)*0.045;   // escape outward + swirl
+    let tx=red.x-p.x, ty=red.y-p.y, tl=Math.hypot(tx,ty)||1;                     // restraint: same tether pull as the focal green
+    const pull = 0.0007*tl + 0.0004*Math.max(0,tl-100)*Math.max(0,tl-100);       // linear + escalating snap-back
+    p.vx += (tx/tl)*pull; p.vy += (ty/tl)*pull;
+    p.vx += (Math.random()-0.5)*0.06; p.vy += (Math.random()-0.5)*0.06;
+    p.vx*=0.97; p.vy*=0.97; clampV(p,3.6); p.x+=p.vx; p.y+=p.vy;
+    if(p.x<8){p.x=8;p.vx*=-0.5;} else if(p.x>W-8){p.x=W-8;p.vx*=-0.5;}
+    if(p.y<8){p.y=8;p.vy*=-0.5;} else if(p.y>H-8){p.y=H-8;p.vy*=-0.5;}
     rec(p);
   }
 
@@ -426,6 +429,11 @@ document.addEventListener('DOMContentLoaded', applyLang);
   function frame(){
     physics();
     ctx.clearRect(0,0,W,H);
+    for(const p of extras){                                   // red restrains every green — faint tether, brighter as it strains
+      const tl=Math.hypot(p.x-red.x,p.y-red.y), tn=Math.min(1,Math.max(0,(tl-80)/90));
+      ctx.strokeStyle='rgba(244,67,54,'+(0.05+0.28*tn).toFixed(3)+')'; ctx.lineWidth=0.6+1.2*tn;
+      ctx.beginPath(); ctx.moveTo(red.x,red.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    }
     for(const p of extras){ drawTrail(p); }                  // ambient escapees (under the focal pair)
     for(const p of extras){ drawHead(p, p.r); }
     // tether: taut+bright during SNAP, slack otherwise
