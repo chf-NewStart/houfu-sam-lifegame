@@ -47,9 +47,9 @@
   canvas{display:block;}
   #plantBox{position:relative;height:284px;overflow:hidden;background:linear-gradient(#0a0d12,#0c0a08);border:1px solid #161616;border-radius:3px;}
   .artpre{margin:0;line-height:0.92;font-family:Consolas,'Courier New',monospace;white-space:pre;position:absolute;transition:font-size .35s ease,opacity .35s ease;}
-  #tomatoArt{left:54%;top:56%;transform:translate(-50%,-50%);z-index:2;}
-  #leafArt{left:3%;top:5%;z-index:1;}
-  #sun{position:absolute;top:10px;right:14px;color:#ffce4d;z-index:3;transition:opacity .3s,font-size .3s;text-shadow:0 0 12px rgba(255,206,77,0.6);}
+  #tomatoArt{left:50%;top:56%;transform:translate(-50%,-50%);z-index:2;}
+  #sun{position:absolute;top:14px;right:18px;color:#ffce4d;z-index:3;line-height:1;transition:opacity .3s,font-size .3s;text-shadow:0 0 18px rgba(255,206,77,0.7);}
+  #cloud{position:absolute;top:22px;right:10px;color:#d2d8e0;z-index:4;line-height:1;transition:opacity .3s,font-size .3s;text-shadow:0 0 10px rgba(0,0,0,0.75);}
   .daybar{height:5px;background:#141414;margin-top:8px;position:relative;}
   .daybar .fill{position:absolute;left:0;top:0;bottom:0;background:#1db954;}
   .phase-tag{font-size:0.62rem;color:#777;margin-top:8px;text-align:center;letter-spacing:1px;text-transform:uppercase;}
@@ -111,7 +111,7 @@
       <div class="card-title"><span data-en="// plant" data-zh="// 植株">// plant</span><span id="dayLabel">DPA 8</span></div>
       <div id="plantBox">
         <div id="sun">☼</div>
-        <pre id="leafArt" class="artpre"></pre>
+        <div id="cloud">☁</div>
         <pre id="tomatoArt" class="artpre"></pre>
       </div>
       <div class="daybar"><div class="fill" id="dayFill" style="width:0%"></div></div>
@@ -227,12 +227,12 @@ function newSeason(){ playing=false; P=newPlant(); history=[]; harvested=false;
 }
 function stepOnce(){ if(P.dpa>DPA_END){return;} stepDay(P, engineInputs()); history.push({d:P.dpa-1,size:P.biomass,brix:brixOf(P)});
   if(P.dpa>DPA_END) harvest(); render(); }
-function togglePlay(){ if(P.dpa>DPA_END) return; playing=!playing;
+function togglePlay(){ if(P.dpa>DPA_END){ newSeason(); return; } playing=!playing;
   document.getElementById('btnPlay').textContent=playing?t('⏸ Pause','⏸ 暂停'):t('▶ Grow','▶ 生长');
   if(playing) loop(); }
 let _acc=0;
 function loop(ts){ if(!playing) return;
-  stepOnce(); if(P.dpa>DPA_END){ playing=false; document.getElementById('btnPlay').textContent=t('✓ Harvested','✓ 已收获'); return; }
+  stepOnce(); if(P.dpa>DPA_END){ playing=false; document.getElementById('btnPlay').textContent=t('↺ New season','↺ 新一季'); return; }
   const speed=+document.getElementById('speed').value;
   setTimeout(()=>requestAnimationFrame(loop), 420/speed);
 }
@@ -256,6 +256,7 @@ function harvest(){
   if(!best||score>best.score){best={score,size:+size.toFixed(0),brix:+brix.toFixed(1)};try{localStorage.setItem('tomato_best',JSON.stringify(best));}catch(e){}}
   document.getElementById('hvBest').textContent=t(`best score: ${best.score}`,`最佳得分：${best.score}`);
   document.getElementById('harvest').classList.add('show');
+  document.getElementById('btnPlay').textContent=t('↺ New season','↺ 新一季');
 }
 
 /* ── render ── */
@@ -309,48 +310,26 @@ const TOMATO_ART=[
 "⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀",
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
 ];
-const LEAF_ART=[
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡴⠋⡓⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠒⠁⠀⠀⡇⠙⢦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⢮⠁⠀⠀⠀⢠⠇⠀⠀⠳⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⡠⠃⠸⡀⠀⠀⠀⡎⠀⠀⠀⠀⢇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⢀⠇⠀⠀⢇⠀⠀⢰⠁⠀⡀⣀⠤⢺⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⢢⠇⠀⠀⠀⠈⢦⣰⠇⠊⠉⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⡜⠇⠀⠀⠀⠀⢠⠃⠀⠀⠀⠀⠀⠀⡃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⢸⠁⢘⠀⠀⠀⠀⡎⠀⠀⠀⠀⠀⠀⢀⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⢸⠀⠀⡇⠀⠀⡜⠀⠀⠀⠀⠀⢀⠤⡞⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⢸⠀⠀⠸⡀⢠⠃⠀⠀⣀⠔⠉⠀⡘⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⢸⠀⠀⠀⢉⠏⠉⠉⠁⠀⠀⢀⡔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠄⠀⠂",
-"⠀⠀⠀⠀⠀⠸⢣⠀⠀⡎⠀⠀⠀⠀⢀⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⢘⠀⡅⡜⠀⠀⠀⣀⠎⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⢸⢆⠎⠧⣀⣤⡊⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⢀⣓⡯⠖⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⡠⠏⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠠⡪⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠄⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
-];
 function renderPlant(){
   const ripe=Math.min(1,P.lyc/2.1);
-  const leafCol='rgb(70,160,68)';
+  const crown='rgb(70,160,68)';                       // green leafy top of the fruit
   const g0=[122,172,78], g1=[228,64,40];
   const b=g0.map((c,i)=>Math.round(c+(g1[i]-c)*ripe));
   const bodyCol=`rgb(${b[0]},${b[1]},${b[2]})`;
-  // tomato: grows with fruit size; crown rows green, body ripens green→red
+  // tomato grows with fruit size; crown rows stay green, body ripens green→red
   const grow=Math.min(1, P.biomass/55);
   const tom=document.getElementById('tomatoArt');
-  tom.style.fontSize=(4.5+grow*8).toFixed(1)+'px';
-  tom.innerHTML=TOMATO_ART.map((ln,i)=>`<span style="color:${i<5?leafCol:bodyCol}">${ln}</span>`).join('\n');
-  // leaf foliage: sprouts early (vegetative phase), reaches full size by mid-season
-  const leafGrow=Math.min(1,(Math.min(P.dpa,DPA_END)-DPA_START)/16);
-  const leaf=document.getElementById('leafArt');
-  leaf.style.fontSize=(3+leafGrow*4).toFixed(1)+'px';
-  leaf.style.opacity=(0.45+leafGrow*0.45).toFixed(2);
-  if(leaf.dataset.f!=='1'){ leaf.style.color=leafCol; leaf.innerHTML=LEAF_ART.join('\n'); leaf.dataset.f='1'; }
-  // sun brightness/size by light
+  tom.style.fontSize=(5+grow*8.5).toFixed(1)+'px';
+  tom.innerHTML=TOMATO_ART.map((ln,i)=>`<span style="color:${i<5?crown:bodyCol}">${ln}</span>`).join('\n');
+  // sun grows & brightens with light; a cloud rolls in to cover it when light is low
   const lf=Math.max(0,Math.min(1,(ctrl.light-40)/410));
   const sun=document.getElementById('sun');
-  sun.style.opacity=(0.3+lf*0.7).toFixed(2);
-  sun.style.fontSize=(16+lf*12).toFixed(0)+'px';
+  sun.style.fontSize=(28+lf*24).toFixed(0)+'px';      // ~28px (dim) → ~52px (full sun)
+  sun.style.opacity=(0.65+lf*0.35).toFixed(2);
+  const cloud=document.getElementById('cloud');
+  const cl=Math.max(0,Math.min(1,1-lf*1.25));         // cloudy at low light, clear by ~80%
+  cloud.style.opacity=cl.toFixed(2);
+  cloud.style.fontSize=(34+(1-lf)*18).toFixed(0)+'px';
 }
 function drawChart(){
   const cv=document.getElementById('chart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=6;
