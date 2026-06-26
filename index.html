@@ -43,17 +43,18 @@
     @property --a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
     @keyframes cardspin { to { --a: 360deg; } }
 
-    /* Tomato — retro CRT terminal: scanline sweep, rigid lift, sharp green glow, phosphor bloom */
+    /* Tomato — terminal CRT chrome + a rain of little ASCII tomatoes under the cursor */
     .card.glow-tomato { --crt-green: 29,185,84; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
     .card.glow-tomato:hover { transform: translateY(-4px); box-shadow: 4px 4px 0 rgba(0,255,0,0.20); border-color: rgba(var(--crt-green),0.4); }
-    /* faint CRT scanline sweeping down the card on hover */
-    .card.glow-tomato::after {
-      content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease;
-      background-image: linear-gradient(to bottom, transparent 45%, rgba(170,255,190,0.07) 49%, rgba(190,255,210,0.22) 50%, rgba(170,255,190,0.07) 51%, transparent 55%);
-      background-size: 100% 280%; background-repeat: no-repeat; background-position: 0 -40%;
+    /* tomato-rain: little ASCII tomatoes drop wherever the cursor hovers (JS-spawned) */
+    .card.glow-tomato .tomato-rain { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+    .tdrop { position: absolute; margin: 0; line-height: 0.9; white-space: pre; font-family: Consolas,'Courier New',monospace; will-change: transform, opacity; opacity: 0; }
+    @keyframes tdropFall {
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(.65) rotate(0deg); }
+      14%  { opacity: 1; }
+      82%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%,-50%) translateY(var(--fall,160px)) translateX(var(--drift,0px)) scale(1) rotate(var(--rot,0deg)); }
     }
-    .card.glow-tomato:hover::after { opacity: 1; animation: crtScan 3s linear infinite; }
-    @keyframes crtScan { 0% { background-position: 0 -40%; } 100% { background-position: 0 140%; } }
     /* phosphor "wake up" — icon glows in its own (red) colour, title in green */
     .card.glow-tomato .card-icon, .card.glow-tomato .card-title { transition: text-shadow .3s ease; }
     .card.glow-tomato:hover .card-icon { text-shadow: 0 0 6px currentColor, 0 0 14px currentColor; }
@@ -325,11 +326,11 @@ document.addEventListener('DOMContentLoaded', applyLang);
   let canvas = card.querySelector('.esc-canvas');
   if (!canvas) { canvas = document.createElement('canvas'); canvas.className = 'esc-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas); }
   const ctx = canvas.getContext('2d');
-  const TRAIL = 24, R_NORM = 4, R_BLOAT = 13;
+  const TRAIL = 24, R_NORM = 6.5, R_BLOAT = 18;
   const green = { x:0,y:0,vx:0,vy:0,r:R_NORM,col:'29,185,84', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
-  const red   = { x:0,y:0,vx:0,vy:0,r:4,col:'244,67,54', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
+  const red   = { x:0,y:0,vx:0,vy:0,r:6.5,col:'244,67,54', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
   // 3 more ambient green escapees — same colour/trail/escape tendency, spread out randomly
-  function mkGreen(){ return { x:0,y:0,vx:0,vy:0,r:3.4,col:'29,185,84', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 }; }
+  function mkGreen(){ return { x:0,y:0,vx:0,vy:0,r:5.5,col:'29,185,84', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 }; }
   const extras = [mkGreen(), mkGreen(), mkGreen()];
   let W=0,H=0,cx=0,cy=0,topB=10, raf=0, inside=false;
   let state='ESCAPE', stateT=0, impact=null, shards=[];
@@ -403,16 +404,16 @@ document.addEventListener('DOMContentLoaded', applyLang);
     ctx.lineCap='round';
     for(let k=0;k<TRAIL-1;k++){
       const i0=(p.tc-1-k+TRAIL*8)%TRAIL, i1=(p.tc-2-k+TRAIL*8)%TRAIL, a=1-k/TRAIL;
-      ctx.strokeStyle='rgba('+p.col+','+(a*a*0.5).toFixed(3)+')';
-      ctx.lineWidth=0.4+a*2.2; ctx.beginPath(); ctx.moveTo(p.tx[i0],p.ty[i0]); ctx.lineTo(p.tx[i1],p.ty[i1]); ctx.stroke();
+      ctx.strokeStyle='rgba('+p.col+','+(a*a*0.6).toFixed(3)+')';
+      ctx.lineWidth=0.7+a*4.0; ctx.beginPath(); ctx.moveTo(p.tx[i0],p.ty[i0]); ctx.lineTo(p.tx[i1],p.ty[i1]); ctx.stroke();
     }
   }
   function drawHead(p,r,colOverride,alpha){
     const col=colOverride||p.col, ga=alpha==null?0.92:alpha;
-    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*1.7);
-    g.addColorStop(0,'rgba('+col+','+ga+')'); g.addColorStop(0.5,'rgba('+col+','+(ga*0.45)+')'); g.addColorStop(1,'rgba('+col+',0)');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r*1.7,0,7); ctx.fill();
-    ctx.fillStyle='rgba(240,255,245,'+(ga*0.9)+')'; ctx.beginPath(); ctx.arc(p.x,p.y,Math.min(2.4,r*0.4),0,7); ctx.fill();
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.2);
+    g.addColorStop(0,'rgba('+col+','+ga+')'); g.addColorStop(0.45,'rgba('+col+','+(ga*0.5)+')'); g.addColorStop(1,'rgba('+col+',0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r*2.2,0,7); ctx.fill();
+    ctx.fillStyle='rgba(240,255,245,'+(ga*0.95)+')'; ctx.beginPath(); ctx.arc(p.x,p.y,Math.min(4,r*0.55),0,7); ctx.fill();
   }
   function drawImpact(){
     if(!impact) return;
@@ -431,14 +432,14 @@ document.addEventListener('DOMContentLoaded', applyLang);
     ctx.clearRect(0,0,W,H);
     for(const p of extras){                                   // red restrains every green — faint tether, brighter as it strains
       const tl=Math.hypot(p.x-red.x,p.y-red.y), tn=Math.min(1,Math.max(0,(tl-80)/90));
-      ctx.strokeStyle='rgba(244,67,54,'+(0.05+0.28*tn).toFixed(3)+')'; ctx.lineWidth=0.6+1.2*tn;
+      ctx.strokeStyle='rgba(244,67,54,'+(0.08+0.32*tn).toFixed(3)+')'; ctx.lineWidth=0.9+1.8*tn;
       ctx.beginPath(); ctx.moveTo(red.x,red.y); ctx.lineTo(p.x,p.y); ctx.stroke();
     }
     for(const p of extras){ drawTrail(p); }                  // ambient escapees (under the focal pair)
     for(const p of extras){ drawHead(p, p.r); }
     // tether: taut+bright during SNAP, slack otherwise
     const taut = state==='SNAP';
-    ctx.strokeStyle='rgba(244,67,54,'+(taut?0.85:0.16).toFixed(3)+')'; ctx.lineWidth = taut?2.6:1.0;
+    ctx.strokeStyle='rgba(244,67,54,'+(taut?0.9:0.18).toFixed(3)+')'; ctx.lineWidth = taut?3.6:1.5;
     ctx.beginPath(); ctx.moveTo(red.x,red.y); ctx.lineTo(green.x,green.y); ctx.stroke();
     // chaotic cloud (bloat/snap)
     for(const s of shards){ ctx.fillStyle='rgba(29,185,84,'+(s.life*0.6).toFixed(3)+')'; ctx.beginPath(); ctx.arc(s.x,s.y,1.4+(1-s.life)*2.4,0,7); ctx.fill(); }
@@ -567,6 +568,49 @@ document.addEventListener('DOMContentLoaded', applyLang);
     io.observe(card);
   } else { setTimeout(() => { if (!attracted) { attracted = true; attract(); } }, 1100); }
   if (img.complete && img.naturalWidth) setup(); else img.addEventListener('load', setup, { once: true });
+})();
+
+/* Tomato card — a rain of little ASCII tomatoes (varied size & ripeness) falls from the cursor */
+(function () {
+  const card = document.querySelector('.card.glow-tomato');
+  if (!card) return;
+  const ART =
+`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠻⣶⡆⠀⠿⠀⣶⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣴⠾⠛⢹⣶⡤⢶⣿⡟⠶⠦⠄⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣠⣶⣤⣤⣤⣤⣴⠂⠸⠋⢀⣄⡉⠓⠀⠲⣶⣾⣿⣷⣄⠀⠀⠀⠀
+⠀⠀⠀⢀⣾⡿⠋⠁⣠⣤⣿⡟⢀⣠⣾⣿⣿⣿⣷⣶⣤⣼⣿⣿⣿⣿⣆⠀⠀⠀
+⠀⠀⠀⣾⡟⠀⣰⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀
+⠀⠀⢸⡿⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⢸⡇⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⢸⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀
+⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀
+⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`;
+  const COLORS = ['#6cc24a','#86d15a','#4fb33a','#f0973a','#e8a13a','#e23b2e','#cf3027'];  // green · orange · red(ripe)
+  let layer = null, timer = 0, mx = 0, my = 0, drops = 0;
+  function ensureLayer(){ if(!layer){ layer = document.createElement('div'); layer.className = 'tomato-rain'; layer.setAttribute('aria-hidden','true'); card.appendChild(layer); } }
+  function spawn(){
+    if(!layer || drops > 34) return;
+    const pre = document.createElement('pre'); pre.className = 'tdrop'; pre.textContent = ART;
+    const fs = (2.2 + Math.random()*3.0).toFixed(2), col = COLORS[(Math.random()*COLORS.length)|0];
+    const fall = (card.clientHeight - my + 36 + Math.random()*36) | 0;
+    pre.style.left = mx + 'px'; pre.style.top = my + 'px'; pre.style.fontSize = fs + 'px';
+    pre.style.color = col; pre.style.textShadow = '0 0 6px ' + col + 'cc';
+    pre.style.setProperty('--fall', fall + 'px');
+    pre.style.setProperty('--drift', ((Math.random()*54 - 27)|0) + 'px');
+    pre.style.setProperty('--rot', ((Math.random()*84 - 42)|0) + 'deg');
+    pre.style.animation = 'tdropFall ' + (1.25 + Math.random()*1.15).toFixed(2) + 's linear forwards';
+    layer.appendChild(pre); drops++;
+    pre.addEventListener('animationend', () => { pre.remove(); drops--; }, { once: true });
+  }
+  function setPos(e){ const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
+  card.addEventListener('mouseenter', (e) => { ensureLayer(); setPos(e); spawn(); if(!timer) timer = setInterval(spawn, 105); });
+  card.addEventListener('mousemove', setPos);
+  card.addEventListener('mouseleave', () => { if(timer){ clearInterval(timer); timer = 0; } });
 })();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
