@@ -177,8 +177,16 @@
    ════════════════════════════════════════════════════════════ */
 const DPA_START=8, DPA_END=53;
 const mm=(c,vmax,km)=>vmax*c/(km+c);
-function sinkStrength(d){const wmax=100,k=0.15,tm=25;const W=wmax*Math.exp(-Math.exp(-k*(d-tm)));
-  const demand=(W>0&&W<wmax)?k*W*Math.log(wmax/W):0;return Math.min(Math.max(demand/((wmax*k)/Math.E),0.05),0.90);}
+// Sink strength = sink SIZE × sink ACTIVITY — the classic decomposition.
+//  · activity: a per-unit reaction rate (Gompertz relative growth rate), normalised 0..1;
+//    peaks mid-development (~day 25) and declines as the fruit matures (determinate growth).
+//  · size: the fruit's own structural frame — a physically bigger fruit pulls in more.
+// So sink strength GROWS as both the fruit's size and its reaction rate grow, then falls
+// away in ripening as activity drops even though the fruit stays large.
+function sinkActivity(d){const wmax=100,k=0.15,tm=25;const W=wmax*Math.exp(-Math.exp(-k*(d-tm)));
+  const demand=(W>0&&W<wmax)?k*W*Math.log(wmax/W):0;return Math.min(1,demand/((wmax*k)/Math.E));}
+function sinkSize(P){return 0.2+0.8*Math.min(1,P.structural/7.0);}     // 0.2 (seed) → 1.0 (full frame)
+function sinkStrength(P){return Math.min(0.92,Math.max(0.05,sinkSize(P)*sinkActivity(P.dpa)));}
 function phase(d){return d<=15?'establish':d<=35?'bulk':'ripen';}
 const CFG={capScale:3.0,kC:5.6,kN:2.3,sucCap:1.6,nCap:0.8,Lhalf:230,
   Lopt:340,LinhibScale:520,inhibMax:0.5,        // light: photoinhibition past the optimum PPFD
@@ -186,7 +194,7 @@ const CFG={capScale:3.0,kC:5.6,kN:2.3,sucCap:1.6,nCap:0.8,Lhalf:230,
   ecThresh:1.3,saltRate:0.55,saltMax:0.45};     // root-zone salinity: stress from over-feeding
 
 function newPlant(){return {dpa:DPA_START,sucPool:0.05,nPool:0.02,biomass:0.01,structural:0,starch:0,sugar:0,lyc:0,daily:0,
-  saltDays:0,inhibDays:0,injDays:0,diag:null};}
+  saltDays:0,inhibDays:0,injDays:0,ripeSize:null,diag:null};}
 
 // One day of metabolism solved as a flux balance (no mutation): substrate uptake,
 // the BINDING constraint (carbon vs nitrogen) that sets growth, then the stress
@@ -219,8 +227,7 @@ function computeStep(P,c){
   const sucPool=Math.min(P.sucPool+Csource,CFG.sucCap*CFG.capScale);
   const nPool  =Math.min(P.nPool+Nsource,  CFG.nCap*CFG.capScale);
   // the fruit sink pulls a share of each pool; growth = the binding substrate, then penalties
-  let ss=sinkStrength(d);
-  if(ph!=='establish') ss*=(0.35+0.65*Math.min(1,P.structural/7.0));
+  const ss=sinkStrength(P);   // = sink size × sink activity (grows with fruit size & reaction rate)
   const availC=sucPool*ss, availN=nPool*ss;
   let cCost,nCost;
   if(ph==='establish'){cCost=1.0;nCost=0.5;}
@@ -235,6 +242,9 @@ function computeStep(P,c){
 
 function stepDay(P,c){
   const f=computeStep(P,c), ph=f.ph, g=f.growth, nFeed=f.nFeed, pk=f.pkLevel;
+  // a real tomato reaches full size while still green, then ripens in place — lock the
+  // physical size in at the start of ripening so the fruit reddens without enlarging
+  if(ph==='ripen'&&P.ripeSize==null)P.ripeSize=P.biomass;
   P.sucPool=Math.max(0,f.sucPool-g*f.cCost);
   P.nPool  =Math.max(0,f.nPool  -g*f.nCost);
   if(ph==='establish'){P.structural+=g;}
@@ -393,7 +403,7 @@ function updatePhaseTip(ph){
   };
   document.getElementById('phaseTip').innerHTML=tips[ph];
 }
-// braille-art tomato — grows (font-size by size) and ripens (crown green, body green→red)
+// braille-art tomato — grows while green, then locks size and ripens green→orange→red
 const TOMATO_ART=[
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
@@ -412,15 +422,19 @@ const TOMATO_ART=[
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
 ];
 function renderPlant(){
+  // ripening reddens through a true tomato ramp: green → orange (breaker) → red
   const ripe=Math.min(1,P.lyc/2.1);
-  const crown='rgb(70,160,68)';                       // green leafy top of the fruit
-  const g0=[122,172,78], g1=[228,64,40];
-  const b=g0.map((c,i)=>Math.round(c+(g1[i]-c)*ripe));
+  const lerp=(a,bb,t)=>a.map((v,i)=>Math.round(v+(bb[i]-v)*t));
+  const green=[86,156,64], orange=[235,150,40], red=[224,52,40];
+  const b=ripe<0.5?lerp(green,orange,ripe/0.5):lerp(orange,red,(ripe-0.5)/0.5);
   const bodyCol=`rgb(${b[0]},${b[1]},${b[2]})`;
-  // tomato grows with fruit size; crown rows stay green, body ripens green→red
-  const grow=Math.min(1, P.biomass/55);
+  const crown='rgb(70,160,68)';                       // green leafy calyx — stays green even when ripe
+  // size is set during bulking (while green); once ripening starts it's locked, so the
+  // fruit reddens in place instead of continuing to grow
+  const sizeM=(P.ripeSize!=null)?P.ripeSize:P.biomass;
+  const grow=Math.min(1, sizeM/48);
   const tom=document.getElementById('tomatoArt');
-  tom.style.fontSize=(5+grow*8.5).toFixed(1)+'px';
+  tom.style.fontSize=(5.5+grow*9).toFixed(1)+'px';
   tom.innerHTML=TOMATO_ART.map((ln,i)=>`<span style="color:${i<5?crown:bodyCol}">${ln}</span>`).join('\n');
   // sun grows & brightens with light; a cloud rolls in to cover it when light is low
   const lf=Math.max(0,Math.min(1,(ctrl.light-40)/410));
