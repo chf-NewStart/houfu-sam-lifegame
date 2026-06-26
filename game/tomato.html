@@ -167,14 +167,14 @@
       <div class="card-title"><span data-en="// sensor fusion · Kalman filter" data-zh="// 传感器融合 · 卡尔曼滤波">// sensor fusion · Kalman filter</span><span id="kfErr" style="color:#36c5d0">—</span></div>
       <canvas id="kfchart" width="320" height="150"></canvas>
       <div style="font-size:0.66rem;color:#9a9a9a;margin-top:6px;line-height:1.8">
-        <span style="color:#5a7d5a">▬</span> <span data-en="true size" data-zh="真实大小">true size</span> &nbsp;
-        <span style="color:#ffce4d">•</span> <span data-en="noisy sensor" data-zh="带噪传感">noisy sensor</span> &nbsp;
-        <span style="color:#36c5d0">▬</span> <span data-en="Kalman estimate" data-zh="卡尔曼估计">Kalman estimate</span> &nbsp;
-        <span style="color:#3a3a3a">┄</span> <span data-en="model" data-zh="模型">model</span>
+        <span style="color:#36c5d0">▬</span> <span data-en="Kalman estimate (±σ band)" data-zh="卡尔曼估计 (±σ 带)">Kalman estimate (±σ band)</span> &nbsp;
+        <span style="color:#ffce4d">◆</span> <span data-en="observation" data-zh="观测">observation</span> &nbsp;
+        <span style="color:#4f7050">▬</span> <span data-en="true size" data-zh="真实大小">true size</span> &nbsp;
+        <span style="color:#5a5a5a">┄</span> <span data-en="model (no correction)" data-zh="模型（无校正）">model (no correction)</span>
       </div>
       <div class="slider-row" style="margin:11px 0 0;">
-        <div class="lab"><span class="name" data-en="sensor noise (σ)" data-zh="传感器噪声 (σ)">sensor noise (σ)</span><span class="val" id="vKf">3.2</span></div>
-        <input type="range" id="kfNoise" min="0" max="9" step="0.5" value="3.2">
+        <div class="lab"><span class="name" data-en="sensor noise (σ)" data-zh="传感器噪声 (σ)">sensor noise (σ)</span><span class="val" id="vKf">2.5</span></div>
+        <input type="range" id="kfNoise" min="0" max="9" step="0.5" value="2.5">
       </div>
       <div class="tip" id="kfTip" style="margin-top:10px"></div>
     </div>
@@ -210,14 +210,16 @@ const CFG={capScale:3.0,kC:5.6,kN:2.3,sucCap:1.6,nCap:0.8,Lhalf:230,
 
 function newPlant(){return {dpa:DPA_START,sucPool:0.05,nPool:0.02,biomass:0.01,structural:0,starch:0,sugar:0,lyc:0,daily:0,
   saltDays:0,inhibDays:0,injDays:0,ripeSize:null,diag:null,
-  trueB:0.01,kfx:0.01,kfP:1,meas:0.01,est:0.01};}
+  trueB:0.01,kfx:0.01,kfP:1,est:0.01,sigma:1,obs:null};}
 
 /* ── sensor + Kalman filter (1-D state estimation on fruit size) ──
    The model predicts each day; a hidden "true" plant deviates from it (process
    noise); a sensor measures the true size with noise; the Kalman filter fuses the
    model prediction with the measurement to estimate the true state. */
-let kfSensorNoise=3.2;            // measurement std (mmol) — slider-controlled
-const KF_PROC_REL=0.22;          // real plant deviates ~22% from the model's daily growth
+let kfSensorNoise=2.5;            // measurement std σ (mmol) — slider-controlled (R = σ²)
+const KF_PROC_REL=0.22;          // hidden true plant deviates ~22% from the model's daily growth
+const KF_Q=1.6;                  // process/model variance added each day → uncertainty grows between obs
+const isObsDay=d=>d>=16 && (d-DPA_START)%8===0;   // a measurement only arrives every ~8 days (sparse)
 function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 
 // One day of metabolism solved as a flux balance (no mutation): substrate uptake,
@@ -285,13 +287,19 @@ function stepDay(P,c){
   }
   if(f.saltStress>0.05)P.saltDays++; if(f.photoinhib>0.05)P.inhibDays++; if(f.clInjury>0.05)P.injDays++;
   P.biomass+=g;P.daily=g;
-  // ── sensor + Kalman filter ──
+  // ── sensor + Kalman filter (sparse observations) ──
   P.trueB=Math.max(0,P.trueB+g*(1+randn()*KF_PROC_REL));      // hidden true plant deviates from the model
-  const R=kfSensorNoise*kfSensorNoise, Q=Math.pow(KF_PROC_REL*g,2)+0.05;
-  const z=Math.max(0,P.trueB+randn()*kfSensorNoise);          // noisy daily measurement of the true size
-  P.kfx+=g; P.kfP+=Q;                                         // predict with the model's growth
-  const Kg=P.kfP/(P.kfP+R); P.kfx+=Kg*(z-P.kfx); P.kfP*=(1-Kg); // correct toward the measurement
-  P.meas=z; P.est=P.kfx;
+  // PREDICT every day: roll the model's growth forward; uncertainty grows
+  P.kfx+=g; P.kfP+=KF_Q;
+  P.obs=null;
+  if(isObsDay(P.dpa)){                                        // a measurement only arrives now and then
+    const R=kfSensorNoise*kfSensorNoise;
+    const z=Math.max(0,P.trueB+randn()*kfSensorNoise);        // noisy observation of the true size
+    const Kg=P.kfP/(P.kfP+R);                                 // UPDATE: correct the estimate toward it…
+    P.kfx+=Kg*(z-P.kfx); P.kfP*=(1-Kg);                       // …and uncertainty collapses
+    P.obs=z;
+  }
+  P.est=P.kfx; P.sigma=Math.sqrt(P.kfP);
   P.dpa++;P.diag=f;
 }
 const brixOf=P=>12*P.sugar/(P.sugar+P.starch+1e-9);
@@ -320,7 +328,7 @@ function newSeason(){ playing=false; P=newPlant(); history=[]; harvested=false;
   render();
 }
 function stepOnce(){ if(P.dpa>DPA_END){return;} stepDay(P, engineInputs());
-  history.push({d:P.dpa-1,size:P.biomass,brix:brixOf(P),trueB:P.trueB,meas:P.meas,est:P.est});
+  history.push({d:P.dpa-1,size:P.biomass,brix:brixOf(P),trueB:P.trueB,est:P.est,sigma:P.sigma,obs:P.obs});
   if(P.dpa>DPA_END) harvest(); render(); }
 function togglePlay(){ if(P.dpa>DPA_END){ newSeason(); return; } playing=!playing;
   document.getElementById('btnPlay').textContent=playing?t('⏸ Pause','⏸ 暂停'):t('▶ Grow','▶ 生长');
@@ -495,31 +503,31 @@ function drawKF(){
   const cv=document.getElementById('kfchart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=6;
   x.clearRect(0,0,W,H);
   x.strokeStyle='#161616';for(let i=0;i<=4;i++){const y=pad+(H-2*pad)*i/4;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();}
-  // explanation + error-reduction stat
   const tipEl=document.getElementById('kfTip');
-  if(tipEl) tipEl.innerHTML=t('The model predicts each day; a noisy sensor measures the fruit; the <b>Kalman filter</b> fuses them, tracking the true size far better than the raw readings. Push <b>sensor noise</b> up and watch the filter still hold the line.','模型每天预测；带噪传感器测量果实；<b>卡尔曼滤波</b>融合两者，比原始读数更准地跟踪真实大小。拉高<b>传感器噪声</b>，滤波依然稳得住。');
+  if(tipEl) tipEl.innerHTML=t('The dFBA model predicts each day, so its uncertainty (the <b>±σ band</b>) keeps growing. A real measurement only arrives every so often (◆) — and when it does, the <b>Kalman filter</b> snaps the estimate toward it and the band collapses. Between obs it drifts again. Raise <b>sensor noise</b> to make the filter trust the measurements less.','dFBA 模型每天预测，所以不确定性（<b>±σ 带</b>）持续增大。真实测量只是偶尔到来（◆）——一旦到来，<b>卡尔曼滤波</b>就把估计拉向它、误差带收缩。两次观测之间又重新漂移。提高<b>传感器噪声</b>会让滤波更不信任测量。');
   if(history.length<2){document.getElementById('kfErr').textContent='—';return;}
-  const max=Math.max(10,...history.map(h=>Math.max(h.trueB||0,h.meas||0,h.est||0,h.size||0)));
+  const max=Math.max(10,...history.map(h=>Math.max(h.trueB||0,h.est+h.sigma||0,h.obs||0,h.size||0)));
   const X=d=>pad+(W-2*pad)*(d-DPA_START)/(DPA_END-DPA_START);
   const Y=v=>H-pad-(H-2*pad)*Math.min(1,Math.max(0,v/max));
-  // model (deterministic) — faint dashed
-  x.strokeStyle='#3a3a3a';x.setLineDash([3,3]);x.lineWidth=1;x.beginPath();
+  // ±σ confidence band — grows between observations, collapses at each one
+  x.fillStyle='rgba(54,197,208,0.16)';x.beginPath();
+  history.forEach((h,i)=>{const px=X(h.d),py=Y(h.est+h.sigma);i?x.lineTo(px,py):x.moveTo(px,py);});
+  for(let i=history.length-1;i>=0;i--){const h=history[i];x.lineTo(X(h.d),Y(Math.max(0,h.est-h.sigma)));}
+  x.closePath();x.fill();
+  // dFBA model, no correction — dotted grey (drifts away, no obs to pull it back)
+  x.strokeStyle='#5a5a5a';x.setLineDash([2,3]);x.lineWidth=1;x.beginPath();
   history.forEach((h,i)=>{const px=X(h.d),py=Y(h.size);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();x.setLineDash([]);
-  // true size — soft green
-  x.strokeStyle='#5a7d5a';x.lineWidth=1.5;x.beginPath();
+  // hidden true size — faint green
+  x.strokeStyle='#4f7050';x.lineWidth=1;x.beginPath();
   history.forEach((h,i)=>{const px=X(h.d),py=Y(h.trueB);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();
-  // noisy measurements — yellow dots
-  x.fillStyle='#ffce4d';
-  history.forEach(h=>{x.beginPath();x.arc(X(h.d),Y(h.meas),1.7,0,7);x.fill();});
-  // Kalman estimate — cyan
+  // Kalman estimate — cyan (jumps toward each observation)
   x.strokeStyle='#36c5d0';x.lineWidth=2;x.beginPath();
   history.forEach((h,i)=>{const px=X(h.d),py=Y(h.est);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();
-  // how much the filter beats the raw sensor (RMSE vs the true size)
-  let sm=0,se=0,n=0;
-  for(const h of history){sm+=(h.meas-h.trueB)**2;se+=(h.est-h.trueB)**2;n++;}
-  const rmseM=Math.sqrt(sm/n), rmseE=Math.sqrt(se/n);
-  const red=rmseM>0.01?Math.round((1-rmseE/rmseM)*100):0;
-  document.getElementById('kfErr').textContent=`−${Math.max(0,red)}% error`;
+  // observations — yellow diamonds (sparse)
+  x.fillStyle='#ffce4d';
+  history.forEach(h=>{if(h.obs==null)return;const px=X(h.d),py=Y(h.obs);x.save();x.translate(px,py);x.rotate(Math.PI/4);x.fillRect(-3.2,-3.2,6.4,6.4);x.restore();});
+  // live uncertainty of the estimate (the ±σ half-width)
+  document.getElementById('kfErr').textContent=`σ ±${(history[history.length-1].sigma).toFixed(1)} mmol`;
 }
 
 /* ── lang ── */
