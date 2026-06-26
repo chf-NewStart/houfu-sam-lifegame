@@ -33,10 +33,43 @@
 
     .grid { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 
-    .card { border: 1px solid #1c1c1c; padding: 20px; background: #0d0d0d; position: relative; transition: border-color 0.15s; display: flex; flex-direction: column; }
+    .card { border: 1px solid #1c1c1c; padding: 20px; background: #0d0d0d; position: relative; z-index: 0; transition: border-color 0.2s, box-shadow 0.3s; display: flex; flex-direction: column; }
     .card:hover { border-color: #1db954; }
     .card.soon { opacity: 0.45; pointer-events: none; }
     .card.flagship { border-color: rgba(29,185,84,0.4); }
+    .card > * { position: relative; z-index: 1; }   /* content stays above the glow layers */
+
+    /* ── per-game hover glows ─────────────────────────────────── */
+    @property --a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    @keyframes cardspin { to { --a: 360deg; } }
+
+    /* Game of Life — slow soft green↔blue breath */
+    .card.glow-life:hover { animation: lifeGlow 4.5s ease-in-out infinite; }
+    @keyframes lifeGlow {
+      0%,100% { box-shadow: 0 0 20px -3px rgba(29,185,84,0.55);  border-color: #1db954; }
+      50%     { box-shadow: 0 0 28px -1px rgba(56,150,230,0.62); border-color: #3a9ee6; }
+    }
+
+    /* Gomoku & Escape — a rotating ring of light around the four edges */
+    .card.glow-gomoku::after, .card.glow-escape::after {
+      content: ''; position: absolute; inset: -4px; z-index: -1; border-radius: 5px;
+      filter: blur(9px); opacity: 0; transition: opacity 0.3s;
+    }
+    .card.glow-gomoku:hover::after, .card.glow-escape:hover::after { opacity: 0.85; animation: cardspin 3.2s linear infinite; }
+    /* Gomoku: red & green sweep around the edges in sequence */
+    .card.glow-gomoku::after { background: conic-gradient(from var(--a), #f44336, #1db954, #f44336, #1db954, #f44336); }
+    /* Escape: a green light and a red light, 180° apart, chasing each other the same way */
+    .card.glow-escape::after { background: conic-gradient(from var(--a), transparent 0deg, #1db954 28deg, transparent 86deg, transparent 180deg, #f44336 208deg, transparent 266deg, transparent 360deg); }
+
+    /* Tomato — warm sunlight radiating from the centre */
+    .card.glow-tomato::before {
+      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(circle at 50% 45%, rgba(255,210,90,0.20), rgba(245,130,45,0.10) 42%, transparent 72%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+    .card.glow-tomato:hover::before { opacity: 1; animation: sunPulse 3s ease-in-out infinite; }
+    .card.glow-tomato:hover { box-shadow: 0 0 30px -6px rgba(255,170,60,0.55); border-color: #ffce4d; }
+    @keyframes sunPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
 
     .card-thumb { display: block; width: calc(100% + 40px); height: 124px; margin: -20px -20px 14px; object-fit: cover; border-bottom: 1px solid #1c1c1c; filter: saturate(0.9) brightness(0.82); transition: filter 0.15s; }
     .card:hover .card-thumb { filter: saturate(1.05) brightness(1); }
@@ -71,7 +104,7 @@
 <div class="section-label" data-en="// playable now" data-zh="// 可以游玩">// playable now</div>
 <div class="grid">
 
-  <div class="card flagship">
+  <div class="card flagship glow-life">
     <img class="card-thumb" src="/game/thumbs/life.jpg?v=3" alt="Game of Life grid" loading="lazy" width="440" height="240">
     <div class="card-icon">[##]</div>
     <div class="card-title" data-en="game_of_life.exe" data-zh="生命游戏.exe">game_of_life.exe</div>
@@ -88,7 +121,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card glow-gomoku">
     <img class="card-thumb" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board" loading="lazy" width="440" height="240">
     <div class="card-icon">[⬡]</div>
     <div class="card-title" data-en="gomoku.exe" data-zh="五子棋.exe">gomoku.exe</div>
@@ -105,7 +138,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card glow-escape">
     <img class="card-thumb" src="/game/thumbs/escape.jpg?v=3" alt="Escape Grid board" loading="lazy" width="440" height="240">
     <div class="card-icon">[::]</div>
     <div class="card-title" data-en="escape_grid.exe" data-zh="逃脱方格.exe">escape_grid.exe</div>
@@ -121,7 +154,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card glow-tomato">
     <img class="card-thumb" src="/game/thumbs/tomato.jpg?v=3" alt="Tomato-growing game" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#f0533a">[◍]</div>
     <div class="card-title" data-en="grow_a_tomato.exe" data-zh="种番茄.exe">grow_a_tomato.exe</div>
