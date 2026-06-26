@@ -59,70 +59,16 @@
     .card.glow-tomato:hover { box-shadow: 0 0 24px -9px rgba(210,135,55,0.5); border-color: #b5803a; }
     @keyframes sunPulse { 0%,100% { opacity: 0.45; } 50% { opacity: 0.9; } }
 
-/* ===== Gomoku — all-blue color-shifting water ripples ===== */
-/* Two rings expand from the centre. Both are blue from the start; the
-   ring colour animates bright light-blue -> mid blue -> deep indigo
-   inside the SAME @keyframes as the scale/opacity, so the blue visibly
-   shifts as each ring travels outward. Hover-only. Pure CSS. */
-
-.card.glow-gomoku{
-  transition: box-shadow .35s ease, border-color .35s ease;
-}
-.card.glow-gomoku:hover{
-  border-color:#3a9ee6;
-  box-shadow:0 0 22px rgba(58,158,230,.45), inset 0 0 26px rgba(54,197,208,.12);
-}
-
-.card.glow-gomoku::before,
-.card.glow-gomoku::after{
-  content:"";
-  position:absolute;
-  left:50%; top:50%;
-  width:40px; height:40px;
-  margin:-20px 0 0 -20px;
-  border-radius:50%;
-  border:2px solid transparent;
-  z-index:0;                 /* behind content (z-index:1), above card bg */
-  pointer-events:none;
-  opacity:0;
-  transform:translateZ(0) scale(.2);
-}
-.card.glow-gomoku:hover::before,
-.card.glow-gomoku:hover::after{
-  animation:ripple 3.4s ease-out infinite;
-}
-.card.glow-gomoku:hover::after{
-  animation-delay:-1.7s;     /* second ring offset for a continuous train */
-}
-
-@keyframes ripple{
-  0%{
-    opacity:0;
-    transform:translateZ(0) scale(.15);
-    border-color:#9fdcff;    /* bright light-blue near the centre */
-    border-width:3px;
-  }
-  12%{
-    opacity:.9;
-    border-color:#9fdcff;
-  }
-  45%{
-    border-color:#3a9ee6;    /* mid blue as it travels */
-    opacity:.7;
-  }
-  75%{
-    border-color:#2466c9;    /* deeper indigo-blue */
-    opacity:.4;
-    border-width:2px;
-  }
-  100%{
-    opacity:0;
-    transform:translateZ(0) scale(4.6);
-    border-color:#163a86;    /* deep indigo, faded out */
-    border-width:1px;
-  }
-}
-/* ========================================================= */
+/* ===== Gomoku — Canvas WATER RIPPLE refracting the thumbnail ===== */
+/* On hover the stones thumbnail becomes a water surface: a height-field
+   ripple sim refracts the image, mousemove leaves a wake, click splashes.
+   Engine in JS (rAF auto-stops when the water goes flat). */
+.card.glow-gomoku{ transition: box-shadow .3s ease, border-color .3s ease; }
+.card.glow-gomoku:hover{ border-color:#2f6fa0; box-shadow:0 0 22px -8px rgba(58,158,230,.5); }
+.gthumb{ position:relative; overflow:hidden; }
+.gthumb-img{ display:block; width:100%; height:100%; object-fit:cover; }
+.gwater{ position:absolute; inset:0; width:100%; height:100%; display:block; opacity:0; transition:opacity .25s ease; }
+.gthumb.ready .gwater{ opacity:1; }
 
 /* ===== Game of Life hover: drifting blue MIST / smoke ===== */
 /* Wispy bluish smoke that rises and curls (cigarette-smoke feel). Hover-only. */
@@ -241,7 +187,10 @@
   </div>
 
   <div class="card glow-gomoku">
-    <img class="card-thumb" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board" loading="lazy" width="440" height="240">
+    <div class="card-thumb gthumb">
+      <img class="gthumb-img" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board" loading="lazy" width="440" height="240">
+      <canvas class="gwater" aria-hidden="true"></canvas>
+    </div>
     <div class="card-icon">[⬡]</div>
     <div class="card-title" data-en="gomoku.exe" data-zh="五子棋.exe">gomoku.exe</div>
     <div class="card-desc" data-en="Classic 5-in-a-row. Beat a minimax AI, watch AI-vs-AI, or play a friend online." data-zh="经典五子棋。挑战极小化极大 AI、观看 AI 对战，或与好友联机对弈。">Classic 5-in-a-row. Beat a minimax AI, watch AI-vs-AI, or play a friend online.</div>
@@ -426,6 +375,101 @@ document.addEventListener('DOMContentLoaded', applyLang);
   function loop(){ spawn(); timer = setTimeout(loop, rnd(540,880)); }   // LOWER, varied frequency
   card.addEventListener('mouseenter', ()=>{ if(timer) return; loop(); });
   card.addEventListener('mouseleave', ()=>{ clearTimeout(timer); timer = null; });
+})();
+
+/* Gomoku card — Canvas 2D water ripple refracting the thumbnail (mousemove wake + click splash) */
+(function () {
+  const wrap = document.querySelector('.glow-gomoku .gthumb');
+  if (!wrap) return;
+  const img = wrap.querySelector('.gthumb-img');
+  const canvas = wrap.querySelector('.gwater');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const SIM_SCALE = 0.5, DAMP = 0.985, REFRACT = 6.0, SHADE = 24, SPEC = 0.9;
+  let DW, DH, SW, SH, SN, cur, prev, bg, out, outData, inited = false;
+  let rafId = 0, inside = false;
+  let wakeQ = [], lastX = 0, lastY = 0, haveLast = false;
+
+  function setup() {
+    const w = wrap.clientWidth | 0, h = wrap.clientHeight | 0;
+    if (!w || !h || !img.naturalWidth) return false;
+    DW = w; DH = h; canvas.width = DW; canvas.height = DH;
+    SW = Math.max(2, Math.round(DW * SIM_SCALE)); SH = Math.max(2, Math.round(DH * SIM_SCALE)); SN = SW * SH;
+    cur = new Float32Array(SN); prev = new Float32Array(SN);
+    out = ctx.createImageData(DW, DH); outData = out.data;
+    const off = document.createElement('canvas'); off.width = DW; off.height = DH;
+    const oc = off.getContext('2d');
+    const ir = img.naturalWidth / img.naturalHeight, cr = DW / DH;
+    let sw, sh, sx, sy;
+    if (ir > cr) { sh = img.naturalHeight; sw = sh * cr; sx = (img.naturalWidth - sw) / 2; sy = 0; }
+    else { sw = img.naturalWidth; sh = sw / cr; sx = 0; sy = (img.naturalHeight - sh) / 2; }
+    oc.drawImage(img, sx, sy, sw, sh, 0, 0, DW, DH);
+    try { bg = oc.getImageData(0, 0, DW, DH).data; } catch (e) { return false; }
+    inited = true; render(prev); wrap.classList.add('ready');
+    return true;
+  }
+  function ensureInit() { return inited || ((img.complete && img.naturalWidth) ? setup() : false); }
+
+  function poke(dx, dy, strength, radius) {
+    const sx = (dx * SIM_SCALE) | 0, sy = (dy * SIM_SCALE) | 0, r = radius || 2;
+    for (let y = -r; y <= r; y++) { const yy = sy + y; if (yy < 1 || yy >= SH - 1) continue;
+      for (let x = -r; x <= r; x++) { const xx = sx + x; if (xx < 1 || xx >= SW - 1) continue;
+        const d = Math.hypot(x, y); if (d > r) continue;
+        prev[yy * SW + xx] -= strength * Math.cos((d / r) * Math.PI * 0.5); } }
+    ensureRAF();
+  }
+  function ringPoke(dx, dy, ringR, strength) {
+    const sx = dx * SIM_SCALE, sy = dy * SIM_SCALE, rr = ringR * SIM_SCALE, steps = Math.max(10, (2 * Math.PI * rr) | 0);
+    for (let s = 0; s < steps; s++) { const a = s / steps * Math.PI * 2, xx = (sx + Math.cos(a) * rr) | 0, yy = (sy + Math.sin(a) * rr) | 0;
+      if (xx < 1 || yy < 1 || xx >= SW - 1 || yy >= SH - 1) continue; prev[yy * SW + xx] -= strength; }
+  }
+  function splash(x, y) { poke(x, y, 46, 5); ringPoke(x, y, 8, 16); ringPoke(x, y, 14, 9); }
+
+  function step() {
+    const c = cur, p = prev;
+    for (let y = 1; y < SH - 1; y++) { let i = y * SW + 1;
+      for (let x = 1; x < SW - 1; x++, i++) { c[i] = (((p[i-1] + p[i+1] + p[i-SW] + p[i+SW]) * 0.5) - c[i]) * DAMP; } }
+    const t = prev; prev = cur; cur = t;
+  }
+  function render(field) {
+    const data = outData, inv = 1 / SIM_SCALE;
+    for (let y = 0; y < DH; y++) {
+      const fy = y * SIM_SCALE, sy0 = fy | 0, wy = fy - sy0, sy1 = sy0 + 1 < SH ? sy0 + 1 : sy0, row0 = sy0 * SW, row1 = sy1 * SW;
+      for (let x = 0; x < DW; x++) {
+        const fx = x * SIM_SCALE, sx0 = fx | 0, wx = fx - sx0, sx1 = sx0 + 1 < SW ? sx0 + 1 : sx0;
+        const h00 = field[row0 + sx0], h10 = field[row0 + sx1], h01 = field[row1 + sx0], h11 = field[row1 + sx1];
+        const xm = sx0 > 0 ? sx0 - 1 : sx0, xp = sx1, ym = sy0 > 0 ? sy0 - 1 : sy0, yp = sy1;
+        const dhx = field[row0 + xp] - field[row0 + xm], dhy = field[yp * SW + sx0] - field[ym * SW + sx0];
+        let bx = x + ((dhx * REFRACT * inv) | 0), by = y + ((dhy * REFRACT * inv) | 0);
+        if (bx < 0) bx = 0; else if (bx >= DW) bx = DW - 1; if (by < 0) by = 0; else if (by >= DH) by = DH - 1;
+        const bi = (by * DW + bx) * 4, lit = (-dhx - dhy) * SHADE; let spec = (dhx * dhx + dhy * dhy) * SHADE * SPEC; if (spec > 32) spec = 32;
+        let r = bg[bi] + lit + spec * 0.9, g = bg[bi + 1] + lit + spec, b = bg[bi + 2] + lit + spec * 1.1;
+        const oi = (y * DW + x) * 4;
+        data[oi] = r < 0 ? 0 : r > 255 ? 255 : r; data[oi + 1] = g < 0 ? 0 : g > 255 ? 255 : g; data[oi + 2] = b < 0 ? 0 : b > 255 ? 255 : b; data[oi + 3] = 255;
+      }
+    }
+    ctx.putImageData(out, 0, 0);
+  }
+  function energy(f) { let e = 0; for (let i = 0; i < SN; i += 7) { const v = f[i]; e += v < 0 ? -v : v; } return e; }
+  function frame() {
+    for (let i = 0; i < wakeQ.length; i += 2) poke(wakeQ[i], wakeQ[i + 1], 6, 2); wakeQ.length = 0;
+    step(); render(prev);
+    if (!inside && energy(prev) < 0.1) { rafId = 0; return; }
+    rafId = requestAnimationFrame(frame);
+  }
+  function ensureRAF() { if (!rafId) rafId = requestAnimationFrame(frame); }
+  function pos(ev) { const r = wrap.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function queueWake(x, y) {
+    if (haveLast) { const dx = x - lastX, dy = y - lastY, dist = Math.hypot(dx, dy), segs = Math.min(8, Math.max(1, (dist / 6) | 0));
+      for (let s = 1; s <= segs; s++) wakeQ.push(lastX + dx * (s / segs), lastY + dy * (s / segs)); }
+    else wakeQ.push(x, y);
+    lastX = x; lastY = y; haveLast = true;
+  }
+  wrap.addEventListener('mouseenter', () => { if (!ensureInit()) return; inside = true; haveLast = false; ensureRAF(); });
+  wrap.addEventListener('mouseleave', () => { inside = false; haveLast = false; });
+  wrap.addEventListener('mousemove', (ev) => { if (!ensureInit()) return; const [x, y] = pos(ev); queueWake(x, y); ensureRAF(); });
+  wrap.addEventListener('click', (ev) => { if (!ensureInit()) return; const [x, y] = pos(ev); splash(x, y); ensureRAF(); });
+  // paint the flat (undistorted) thumbnail once the image is ready, then reveal the canvas
+  if (img.complete && img.naturalWidth) setup(); else img.addEventListener('load', setup, { once: true });
 })();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
