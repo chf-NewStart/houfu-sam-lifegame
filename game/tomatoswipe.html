@@ -27,12 +27,14 @@
   .face:hover{border-color:#1db954;background:rgba(29,185,84,0.07);}
 
   .board{display:grid;gap:2px;width:min(92vw,460px);margin:0 auto;background:#0a0a0a;border:1px solid #1a1a1a;padding:4px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;}
-  .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1;border-radius:2px;cursor:pointer;}
+  .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1;border-radius:2px;cursor:pointer;overflow:hidden;}
+  .tmt{margin:0;line-height:0.82;white-space:pre;font-family:Consolas,'Courier New',monospace;color:#e2523e;font-size:var(--tmt-fs,3px);text-shadow:0 0 2px rgba(226,82,62,0.5);}
+  .tmt.can{color:#dcdcdc;text-shadow:0 0 2px rgba(0,0,0,0.6);}
   .cell.hidden{background:linear-gradient(145deg,#1f3416,#13200d);box-shadow:inset 1px 1px 0 rgba(124,206,90,0.13),inset -1px -1px 0 rgba(0,0,0,0.4);}
   .cell.hidden:hover{background:linear-gradient(145deg,#274119,#192b10);}
   .cell.flag{color:#e2523e;}
   .cell.open{background:#0c0c0c;box-shadow:inset 0 0 0 1px #141414;cursor:default;}
-  .cell.tom{background:#240e0b;}
+  .cell.tom{background:#0c0c0c;box-shadow:inset 0 0 0 1px #141414;}
   .cell.boom{background:#e23b2e;box-shadow:0 0 14px rgba(226,59,46,0.7);}
   .cell.wrong{color:#e23b2e;}
   .n1{color:#4da6ff;} .n2{color:#6cc24a;} .n3{color:#f0973a;} .n4{color:#c77dff;}
@@ -91,9 +93,9 @@
     <div class="card">
       <div class="card-title"><span data-en="// garden" data-zh="// 菜园">// garden</span></div>
       <div class="seg" id="diffSeg">
-        <button data-diff="patch" class="on" data-en="patch" data-zh="小块">patch<span class="lab">9·10</span></button>
-        <button data-diff="plot" data-en="plot" data-zh="菜畦">plot<span class="lab">13·30</span></button>
-        <button data-diff="field" data-en="field" data-zh="田地">field<span class="lab">16·50</span></button>
+        <button data-diff="patch" class="on" data-en="patch<span class='lab'>9·12</span>" data-zh="小块<span class='lab'>9·12</span>">patch<span class="lab">9·12</span></button>
+        <button data-diff="plot" data-en="plot<span class='lab'>13·36</span>" data-zh="菜畦<span class='lab'>13·36</span>">plot<span class="lab">13·36</span></button>
+        <button data-diff="field" data-en="field<span class='lab'>16·56</span>" data-zh="田地<span class='lab'>16·56</span>">field<span class="lab">16·56</span></button>
       </div>
     </div>
 
@@ -122,7 +124,41 @@
    ============================================================================ */
 const game = (function () {
   const $ = (id) => document.getElementById(id);
-  const DIFFS = { patch: { c: 9, r: 9, m: 10 }, plot: { c: 13, r: 13, m: 30 }, field: { c: 16, r: 16, m: 50 } };
+  const TMT =
+`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠻⣶⡆⠀⠿⠀⣶⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣴⠾⠛⢹⣶⡤⢶⣿⡟⠶⠦⠄⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣠⣶⣤⣤⣤⣤⣴⠂⠸⠋⢀⣄⡉⠓⠀⠲⣶⣾⣿⣷⣄⠀⠀⠀⠀
+⠀⠀⠀⢀⣾⡿⠋⠁⣠⣤⣿⡟⢀⣠⣾⣿⣿⣿⣷⣶⣤⣼⣿⣿⣿⣿⣆⠀⠀⠀
+⠀⠀⠀⣾⡟⠀⣰⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀
+⠀⠀⢸⡿⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⢸⡇⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⢸⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀
+⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀
+⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`;
+  const CAN =
+`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣷⣶⣤⣄⣀⡀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣈⣉⠛⠛⠿⢿⣿⠇⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⠟⠛⠛⢷⣶⡄⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⠇⢰⣿⣷⠈⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣶⣿⣆⠘⠛⠋⣰⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⡿⠿⠿⠿⠿⢿⣶⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⡟⢠⣶⣶⣶⣦⣤⣈⠙⠿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⠇⢸⣿⣿⠏⢹⣿⣿⣿⡆⢹⣿⡟⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⠀⠋⣠⡄⢀⠀⠈⠻⡿⠁⣾⣿⠁⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢀⣿⣿⡇⠀⢸⣿⣿⣿⣿⣿⠆⠀⣼⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⣼⣿⣿⠁⣼⣄⠙⠻⠟⠛⢁⠀⢰⣿⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠻⣿⣿⣤⣄⣉⠙⠒⠶⢿⠟⢠⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠉⠙⠛⠿⢿⣿⣶⣶⣤⣿⣿⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`;
+  const DIFFS = { patch: { c: 9, r: 9, m: 12 }, plot: { c: 13, r: 13, m: 36 }, field: { c: 16, r: 16, m: 56 } };
+  // two-tone tomato (green calyx + red body) so it reads as a tomato even at cell size
+  const TMT_HTML = (function () { const L = TMT.split('\n'); return '<span style="color:#5fbf3f">' + L.slice(0, 4).join('\n') + '\n</span><span style="color:#e2523e">' + L.slice(4).join('\n') + '</span>'; })();
   let diff = 'patch', cols = 9, rows = 9, mines = 10, N = 81;
   let tomato, count, revealed, flagged, cells = [];
   let state = 'ready', flagMode = false, revealedCount = 0, flags = 0, exploded = -1;
@@ -151,6 +187,7 @@ const game = (function () {
     const w = board.clientWidth - 8 - (cols - 1) * 2;        // minus padding + gaps
     const cw = w / cols;
     board.style.fontSize = Math.max(8, Math.round(cw * 0.52)) + 'px';
+    board.style.setProperty('--tmt-fs', Math.max(1, cw * 0.055).toFixed(2) + 'px');   // braille tomato/can fills the cell (full art, no clip)
   }
 
   function placeMines(safe) {
@@ -225,7 +262,7 @@ const game = (function () {
   function renderCell(i) {
     const el = cells[i];
     if (revealed[i]) {
-      if (tomato[i]) { el.className = 'cell tom open' + (i === exploded ? ' boom' : ''); el.textContent = '🍅'; }
+      if (tomato[i]) { const boom = i === exploded; el.className = 'cell tom open' + (boom ? ' boom' : ''); el.innerHTML = '<pre class="tmt' + (boom ? ' can' : '') + '">' + (boom ? CAN : TMT_HTML) + '</pre>'; }
       else { el.className = 'cell open' + (count[i] ? ' n' + count[i] : ''); el.textContent = count[i] ? count[i] : ''; }
     } else if (state === 'lost' && flagged[i] && !tomato[i]) { el.className = 'cell hidden wrong'; el.textContent = '✗'; }
     else { el.className = 'cell hidden' + (flagged[i] ? ' flag' : ''); el.textContent = flagged[i] ? '🚩' : ''; }
