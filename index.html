@@ -611,6 +611,28 @@ document.addEventListener('DOMContentLoaded', applyLang);
   card.addEventListener('mouseenter', (e) => { ensureLayer(); setPos(e); spawn(); if(!timer) timer = setInterval(spawn, 105); });
   card.addEventListener('mousemove', setPos);
   card.addEventListener('mouseleave', () => { if(timer){ clearInterval(timer); timer = 0; } });
+  // attract: on first scroll-into-view, do a slow horizontal "hover" so the rain self-demos
+  let attracted = false;
+  function attract(){
+    if (attracted) return; attracted = true;
+    ensureLayer();
+    const W = card.clientWidth, H = card.clientHeight;
+    my = H * 0.30;
+    const x0 = W * 0.12, x1 = W * 0.88, dur = 2300;
+    let t0 = null, last = 0;
+    function step(ts){
+      if (t0 == null) t0 = ts;
+      const p = Math.min(1, (ts - t0) / dur);
+      mx = x0 + (x1 - x0) * p;                       // slow sweep across the card
+      if (ts - last > 115) { spawn(); last = ts; }
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting && !attracted) { io.disconnect(); setTimeout(attract, 400); } }); }, { threshold: 0.5 });
+    io.observe(card);
+  } else { setTimeout(attract, 1000); }
 })();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
