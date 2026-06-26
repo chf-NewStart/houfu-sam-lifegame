@@ -20,7 +20,7 @@
 
   .wrap{max-width:920px;margin:0 auto;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;justify-content:center;}
   .stage{flex:0 0 auto;position:relative;}
-  #maze{display:block;background:#080808;border:1px solid #161616;border-radius:3px;touch-action:none;box-shadow:0 0 40px -16px rgba(29,185,84,0.5);}
+  #maze{display:block;background:#080808;border:1px solid #161616;border-radius:3px;touch-action:none;outline:none;cursor:pointer;box-shadow:0 0 40px -16px rgba(29,185,84,0.5);}
   .side{flex:1;min-width:230px;max-width:320px;}
   .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:13px 14px;margin-bottom:11px;}
   .card-title{color:#1db954;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:11px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
@@ -49,11 +49,11 @@
   .leg{display:flex;align-items:center;gap:7px;margin-top:5px;}
   .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
 
-  .dpad{display:none;margin-top:12px;}
+  .dpad{display:block;margin-top:14px;}
   .dpad .drow{display:flex;justify-content:center;gap:8px;}
-  .dpad button{width:54px;height:46px;background:#0d0d0d;border:1px solid #2a2a2a;color:#1db954;font-size:1.1rem;font-family:inherit;cursor:pointer;border-radius:4px;}
-  .dpad button:active{background:rgba(29,185,84,0.15);}
-  @media(hover:none){ .dpad{display:block;} }
+  .dpad button{width:54px;height:46px;background:#0d0d0d;border:1px solid #2a2a2a;color:#1db954;font-size:1.1rem;font-family:inherit;cursor:pointer;border-radius:4px;transition:background .1s,border-color .1s;}
+  .dpad button:hover{border-color:#1db954;}
+  .dpad button:active{background:rgba(29,185,84,0.2);}
 
   .win{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(4,6,4,0.82);z-index:50;padding:20px;}
   .win.show{display:flex;}
@@ -79,7 +79,7 @@
 
 <div class="wrap">
   <div class="stage">
-    <canvas id="maze" width="520" height="520"></canvas>
+    <canvas id="maze" width="520" height="520" tabindex="0"></canvas>
     <div class="dpad">
       <div class="drow"><button data-dir="0" aria-label="up">▲</button></div>
       <div class="drow"><button data-dir="3" aria-label="left">◀</button><button data-dir="2" aria-label="down">▼</button><button data-dir="1" aria-label="right">▶</button></div>
@@ -113,7 +113,7 @@
 
     <div class="card help">
       <div class="card-title"><span data-en="// how" data-zh="// 玩法">// how</span></div>
-      <div data-en="Move with <b class='keycap'>W A S D</b> or the arrow keys (swipe / d-pad on touch)." data-zh="用 <b class='keycap'>W A S D</b> 或方向键移动（触屏可滑动 / 用方向键盘）。">Move with <b class="keycap">W A S D</b> or the arrow keys (swipe / d-pad on touch).</div>
+      <div data-en="Move with <b class='keycap'>W A S D</b> / arrow keys, the d-pad below, or click the maze toward the dot (swipe on touch)." data-zh="用 <b class='keycap'>W A S D</b> / 方向键、下方方向盘，或朝小绿点方向点击迷宫来移动（触屏可滑动）。">Move with <b class="keycap">W A S D</b> / arrow keys, the d-pad below, or click the maze toward the dot (swipe on touch).</div>
       <div class="leg"><span class="dot" style="background:#2bff88;box-shadow:0 0 8px #2bff88"></span><span data-en="you" data-zh="你">you</span></div>
       <div class="leg"><span class="dot" style="background:#ffd24d;box-shadow:0 0 8px #ffd24d"></span><span data-en="the exit (beacon shows direction)" data-zh="出口（光点指示方向）">the exit (beacon shows direction)</span></div>
       <div class="leg"><span class="dot" style="background:#36c5d0"></span><span data-en="A* search frontier" data-zh="A* 搜索前沿">A* search frontier</span></div>
@@ -220,6 +220,15 @@ const game = (function () {
     if (!running) { running = true; startT = performance.now(); }
     computeVision(); $('vSteps').textContent = steps;
     if (px === ex && py === ey) finish();
+  }
+  // click/tap a spot: step one cell toward it (dominant axis first, fall back to the other)
+  function stepToward(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const tx = Math.floor((clientX - rect.left) / cell), ty = Math.floor((clientY - rect.top) / cell);
+    const dx = tx - px, dy = ty - py; if (!dx && !dy) return;
+    const h = dx ? [dx > 0 ? 1 : 3] : [], v = dy ? [dy > 0 ? 2 : 0] : [];
+    const order = Math.abs(dx) >= Math.abs(dy) ? h.concat(v) : v.concat(h);
+    for (let n = 0; n < order.length; n++) { if (!cells[idx(px, py)][order[n]]) { move(order[n]); break; } }
   }
 
   function finish() {
@@ -365,20 +374,23 @@ const game = (function () {
       document.querySelectorAll('#sizeSeg button').forEach(o => o.classList.toggle('on', o === b));
       newMaze();
     }));
-    // swipe
-    let sx = 0, sy = 0, sw = false;
+    // click / tap / swipe on the maze
+    let sx = 0, sy = 0, sw = false, touchedAt = 0;
     canvas.addEventListener('touchstart', (e) => { const tch = e.touches[0]; sx = tch.clientX; sy = tch.clientY; sw = true; }, { passive: true });
     canvas.addEventListener('touchend', (e) => {
+      touchedAt = performance.now();
       if (!sw) return; sw = false; const tch = e.changedTouches[0], dx = tch.clientX - sx, dy = tch.clientY - sy;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return;
-      if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 3); else move(dy > 0 ? 2 : 0);
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) { stepToward(tch.clientX, tch.clientY); return; }   // tap = step toward
+      if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 3); else move(dy > 0 ? 2 : 0);                  // swipe = direction
     }, { passive: true });
+    canvas.addEventListener('click', (e) => { canvas.focus({ preventScroll: true }); if (performance.now() - touchedAt < 600) return; stepToward(e.clientX, e.clientY); });
     window.addEventListener('resize', () => { layout(); });
   }
 
   function init() {
     canvas = $('maze'); ctx = canvas.getContext('2d');
     bind(); newMaze(); requestAnimationFrame(loop);
+    try { canvas.focus({ preventScroll: true }); } catch (e) {}
   }
 
   return { init, newMaze, solve, setFog: (v) => { fog = v; }, getFog: () => fog };
