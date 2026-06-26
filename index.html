@@ -48,13 +48,7 @@
     .card.glow-tomato:hover { transform: translateY(-4px); box-shadow: 4px 4px 0 rgba(0,255,0,0.20); border-color: rgba(var(--crt-green),0.4); }
     /* tomato-rain: little ASCII tomatoes drop wherever the cursor hovers (JS-spawned) */
     .card.glow-tomato .tomato-rain { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
-    .tdrop { position: absolute; margin: 0; line-height: 0.9; white-space: pre; font-family: Consolas,'Courier New',monospace; will-change: transform, opacity; opacity: 0; }
-    @keyframes tdropFall {
-      0%   { opacity: 0; transform: translate(-50%,-50%) scale(.65) rotate(0deg); }
-      14%  { opacity: 1; }
-      82%  { opacity: 1; }
-      100% { opacity: 0; transform: translate(-50%,-50%) translateY(var(--fall,160px)) translateX(var(--drift,0px)) scale(1) rotate(var(--rot,0deg)); }
-    }
+    .tdrop { position: absolute; left: 0; top: 0; margin: 0; line-height: 0.9; white-space: pre; font-family: Consolas,'Courier New',monospace; will-change: transform; opacity: 0; transition: opacity .25s ease; }
     /* phosphor "wake up" — icon glows in its own (red) colour, title in green */
     .card.glow-tomato .card-icon, .card.glow-tomato .card-title { transition: text-shadow .3s ease; }
     .card.glow-tomato:hover .card-icon { text-shadow: 0 0 6px currentColor, 0 0 14px currentColor; }
@@ -591,48 +585,84 @@ document.addEventListener('DOMContentLoaded', applyLang);
 ⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`;
   const COLORS = ['#6cc24a','#86d15a','#4fb33a','#f0973a','#e8a13a','#e23b2e','#cf3027'];  // green · orange · red(ripe)
-  let layer = null, timer = 0, mx = 0, my = 0, drops = 0;
-  function ensureLayer(){ if(!layer){ layer = document.createElement('div'); layer.className = 'tomato-rain'; layer.setAttribute('aria-hidden','true'); card.appendChild(layer); } }
-  function spawn(){
-    if(!layer || drops > 34) return;
-    const pre = document.createElement('pre'); pre.className = 'tdrop'; pre.textContent = ART;
-    const fs = (2.2 + Math.random()*3.0).toFixed(2), col = COLORS[(Math.random()*COLORS.length)|0];
-    const fall = (card.clientHeight - my + 36 + Math.random()*36) | 0;
-    pre.style.left = mx + 'px'; pre.style.top = my + 'px'; pre.style.fontSize = fs + 'px';
-    pre.style.color = col; pre.style.textShadow = '0 0 6px ' + col + 'cc';
-    pre.style.setProperty('--fall', fall + 'px');
-    pre.style.setProperty('--drift', ((Math.random()*54 - 27)|0) + 'px');
-    pre.style.setProperty('--rot', ((Math.random()*84 - 42)|0) + 'deg');
-    pre.style.animation = 'tdropFall ' + (1.25 + Math.random()*1.15).toFixed(2) + 's linear forwards';
-    layer.appendChild(pre); drops++;
-    pre.addEventListener('animationend', () => { pre.remove(); drops--; }, { once: true });
+  const G = 0.40, REST = 0.10, WALL = 0.45, FRIC = 0.82, MAXV = 17, MAX_BODIES = 48, WAKEV = 1.2, VDX = 0.92, VDY = 0.99;
+  let layer = null, bodies = [], raf = 0, mx = 0, my = 0, spawning = false, timer = 0, W = 0, H = 0;
+  function ensureLayer(){ if(!layer){ layer = document.createElement('div'); layer.className = 'tomato-rain'; layer.setAttribute('aria-hidden','true'); card.appendChild(layer); } W = card.clientWidth; H = card.clientHeight; }
+  function place(b){ b.el.style.transform = 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px) translate(-50%,-50%) rotate(' + b.rot.toFixed(1) + 'deg)'; }
+  function wakeAll(){ for(const b of bodies){ b.asleep = false; b.sleep = 0; } ensureRAF(); }
+  function removeOldest(){ const b = bodies.shift(); if(b){ b.el.style.opacity = '0'; setTimeout(() => b.el.remove(), 350); wakeAll(); } }
+  function spawnAt(x, y){
+    ensureLayer();
+    if(bodies.length >= MAX_BODIES) removeOldest();
+    const fs = 2.6 + Math.random()*3.3, col = COLORS[(Math.random()*COLORS.length)|0];
+    const el = document.createElement('pre'); el.className = 'tdrop'; el.textContent = ART;
+    el.style.fontSize = fs.toFixed(2) + 'px'; el.style.color = col; el.style.textShadow = '0 0 6px ' + col + 'cc';
+    layer.appendChild(el);
+    const r = (el.offsetWidth * 0.32) || fs * 5.4;                       // collision radius ≈ the tomato body
+    const b = { x:x, y:y, vx:(Math.random()*2-1)*1.3, vy:Math.random()*1.2, r:r, el:el, rot:(Math.random()*30-15), vrot:(Math.random()*3-1.5), sleep:0, asleep:false };
+    place(b); el.style.opacity = '0';
+    requestAnimationFrame(() => { el.style.opacity = '0.96'; });
+    bodies.push(b); ensureRAF();
   }
+  function collide(){                                                    // 3 relaxation passes: separate; wake only on real impact; impulse on awake only
+    for(let pass=0; pass<3; pass++){
+      for(let i=0;i<bodies.length;i++){ const a = bodies[i];
+        for(let j=i+1;j<bodies.length;j++){ const b = bodies[j];
+          let dx = b.x-a.x, dy = b.y-a.y, d = Math.hypot(dx,dy)||0.01, min = a.r+b.r;
+          if(d < min){
+            const ov = min-d, nx = dx/d, ny = dy/d, push = ov*0.5;
+            a.x -= nx*push; a.y -= ny*push; b.x += nx*push; b.y += ny*push;
+            if(a.asleep && b.asleep) continue;                            // resting contact: separate only, stay asleep
+            const rvx = b.vx-a.vx, rvy = b.vy-a.vy, vn = rvx*nx + rvy*ny;
+            if(vn < -WAKEV){ if(a.asleep){ a.asleep=false; a.sleep=0; } if(b.asleep){ b.asleep=false; b.sleep=0; } }
+            if(vn < 0){ const imp = -vn*0.5*(1+REST); if(!a.asleep){ a.vx -= imp*nx; a.vy -= imp*ny; } if(!b.asleep){ b.vx += imp*nx; b.vy += imp*ny; } }
+          }
+        }
+      }
+    }
+  }
+  function step(){
+    const floor = H - 2;
+    for(const b of bodies){
+      if(b.asleep) continue;
+      b.vy += G; b.vx *= VDX; b.vy *= VDY;
+      if(b.vx > MAXV) b.vx = MAXV; else if(b.vx < -MAXV) b.vx = -MAXV; if(b.vy > MAXV) b.vy = MAXV;
+      b.x += b.vx; b.y += b.vy; b.rot += b.vrot; b.vrot *= 0.92;
+      if(b.x-b.r < 0){ b.x = b.r; b.vx = -b.vx*WALL; } else if(b.x+b.r > W){ b.x = W-b.r; b.vx = -b.vx*WALL; }
+      if(b.y+b.r > floor){ b.y = floor-b.r; if(b.vy > 0) b.vy = 0; b.vx *= FRIC; }   // land: no floor bounce
+    }
+    collide();
+    let active = false;
+    for(const b of bodies){
+      if(!b.asleep){
+        if(Math.abs(b.vx) < 0.3 && Math.abs(b.vy) < 0.8){ if(++b.sleep > 12){ b.asleep = true; b.vx = 0; b.vy = 0; } } else b.sleep = 0;
+        if(!b.asleep) active = true;
+      }
+      place(b);
+    }
+    return active;
+  }
+  function frame(){ raf = (step() || spawning) ? requestAnimationFrame(frame) : 0; }
+  function ensureRAF(){ if(!raf) raf = requestAnimationFrame(frame); }
   function setPos(e){ const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
-  card.addEventListener('mouseenter', (e) => { ensureLayer(); setPos(e); spawn(); if(!timer) timer = setInterval(spawn, 105); });
+  card.addEventListener('mouseenter', (e) => { ensureLayer(); setPos(e); spawnAt(mx,my); spawning = true; if(!timer) timer = setInterval(() => spawnAt(mx,my), 120); });
   card.addEventListener('mousemove', setPos);
-  card.addEventListener('mouseleave', () => { if(timer){ clearInterval(timer); timer = 0; } });
-  // attract: on first scroll-into-view, do a slow horizontal "hover" so the rain self-demos
+  card.addEventListener('mouseleave', () => { spawning = false; if(timer){ clearInterval(timer); timer = 0; } });
+  window.addEventListener('resize', () => { if(layer){ W = card.clientWidth; H = card.clientHeight; wakeAll(); } });
+  // attract: slow horizontal "hover" sweep on first view, raining tomatoes that pile up
   let attracted = false;
   function attract(){
-    if (attracted) return; attracted = true;
-    ensureLayer();
-    const W = card.clientWidth, H = card.clientHeight;
-    my = H * 0.30;
-    const x0 = W * 0.12, x1 = W * 0.88, dur = 2300;
-    let t0 = null, last = 0;
-    function step(ts){
-      if (t0 == null) t0 = ts;
-      const p = Math.min(1, (ts - t0) / dur);
-      mx = x0 + (x1 - x0) * p;                       // slow sweep across the card
-      if (ts - last > 115) { spawn(); last = ts; }
-      if (p < 1) requestAnimationFrame(step);
+    if(attracted) return; attracted = true; ensureLayer();
+    my = H*0.26; const x0 = W*0.12, x1 = W*0.88, dur = 2400; let t0 = null, last = 0; spawning = true;
+    function sweep(ts){
+      if(t0 == null) t0 = ts; const p = Math.min(1, (ts-t0)/dur); mx = x0 + (x1-x0)*p;
+      if(ts-last > 130){ spawnAt(mx,my); last = ts; }
+      if(p < 1) requestAnimationFrame(sweep); else spawning = false;
     }
-    requestAnimationFrame(step);
+    requestAnimationFrame(sweep);
   }
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting && !attracted) { io.disconnect(); setTimeout(attract, 400); } }); }, { threshold: 0.5 });
-    io.observe(card);
-  } else { setTimeout(attract, 1000); }
+  if('IntersectionObserver' in window){ const io = new IntersectionObserver((es) => es.forEach(e => { if(e.isIntersecting && !attracted){ io.disconnect(); setTimeout(attract, 400); } }), { threshold: 0.5 }); io.observe(card); }
+  else setTimeout(attract, 1000);
 })();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
