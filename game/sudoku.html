@@ -209,17 +209,16 @@ const game = (function () {
     if (won || solveAnim || sel < 0 || given[sel]) return;
     errorCells = new Set();
     startTimer();
-    if (notesMode && v !== 0) {
-      if (grid[sel]) return;                              // can't note a filled cell
+    if (v === 0) {                                         // erase: clear the value, or the notes if the cell is empty
+      if (grid[sel]) grid[sel] = 0; else notes[sel].clear();
+    } else if (notesMode) {
+      if (grid[sel]) return;                               // can't note a filled cell
       if (notes[sel].has(v)) notes[sel].delete(v); else notes[sel].add(v);
     } else {
-      grid[sel] = v;
-      if (v !== 0) {
-        notes[sel].clear();
-        const r = (sel / 9) | 0, c = sel % 9, br = r - r % 3, bc = c - c % 3;   // auto-erase that candidate from peers
-        for (let k = 0; k < 9; k++) { notes[r * 9 + k].delete(v); notes[k * 9 + c].delete(v); }
-        for (let dr = 0; dr < 3; dr++) for (let dc = 0; dc < 3; dc++) notes[(br + dr) * 9 + (bc + dc)].delete(v);
-      }
+      grid[sel] = v; notes[sel].clear();
+      const r = (sel / 9) | 0, c = sel % 9, br = r - r % 3, bc = c - c % 3;     // auto-erase that candidate from peers
+      for (let k = 0; k < 9; k++) { notes[r * 9 + k].delete(v); notes[k * 9 + c].delete(v); }
+      for (let dr = 0; dr < 3; dr++) for (let dc = 0; dc < 3; dc++) notes[(br + dr) * 9 + (bc + dc)].delete(v);
     }
     render(); updatePad(); checkWin();
   }
