@@ -45,7 +45,9 @@
   .btn-row .btn{margin-bottom:0;}
 
   canvas{display:block;}
-  #plant{width:100%;background:linear-gradient(#0a0d12,#0c0a08);border:1px solid #161616;border-radius:3px;}
+  #plantBox{position:relative;height:284px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(#0a0d12,#0c0a08);border:1px solid #161616;border-radius:3px;}
+  #plantArt{margin:0;line-height:0.92;font-family:Consolas,'Courier New',monospace;white-space:pre;transition:font-size .3s ease;}
+  #sun{position:absolute;top:12px;right:16px;color:#ffce4d;transition:opacity .3s,font-size .3s;text-shadow:0 0 12px rgba(255,206,77,0.55);}
   .daybar{height:5px;background:#141414;margin-top:8px;position:relative;}
   .daybar .fill{position:absolute;left:0;top:0;bottom:0;background:#1db954;}
   .phase-tag{font-size:0.62rem;color:#777;margin-top:8px;text-align:center;letter-spacing:1px;text-transform:uppercase;}
@@ -105,7 +107,10 @@
   <div class="col mid">
     <div class="card">
       <div class="card-title"><span data-en="// plant" data-zh="// 植株">// plant</span><span id="dayLabel">DPA 8</span></div>
-      <canvas id="plant" width="300" height="300"></canvas>
+      <div id="plantBox">
+        <div id="sun">☀</div>
+        <pre id="plantArt"></pre>
+      </div>
       <div class="daybar"><div class="fill" id="dayFill" style="width:0%"></div></div>
       <div class="phase-tag" id="phaseTag">establishing</div>
     </div>
@@ -272,7 +277,7 @@ function render(){
   const sc=Math.round(P.biomass*(brix/12)*12);
   document.getElementById('scoreNow').textContent=t('score '+sc,'得分 '+sc);
   updatePhaseTip(ph);
-  drawPlant(brix);
+  renderPlant();
   drawChart();
 }
 function updatePhaseTip(ph){
@@ -283,41 +288,39 @@ function updatePhaseTip(ph){
   };
   document.getElementById('phaseTip').innerHTML=tips[ph];
 }
-function drawPlant(brix){
-  const cv=document.getElementById('plant'),x=cv.getContext('2d'),W=cv.width,H=cv.height;
-  x.clearRect(0,0,W,H);
-  // sun (brightness by light)
-  const lf=(ctrl.light-40)/410;
-  const sx=W-44,sy=40,sr=15+lf*6;
-  x.save();x.globalAlpha=0.25+lf*0.55;
-  x.fillStyle='#ffce4d';x.beginPath();x.arc(sx,sy,sr,0,7);x.fill();
-  x.strokeStyle='#ffce4d';x.lineWidth=2;for(let i=0;i<8;i++){const a=i/8*Math.PI*2;x.beginPath();x.moveTo(sx+Math.cos(a)*(sr+4),sy+Math.sin(a)*(sr+4));x.lineTo(sx+Math.cos(a)*(sr+10+lf*6),sy+Math.sin(a)*(sr+10+lf*6));x.stroke();}
-  x.restore();
-  // pot / soil
-  x.fillStyle='#241a12';x.fillRect(W/2-46,H-34,92,30);
-  x.fillStyle='#2e2118';x.fillRect(W/2-52,H-40,104,10);
-  // stem grows with progress
-  const prog=(Math.min(P.dpa,DPA_END)-DPA_START)/(DPA_END-DPA_START);
-  const stemTop=H-40-(40+prog*120);
-  x.strokeStyle='#2f7d32';x.lineWidth=4;x.beginPath();x.moveTo(W/2,H-40);x.lineTo(W/2,stemTop);x.stroke();
-  // leaves
-  x.fillStyle='#2f7d32';
-  for(let i=0;i<3;i++){const ly=H-60-i*((H-80-stemTop)/3)*1.0; if(ly<stemTop+10)break; const side=i%2?1:-1;
-    x.save();x.translate(W/2,ly);x.rotate(side*0.5);x.beginPath();x.ellipse(side*16,0,18,7,0,0,7);x.fill();x.restore();}
-  // fruit: radius by size, colour green->red by ripeness
-  const r=Math.min(46, 6+Math.sqrt(P.biomass)*5.4);
-  const fy=stemTop+ r*0.4;
+// braille-art tomato — grows (font-size by size) and ripens (crown green, body green→red)
+const TOMATO_ART=[
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠻⣶⡆⠀⠿⠀⣶⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣴⠾⠛⢹⣶⡤⢶⣿⡟⠶⠦⠄⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⣠⣶⣤⣤⣤⣤⣴⠂⠸⠋⢀⣄⡉⠓⠀⠲⣶⣾⣿⣷⣄⠀⠀⠀⠀",
+"⠀⠀⠀⢀⣾⡿⠋⠁⣠⣤⣿⡟⢀⣠⣾⣿⣿⣿⣷⣶⣤⣼⣿⣿⣿⣿⣆⠀⠀⠀",
+"⠀⠀⠀⣾⡟⠀⣰⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀",
+"⠀⠀⢸⡿⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀",
+"⠀⠀⢸⡇⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀",
+"⠀⠀⢸⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀",
+"⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀",
+"⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀",
+"⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
+];
+function renderPlant(){
   const ripe=Math.min(1,P.lyc/2.1);
-  const g=[ [90,150,55],[225,70,42] ];
-  const col=g[0].map((c,i)=>Math.round(c+(g[1][i]-c)*ripe));
-  if(P.biomass>0.2){
-    x.fillStyle=`rgb(${col[0]},${col[1]},${col[2]})`;
-    x.beginPath();x.arc(W/2,fy,r,0,7);x.fill();
-    // shine
-    x.fillStyle='rgba(255,255,255,0.18)';x.beginPath();x.arc(W/2-r*0.32,fy-r*0.34,r*0.28,0,7);x.fill();
-    // calyx
-    x.fillStyle='#2f7d32';for(let i=0;i<5;i++){const a=-Math.PI/2+i*1.05-0.4;x.save();x.translate(W/2,fy-r*0.92);x.rotate(a);x.beginPath();x.ellipse(0,0,3,8,0,0,7);x.fill();x.restore();}
-  }
+  const leaf='rgb(64,154,64)';
+  const g0=[122,172,78], g1=[228,64,40];
+  const b=g0.map((c,i)=>Math.round(c+(g1[i]-c)*ripe));
+  const bodyCol=`rgb(${b[0]},${b[1]},${b[2]})`;
+  const fs=4.5 + Math.min(1, P.biomass/55)*8;            // grows ~4.5px → 12.5px
+  const art=document.getElementById('plantArt');
+  art.style.fontSize=fs.toFixed(1)+'px';
+  // first 5 rows = stem + leafy crown (green); rest = fruit body (green→red)
+  art.innerHTML=TOMATO_ART.map((ln,i)=>`<span style="color:${i<5?leaf:bodyCol}">${ln}</span>`).join('\n');
+  const lf=Math.max(0,Math.min(1,(ctrl.light-40)/410));
+  const sun=document.getElementById('sun');
+  sun.style.opacity=(0.3+lf*0.7).toFixed(2);
+  sun.style.fontSize=(15+lf*11).toFixed(0)+'px';
 }
 function drawChart(){
   const cv=document.getElementById('chart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=6;
