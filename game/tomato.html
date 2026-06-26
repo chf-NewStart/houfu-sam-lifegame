@@ -79,7 +79,7 @@
 <div class="hdr">
   <div>
     <div class="title" id="pgTitle">&gt;_ Grow a Tomato</div>
-    <div class="sub" id="pgSub">A tomato-growing optimization distilled from a real dFBA metabolic model. Every input has a sweet spot — too little starves the fruit; too much triggers photoinhibition, light injury or salt stress. Read the binding constraint and tune the season (day 8 → 53) to maximize size × sweetness.</div>
+    <div class="sub" id="pgSub">A tomato-growing optimization distilled from a real dFBA metabolic model. The objective shifts each stage — frame → carbon → sweetness — and every input has a sweet spot: too little starves the fruit; too much triggers photoinhibition, light injury or salt stress. Read the binding constraint and tune the season (day 8 → 53) to maximize size × sweetness.</div>
     <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
@@ -151,8 +151,9 @@
       <div class="meter"><div class="fill" id="mStarch" style="width:0%;background:#9a7b4f"></div></div>
     </div>
     <div class="card">
-      <div class="card-title"><span data-en="// FBA · objective & limits" data-zh="// FBA · 目标与约束">// FBA · objective & limits</span><span id="objZ">—</span></div>
-      <div class="stat-row"><span class="k" data-en="maximize  Z = size × sweetness" data-zh="最大化  Z = 大小 × 甜度">maximize  Z = size × sweetness</span></div>
+      <div class="card-title"><span data-en="// FBA · stage objective" data-zh="// FBA · 阶段目标">// FBA · stage objective</span><span id="objZ">—</span></div>
+      <div id="objSeq" style="display:flex;gap:4px;font-size:0.58rem;margin-bottom:9px;letter-spacing:.3px;"></div>
+      <div class="stat-row"><span class="k" id="stageObjLab">—</span><span class="v" id="stageObjVal">—</span></div>
       <div class="mlabel" style="margin-top:6px"><span data-en="binding constraint" data-zh="紧约束">binding constraint</span><span id="limitNow">—</span></div>
       <div id="stressBadges" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px"></div>
       <div class="tip" id="fbaTip" style="margin-top:10px"></div>
@@ -339,12 +340,32 @@ function render(){
   renderPlant();
   drawChart();
 }
-// FBA readout: the objective, which substrate constraint is binding right now, and
-// the "too much" stress flags — the shadow-price intuition made visible.
+// In dynamic FBA the metabolic objective shifts across development: build a frame,
+// then bank carbon, then turn it into sugar. Each stage maximizes a different thing.
+const STAGE_OBJ={
+  establish:{en:'maximize structural frame',zh:'最大化结构框架',val:P=>P.structural.toFixed(1),col:'#1db954'},
+  bulk:     {en:'maximize stored carbon (starch)',zh:'最大化储碳（淀粉）',val:P=>P.starch.toFixed(1),col:'#9a7b4f'},
+  ripen:    {en:'maximize sweetness (Brix)',zh:'最大化甜度（Brix）',val:P=>brixOf(P).toFixed(1),col:'#ffce4d'},
+};
+const OBJ_SEQ=[['establish','frame','框架'],['bulk','carbon','储碳'],['ripen','sweetness','甜度']];
+
+// FBA readout: the CURRENT stage objective, which substrate constraint is binding
+// right now, and the "too much" stress flags — the shadow-price intuition made visible.
 function renderFBA(){
-  const f=computeStep(P, engineInputs());
+  const f=computeStep(P, engineInputs()), ph=f.ph;
   const brix=brixOf(P);
-  document.getElementById('objZ').textContent='Z = '+(P.biomass*(brix/12)).toFixed(1);
+  document.getElementById('objZ').textContent='harvest Z '+(P.biomass*(brix/12)).toFixed(1);
+  // objective breadcrumb — the active stage is highlighted in its own colour
+  document.getElementById('objSeq').innerHTML=OBJ_SEQ.map(([k,en,zh],i)=>{
+    const on=k===ph, col=on?STAGE_OBJ[k].col:'#444';
+    const sep=i<2?'<span style="color:#2c2c2c"> → </span>':'';
+    return `<span style="color:${col};font-weight:${on?700:400}">${i+1} ${t(en,zh)}</span>${sep}`;
+  }).join('');
+  // current stage objective + its value
+  const so=STAGE_OBJ[ph];
+  document.getElementById('stageObjLab').textContent=t(so.en,so.zh);
+  const vEl=document.getElementById('stageObjVal');
+  vEl.textContent=so.val(P); vEl.style.color=so.col;
   const limEl=document.getElementById('limitNow');
   limEl.textContent = f.limit==='carbon' ? t('carbon (light)','碳（光照）') : t('nitrogen (feed)','氮（施肥）');
   limEl.style.color = f.limit==='carbon' ? '#ffce4d' : '#4da6ff';
@@ -439,7 +460,7 @@ function buildSliders(){
 }
 function applyLang(){
   document.getElementById('pgTitle').textContent=t('>_ Grow a Tomato','>_ 种番茄');
-  document.getElementById('pgSub').textContent=t('A tomato-growing optimization distilled from a real dFBA metabolic model. Every input has a sweet spot — too little starves the fruit; too much triggers photoinhibition, light injury or salt stress. Read the binding constraint and tune the season (day 8 → 53) to maximize size × sweetness.','由真实 dFBA 代谢模型提炼的番茄优化问题。每个输入都有最佳点——太少则果实挨饿，太多则引发光抑制、连续光伤害或盐胁迫。读取紧约束并调节整季（第8→53天），最大化 大小 × 甜度。');
+  document.getElementById('pgSub').textContent=t('A tomato-growing optimization distilled from a real dFBA metabolic model. The objective shifts each stage — frame → carbon → sweetness — and every input has a sweet spot: too little starves the fruit; too much triggers photoinhibition, light injury or salt stress. Read the binding constraint and tune the season (day 8 → 53) to maximize size × sweetness.','由真实 dFBA 代谢模型提炼的番茄优化问题。目标随阶段变化——框架 → 储碳 → 甜度——且每个输入都有最佳点：太少则果实挨饿，太多则引发光抑制、连续光伤害或盐胁迫。读取紧约束并调节整季（第8→53天），最大化 大小 × 甜度。');
   document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=t(el.dataset.en,el.dataset.zh);});
   buildSliders();render();
 }
