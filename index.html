@@ -72,10 +72,9 @@
 .glow-gomoku .gband{ background:transparent; }   /* transparent spacer; water shows through the band */
 .glow-gomoku .gsrc{ display:none; }
 
-/* ===== Game of Life — live Conway sim across the whole card (Canvas) ===== */
+/* ===== Game of Life — live Conway sim in the card BODY (screenshot stays in the band) ===== */
 .card.glow-life:hover{ border-color:#1f7a4a; box-shadow:0 0 22px -8px rgba(29,185,84,.5); }
-.glow-life .lgrid{ position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; }
-.glow-life .lband{ background:transparent; }
+.glow-life .lgrid{ position:absolute; left:0; right:0; bottom:0; z-index:0; pointer-events:none; }  /* top set in JS = thumbnail bottom */
 .glow-life .card-icon, .glow-life .card-title, .glow-life .card-desc, .glow-life .card-meta{ text-shadow:0 1px 4px rgba(0,0,0,0.92); }
 
 /* === Escape — "Escape vs Restraint" two-particle physics (Canvas) === */
@@ -118,8 +117,8 @@
 <div class="grid">
 
   <div class="card flagship glow-life">
+    <img class="card-thumb" src="/game/thumbs/life.png?v=4" alt="Game of Life grid" loading="lazy" width="440" height="240">
     <canvas class="lgrid" aria-hidden="true"></canvas>
-    <div class="card-thumb lband" aria-hidden="true"></div>
     <div class="card-icon">[##]</div>
     <div class="card-title" data-en="game_of_life.exe" data-zh="生命游戏.exe">game_of_life.exe</div>
     <div class="card-desc" data-en="Draw patterns, watch them evolve, turn them into music. Sandbox, 11 leaderboard challenges, and a Music Box sequencer." data-zh="绘制图案、观察演化、化作音乐。沙盒、11 个排行榜挑战，以及八音盒音序器。">Draw patterns, watch them evolve, turn them into music. Sandbox, 11 leaderboard challenges, and a Music Box sequencer.</div>
@@ -219,11 +218,15 @@ document.addEventListener('DOMContentLoaded', applyLang);
   const canvas = card.querySelector('.lgrid');
   const ctx = canvas.getContext('2d', { alpha: false });
   const CELL = 9, GEN_EVERY = 5, FADE = 0.84;     // ~12 gens/sec, trail ~18 gens
-  let cols, rows, alive, next, trail, raf = 0, frame = 0, gens = 0, visible = false, painting = false, ready = false;
+  let cols, rows, alive, next, trail, raf = 0, frame = 0, gens = 0, visible = false, painting = false, ready = false, topOff = 0;
 
   function build() {
-    const w = card.clientWidth | 0, h = card.clientHeight | 0;
-    if (!w || !h) return false;
+    const cr = card.getBoundingClientRect();
+    const thumb = card.querySelector('.card-thumb');
+    topOff = thumb ? Math.max(0, Math.round(thumb.getBoundingClientRect().bottom - cr.top)) : 0;
+    const w = card.clientWidth | 0, h = (card.clientHeight - topOff) | 0;
+    if (w < 8 || h < 8) return false;
+    canvas.style.top = topOff + 'px';
     canvas.width = w; canvas.height = h;
     cols = Math.max(4, Math.floor(w / CELL)); rows = Math.max(4, Math.floor(h / CELL));
     const n = cols * rows;
@@ -289,7 +292,7 @@ document.addEventListener('DOMContentLoaded', applyLang);
   function paintAt(ev) {
     if (!ready) return;
     const r = card.getBoundingClientRect();
-    const cxp = ((ev.clientX - r.left) / CELL) | 0, cyp = ((ev.clientY - r.top) / CELL) | 0;
+    const cxp = ((ev.clientX - r.left) / CELL) | 0, cyp = ((ev.clientY - r.top - topOff) / CELL) | 0;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const xx = cxp + dx, yy = cyp + dy;
       if (xx >= 0 && xx < cols && yy >= 0 && yy < rows) { alive[yy * cols + xx] = 1; trail[yy * cols + xx] = 1; }
@@ -299,6 +302,7 @@ document.addEventListener('DOMContentLoaded', applyLang);
   card.addEventListener('mousedown', (e) => { painting = true; paintAt(e); });
   card.addEventListener('mousemove', (e) => { if (painting) paintAt(e); });
   window.addEventListener('mouseup', () => { painting = false; });
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { ready = false; if (visible) start(); }, 200); });
   if ('IntersectionObserver' in window) {
     new IntersectionObserver((es) => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0.04 }).observe(card);
   } else { start(); }
