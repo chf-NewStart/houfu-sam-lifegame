@@ -63,6 +63,11 @@
     .glow-laby .laby-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; mix-blend-mode: screen; }
     .card.glow-laby:hover .laby-canvas { opacity: 1; }
 
+    /* Tomatoswipe — on hover, garden plots are "dug away" to reveal the board (diagonal sweep) */
+    .card.glow-tsweep:hover { border-color: #a33c30; box-shadow: 0 0 22px -8px rgba(226,82,62,0.5); }
+    .glow-tsweep .tsw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+    .card.glow-tsweep:hover .tsw-canvas { opacity: 1; }
+
 /* ===== Gomoku — Canvas WATER RIPPLE across the whole card ===== */
 /* The water canvas IS the card background: stones in the top band, dark body
    below. On hover the whole surface ripples — mousemove wakes, click splashes —
@@ -207,6 +212,22 @@
     <div class="card-footer">
       <span class="card-meta" data-en="JS · metabolic sim" data-zh="JS · 代谢模拟">JS · metabolic sim</span>
       <a class="play-btn" href="/game/tomato.html" data-en="→ grow" data-zh="→ 种植">→ grow</a>
+    </div>
+  </div>
+
+  <div class="card glow-tsweep">
+    <img class="card-thumb" src="/game/thumbs/tomatoswipe.png?v=1" alt="Tomatoswipe board" loading="lazy" width="440" height="240">
+    <div class="card-icon" style="color:#e2523e">[#]</div>
+    <div class="card-title" data-en="tomatoswipe.exe" data-zh="扫番茄.exe">tomatoswipe.exe</div>
+    <div class="card-desc" data-en="Minesweeper, but the mines are tomatoes. Read the numbers, flag the 🍅, and clear the whole garden without squashing a single one." data-zh="扫雷，但地雷是番茄。读数字、标记 🍅，清完整座菜园而不踩烂任何一颗。">Minesweeper, but the mines are tomatoes. Read the numbers, flag the 🍅, and clear the whole garden without squashing a single one.</div>
+    <div class="card-tags">
+      <span class="tag green" data-en="logic" data-zh="逻辑">logic</span>
+      <span class="tag red" data-en="🍅 mines" data-zh="🍅 地雷">🍅 mines</span>
+      <span class="tag" data-en="flags" data-zh="标记">flags</span>
+    </div>
+    <div class="card-footer">
+      <span class="card-meta" data-en="JS · first-click safe" data-zh="JS · 首击安全">JS · first-click safe</span>
+      <a class="play-btn" href="/game/tomatoswipe.html" data-en="→ dig" data-zh="→ 挖掘">→ dig</a>
     </div>
   </div>
 
@@ -735,6 +756,37 @@ document.addEventListener('DOMContentLoaded', applyLang);
       const a = 1 - dd / 7, front = dd < 1.6, r = front ? 130 : 43, g = front ? 235 : 255, b = front ? 220 : 140;
       ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (a * 0.42).toFixed(3) + ')';
       ctx.beginPath(); ctx.arc(x * C + C / 2, y * C + C / 2, C * 0.32, 0, 7); ctx.fill();
+    }
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  card.addEventListener('mouseenter', () => { if (raf) return; build(); t = 0; inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Tomatoswipe card — on hover, soil "plots" cover the board then get dug away in a diagonal sweep */
+(function () {
+  const card = document.querySelector('.card.glow-tsweep');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'tsw-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const C = 19;
+  let W, H, cols, rows, tom, t = 0, raf = 0, inside = false;
+  function build() {
+    W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
+    cols = Math.ceil(W / C); rows = Math.ceil(H / C);
+    tom = new Uint8Array(cols * rows); for (let i = 0; i < tom.length; i++) tom[i] = Math.random() < 0.15 ? 1 : 0;
+  }
+  function frame() {
+    t += 0.009; ctx.clearRect(0, 0, W, H);
+    const maxd = cols + rows, wave = (t % 1) * (maxd + 7);
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const dd = wave - (x + y);
+      if (dd > 0) continue;                                   // dug away -> reveal the thumbnail beneath
+      const cx = x * C, cy = y * C, front = dd > -1.3;
+      ctx.fillStyle = front ? 'rgba(52,92,32,0.96)' : 'rgba(20,40,12,0.93)';   // soil plot
+      ctx.fillRect(cx + 1, cy + 1, C - 2, C - 2);
+      if (front) { ctx.fillStyle = tom[y * cols + x] ? 'rgba(226,82,62,0.6)' : 'rgba(124,206,90,0.5)'; ctx.fillRect(cx + 1, cy + 1, C - 2, 2); }
     }
     raf = inside ? requestAnimationFrame(frame) : 0;
   }

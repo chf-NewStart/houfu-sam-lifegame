@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tomatoswipe // houfu.xyz</title>
+<meta name="description" content="Minesweeper, but the mines are tomatoes — clear the garden without squashing a 🍅. First-click safe, flood-reveal, chording, flag mode.">
+<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:22px 18px 40px;}
+  a{color:#1db954;}
+  .hdr{max-width:880px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .hdr .title{color:#e23b2e;font-size:1.3rem;text-transform:uppercase;letter-spacing:-1px;}
+  .hdr .sub{color:#9a9a9a;font-size:0.76rem;margin-top:5px;line-height:1.6;max-width:540px;}
+  .hdr .back{color:#1db954;font-size:0.7rem;text-decoration:none;display:inline-block;margin-top:7px;}
+  .hdr .back:hover{text-decoration:underline;}
+  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.7rem;padding:5px 11px;cursor:pointer;flex-shrink:0;transition:background .12s;}
+  .lang-btn:hover{background:rgba(29,185,84,0.1);}
+
+  .wrap{max-width:880px;margin:0 auto;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;justify-content:center;}
+  .stage{flex:0 0 auto;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;width:min(92vw,460px);margin:0 auto 8px;background:#0d0d0d;border:1px solid #1a1a1a;padding:8px 12px;}
+  .count{font-size:1.1rem;font-variant-numeric:tabular-nums;letter-spacing:1px;}
+  .count.tom{color:#e2523e;} .count.time{color:#ffce4d;}
+  .face{font-size:1.4rem;background:transparent;border:1px solid #2a2a2a;border-radius:6px;width:46px;height:40px;cursor:pointer;line-height:1;transition:background .12s,border-color .12s;}
+  .face:hover{border-color:#1db954;background:rgba(29,185,84,0.07);}
+
+  .board{display:grid;gap:2px;width:min(92vw,460px);margin:0 auto;background:#0a0a0a;border:1px solid #1a1a1a;padding:4px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;}
+  .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1;border-radius:2px;cursor:pointer;}
+  .cell.hidden{background:linear-gradient(145deg,#1f3416,#13200d);box-shadow:inset 1px 1px 0 rgba(124,206,90,0.13),inset -1px -1px 0 rgba(0,0,0,0.4);}
+  .cell.hidden:hover{background:linear-gradient(145deg,#274119,#192b10);}
+  .cell.flag{color:#e2523e;}
+  .cell.open{background:#0c0c0c;box-shadow:inset 0 0 0 1px #141414;cursor:default;}
+  .cell.tom{background:#240e0b;}
+  .cell.boom{background:#e23b2e;box-shadow:0 0 14px rgba(226,59,46,0.7);}
+  .cell.wrong{color:#e23b2e;}
+  .n1{color:#4da6ff;} .n2{color:#6cc24a;} .n3{color:#f0973a;} .n4{color:#c77dff;}
+  .n5{color:#e2523e;} .n6{color:#36c5d0;} .n7{color:#d6d6d6;} .n8{color:#8a8a8a;}
+
+  .flagbar{width:min(92vw,460px);margin:10px auto 0;}
+  .flagbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#0d0d0d;border:1px solid #2a2a2a;color:#9a9a9a;font-family:inherit;font-size:0.82rem;padding:11px;cursor:pointer;border-radius:4px;transition:all .12s;}
+  .flagbtn.on{border-color:#e2523e;color:#e2523e;background:rgba(226,82,62,0.08);}
+  .status{text-align:center;font-size:0.8rem;color:#9a9a9a;min-height:1.2em;margin-top:9px;}
+  .status.win{color:#6cc24a;} .status.lose{color:#e2523e;}
+
+  .side{flex:1;min-width:220px;max-width:300px;}
+  .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:13px 14px;margin-bottom:11px;}
+  .card-title{color:#1db954;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:11px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
+  .seg{display:flex;gap:6px;}
+  .seg button{flex:1;background:transparent;border:1px solid #2a2a2a;color:#9a9a9a;font-family:inherit;font-size:0.7rem;padding:8px 0;cursor:pointer;transition:all .12s;}
+  .seg button.on{border-color:#e2523e;color:#e2523e;background:rgba(226,82,62,0.08);}
+  .seg button:hover{border-color:#e2523e;}
+  .seg .lab{font-size:0.56rem;color:#666;display:block;margin-top:2px;}
+  .help{font-size:0.7rem;color:#9a9a9a;line-height:1.7;}
+  .help b{color:#cfcfcf;font-weight:normal;}
+  .help > div{margin-bottom:5px;}
+  .best-row{display:flex;justify-content:space-between;font-size:0.72rem;color:#b0b0b0;margin-bottom:5px;}
+  .best-row .bt{color:#ffce4d;font-variant-numeric:tabular-nums;}
+
+  html, body, button, a, input, select, label { touch-action: manipulation; }
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="title" id="pgTitle">&gt;_ Tomatoswipe</div>
+    <div class="sub" id="pgSub" data-en="Minesweeper, but the mines are tomatoes. Clear every plot of soil without digging up a 🍅 — the numbers count the tomatoes touching each square. Flag the ones you've deduced, then harvest the whole garden." data-zh="扫雷，但地雷是番茄。挖开每一格泥土，别挖到 🍅——数字表示相邻格里的番茄数量。标记你推理出的番茄，然后收获整座菜园。">Minesweeper, but the mines are tomatoes. Clear every plot of soil without digging up a 🍅 — the numbers count the tomatoes touching each square. Flag the ones you've deduced, then harvest the whole garden.</div>
+    <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+</div>
+
+<div class="wrap">
+  <div class="stage">
+    <div class="topbar">
+      <span class="count tom" id="vTom">🍅 010</span>
+      <button class="face" id="face" onclick="game.newGame()" title="new game">🍅</button>
+      <span class="count time" id="vTime">⏱ 000</span>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="flagbar">
+      <button class="flagbtn" id="flagBtn" onclick="game.toggleFlagMode()">
+        <span id="flagIcon">⛏</span><span id="flagLabel" data-en="dig mode — tap to switch to flag" data-zh="挖掘模式 — 点击切换为标记">dig mode — tap to switch to flag</span>
+      </button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <div class="card-title"><span data-en="// garden" data-zh="// 菜园">// garden</span></div>
+      <div class="seg" id="diffSeg">
+        <button data-diff="patch" class="on" data-en="patch" data-zh="小块">patch<span class="lab">9·10</span></button>
+        <button data-diff="plot" data-en="plot" data-zh="菜畦">plot<span class="lab">13·30</span></button>
+        <button data-diff="field" data-en="field" data-zh="田地">field<span class="lab">16·50</span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// best times" data-zh="// 最佳时间">// best times</span></div>
+      <div class="best-row"><span data-en="patch" data-zh="小块">patch</span><span class="bt" id="bPatch">—</span></div>
+      <div class="best-row"><span data-en="plot" data-zh="菜畦">plot</span><span class="bt" id="bPlot">—</span></div>
+      <div class="best-row"><span data-en="field" data-zh="田地">field</span><span class="bt" id="bField">—</span></div>
+    </div>
+
+    <div class="card help">
+      <div class="card-title"><span data-en="// how" data-zh="// 玩法">// how</span></div>
+      <div data-en="<b>Tap</b> to dig. A number = how many 🍅 touch that square; <b>0</b> opens up its neighbours." data-zh="<b>点击</b>挖掘。数字 = 相邻的 🍅 数量；<b>0</b> 会自动展开周围。">Tap to dig. A number = how many 🍅 touch that square; 0 opens up its neighbours.</div>
+      <div data-en="<b>Flag</b> a tomato: right-click, long-press, or the <b>⛏ / 🚩</b> mode button." data-zh="<b>标记</b>番茄：右键、长按，或用 <b>⛏ / 🚩</b> 模式按钮。">Flag a tomato: right-click, long-press, or the ⛏ / 🚩 mode button.</div>
+      <div data-en="<b>Tap a number</b> with its tomatoes all flagged to clear around it (chord)." data-zh="<b>点击已标记齐全的数字</b>可一次清开周围（和弦）。">Tap a number with its tomatoes all flagged to clear around it.</div>
+      <div data-en="First dig is always safe. Clear all soil to harvest." data-zh="第一次挖掘永远安全。清完所有泥土即收获。">First dig is always safe. Clear all soil to harvest.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   tomatoswipe.exe — Minesweeper, tomato-themed
+   first-click-safe · flood reveal · chording · flag mode · best times
+   HTML5 DOM grid + vanilla JS. (c) houfu.xyz
+   ============================================================================ */
+const game = (function () {
+  const $ = (id) => document.getElementById(id);
+  const DIFFS = { patch: { c: 9, r: 9, m: 10 }, plot: { c: 13, r: 13, m: 30 }, field: { c: 16, r: 16, m: 50 } };
+  let diff = 'patch', cols = 9, rows = 9, mines = 10, N = 81;
+  let tomato, count, revealed, flagged, cells = [];
+  let state = 'ready', flagMode = false, revealedCount = 0, flags = 0, exploded = -1;
+  let startT = 0, timer = 0, tickId = 0;
+  let board;
+
+  const idx = (x, y) => y * cols + x;
+  function neighbors(i) { const x = i % cols, y = (i / cols) | 0, out = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) out.push(ny * cols + nx); } return out; }
+
+  function newGame() {
+    const d = DIFFS[diff]; cols = d.c; rows = d.r; mines = d.m; N = cols * rows;
+    tomato = new Uint8Array(N); count = new Uint8Array(N); revealed = new Uint8Array(N); flagged = new Uint8Array(N);
+    state = 'ready'; revealedCount = 0; flags = 0; exploded = -1; timer = 0;
+    if (tickId) { clearInterval(tickId); tickId = 0; }
+    buildBoard(); renderAll(); updateBars(); setFace('🍅'); $('status').className = 'status'; $('status').textContent = '';
+  }
+
+  function buildBoard() {
+    board.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    board.innerHTML = '';
+    cells = new Array(N);
+    for (let i = 0; i < N; i++) { const el = document.createElement('div'); el.className = 'cell hidden'; el.dataset.i = i; board.appendChild(el); cells[i] = el; }
+    sizeFont();
+  }
+  function sizeFont() {
+    const w = board.clientWidth - 8 - (cols - 1) * 2;        // minus padding + gaps
+    const cw = w / cols;
+    board.style.fontSize = Math.max(8, Math.round(cw * 0.52)) + 'px';
+  }
+
+  function placeMines(safe) {
+    const banned = new Set([safe]); neighbors(safe).forEach(n => banned.add(n));
+    let placed = 0;
+    const room = N - banned.size;
+    const want = Math.min(mines, Math.max(1, room));         // safety for tiny boards
+    while (placed < want) { const i = (Math.random() * N) | 0; if (tomato[i] || banned.has(i)) continue; tomato[i] = 1; placed++; }
+    mines = placed;
+    for (let i = 0; i < N; i++) { if (tomato[i]) continue; let c = 0; for (const n of neighbors(i)) if (tomato[n]) c++; count[i] = c; }
+  }
+
+  function startGame(safe) {
+    placeMines(safe); state = 'play'; startT = Date.now(); setFace('🙂');
+    tickId = setInterval(() => { timer = Math.min(999, Math.floor((Date.now() - startT) / 1000)); $('vTime').textContent = '⏱ ' + pad(timer); }, 250);
+  }
+
+  function reveal(i) {
+    if (state === 'won' || state === 'lost') return;
+    if (revealed[i] || flagged[i]) return;
+    if (state === 'ready') startGame(i);
+    const stack = [i];
+    while (stack.length) {
+      const c = stack.pop();
+      if (revealed[c] || flagged[c]) continue;
+      revealed[c] = 1; revealedCount++;
+      if (tomato[c]) { lose(c); return; }
+      if (count[c] === 0) for (const n of neighbors(c)) if (!revealed[n] && !flagged[n]) stack.push(n);
+    }
+    renderAll(); checkWin();
+  }
+
+  function chord(i) {
+    if (state !== 'play' || !revealed[i] || count[i] === 0) return;
+    let f = 0; const nb = neighbors(i); for (const n of nb) if (flagged[n]) f++;
+    if (f !== count[i]) return;
+    for (const n of nb) if (!flagged[n] && !revealed[n]) { reveal(n); if (state === 'lost') return; }
+  }
+
+  function toggleFlag(i) {
+    if (state === 'won' || state === 'lost' || revealed[i]) return;
+    if (state === 'ready' && !flagged[i]) { /* allow flagging before first dig */ }
+    flagged[i] = flagged[i] ? 0 : 1; flags += flagged[i] ? 1 : -1;
+    renderCell(i); updateBars();
+  }
+
+  function lose(c) {
+    state = 'lost'; exploded = c; stop();
+    for (let i = 0; i < N; i++) if (tomato[i]) revealed[i] = 1;
+    renderAll(); setFace('💥');
+    $('status').className = 'status lose'; $('status').textContent = t('💥 squashed! tap the face to replant.', '💥 踩烂了！点击表情重新种植。');
+  }
+  function checkWin() {
+    if (state !== 'play') return;
+    if (revealedCount === N - mines) {
+      state = 'won'; stop();
+      for (let i = 0; i < N; i++) if (tomato[i] && !flagged[i]) { flagged[i] = 1; flags++; }
+      renderAll(); updateBars(); setFace('🌞');
+      const nb = saveBest(timer);
+      $('status').className = 'status win'; $('status').textContent = t('🌞 harvested in ' + pad(timer) + 's!', '🌞 用时 ' + pad(timer) + ' 秒收获！') + (nb ? t('  ★ best', '  ★ 最佳') : '');
+    }
+  }
+  function stop() { if (tickId) { clearInterval(tickId); tickId = 0; } }
+
+  // ---- best times ----
+  function bestKey() { return 'tomatoswipe_' + diff; }
+  function loadBest(d) { try { return JSON.parse(localStorage.getItem('tomatoswipe_' + d)); } catch (e) { return null; } }
+  function saveBest(sec) { let b = loadBest(diff), nb = false; if (b === null || sec < b) { b = sec; nb = true; try { localStorage.setItem(bestKey(), JSON.stringify(b)); } catch (e) {} } updateBestPanel(); return nb; }
+  function updateBestPanel() { ['patch', 'plot', 'field'].forEach(d => { const b = loadBest(d); $('b' + d.charAt(0).toUpperCase() + d.slice(1)).textContent = (b === null ? '—' : pad(b) + 's'); }); }
+
+  // ---- render ----
+  function renderCell(i) {
+    const el = cells[i];
+    if (revealed[i]) {
+      if (tomato[i]) { el.className = 'cell tom open' + (i === exploded ? ' boom' : ''); el.textContent = '🍅'; }
+      else { el.className = 'cell open' + (count[i] ? ' n' + count[i] : ''); el.textContent = count[i] ? count[i] : ''; }
+    } else if (state === 'lost' && flagged[i] && !tomato[i]) { el.className = 'cell hidden wrong'; el.textContent = '✗'; }
+    else { el.className = 'cell hidden' + (flagged[i] ? ' flag' : ''); el.textContent = flagged[i] ? '🚩' : ''; }
+  }
+  function renderAll() { for (let i = 0; i < N; i++) renderCell(i); }
+  function updateBars() { $('vTom').textContent = '🍅 ' + pad(Math.max(0, mines - flags)); $('vTime').textContent = '⏱ ' + pad(timer); }
+  function setFace(f) { $('face').textContent = f; }
+  function pad(n) { n = n | 0; return n < 10 ? '00' + n : n < 100 ? '0' + n : '' + n; }
+
+  function toggleFlagMode() {
+    flagMode = !flagMode;
+    $('flagBtn').classList.toggle('on', flagMode);
+    $('flagIcon').textContent = flagMode ? '🚩' : '⛏';
+    $('flagLabel').textContent = flagMode ? t('flag mode — tap to switch to dig', '标记模式 — 点击切换为挖掘') : t('dig mode — tap to switch to flag', '挖掘模式 — 点击切换为标记');
+  }
+
+  // ---- input ----
+  function cellAt(e) { const el = e.target.closest('.cell'); return el ? +el.dataset.i : -1; }
+  function primary(i) {
+    if (i < 0) return;
+    if (flagMode) { toggleFlag(i); return; }
+    if (revealed[i]) chord(i); else reveal(i);
+  }
+  function bind() {
+    let lpTimer = 0, lpCell = -1, moved = false, lpFired = false;
+    board.addEventListener('click', (e) => { primary(cellAt(e)); });                   // mouse (touch is handled below and suppresses this)
+    board.addEventListener('contextmenu', (e) => { e.preventDefault(); const i = cellAt(e); if (i >= 0) toggleFlag(i); });
+    board.addEventListener('touchstart', (e) => {
+      const i = cellAt(e); lpCell = i; moved = false; lpFired = false;
+      if (lpTimer) clearTimeout(lpTimer);
+      lpTimer = setTimeout(() => { lpFired = true; if (i >= 0) { toggleFlag(i); if (navigator.vibrate) navigator.vibrate(15); } }, 420);
+    }, { passive: true });
+    board.addEventListener('touchmove', () => { moved = true; if (lpTimer) { clearTimeout(lpTimer); lpTimer = 0; } }, { passive: true });
+    board.addEventListener('touchend', (e) => {
+      if (lpTimer) { clearTimeout(lpTimer); lpTimer = 0; }
+      if (moved) return;                       // was a scroll/drag
+      e.preventDefault();                       // kill the ghost click so it doesn't double-fire
+      if (lpFired) return;                      // long-press already flagged
+      primary(lpCell);                          // short tap
+    }, { passive: false });
+    document.querySelectorAll('#diffSeg button').forEach(b => b.addEventListener('click', () => { diff = b.dataset.diff; document.querySelectorAll('#diffSeg button').forEach(o => o.classList.toggle('on', o === b)); newGame(); }));
+    window.addEventListener('resize', sizeFont);
+  }
+
+  function t(en, zh) { return (document.documentElement.lang === 'zh') ? zh : en; }
+
+  function init() { board = $('board'); bind(); updateBestPanel(); newGame(); }
+  return { init: init, newGame: newGame, toggleFlagMode: toggleFlagMode };
+})();
+
+function toggleLang() {
+  const zh = document.documentElement.lang !== 'zh';
+  document.documentElement.lang = zh ? 'zh' : 'en';
+  document.querySelectorAll('[data-en]').forEach(el => { el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
+  document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
+}
+
+game.init();
+</script>
+</body>
+</html>
