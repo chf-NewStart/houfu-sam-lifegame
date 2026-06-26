@@ -26,3 +26,9 @@ lifegame-itch.zip
 
 # Raw source recording for the hero gif (kept local)
 demojun25/
+
+# Tomato dFBA source/reference (engine, models, handoff) — kept local, not deployed
+game/tomato/
+
+# Personal interview notes — kept local
+INTERVIEW_PREP.md
