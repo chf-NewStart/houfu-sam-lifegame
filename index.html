@@ -305,79 +305,123 @@ document.addEventListener('DOMContentLoaded', applyLang);
 })();
 
 
-/* Escape card — "Escape vs Restraint": a green escapee strains to the boundary while a
-   red restrainer tethers it back (pulsing tug-of-war). Canvas + hand-rolled vector physics. */
+/* Escape card — "FAILED ESCAPE CYCLE": a 4-state machine.
+   1 ESCAPE  green bolts for the TOP edge, red pursues.
+   2 BUMP    green hits the top boundary -> fractured impact ripple, momentum halts.
+   3 BLOAT   green swells, goes chaotic ("not vigorous"), trail dissolves into a cloud.
+   4 SNAP    red amplifies into a taut spring and yanks the bloated green back to centre.
+   Canvas + vector physics on requestAnimationFrame; hover-gated. */
 (function () {
   const card = document.querySelector('.glow-escape');
   if (!card) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'esc-canvas'; canvas.setAttribute('aria-hidden', 'true');
-  card.appendChild(canvas);
+  let canvas = card.querySelector('.esc-canvas');
+  if (!canvas) { canvas = document.createElement('canvas'); canvas.className = 'esc-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas); }
   const ctx = canvas.getContext('2d');
-  const TRAIL = 26;
-  function mkP(col) { return { x:0,y:0,vx:0,vy:0, col, tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 }; }
-  const green = mkP('29,185,84'), red = mkP('244,67,54');
-  let W=0, H=0, cx=0, cy=0, bx0=0, by0=0, bx1=0, by1=0, tphase=0, raf=0, inside=false;
-  const FE=0.40, OMEGA=0.020, SWIRL=0.05, KS=0.0018, ET=52, K2=0.00045, FS=0.010, KA=0.030, DM=0.985, MAXV=6.5, INSET=8;
-  const EDGE = () => Math.hypot(W/2, H/2);
+  const TRAIL = 24, R_NORM = 4, R_BLOAT = 13;
+  const green = { x:0,y:0,vx:0,vy:0,r:R_NORM,col:'29,185,84', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
+  const red   = { x:0,y:0,vx:0,vy:0,r:4,col:'244,67,54', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
+  let W=0,H=0,cx=0,cy=0,topB=10, raf=0, inside=false;
+  let state='ESCAPE', stateT=0, impact=null, shards=[];
 
-  function resize() { W=card.clientWidth; H=card.clientHeight; canvas.width=W; canvas.height=H; cx=W/2; cy=H/2; bx0=INSET; by0=INSET; bx1=W-INSET; by1=H-INSET; }
-  function init() {
+  function resize(){ W=card.clientWidth; H=card.clientHeight; canvas.width=W; canvas.height=H; cx=W/2; cy=H/2; topB=10; }
+  function reset(){
     resize();
-    green.x=cx+10; green.y=cy; green.vx=1; green.vy=-2; green.tc=0;
-    red.x=cx-8; red.y=cy; red.vx=0; red.vy=1; red.tc=0;
-    for (let i=0;i<TRAIL;i++){ green.tx[i]=green.x; green.ty[i]=green.y; red.tx[i]=red.x; red.ty[i]=red.y; }
-    tphase=0;
+    green.x=cx; green.y=cy+6; green.vx=0.6; green.vy=-1; green.r=R_NORM; green.tc=0;
+    red.x=cx; red.y=cy+16; red.vx=0; red.vy=0; red.tc=0;
+    for(let i=0;i<TRAIL;i++){ green.tx[i]=green.x; green.ty[i]=green.y; red.tx[i]=red.x; red.ty[i]=red.y; }
+    state='ESCAPE'; stateT=0; impact=null; shards.length=0;
   }
-  function clampV(p){ const s=Math.hypot(p.vx,p.vy); if(s>MAXV){ p.vx*=MAXV/s; p.vy*=MAXV/s; } }
-  function bound(p){ if(p.x<bx0){p.x=bx0; if(p.vx<0)p.vx*=-0.3;} else if(p.x>bx1){p.x=bx1; if(p.vx>0)p.vx*=-0.3;}
-                     if(p.y<by0){p.y=by0; if(p.vy<0)p.vy*=-0.3;} else if(p.y>by1){p.y=by1; if(p.vy>0)p.vy*=-0.3;} }
-  function physics() {
-    tphase++;
-    const esc = FE * (0.15 + 0.85 * (0.5 + 0.5 * Math.sin(tphase * OMEGA)));   // pulsing escape
-    let dx=green.x-cx, dy=green.y-cy, d=Math.hypot(dx,dy)||1;
-    green.vx += (dx/d)*esc;   green.vy += (dy/d)*esc;          // escape outward
-    green.vx += (-dy/d)*SWIRL; green.vy += (dx/d)*SWIRL;       // tangential swirl
-    let tx=red.x-green.x, ty=red.y-green.y, tl=Math.hypot(tx,ty)||1;
-    const pull = KS*tl + K2*Math.max(0, tl-ET)*Math.max(0, tl-ET);  // tether: linear + escalating
-    green.vx += (tx/tl)*pull; green.vy += (ty/tl)*pull;
-    red.vx += (green.x-red.x)*FS + (cx-red.x)*KA;              // red: weak chase + strong anchor
-    red.vy += (green.y-red.y)*FS + (cy-red.y)*KA;
-    green.vx*=DM; green.vy*=DM; red.vx*=DM; red.vy*=DM; clampV(green); clampV(red);
-    green.x+=green.vx; green.y+=green.vy; red.x+=red.vx; red.y+=red.vy; bound(green); bound(red);
-    green.tx[green.tc%TRAIL]=green.x; green.ty[green.tc%TRAIL]=green.y; green.tc++;
-    red.tx[red.tc%TRAIL]=red.x; red.ty[red.tc%TRAIL]=red.y; red.tc++;
-    return tl;
+  function clampV(p,m){ const s=Math.hypot(p.vx,p.vy); if(s>m){ p.vx*=m/s; p.vy*=m/s; } }
+  function rec(p){ p.tx[p.tc%TRAIL]=p.x; p.ty[p.tc%TRAIL]=p.y; p.tc++; }
+  function anchorRed(seek){ red.vx += (green.x-red.x)*seek + (cx-red.x)*0.03; red.vy += (green.y-red.y)*seek + (cy-red.y)*0.03; red.vx*=0.88; red.vy*=0.88; clampV(red,7); red.x+=red.vx; red.y+=red.vy; }
+
+  function physics(){
+    stateT++;
+    if (state==='ESCAPE'){
+      green.vy -= 0.17;                                   // constant escape, upward/outward
+      green.vx += 0.03*Math.sin(stateT*0.06);             // gentle arc/swirl
+      green.vx*=0.975; green.vy*=0.985; clampV(green,6.5);
+      green.x+=green.vx; green.y+=green.vy;
+      if(green.x<8){green.x=8;green.vx*=-0.4;} else if(green.x>W-8){green.x=W-8;green.vx*=-0.4;}
+      if(green.y>H-8){green.y=H-8;green.vy*=-0.4;}
+      anchorRed(0.018);                                   // red pursues but stays anchored-ish
+      if(green.y<=topB){                                  // BUMP at the top edge
+        green.y=topB; green.vy=0; green.vx*=0.2;
+        impact={x:green.x,y:topB,t:0};
+        shards.length=0;
+        for(let i=0;i<16;i++){ const a=Math.random()*Math.PI*2, sp=0.6+Math.random()*2.0;
+          shards.push({x:green.x,y:topB,vx:Math.cos(a)*sp,vy:Math.abs(Math.sin(a))*sp*0.7+0.25,life:1}); }
+        state='BLOAT'; stateT=0;
+      }
+    } else if (state==='BLOAT'){
+      green.r += (R_BLOAT-green.r)*0.22;                  // swell
+      green.vx += (Math.random()-0.5)*0.35; green.vy += (Math.random()-0.5)*0.22;  // jitter, sluggish
+      green.vx*=0.78; green.vy*=0.78; clampV(green,1.4); green.x+=green.vx; green.y+=green.vy;
+      if(green.y<topB)green.y=topB;
+      anchorRed(0.02);
+      for(const s of shards){ s.x+=s.vx; s.y+=s.vy; s.vy+=0.045; s.life-=0.022; }
+      shards=shards.filter(s=>s.life>0);
+      if(stateT>48){ state='SNAP'; stateT=0; }
+    } else { // SNAP — red restoring spring yanks green back onto the card
+      green.vx += (cx-green.x)*0.065; green.vy += (cy-green.y)*0.065;
+      green.vx*=0.86; green.vy*=0.86; clampV(green,9.5); green.x+=green.vx; green.y+=green.vy;
+      green.r += (R_NORM-green.r)*0.14;                   // deflate as it returns
+      red.vx += (cx-red.x)*0.06; red.vy += (cy-red.y)*0.06; red.vx*=0.8; red.vy*=0.8; red.x+=red.vx; red.y+=red.vy;
+      for(const s of shards){ s.x+=s.vx; s.y+=s.vy; s.life-=0.05; } shards=shards.filter(s=>s.life>0);
+      if(Math.hypot(green.x-cx,green.y-cy)<24 || stateT>64){ state='ESCAPE'; stateT=0; green.r=R_NORM; }
+    }
+    if(impact){ impact.t++; if(impact.t>22) impact=null; }
+    rec(green); rec(red);
   }
-  function drawTrail(p) {
+
+  function drawTrail(p){
     ctx.lineCap='round';
-    for (let k=0;k<TRAIL-1;k++){
-      const i0=(p.tc-1-k+TRAIL*8)%TRAIL, i1=(p.tc-2-k+TRAIL*8)%TRAIL;
-      const a=1-k/TRAIL;
-      ctx.strokeStyle='rgba('+p.col+','+(a*a*0.55).toFixed(3)+')';
-      ctx.lineWidth=0.4+a*2.6;
-      ctx.beginPath(); ctx.moveTo(p.tx[i0],p.ty[i0]); ctx.lineTo(p.tx[i1],p.ty[i1]); ctx.stroke();
+    for(let k=0;k<TRAIL-1;k++){
+      const i0=(p.tc-1-k+TRAIL*8)%TRAIL, i1=(p.tc-2-k+TRAIL*8)%TRAIL, a=1-k/TRAIL;
+      ctx.strokeStyle='rgba('+p.col+','+(a*a*0.5).toFixed(3)+')';
+      ctx.lineWidth=0.4+a*2.2; ctx.beginPath(); ctx.moveTo(p.tx[i0],p.ty[i0]); ctx.lineTo(p.tx[i1],p.ty[i1]); ctx.stroke();
     }
   }
-  function drawHead(p) {
-    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,9);
-    g.addColorStop(0,'rgba('+p.col+',0.95)'); g.addColorStop(0.4,'rgba('+p.col+',0.45)'); g.addColorStop(1,'rgba('+p.col+',0)');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,9,0,7); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.beginPath(); ctx.arc(p.x,p.y,1.7,0,7); ctx.fill();
+  function drawHead(p,r,colOverride,alpha){
+    const col=colOverride||p.col, ga=alpha==null?0.92:alpha;
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*1.7);
+    g.addColorStop(0,'rgba('+col+','+ga+')'); g.addColorStop(0.5,'rgba('+col+','+(ga*0.45)+')'); g.addColorStop(1,'rgba('+col+',0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r*1.7,0,7); ctx.fill();
+    ctx.fillStyle='rgba(240,255,245,'+(ga*0.9)+')'; ctx.beginPath(); ctx.arc(p.x,p.y,Math.min(2.4,r*0.4),0,7); ctx.fill();
   }
-  function frame() {
-    const tl=physics();
+  function drawImpact(){
+    if(!impact) return;
+    const prog=impact.t/22, R=4+prog*24, alpha=1-prog;
+    ctx.strokeStyle='rgba(150,255,190,'+(alpha*0.9).toFixed(3)+')'; ctx.lineWidth=1.4;
+    ctx.beginPath();
+    const segs=12;
+    for(let i=0;i<=segs;i++){ const a=i/segs*Math.PI*2, jag=R*(0.6+0.55*(((i*53)%7)/7)); const px=impact.x+Math.cos(a)*jag, py=impact.y+Math.sin(a)*jag*0.6; i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.stroke();
+    for(let i=0;i<7;i++){ const a=(i/7)*Math.PI*2+0.4, r1=R*0.35, r2=R*1.25;
+      ctx.strokeStyle='rgba(210,255,225,'+(alpha*0.8).toFixed(3)+')'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(impact.x+Math.cos(a)*r1,impact.y+Math.sin(a)*r1*0.6); ctx.lineTo(impact.x+Math.cos(a)*r2,impact.y+Math.sin(a)*r2*0.6); ctx.stroke(); }
+  }
+  function frame(){
+    physics();
     ctx.clearRect(0,0,W,H);
-    const tension=Math.min(1, Math.max(0, (tl-ET)/(EDGE()-ET)));   // 0 slack → 1 taut
-    ctx.strokeStyle='rgba(244,67,54,'+(0.10+0.55*tension).toFixed(3)+')';
-    ctx.lineWidth=0.5+2.0*tension;
-    ctx.beginPath(); ctx.moveTo(red.x,red.y); ctx.lineTo(green.x,green.y); ctx.stroke();   // elastic tether
-    drawTrail(red); drawTrail(green);
-    drawHead(red); drawHead(green);
+    // tether: taut+bright during SNAP, slack otherwise
+    const taut = state==='SNAP';
+    ctx.strokeStyle='rgba(244,67,54,'+(taut?0.85:0.16).toFixed(3)+')'; ctx.lineWidth = taut?2.6:1.0;
+    ctx.beginPath(); ctx.moveTo(red.x,red.y); ctx.lineTo(green.x,green.y); ctx.stroke();
+    // chaotic cloud (bloat/snap)
+    for(const s of shards){ ctx.fillStyle='rgba(29,185,84,'+(s.life*0.6).toFixed(3)+')'; ctx.beginPath(); ctx.arc(s.x,s.y,1.4+(1-s.life)*2.4,0,7); ctx.fill(); }
+    drawImpact();
+    if(state!=='BLOAT') drawTrail(green);    // smooth arc except while bloated (then it's a cloud)
+    drawTrail(red);
+    drawHead(red,red.r);
+    if(state==='BLOAT'){ drawHead(green,green.r,'120,200,140',0.5+0.25*Math.sin(stateT*0.7)); }  // bloated, desaturated, flickering
+    else { drawHead(green,green.r); }
     raf = inside ? requestAnimationFrame(frame) : 0;
   }
-  card.addEventListener('mouseenter', () => { if (raf) return; init(); inside=true; raf=requestAnimationFrame(frame); });
-  card.addEventListener('mouseleave', () => { inside=false; });   // frame() stops itself; CSS fades the canvas out
+  card.addEventListener('mouseenter', () => { if (raf) return; reset(); inside=true; raf=requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside=false; });
+  // expose state for verification
+  window.__escState = () => state;
 })();
 
 /* Gomoku card — Canvas 2D water across the WHOLE card (thumbnail band + dark body) */
