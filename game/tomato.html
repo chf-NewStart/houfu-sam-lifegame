@@ -168,9 +168,11 @@ function stepDay(P,c){
   const fbSuc=Math.max(0.5,1-0.5*Math.min(1,P.sucPool/(CFG.sucCap*CFG.capScale)));
   const satL=c.light/(c.light+CFG.Lhalf);
   const Csource=CFG.kC*satL*(c.photo/16)*fbSuc;
-  const upNo3=mm(c.no3,50,0.5),upNh4=mm(c.nh4,10,0.3),upPi=mm(c.pi,15,0.05),upK=mm(c.k,60,0.2);
-  const cofactor=Math.min(1,(upPi/8)*0.5+0.5)*Math.min(1,(upK/30)*0.5+0.5);
-  const Nsource=CFG.kN*(upNo3*0.15+upNh4*0.20)*cofactor;
+  const upNo3=mm(c.no3,50,0.5),upNh4=mm(c.nh4,10,0.3);
+  const Nsource=CFG.kN*(upNo3*0.15+upNh4*0.20);
+  // minerals (P·K) — a real, non-saturating limiter on how fast the fruit pulls in
+  // substrate (K drives phloem unloading). ~0.57 starved → 1.0 rich.
+  const mineralF=0.5+0.5*Math.min(1,(c.pi/3+c.k/12)/2);
   P.sucPool=Math.min(P.sucPool+Csource,CFG.sucCap*CFG.capScale);
   P.nPool  =Math.min(P.nPool+Nsource,  CFG.nCap*CFG.capScale);
   let ss=sinkStrength(d);
@@ -180,7 +182,8 @@ function stepDay(P,c){
   if(ph==='establish'){cCost=1.0;nCost=0.5;}
   else if(ph==='bulk'){cCost=1.2;nCost=0.12;}
   else {cCost=1.1;nCost=0.05;}
-  const growth=Math.max(0,Math.min(availC/cCost,availN/nCost));
+  let growth=Math.max(0,Math.min(availC/cCost,availN/nCost));
+  growth*=mineralF;
   P.sucPool=Math.max(0,P.sucPool-growth*cCost);
   P.nPool  =Math.max(0,P.nPool-growth*nCost);
   if(ph==='establish'){P.structural+=growth;}

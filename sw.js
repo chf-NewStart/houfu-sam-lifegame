@@ -1,6 +1,6 @@
 /* Life Game service worker — offline app shell.
    Bump CACHE on each release so clients pick up new files. */
-const CACHE = 'lifegame-v4';
+const CACHE = 'lifegame-v5';
 const CORE = [
   '/',
   '/index.html',
@@ -51,17 +51,21 @@ self.addEventListener('fetch', (e) => {
         .catch(() => caches.match(req).then((r) => r || caches.match('/index.html')))
     );
   } else {
-    // Static assets: cache-first, fall back to network and cache the result.
+    // Static assets (images, etc.): stale-while-revalidate. Serve the cached copy
+    // immediately for speed, but always refetch in the background and update the
+    // cache — so updated thumbnails/assets self-heal on the next visit instead of
+    // sticking until a hard reset.
     e.respondWith(
-      caches.match(req).then(
-        (r) =>
-          r ||
-          fetch(req).then((res) => {
+      caches.match(req).then((cached) => {
+        const fresh = fetch(req)
+          .then((res) => {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(req, copy));
             return res;
           })
-      )
+          .catch(() => cached);
+        return cached || fresh;
+      })
     );
   }
 });
