@@ -124,58 +124,56 @@
 }
 /* ========================================================= */
 
-/* ===== Game of Life hover: DRIFTING MIST ===== */
-/* Replaces .life-cell + @keyframes cellBlink. Soft layered fog, hover-only. */
+/* ===== Game of Life hover: drifting blue MIST / smoke ===== */
+/* Wispy bluish smoke that rises and curls (cigarette-smoke feel). Hover-only. */
 .card.glow-life:hover{
-  border-color:#1f3a2e;
-  box-shadow:0 0 18px rgba(29,185,84,.18), inset 0 0 24px rgba(54,197,208,.08);
+  border-color:#23506e;
+  box-shadow:0 0 20px rgba(58,158,230,.22), inset 0 0 26px rgba(54,197,208,.10);
 }
 .mist-layer{
-  position:absolute;
-  z-index:0;                 /* above card bg, below content (.card > * is z-index:1) */
-  inset:-25%;                /* overscan so blurred clouds cover the whole face */
-  pointer-events:none;
-  opacity:0;
-  will-change:transform,opacity;
-  filter:blur(30px);
-  mix-blend-mode:screen;     /* clouds add light, never darken text */
+  position:absolute; z-index:0; inset:-30%;
+  pointer-events:none; opacity:0; will-change:transform,opacity;
+  filter:blur(22px); mix-blend-mode:screen;
 }
 .mist-a{
   background:
-    radial-gradient(38% 42% at 30% 35%, rgba(29,185,84,.55), rgba(29,185,84,0) 70%),
-    radial-gradient(34% 38% at 70% 60%, rgba(54,197,208,.45), rgba(54,197,208,0) 70%);
-  animation:mistDriftA 17s ease-in-out infinite, mistFadeA 11s ease-in-out infinite;
+    radial-gradient(24% 58% at 30% 64%, rgba(58,158,230,.65), transparent 72%),
+    radial-gradient(20% 50% at 60% 50%, rgba(54,197,208,.55), transparent 72%),
+    radial-gradient(18% 44% at 46% 72%, rgba(120,175,225,.50), transparent 72%);
+  animation:smokeA 15s ease-in-out infinite, smokeFadeA 8s ease-in-out infinite;
 }
 .mist-b{
   background:
-    radial-gradient(40% 46% at 65% 30%, rgba(58,158,230,.50), rgba(58,158,230,0) 70%),
-    radial-gradient(36% 40% at 30% 70%, rgba(54,197,208,.42), rgba(54,197,208,0) 70%);
-  animation:mistDriftB 23s ease-in-out infinite, mistFadeB 14s ease-in-out infinite;
+    radial-gradient(22% 54% at 64% 60%, rgba(80,150,220,.60), transparent 72%),
+    radial-gradient(20% 48% at 34% 46%, rgba(54,197,208,.50), transparent 72%),
+    radial-gradient(16% 40% at 52% 30%, rgba(150,195,235,.45), transparent 72%);
+  animation:smokeB 21s ease-in-out infinite, smokeFadeB 11s ease-in-out infinite;
 }
 .mist-c{
   background:
-    radial-gradient(50% 50% at 50% 55%, rgba(29,185,84,.40), rgba(29,185,84,0) 70%),
-    radial-gradient(30% 34% at 78% 22%, rgba(58,158,230,.40), rgba(58,158,230,0) 70%);
-  animation:mistDriftC 29s ease-in-out infinite, mistFadeC 9s ease-in-out infinite;
+    radial-gradient(28% 62% at 48% 56%, rgba(58,158,230,.50), transparent 72%),
+    radial-gradient(18% 44% at 74% 30%, rgba(110,165,220,.45), transparent 72%),
+    radial-gradient(16% 38% at 24% 40%, rgba(54,197,208,.45), transparent 72%);
+  animation:smokeC 27s ease-in-out infinite, smokeFadeC 7s ease-in-out infinite;
 }
-@keyframes mistDriftA{
-  0%  {transform:translate3d(-6%,-3%,0) scale(1.05);}
-  50% {transform:translate3d(7%,5%,0)  scale(1.25);}
-  100%{transform:translate3d(-6%,-3%,0) scale(1.05);}
+@keyframes smokeA{
+  0%  {transform:translate3d(-5%,14%,0) rotate(-4deg) scale(1.00,1.15);}
+  50% {transform:translate3d(6%,-12%,0) rotate(5deg)  scale(1.18,1.35);}
+  100%{transform:translate3d(-5%,14%,0) rotate(-4deg) scale(1.00,1.15);}
 }
-@keyframes mistDriftB{
-  0%  {transform:translate3d(5%,4%,0)  scale(1.15);}
-  50% {transform:translate3d(-7%,-5%,0) scale(1.32);}
-  100%{transform:translate3d(5%,4%,0)  scale(1.15);}
+@keyframes smokeB{
+  0%  {transform:translate3d(5%,12%,0)   rotate(3deg)  scale(1.10,1.20);}
+  50% {transform:translate3d(-6%,-14%,0) rotate(-5deg) scale(1.30,1.45);}
+  100%{transform:translate3d(5%,12%,0)   rotate(3deg)  scale(1.10,1.20);}
 }
-@keyframes mistDriftC{
-  0%  {transform:translate3d(0,6%,0)   scale(1.1);}
-  50% {transform:translate3d(4%,-6%,0) scale(1.28);}
-  100%{transform:translate3d(0,6%,0)   scale(1.1);}
+@keyframes smokeC{
+  0%  {transform:translate3d(0,16%,0)    rotate(-2deg) scale(1.05,1.18);}
+  50% {transform:translate3d(4%,-12%,0)  rotate(4deg)  scale(1.22,1.40);}
+  100%{transform:translate3d(0,16%,0)    rotate(-2deg) scale(1.05,1.18);}
 }
-@keyframes mistFadeA{0%,100%{opacity:.10;}50%{opacity:.26;}}
-@keyframes mistFadeB{0%,100%{opacity:.14;}45%{opacity:.24;}}
-@keyframes mistFadeC{0%,100%{opacity:.08;}55%{opacity:.20;}}
+@keyframes smokeFadeA{0%,100%{opacity:.22;}50%{opacity:.55;}}
+@keyframes smokeFadeB{0%,100%{opacity:.18;}45%{opacity:.48;}}
+@keyframes smokeFadeC{0%,100%{opacity:.15;}55%{opacity:.42;}}
 
 /* === Escape: ZIGZAG LIGHTNING flashes (replaces .esc-trail) === */
 .card.glow-escape{
@@ -339,122 +337,95 @@ document.addEventListener('DOMContentLoaded', applyLang);
   card.addEventListener('mouseleave',destroy);
 })();
 
-/* Escape: zigzag lightning flashes — replaces the old Escape IIFE */
+/* Escape: zigzag lightning — gentle jag; thick/bright at edges, thin/dim across the face */
 (function(){
   const card = document.querySelector('.card.glow-escape');
   if(!card) return;
   const SVGNS = 'http://www.w3.org/2000/svg';
   let timer = null;
+  const rnd = (a,b)=> a + Math.random()*(b-a);
 
-  function rnd(a,b){ return a + Math.random()*(b-a); }
-
-  // Build a sharp jagged zigzag polyline crossing the card (horizontal-ish or diagonal).
   function makeZigzag(w,h){
-    const diagonal = Math.random() < 0.5;
+    const diagonal = Math.random() < 0.4;
     let x0,y0,x1,y1;
     if(diagonal){
       const dir = Math.random() < 0.5;
-      x0 = rnd(0, w*0.12);            x1 = rnd(w*0.88, w);
-      if(dir){ y0 = rnd(0, h*0.25);   y1 = rnd(h*0.75, h); }
-      else   { y0 = rnd(h*0.75, h);   y1 = rnd(0, h*0.25); }
+      x0 = rnd(-w*0.04, w*0.05);   x1 = rnd(w*0.95, w*1.04);
+      if(dir){ y0 = rnd(h*0.10, h*0.32); y1 = rnd(h*0.68, h*0.90); }
+      else   { y0 = rnd(h*0.68, h*0.90); y1 = rnd(h*0.10, h*0.32); }
     } else {
-      const cy = rnd(h*0.18, h*0.82);
-      x0 = rnd(-w*0.05, w*0.08);      x1 = rnd(w*0.92, w*1.05);
-      y0 = cy + rnd(-h*0.12, h*0.12);
-      y1 = cy + rnd(-h*0.12, h*0.12);
+      const cy = rnd(h*0.22, h*0.78);
+      x0 = rnd(-w*0.04, w*0.05);   x1 = rnd(w*0.95, w*1.04);
+      y0 = cy + rnd(-h*0.05, h*0.05);
+      y1 = cy + rnd(-h*0.05, h*0.05);
     }
     const segs = Math.round(rnd(6,9));
-    const dx = x1-x0, dy = y1-y0;
-    const len = Math.hypot(dx,dy) || 1;
-    const px = -dy/len, py = dx/len; // perpendicular unit vector
-    const pts = [];
-    let lastSign = Math.random()<0.5 ? 1 : -1;
+    const dx = x1-x0, dy = y1-y0, len = Math.hypot(dx,dy) || 1;
+    const px = -dy/len, py = dx/len;
+    const amp = h * rnd(0.05, 0.11);          // LOWER magnitude than before
+    const pts = []; let sign = Math.random()<0.5 ? 1 : -1;
     for(let i=0;i<=segs;i++){
-      const t = i/segs;
-      const bx = x0 + dx*t, by = y0 + dy*t;
-      const env = Math.sin(t*Math.PI);          // taper jitter to zero at the ends
-      const sign = (Math.random()<0.8) ? -lastSign : lastSign; // mostly alternate => sharp zigzag
-      lastSign = sign;
-      const j = (i===0||i===segs) ? 0 : sign*env*rnd(h*0.22,h*0.42);
-      pts.push([ (bx + px*j).toFixed(1), (by + py*j).toFixed(1) ]);
+      const t = i/segs, bx = x0 + dx*t, by = y0 + dy*t, env = Math.sin(t*Math.PI);
+      sign = (Math.random()<0.82) ? -sign : sign;
+      const j = (i===0||i===segs) ? 0 : sign*env*amp;
+      pts.push([ bx + px*j, by + py*j ]);
     }
-    return pts.map(p=>p[0]+','+p[1]).join(' ');
+    return pts;
   }
 
-  function poly(pts, stroke, width, filt){
-    const p = document.createElementNS(SVGNS,'polyline');
-    p.setAttribute('points', pts);
-    p.setAttribute('fill','none');
-    p.setAttribute('stroke', stroke);
-    p.setAttribute('stroke-width', width);
-    p.setAttribute('stroke-linecap','round');
-    p.setAttribute('stroke-linejoin','round');
-    if(filt) p.setAttribute('filter', filt);
-    return p;
+  function seg(x1,y1,x2,y2,stroke,width,opacity,filt){
+    const l = document.createElementNS(SVGNS,'line');
+    l.setAttribute('x1',x1.toFixed(1)); l.setAttribute('y1',y1.toFixed(1));
+    l.setAttribute('x2',x2.toFixed(1)); l.setAttribute('y2',y2.toFixed(1));
+    l.setAttribute('stroke',stroke); l.setAttribute('stroke-width',width.toFixed(2));
+    l.setAttribute('stroke-linecap','round'); l.setAttribute('opacity',opacity.toFixed(2));
+    if(filt) l.setAttribute('filter',filt);
+    return l;
   }
 
   function spawn(){
     const w = card.clientWidth, h = card.clientHeight;
     if(!w || !h) return;
-
-    const wrap = document.createElement('div');
-    wrap.className = 'esc-bolt';
-
+    const wrap = document.createElement('div'); wrap.className = 'esc-bolt';
     const svg = document.createElementNS(SVGNS,'svg');
-    svg.setAttribute('viewBox', '0 0 '+w+' '+h);
-    svg.setAttribute('preserveAspectRatio','none');
-
-    const green = Math.random() < 0.62; // slightly more green than red
+    svg.setAttribute('viewBox','0 0 '+w+' '+h); svg.setAttribute('preserveAspectRatio','none');
+    const green = Math.random() < 0.62;
     const color = green ? '#1db954' : '#f44336';
-    const glow  = green ? 'rgba(29,185,84,.9)' : 'rgba(244,67,54,.9)';
-
-    // blur filter for the glow
+    const glow  = green ? 'rgba(29,185,84,.85)' : 'rgba(244,67,54,.85)';
     const fid = 'esc'+Math.random().toString(36).slice(2,8);
     const filt = document.createElementNS(SVGNS,'filter');
-    filt.setAttribute('id', fid);
-    filt.setAttribute('x','-30%'); filt.setAttribute('y','-30%');
+    filt.setAttribute('id',fid); filt.setAttribute('x','-30%'); filt.setAttribute('y','-30%');
     filt.setAttribute('width','160%'); filt.setAttribute('height','160%');
-    const blur = document.createElementNS(SVGNS,'feGaussianBlur');
-    blur.setAttribute('stdDeviation','2.2'); blur.setAttribute('result','b');
+    const blur = document.createElementNS(SVGNS,'feGaussianBlur'); blur.setAttribute('stdDeviation','1.6'); blur.setAttribute('result','b');
     const merge = document.createElementNS(SVGNS,'feMerge');
-    const mn1 = document.createElementNS(SVGNS,'feMergeNode'); mn1.setAttribute('in','b');
-    const mn2 = document.createElementNS(SVGNS,'feMergeNode'); mn2.setAttribute('in','SourceGraphic');
-    merge.appendChild(mn1); merge.appendChild(mn2);
-    filt.appendChild(blur); filt.appendChild(merge);
-    svg.appendChild(filt);
-
-    const pts = makeZigzag(w,h);
+    const m1 = document.createElementNS(SVGNS,'feMergeNode'); m1.setAttribute('in','b');
+    const m2 = document.createElementNS(SVGNS,'feMergeNode'); m2.setAttribute('in','SourceGraphic');
+    merge.appendChild(m1); merge.appendChild(m2); filt.appendChild(blur); filt.appendChild(merge); svg.appendChild(filt);
     const url = 'url(#'+fid+')';
-    const g = poly(pts, glow, '5', url);     g.setAttribute('opacity','0.7'); // soft halo
-    const m = poly(pts, color, '2.6', url);                                   // colored body
-    const c = poly(pts, '#eafff0', '1.6', null);                             // bright hot core
-    svg.appendChild(g); svg.appendChild(m); svg.appendChild(c);
-    wrap.appendChild(svg);
-    card.appendChild(wrap);
-
-    const dur = rnd(300,600);
+    const pts = makeZigzag(w,h);
+    // k: 1 at the left/right edges, 0 across the face (centre) — beam thicker & brighter at edges
+    for(let i=0;i<pts.length-1;i++){
+      const a = pts[i], b = pts[i+1], cx = (a[0]+b[0])/2;
+      const d = Math.min(Math.max(cx,0), w);
+      const k = 1 - Math.min(1, Math.min(d, w-d) / (w*0.5));
+      const width = 0.7 + 2.8*k;
+      const op    = 0.16 + 0.74*k;
+      svg.appendChild(seg(a[0],a[1],b[0],b[1], glow, width+2.4, op*0.5, url));   // halo
+      svg.appendChild(seg(a[0],a[1],b[0],b[1], color, width, op, url));          // body
+      if(k > 0.5) svg.appendChild(seg(a[0],a[1],b[0],b[1], '#eafff0', Math.max(0.6,width*0.45), op, null)); // hot core, edges only
+    }
+    wrap.appendChild(svg); card.appendChild(wrap);
+    const dur = rnd(300,560);
     const anim = wrap.animate(
-      [
-        { opacity:0 },
-        { opacity:1,   offset:0.12 },
-        { opacity:0.35,offset:0.30 },  // electric flicker
-        { opacity:0.9, offset:0.45 },
-        { opacity:0,   offset:1 }
-      ],
-      { duration:dur, easing:'ease-out' }
-    );
-    anim.onfinish = ()=>{ wrap.remove(); };
-    setTimeout(()=>{ if(wrap.parentNode) wrap.remove(); }, dur+150);
+      [ {opacity:0}, {opacity:1,offset:0.14}, {opacity:0.4,offset:0.32}, {opacity:0.85,offset:0.5}, {opacity:0,offset:1} ],
+      { duration:dur, easing:'ease-out' });
+    anim.onfinish = ()=> wrap.remove();
+    setTimeout(()=>{ if(wrap.parentNode) wrap.remove(); }, dur+160);
   }
 
-  card.addEventListener('mouseenter', ()=>{
-    if(timer) return;
-    spawn();
-    timer = setInterval(spawn, 240);
-  });
-  card.addEventListener('mouseleave', ()=>{
-    clearInterval(timer); timer = null;
-  });
+  function loop(){ spawn(); timer = setTimeout(loop, rnd(540,880)); }   // LOWER, varied frequency
+  card.addEventListener('mouseenter', ()=>{ if(timer) return; loop(); });
+  card.addEventListener('mouseleave', ()=>{ clearTimeout(timer); timer = null; });
 })();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
