@@ -41,9 +41,9 @@
     .card-thumb { display: block; width: calc(100% + 40px); height: 124px; margin: -20px -20px 14px; object-fit: cover; border-bottom: 1px solid #1c1c1c; filter: saturate(0.9) brightness(0.82); transition: filter 0.15s; }
     .card:hover .card-thumb { filter: saturate(1.05) brightness(1); }
 
-    .card-icon { color: #1db954; font-size: 1.1rem; margin-bottom: 10px; }
-    .card-title { color: #ddd; font-size: 0.95rem; margin-bottom: 6px; }
-    .card-desc  { color: #9a9a9a; font-size: 0.7rem; line-height: 1.75; flex: 1; }
+    .card-icon { color: #1db954; font-size: 1.25rem; margin-bottom: 10px; }
+    .card-title { color: #f0f0f0; font-size: 1.18rem; font-weight: 700; letter-spacing: 0.4px; margin-bottom: 8px; }
+    .card-desc  { color: #b0b0b0; font-size: 0.86rem; line-height: 1.6; flex: 1; }
     .card-tags  { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
     .tag { font-size: 0.6rem; padding: 2px 7px; border: 1px solid #222; color: #444; }
     .tag.green { border-color: rgba(29,185,84,0.3); color: #1db954; }
@@ -75,7 +75,7 @@
     <img class="card-thumb" src="/game/thumbs/life.jpg?v=3" alt="Game of Life grid" loading="lazy" width="440" height="240">
     <div class="card-icon">[##]</div>
     <div class="card-title" data-en="game_of_life.exe" data-zh="生命游戏.exe">game_of_life.exe</div>
-    <div class="card-desc" data-en="Conway's Game of Life — draw patterns, watch them evolve, and turn them into music. Sandbox, 11 leaderboard challenges, aura colouring, lookahead, image-to-cells, and a Music Box sequencer." data-zh="康威生命游戏——绘制图案、观察演化、化作音乐。沙盒、11个排行榜挑战、光环着色、预演、图像转细胞，以及八音盒音序器。">Conway's Game of Life — draw patterns, watch them evolve, and turn them into music. Sandbox, 11 leaderboard challenges, aura colouring, lookahead, image-to-cells, and a Music Box sequencer.</div>
+    <div class="card-desc" data-en="Draw patterns, watch them evolve, turn them into music. Sandbox, 11 leaderboard challenges, and a Music Box sequencer." data-zh="绘制图案、观察演化、化作音乐。沙盒、11 个排行榜挑战，以及八音盒音序器。">Draw patterns, watch them evolve, turn them into music. Sandbox, 11 leaderboard challenges, and a Music Box sequencer.</div>
     <div class="card-tags">
       <span class="tag green" data-en="flagship" data-zh="旗舰">flagship</span>
       <span class="tag" data-en="sandbox" data-zh="沙盒">sandbox</span>
@@ -92,7 +92,7 @@
     <img class="card-thumb" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board" loading="lazy" width="440" height="240">
     <div class="card-icon">[⬡]</div>
     <div class="card-title" data-en="gomoku.exe" data-zh="五子棋.exe">gomoku.exe</div>
-    <div class="card-desc" data-en="Classic 5-in-a-row on a 15×15 board. Play a minimax AI at three difficulty levels, watch AI-vs-AI, or share a room code for online play against a friend. RL agent slot reserved." data-zh="经典15×15五子棋。挑战三种难度的极小化极大AI、观看AI对战，或分享房间码与好友联机对弈。RL智能体插槽预留。">Classic 5-in-a-row on a 15×15 board. Play a minimax AI at three difficulty levels, watch AI-vs-AI, or share a room code for online play against a friend. RL agent slot reserved.</div>
+    <div class="card-desc" data-en="Classic 5-in-a-row. Beat a minimax AI, watch AI-vs-AI, or play a friend online." data-zh="经典五子棋。挑战极小化极大 AI、观看 AI 对战，或与好友联机对弈。">Classic 5-in-a-row. Beat a minimax AI, watch AI-vs-AI, or play a friend online.</div>
     <div class="card-tags">
       <span class="tag green" data-en="strategy" data-zh="策略">strategy</span>
       <span class="tag" data-en="minimax AI" data-zh="极大极小AI">minimax AI</span>
@@ -109,7 +109,7 @@
     <img class="card-thumb" src="/game/thumbs/escape.jpg?v=3" alt="Escape Grid board" loading="lazy" width="440" height="240">
     <div class="card-icon">[::]</div>
     <div class="card-title" data-en="escape_grid.exe" data-zh="逃脱方格.exe">escape_grid.exe</div>
-    <div class="card-desc" data-en="4 participants vs 1 hunter on a 4×4 grid. Unlock doors, dodge traps, reach the exit. The hunter plans its route with greedy pathfinding; place traps before the round begins." data-zh="4名参与者对抗1名猎手的4×4格逃脱。解锁门道、躲避陷阱、抵达出口。猎手用贪心寻路规划路线；回合开始前布置陷阱。">4 participants vs 1 hunter on a 4×4 grid. Unlock doors, dodge traps, reach the exit. The hunter plans its route with greedy pathfinding; place traps before the round begins.</div>
+    <div class="card-desc" data-en="4 runners vs 1 hunter on a 4×4 grid. Unlock doors, dodge traps, reach the exit before you're caught." data-zh="4 名参与者对抗 1 名猎手的 4×4 格逃脱。解锁门道、躲避陷阱、在被擒前抵达出口。">4 runners vs 1 hunter on a 4×4 grid. Unlock doors, dodge traps, reach the exit before you're caught.</div>
     <div class="card-tags">
       <span class="tag green" data-en="turn-based" data-zh="回合制">turn-based</span>
       <span class="tag" data-en="traps" data-zh="陷阱">traps</span>
@@ -125,7 +125,7 @@
     <img class="card-thumb" src="/game/thumbs/tomato.jpg?v=3" alt="Tomato-growing game" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#f0533a">[◍]</div>
     <div class="card-title" data-en="grow_a_tomato.exe" data-zh="种番茄.exe">grow_a_tomato.exe</div>
-    <div class="card-desc" data-en="Grow the biggest, sweetest tomato. Set the greenhouse light and nutrient feed across the season — light banks starch, sunny ripening turns it to sugar. A real plant-metabolism (dFBA) model, distilled into a game where every choice changes the fruit." data-zh="种出又大又甜的番茄。整季调节温室的光照与施肥——光照把能量存为淀粉，充足光照的成熟期再把它转化为糖。由真实植物代谢（dFBA）模型提炼，每个选择都改变果实。">Grow the biggest, sweetest tomato. Set the greenhouse light and nutrient feed across the season — light banks starch, sunny ripening turns it to sugar. A real plant-metabolism (dFBA) model, distilled into a game where every choice changes the fruit.</div>
+    <div class="card-desc" data-en="Grow the biggest, sweetest tomato. Balance light and feed across the season — powered by a real plant-metabolism model." data-zh="种出又大又甜的番茄。整季权衡光照与施肥——由真实植物代谢模型驱动。">Grow the biggest, sweetest tomato. Balance light and feed across the season — powered by a real plant-metabolism model.</div>
     <div class="card-tags">
       <span class="tag green" data-en="sim" data-zh="模拟">sim</span>
       <span class="tag" data-en="dFBA model" data-zh="dFBA模型">dFBA model</span>
