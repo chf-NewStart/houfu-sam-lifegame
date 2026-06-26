@@ -43,33 +43,43 @@
     @property --a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
     @keyframes cardspin { to { --a: 360deg; } }
 
-    /* Game of Life — slow soft green↔blue breath */
-    .card.glow-life:hover { animation: lifeGlow 4.5s ease-in-out infinite; }
-    @keyframes lifeGlow {
-      0%,100% { box-shadow: 0 0 20px -3px rgba(29,185,84,0.55);  border-color: #1db954; }
-      50%     { box-shadow: 0 0 28px -1px rgba(56,150,230,0.62); border-color: #3a9ee6; }
-    }
-
-    /* Gomoku & Escape — a rotating ring of light around the four edges */
-    .card.glow-gomoku::after, .card.glow-escape::after {
+    /* Life & Tomato — SSR-style rotating conic light ring */
+    .card.glow-life::after, .card.glow-tomato::after {
       content: ''; position: absolute; inset: -4px; z-index: -1; border-radius: 5px;
       filter: blur(9px); opacity: 0; transition: opacity 0.3s;
     }
-    .card.glow-gomoku:hover::after, .card.glow-escape:hover::after { opacity: 0.85; animation: cardspin 3.2s linear infinite; }
-    /* Gomoku: red & green sweep around the edges in sequence */
-    .card.glow-gomoku::after { background: conic-gradient(from var(--a), #f44336, #1db954, #f44336, #1db954, #f44336); }
-    /* Escape: a green light and a red light, 180° apart, chasing each other the same way */
-    .card.glow-escape::after { background: conic-gradient(from var(--a), transparent 0deg, #1db954 28deg, transparent 86deg, transparent 180deg, #f44336 208deg, transparent 266deg, transparent 360deg); }
-
-    /* Tomato — warm sunlight radiating from the centre */
+    .card.glow-life:hover::after   { opacity: 0.85; animation: cardspin 5s linear infinite; }     /* slow, tranquil */
+    .card.glow-tomato:hover::after { opacity: 0.9;  animation: cardspin 3.6s linear infinite; }
+    /* Life: green → cyan → blue ring */
+    .card.glow-life::after   { background: conic-gradient(from var(--a), #1db954, #36c5d0, #3a9ee6, #36c5d0, #1db954); }
+    /* Tomato: warm sun ring (gold → orange → amber) */
+    .card.glow-tomato::after { background: conic-gradient(from var(--a), #ffce4d, #ff8a3c, #ffd86b, #ffab47, #ffce4d); }
+    /* …plus a soft warm centre for the tomato */
     .card.glow-tomato::before {
       content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-      background: radial-gradient(circle at 50% 45%, rgba(255,210,90,0.20), rgba(245,130,45,0.10) 42%, transparent 72%);
+      background: radial-gradient(circle at 50% 45%, rgba(255,210,90,0.18), transparent 68%);
       opacity: 0; transition: opacity 0.4s;
     }
     .card.glow-tomato:hover::before { opacity: 1; animation: sunPulse 3s ease-in-out infinite; }
-    .card.glow-tomato:hover { box-shadow: 0 0 30px -6px rgba(255,170,60,0.55); border-color: #ffce4d; }
-    @keyframes sunPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+    @keyframes sunPulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+    /* Gomoku — tranquil water-droplet ripples from the centre */
+    .card.glow-gomoku::before, .card.glow-gomoku::after {
+      content: ''; position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; border-radius: 50%;
+      border: 1px solid rgba(54,197,208,0.55); transform: translate(-50%,-50%) scale(0.2);
+      opacity: 0; z-index: 0; pointer-events: none;
+    }
+    .card.glow-gomoku:hover { box-shadow: 0 0 22px -7px rgba(54,197,208,0.5); border-color: #2f8f99; }
+    .card.glow-gomoku:hover::before { animation: ripple 2.6s ease-out infinite; }
+    .card.glow-gomoku:hover::after  { animation: ripple 2.6s ease-out infinite 1.3s; }
+    @keyframes ripple { 0% { transform: translate(-50%,-50%) scale(0.2); opacity: 0.7; } 100% { transform: translate(-50%,-50%) scale(6); opacity: 0; } }
+
+    /* Escape — random green/red flashes pop along the edges (spawned in JS) */
+    .edge-flash { position: absolute; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%;
+      background: radial-gradient(circle, var(--c) 0%, var(--c) 22%, transparent 70%);
+      filter: drop-shadow(0 0 5px var(--c)); pointer-events: none; z-index: 3; animation: flashPop 0.75s ease-out forwards; }
+    @keyframes flashPop { 0% { transform: scale(0.2); opacity: 0; } 30% { transform: scale(1.25); opacity: 1; } 100% { transform: scale(0.5); opacity: 0; } }
+    .card.glow-escape:hover { border-color: #2c4a2c; box-shadow: 0 0 16px -8px rgba(29,185,84,0.4); }
 
     .card-thumb { display: block; width: calc(100% + 40px); height: 124px; margin: -20px -20px 14px; object-fit: cover; border-bottom: 1px solid #1c1c1c; filter: saturate(0.9) brightness(0.82); transition: filter 0.15s; }
     .card:hover .card-thumb { filter: saturate(1.05) brightness(1); }
@@ -193,6 +203,29 @@ function toggleLang() {
 }
 
 document.addEventListener('DOMContentLoaded', applyLang);
+
+/* Escape Grid — little green/red flashes pop at random spots on the card edges while hovered */
+(function () {
+  const card = document.querySelector('.glow-escape');
+  if (!card) return;
+  let timer = null;
+  function flash() {
+    const f = document.createElement('div');
+    f.className = 'edge-flash';
+    const W = card.offsetWidth, H = card.offsetHeight, e = Math.floor(Math.random() * 4);
+    let x, y;
+    if (e === 0) { x = Math.random() * W; y = 0; }
+    else if (e === 1) { x = W; y = Math.random() * H; }
+    else if (e === 2) { x = Math.random() * W; y = H; }
+    else { x = 0; y = Math.random() * H; }
+    f.style.left = x + 'px'; f.style.top = y + 'px';
+    f.style.setProperty('--c', Math.random() < 0.2 ? '#f44336' : '#1db954');  // ~1 red : 4 green
+    card.appendChild(f);
+    setTimeout(() => f.remove(), 760);
+  }
+  card.addEventListener('mouseenter', () => { if (timer) return; flash(); timer = setInterval(flash, 240); });
+  card.addEventListener('mouseleave', () => { clearInterval(timer); timer = null; });
+})();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
