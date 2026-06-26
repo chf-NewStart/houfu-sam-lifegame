@@ -43,21 +43,25 @@
     @property --a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
     @keyframes cardspin { to { --a: 360deg; } }
 
-    /* Tomato — soft, warm sun ring (toned-down, less yellow) + gentle centre */
+    /* Tomato — retro CRT terminal: scanline sweep, rigid lift, sharp green glow, phosphor bloom */
+    .card.glow-tomato { --crt-green: 29,185,84; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+    .card.glow-tomato:hover { transform: translateY(-4px); box-shadow: 4px 4px 0 rgba(0,255,0,0.20); border-color: rgba(var(--crt-green),0.4); }
+    /* faint CRT scanline sweeping down the card on hover */
     .card.glow-tomato::after {
-      content: ''; position: absolute; inset: -4px; z-index: -1; border-radius: 5px;
-      filter: blur(10px); opacity: 0; transition: opacity 0.3s;
-      background: conic-gradient(from var(--a), #e0973a, #cf6f30, #e3ab50, #c66f26, #e0973a);
+      content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease;
+      background-image: linear-gradient(to bottom, transparent 45%, rgba(170,255,190,0.07) 49%, rgba(190,255,210,0.22) 50%, rgba(170,255,190,0.07) 51%, transparent 55%);
+      background-size: 100% 280%; background-repeat: no-repeat; background-position: 0 -40%;
     }
-    .card.glow-tomato:hover::after { opacity: 0.7; animation: cardspin 4s linear infinite; }
-    .card.glow-tomato::before {
-      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-      background: radial-gradient(circle at 50% 48%, rgba(224,150,60,0.13), transparent 66%);
-      opacity: 0; transition: opacity 0.4s;
-    }
-    .card.glow-tomato:hover::before { opacity: 1; animation: sunPulse 3.2s ease-in-out infinite; }
-    .card.glow-tomato:hover { box-shadow: 0 0 24px -9px rgba(210,135,55,0.5); border-color: #b5803a; }
-    @keyframes sunPulse { 0%,100% { opacity: 0.45; } 50% { opacity: 0.9; } }
+    .card.glow-tomato:hover::after { opacity: 1; animation: crtScan 3s linear infinite; }
+    @keyframes crtScan { 0% { background-position: 0 -40%; } 100% { background-position: 0 140%; } }
+    /* phosphor "wake up" — icon glows in its own (red) colour, title in green */
+    .card.glow-tomato .card-icon, .card.glow-tomato .card-title { transition: text-shadow .3s ease; }
+    .card.glow-tomato:hover .card-icon { text-shadow: 0 0 6px currentColor, 0 0 14px currentColor; }
+    .card.glow-tomato:hover .card-title { text-shadow: 0 0 7px rgba(var(--crt-green),0.7); }
+    /* tags + play button — instant "terminal invert" (no fade), like a command-line selection */
+    .card.glow-tomato .tag, .card.glow-tomato .play-btn { transition: none; }
+    .card.glow-tomato .tag:hover { background: #8c8c8c; color: #0a0a0a; border-color: #8c8c8c; }
+    .card.glow-tomato .tag.green:hover, .card.glow-tomato .play-btn:hover { background: rgb(var(--crt-green)); color: #07120b; border-color: rgb(var(--crt-green)); }
 
 /* ===== Gomoku — Canvas WATER RIPPLE across the whole card ===== */
 /* The water canvas IS the card background: stones in the top band, dark body
