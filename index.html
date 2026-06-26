@@ -68,6 +68,11 @@
     .glow-tsweep .tsw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
     .card.glow-tsweep:hover .tsw-canvas { opacity: 1; }
 
+    /* Sudoku — on hover, a faint cyan column-scan sweeps the grid (the solver checking) */
+    .card.glow-sudoku:hover { border-color: #2a6e78; box-shadow: 0 0 22px -8px rgba(54,197,208,0.45); }
+    .glow-sudoku .sudoku-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+    .card.glow-sudoku:hover .sudoku-canvas { opacity: 1; }
+
 /* ===== Gomoku — Canvas WATER RIPPLE across the whole card ===== */
 /* The water canvas IS the card background: stones in the top band, dark body
    below. On hover the whole surface ripples — mousemove wakes, click splashes —
@@ -228,6 +233,22 @@
     <div class="card-footer">
       <span class="card-meta" data-en="JS · first-click safe" data-zh="JS · 首击安全">JS · first-click safe</span>
       <a class="play-btn" href="/game/tomatoswipe.html" data-en="→ dig" data-zh="→ 挖掘">→ dig</a>
+    </div>
+  </div>
+
+  <div class="card glow-sudoku">
+    <img class="card-thumb" src="/game/thumbs/sudoku.png?v=1" alt="Sudoku grid" loading="lazy" width="440" height="240">
+    <div class="card-icon" style="color:#36c5d0">[9]</div>
+    <div class="card-title" data-en="sudoku.exe" data-zh="数独.exe">sudoku.exe</div>
+    <div class="card-desc" data-en="Fill every row, column and 3×3 box with 1–9. A backtracking generator guarantees one unique solution — with pencil-mark notes, hints, and a one-click solver." data-zh="让每行、每列、每个 3×3 宫格都填入 1–9。回溯生成器保证唯一解——含铅笔笔记、提示与一键求解。">Fill every row, column and 3×3 box with 1–9. A backtracking generator guarantees one unique solution — with pencil-mark notes, hints, and a one-click solver.</div>
+    <div class="card-tags">
+      <span class="tag green" data-en="logic" data-zh="逻辑">logic</span>
+      <span class="tag" data-en="backtracking" data-zh="回溯">backtracking</span>
+      <span class="tag" data-en="unique solution" data-zh="唯一解">unique solution</span>
+    </div>
+    <div class="card-footer">
+      <span class="card-meta" data-en="JS · constraint solver" data-zh="JS · 约束求解">JS · constraint solver</span>
+      <a class="play-btn" href="/game/sudoku.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
     </div>
   </div>
 
@@ -788,6 +809,37 @@ document.addEventListener('DOMContentLoaded', applyLang);
         ctx.fillStyle = 'rgba(46,84,28,' + a.toFixed(3) + ')';
         ctx.fillRect(cx + 1, cy + 1, C - 2, C - 2);
         if (e < 1) { ctx.fillStyle = (tom[y * cols + x] ? 'rgba(226,82,62,' : 'rgba(124,206,90,') + (a * 1.4).toFixed(3) + ')'; ctx.fillRect(cx + 1, cy + 1, C - 2, 2); }
+      }
+    }
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  card.addEventListener('mouseenter', () => { if (raf) return; build(); t = 0; inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Sudoku card — on hover, a faint cyan column-scan sweeps across the grid thumbnail */
+(function () {
+  const card = document.querySelector('.card.glow-sudoku');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'sudoku-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const C = 20;
+  let W, H, cols, rows, topH, t = 0, raf = 0, inside = false;
+  function build() {
+    W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
+    cols = Math.ceil(W / C); rows = Math.ceil(H / C);
+    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight + 4 : Math.round(H * 0.4);
+  }
+  function frame() {
+    t += 0.004; ctx.clearRect(0, 0, W, H);
+    const wave = (t % 1) * (cols + 6), BAND = 3.5;
+    for (let y = 0; y < rows; y++) { const cy = y * C; if (cy >= topH) break;
+      for (let x = 0; x < cols; x++) {
+        const e = wave - x; if (e < 0 || e > BAND) continue;                  // faint cyan column-scan
+        const a = (1 - e / BAND) * 0.3, cx = x * C;
+        ctx.fillStyle = 'rgba(54,197,208,' + a.toFixed(3) + ')';
+        ctx.fillRect(cx + 1, cy + 1, C - 2, C - 2);
       }
     }
     raf = inside ? requestAnimationFrame(frame) : 0;

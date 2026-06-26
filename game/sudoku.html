@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sudoku // houfu.xyz</title>
+<meta name="description" content="Sudoku with a backtracking generator that guarantees a unique solution — pencil-mark notes, conflict highlighting, hints, and a one-click solver.">
+<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:22px 18px 40px;}
+  a{color:#1db954;}
+  .hdr{max-width:880px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .hdr .title{color:#1db954;font-size:1.3rem;text-transform:uppercase;letter-spacing:-1px;}
+  .hdr .sub{color:#9a9a9a;font-size:0.76rem;margin-top:5px;line-height:1.6;max-width:540px;}
+  .hdr .back{color:#1db954;font-size:0.7rem;text-decoration:none;display:inline-block;margin-top:7px;}
+  .hdr .back:hover{text-decoration:underline;}
+  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.7rem;padding:5px 11px;cursor:pointer;flex-shrink:0;transition:background .12s;}
+  .lang-btn:hover{background:rgba(29,185,84,0.1);}
+
+  .wrap{max-width:880px;margin:0 auto;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;justify-content:center;}
+  .stage{flex:0 0 auto;}
+  #grid{display:block;width:min(94vw,460px);height:min(94vw,460px);background:#0a0a0a;border:1px solid #1a1a1a;touch-action:manipulation;cursor:pointer;border-radius:3px;}
+  .status{text-align:center;font-size:0.8rem;color:#9a9a9a;min-height:1.2em;margin-top:10px;}
+  .status.win{color:#2bd46a;} .status.note{color:#ffce4d;}
+
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:min(94vw,300px);margin:12px auto 0;}
+  .pk{aspect-ratio:1.5;background:#0d0d0d;border:1px solid #2a2a2a;color:#2bd46a;font-family:inherit;font-size:1.3rem;font-weight:700;cursor:pointer;border-radius:5px;transition:border-color .1s,background .1s;}
+  .pk:hover{border-color:#1db954;}
+  .pk:active{background:rgba(29,185,84,0.15);}
+  .pk.done{color:#3a3a3a;border-color:#161616;cursor:default;}
+  .padrow{display:flex;gap:8px;width:min(94vw,300px);margin:8px auto 0;}
+  .padrow button{flex:1;background:#0d0d0d;border:1px solid #2a2a2a;color:#9a9a9a;font-family:inherit;font-size:0.82rem;padding:10px;cursor:pointer;border-radius:5px;transition:all .1s;}
+  .padrow button:hover{border-color:#1db954;}
+  .padrow button.on{border-color:#36c5d0;color:#36c5d0;background:rgba(54,197,208,0.08);}
+
+  .side{flex:1;min-width:220px;max-width:300px;}
+  .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:13px 14px;margin-bottom:11px;}
+  .card-title{color:#1db954;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:11px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
+  .seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
+  .seg button{background:transparent;border:1px solid #2a2a2a;color:#9a9a9a;font-family:inherit;font-size:0.72rem;padding:8px 0;cursor:pointer;transition:all .12s;}
+  .seg button.on{border-color:#1db954;color:#1db954;background:rgba(29,185,84,0.08);}
+  .seg button:hover{border-color:#1db954;}
+  .btn{display:block;width:100%;background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.74rem;padding:9px;cursor:pointer;margin-bottom:8px;transition:background .12s,color .12s;}
+  .btn:hover{background:#1db954;color:#07120b;}
+  .btn.ghost{border-color:#2a2a2a;color:#9a9a9a;}
+  .btn.ghost:hover{background:#9a9a9a;color:#0a0a0a;border-color:#9a9a9a;}
+  .btn-row{display:flex;gap:8px;}
+  .btn-row .btn{margin-bottom:0;}
+  .hud{display:flex;gap:8px;}
+  .stat{flex:1;text-align:center;}
+  .stat .k{font-size:0.56rem;text-transform:uppercase;letter-spacing:1px;color:#7a7a7a;}
+  .stat .v{font-size:1.15rem;color:#f0f0f0;margin-top:3px;font-variant-numeric:tabular-nums;}
+  .stat .v.best{color:#36c5d0;}
+  .help{font-size:0.7rem;color:#9a9a9a;line-height:1.7;}
+  .help b{color:#cfcfcf;font-weight:normal;}
+  .help > div{margin-bottom:4px;}
+  .keycap{display:inline-block;border:1px solid #2a2a2a;border-radius:3px;padding:0 5px;color:#cfcfcf;font-size:0.66rem;}
+
+  html, body, button, a, input, select, label { touch-action: manipulation; }
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="title" id="pgTitle">&gt;_ Sudoku</div>
+    <div class="sub" id="pgSub" data-en="Fill the grid so every row, column and 3×3 box holds 1–9 exactly once. Every puzzle is carved by a backtracking generator that guarantees one unique solution — the same solver powers the hints and the one-click solve." data-zh="填满网格，使每一行、每一列、每个 3×3 宫格都恰好包含 1–9。每道题都由回溯算法生成并保证唯一解——同一个求解器也驱动提示和一键求解。">Fill the grid so every row, column and 3×3 box holds 1–9 exactly once. Every puzzle is carved by a backtracking generator that guarantees one unique solution — the same solver powers the hints and the one-click solve.</div>
+    <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+</div>
+
+<div class="wrap">
+  <div class="stage">
+    <canvas id="grid" width="460" height="460" tabindex="0"></canvas>
+    <div class="status" id="status"></div>
+    <div class="pad" id="pad">
+      <button class="pk" data-n="1">1</button><button class="pk" data-n="2">2</button><button class="pk" data-n="3">3</button>
+      <button class="pk" data-n="4">4</button><button class="pk" data-n="5">5</button><button class="pk" data-n="6">6</button>
+      <button class="pk" data-n="7">7</button><button class="pk" data-n="8">8</button><button class="pk" data-n="9">9</button>
+    </div>
+    <div class="padrow">
+      <button id="notesBtn" data-en="✎ notes: off" data-zh="✎ 笔记：关">✎ notes: off</button>
+      <button data-n="0" data-en="⌫ erase" data-zh="⌫ 擦除">⌫ erase</button>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <div class="card-title"><span data-en="// difficulty" data-zh="// 难度">// difficulty</span></div>
+      <div class="seg" id="diffSeg">
+        <button data-diff="easy" class="on" data-en="easy" data-zh="简单">easy</button>
+        <button data-diff="medium" data-en="medium" data-zh="中等">medium</button>
+        <button data-diff="hard" data-en="hard" data-zh="困难">hard</button>
+        <button data-diff="expert" data-en="expert" data-zh="专家">expert</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span data-en="// run" data-zh="// 进度">// run</span></div>
+      <div class="hud">
+        <div class="stat"><div class="k" data-en="time" data-zh="时间">time</div><div class="v" id="vTime">00:00</div></div>
+        <div class="stat"><div class="k" data-en="best" data-zh="最佳">best</div><div class="v best" id="vBest">—</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span data-en="// tools" data-zh="// 工具">// tools</span></div>
+      <button class="btn" id="btnNew" onclick="game.newGame()" data-en="↺ new puzzle" data-zh="↺ 新题">↺ new puzzle</button>
+      <div class="btn-row">
+        <button class="btn ghost" onclick="game.hint()" data-en="◇ hint" data-zh="◇ 提示">◇ hint</button>
+        <button class="btn ghost" onclick="game.check()" data-en="✓ check" data-zh="✓ 检查">✓ check</button>
+      </div>
+      <button class="btn ghost" onclick="game.solve()" data-en="⊞ solve" data-zh="⊞ 求解">⊞ solve</button>
+    </div>
+    <div class="card help">
+      <div class="card-title"><span data-en="// how" data-zh="// 玩法">// how</span></div>
+      <div data-en="Tap a cell, then a number (or press <b class='keycap'>1–9</b>). <b class='keycap'>0</b>/<b class='keycap'>⌫</b> erases, arrows move." data-zh="点选一格，再选数字（或按 <b class='keycap'>1–9</b>）。<b class='keycap'>0</b>/<b class='keycap'>⌫</b> 擦除，方向键移动。">Tap a cell, then a number (or press 1–9). 0/⌫ erases, arrows move.</div>
+      <div data-en="<b>Notes</b> mode pencils small candidates. Picking a cell highlights its peers and matching digits; clashes glow red." data-zh="<b>笔记</b>模式可标记候选数。选中格会高亮同行列宫与相同数字；冲突会红色高亮。">Notes mode pencils small candidates. Picking a cell highlights its peers and matching digits; clashes glow red.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   sudoku.exe — backtracking generator (unique solution) + solver
+   HTML5 Canvas + vanilla JS. (c) houfu.xyz
+   ============================================================================ */
+const game = (function () {
+  const $ = (id) => document.getElementById(id);
+  const DIFFS = { easy: 42, medium: 34, hard: 29, expert: 25 };   // target givens
+  let diff = 'easy';
+  let solution, puzzle, grid, given, notes;
+  let sel = -1, notesMode = false, won = false, running = false, startT = 0, elapsed = 0, tickId = 0;
+  let errorCells = new Set();
+  let canvas, ctx, DPR = 1, cs = 50, size = 0;
+
+  // ---- sudoku core ----
+  function candidates(g, i) {
+    const r = (i / 9) | 0, c = i % 9, br = r - r % 3, bc = c - c % 3, used = new Uint8Array(10);
+    for (let k = 0; k < 9; k++) { used[g[r * 9 + k]] = 1; used[g[k * 9 + c]] = 1; }
+    for (let dr = 0; dr < 3; dr++) for (let dc = 0; dc < 3; dc++) used[g[(br + dr) * 9 + (bc + dc)]] = 1;
+    const out = []; for (let v = 1; v <= 9; v++) if (!used[v]) out.push(v); return out;
+  }
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0, t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function fillGrid(g) {                                  // random complete solution (backtracking)
+    let i = -1; for (let k = 0; k < 81; k++) if (!g[k]) { i = k; break; }
+    if (i < 0) return true;
+    const cand = shuffle(candidates(g, i));
+    for (let n = 0; n < cand.length; n++) { g[i] = cand[n]; if (fillGrid(g)) return true; g[i] = 0; }
+    return false;
+  }
+  function countSolutions(g, cap) {                      // MRV backtracking, stops at cap
+    let best = -1, bc = null;
+    for (let i = 0; i < 81; i++) {
+      if (g[i]) continue;
+      const cand = candidates(g, i);
+      if (cand.length === 0) return 0;
+      if (best < 0 || cand.length < bc.length) { best = i; bc = cand; if (cand.length === 1) break; }
+    }
+    if (best < 0) return 1;
+    let total = 0;
+    for (let n = 0; n < bc.length; n++) { g[best] = bc[n]; total += countSolutions(g, cap); g[best] = 0; if (total >= cap) break; }
+    return total;
+  }
+
+  function generate() {
+    solution = new Int8Array(81); fillGrid(solution);
+    puzzle = Int8Array.from(solution);
+    const order = shuffle(Array.from({ length: 81 }, (_, i) => i)), target = DIFFS[diff];
+    let givens = 81;
+    for (let k = 0; k < order.length && givens > target; k++) {
+      const i = order[k], saved = puzzle[i]; puzzle[i] = 0;
+      if (countSolutions(puzzle, 2) !== 1) puzzle[i] = saved; else givens--;
+    }
+    grid = Int8Array.from(puzzle);
+    given = Array.from(puzzle, (v) => v !== 0);
+    notes = Array.from({ length: 81 }, () => new Set());
+  }
+
+  // ---- game flow ----
+  function newGame() {
+    $('status').textContent = t('generating…', '生成中…'); $('status').className = 'status note';
+    // let the status paint first, then generate (can take a beat on expert)
+    setTimeout(() => {
+      generate();
+      sel = -1; won = false; running = false; elapsed = 0; startT = 0; errorCells = new Set();
+      if (tickId) { clearInterval(tickId); tickId = 0; }
+      $('status').textContent = ''; $('status').className = 'status';
+      loadBest(); layout(); render(); updatePad();
+    }, 20);
+  }
+  function startTimer() { if (running) return; running = true; startT = Date.now() - elapsed; tickId = setInterval(() => { elapsed = Date.now() - startT; $('vTime').textContent = fmt(elapsed); }, 500); }
+  function stopTimer() { if (tickId) { clearInterval(tickId); tickId = 0; } running = false; }
+
+  function place(v) {
+    if (won || sel < 0 || given[sel]) return;
+    errorCells = new Set();
+    startTimer();
+    if (notesMode && v !== 0) {
+      if (grid[sel]) return;                              // can't note a filled cell
+      if (notes[sel].has(v)) notes[sel].delete(v); else notes[sel].add(v);
+    } else {
+      grid[sel] = v;
+      if (v !== 0) {
+        notes[sel].clear();
+        const r = (sel / 9) | 0, c = sel % 9, br = r - r % 3, bc = c - c % 3;   // auto-erase that candidate from peers
+        for (let k = 0; k < 9; k++) { notes[r * 9 + k].delete(v); notes[k * 9 + c].delete(v); }
+        for (let dr = 0; dr < 3; dr++) for (let dc = 0; dc < 3; dc++) notes[(br + dr) * 9 + (bc + dc)].delete(v);
+      }
+    }
+    render(); updatePad(); checkWin();
+  }
+
+  function conflicts() {
+    const bad = new Set();
+    for (let i = 0; i < 81; i++) {
+      const v = grid[i]; if (!v) continue;
+      const r = (i / 9) | 0, c = i % 9, br = r - r % 3, bc = c - c % 3;
+      for (let k = 0; k < 9; k++) { const a = r * 9 + k, b = k * 9 + c; if (a !== i && grid[a] === v) bad.add(i); if (b !== i && grid[b] === v) bad.add(i); }
+      for (let dr = 0; dr < 3; dr++) for (let dc = 0; dc < 3; dc++) { const j = (br + dr) * 9 + (bc + dc); if (j !== i && grid[j] === v) bad.add(i); }
+    }
+    return bad;
+  }
+  function checkWin() {
+    for (let i = 0; i < 81; i++) if (!grid[i]) return;
+    if (conflicts().size) return;
+    won = true; stopTimer();
+    const nb = saveBest(elapsed);
+    $('status').className = 'status win';
+    $('status').textContent = t('✓ solved in ' + fmt(elapsed), '✓ 用时 ' + fmt(elapsed) + ' 完成') + (nb ? t('  ★ best', '  ★ 最佳') : '');
+    render();
+  }
+
+  function hint() {
+    if (won) return;
+    let i = (sel >= 0 && !grid[sel]) ? sel : -1;
+    if (i < 0) { const empties = []; for (let k = 0; k < 81; k++) if (!grid[k]) empties.push(k); if (!empties.length) return; i = empties[(Math.random() * empties.length) | 0]; }
+    sel = i; startTimer(); grid[i] = solution[i]; notes[i].clear(); errorCells = new Set();
+    render(); updatePad(); checkWin();
+  }
+  function check() {
+    if (won) return;
+    errorCells = new Set();
+    for (let i = 0; i < 81; i++) if (grid[i] && !given[i] && grid[i] !== solution[i]) errorCells.add(i);
+    $('status').className = 'status note';
+    $('status').textContent = errorCells.size ? t(errorCells.size + ' wrong so far', '当前有 ' + errorCells.size + ' 处错误') : t('no mistakes yet ✓', '暂无错误 ✓');
+    render();
+  }
+  function solve() {
+    if (won) return;
+    for (let i = 0; i < 81; i++) { grid[i] = solution[i]; notes[i].clear(); }
+    errorCells = new Set(); stopTimer();
+    $('status').className = 'status note'; $('status').textContent = t('solved (revealed)', '已揭示答案');
+    render(); updatePad();
+  }
+
+  // ---- best ----
+  function bestKey() { return 'sudoku_' + diff; }
+  function loadBest() { let b = null; try { b = JSON.parse(localStorage.getItem(bestKey())); } catch (e) {} $('vBest').textContent = (b == null ? '—' : fmt(b)); return b; }
+  function saveBest(ms) { let b = null; try { b = JSON.parse(localStorage.getItem(bestKey())); } catch (e) {} let nb = false; if (b == null || ms < b) { try { localStorage.setItem(bestKey(), JSON.stringify(ms)); } catch (e) {} nb = true; } $('vBest').textContent = fmt(nb ? ms : b); return nb; }
+  function fmt(ms) { const s = (ms / 1000) | 0, m = (s / 60) | 0, r = s % 60; return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r; }
+
+  // ---- render ----
+  function layout() {
+    size = Math.min(460, Math.floor((canvas.parentNode.clientWidth || 460) * 0.94));
+    cs = Math.floor(size / 9); size = cs * 9;
+    DPR = window.devicePixelRatio || 1;
+    canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
+    canvas.width = Math.round(size * DPR); canvas.height = Math.round(size * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  function render() {
+    ctx.fillStyle = '#0b0b0b'; ctx.fillRect(0, 0, size, size);
+    const bad = conflicts();
+    const sr = sel >= 0 ? (sel / 9) | 0 : -1, sc = sel >= 0 ? sel % 9 : -1;
+    const selDigit = sel >= 0 ? grid[sel] : 0;
+    for (let i = 0; i < 81; i++) {
+      const r = (i / 9) | 0, c = i % 9, x = c * cs, y = r * cs;
+      let bg = null;
+      if (i === sel) bg = 'rgba(29,185,84,0.22)';
+      else if (sel >= 0 && (r === sr || c === sc || ((r - r % 3) === (sr - sr % 3) && (c - c % 3) === (sc - sc % 3)))) bg = 'rgba(255,255,255,0.035)';
+      else if (selDigit && grid[i] === selDigit) bg = 'rgba(54,197,208,0.16)';
+      if (bg) { ctx.fillStyle = bg; ctx.fillRect(x, y, cs, cs); }
+      if (bad.has(i) || errorCells.has(i)) { ctx.fillStyle = 'rgba(226,82,62,0.22)'; ctx.fillRect(x, y, cs, cs); }
+      if (grid[i]) {
+        ctx.fillStyle = errorCells.has(i) ? '#ff6a5e' : given[i] ? '#e9e9e9' : (bad.has(i) ? '#ff6a5e' : '#2bd46a');
+        ctx.font = 'bold ' + Math.round(cs * 0.6) + 'px Consolas,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(grid[i], x + cs / 2, y + cs / 2 + cs * 0.04);
+      } else if (notes[i].size) {
+        ctx.fillStyle = '#6f6f6f'; ctx.font = Math.round(cs * 0.22) + 'px Consolas,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        notes[i].forEach((n) => { const nr = ((n - 1) / 3) | 0, nc = (n - 1) % 3; ctx.fillText(n, x + cs * (nc + 0.5) / 3, y + cs * (nr + 0.5) / 3); });
+      }
+    }
+    for (let k = 0; k <= 9; k++) {
+      const thick = k % 3 === 0; ctx.strokeStyle = thick ? '#2f9457' : '#1d1d1d'; ctx.lineWidth = thick ? 2 : 1;
+      const p = k * cs + (thick ? 0 : 0.5);
+      ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, size); ctx.moveTo(0, p); ctx.lineTo(size, p); ctx.stroke();
+    }
+  }
+  function updatePad() {                                  // grey out fully-placed digits
+    const cnt = new Uint8Array(10); for (let i = 0; i < 81; i++) if (grid[i]) cnt[grid[i]]++;
+    document.querySelectorAll('.pk').forEach((b) => { const n = +b.dataset.n; b.classList.toggle('done', !notesMode && cnt[n] >= 9); });
+  }
+
+  // ---- input ----
+  function selectAt(clientX, clientY) {
+    const r = canvas.getBoundingClientRect();
+    const c = Math.floor((clientX - r.left) / (r.width / 9)), rr = Math.floor((clientY - r.top) / (r.height / 9));
+    if (c >= 0 && c < 9 && rr >= 0 && rr < 9) { sel = rr * 9 + c; errorCells = new Set(); render(); }
+    canvas.focus({ preventScroll: true });
+  }
+  function move(dr, dc) { if (sel < 0) { sel = 40; render(); return; } const r = Math.min(8, Math.max(0, ((sel / 9) | 0) + dr)), c = Math.min(8, Math.max(0, (sel % 9) + dc)); sel = r * 9 + c; render(); }
+  function setNotes(on) { notesMode = on; $('notesBtn').classList.toggle('on', on); $('notesBtn').textContent = t(on ? '✎ notes: on' : '✎ notes: off', on ? '✎ 笔记：开' : '✎ 笔记：关'); updatePad(); }
+
+  function bind() {
+    canvas.addEventListener('click', (e) => selectAt(e.clientX, e.clientY));
+    document.querySelectorAll('.pk').forEach((b) => b.addEventListener('click', () => place(+b.dataset.n)));
+    document.querySelectorAll('[data-n="0"]').forEach((b) => b.addEventListener('click', () => place(0)));
+    $('notesBtn').addEventListener('click', () => setNotes(!notesMode));
+    document.querySelectorAll('#diffSeg button').forEach((b) => b.addEventListener('click', () => { diff = b.dataset.diff; document.querySelectorAll('#diffSeg button').forEach((o) => o.classList.toggle('on', o === b)); newGame(); }));
+    window.addEventListener('keydown', (e) => {
+      if (e.key >= '1' && e.key <= '9') { place(+e.key); }
+      else if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') { place(0); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1, 0); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); move(1, 0); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); move(0, -1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); move(0, 1); }
+      else if (e.key === 'n' || e.key === 'N') { setNotes(!notesMode); }
+    });
+    window.addEventListener('resize', () => { layout(); render(); });
+  }
+
+  function t(en, zh) { return document.documentElement.lang === 'zh' ? zh : en; }
+  function init() { canvas = $('grid'); ctx = canvas.getContext('2d'); bind(); newGame(); }
+  return { init: init, newGame: newGame, hint: hint, check: check, solve: solve };
+})();
+
+function toggleLang() {
+  const zh = document.documentElement.lang !== 'zh';
+  document.documentElement.lang = zh ? 'zh' : 'en';
+  document.querySelectorAll('[data-en]').forEach((el) => { el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
+  document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
+}
+
+game.init();
+</script>
+</body>
+</html>
