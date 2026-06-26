@@ -328,6 +328,9 @@ document.addEventListener('DOMContentLoaded', applyLang);
   const TRAIL = 24, R_NORM = 4, R_BLOAT = 13;
   const green = { x:0,y:0,vx:0,vy:0,r:R_NORM,col:'29,185,84', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
   const red   = { x:0,y:0,vx:0,vy:0,r:4,col:'244,67,54', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
+  // 3 more ambient green escapees — same colour/trail/escape tendency, spread out randomly
+  function mkGreen(){ return { x:0,y:0,vx:0,vy:0,r:3.4,col:'29,185,84', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 }; }
+  const extras = [mkGreen(), mkGreen(), mkGreen()];
   let W=0,H=0,cx=0,cy=0,topB=10, raf=0, inside=false;
   let state='ESCAPE', stateT=0, impact=null, shards=[];
 
@@ -337,11 +340,21 @@ document.addEventListener('DOMContentLoaded', applyLang);
     green.x=cx; green.y=cy+6; green.vx=0.6; green.vy=-1; green.r=R_NORM; green.tc=0;
     red.x=cx; red.y=cy+16; red.vx=0; red.vy=0; red.tc=0;
     for(let i=0;i<TRAIL;i++){ green.tx[i]=green.x; green.ty[i]=green.y; red.tx[i]=red.x; red.ty[i]=red.y; }
+    for(const p of extras){ p.x=8+Math.random()*(W-16); p.y=8+Math.random()*(H-16); p.vx=(Math.random()-0.5)*2.4; p.vy=(Math.random()-0.5)*2.4; p.tc=0; for(let i=0;i<TRAIL;i++){ p.tx[i]=p.x; p.ty[i]=p.y; } }
     state='ESCAPE'; stateT=0; impact=null; shards.length=0;
   }
   function clampV(p,m){ const s=Math.hypot(p.vx,p.vy); if(s>m){ p.vx*=m/s; p.vy*=m/s; } }
   function rec(p){ p.tx[p.tc%TRAIL]=p.x; p.ty[p.tc%TRAIL]=p.y; p.tc++; }
   function anchorRed(seek){ red.vx += (green.x-red.x)*seek + (cx-red.x)*0.03; red.vy += (green.y-red.y)*seek + (cy-red.y)*0.03; red.vx*=0.88; red.vy*=0.88; clampV(red,7); red.x+=red.vx; red.y+=red.vy; }
+  function roam(p){                                          // free-roaming green: escape outward + swirl, bounce off edges
+    let dx=p.x-cx, dy=p.y-cy, d=Math.hypot(dx,dy)||1;
+    p.vx += (dx/d)*0.05 + (-dy/d)*0.045; p.vy += (dy/d)*0.05 + (dx/d)*0.045;
+    p.vx += (Math.random()-0.5)*0.07; p.vy += (Math.random()-0.5)*0.07;
+    p.vx*=0.97; p.vy*=0.97; clampV(p,3.4); p.x+=p.vx; p.y+=p.vy;
+    if(p.x<8){p.x=8;p.vx*=-0.6;} else if(p.x>W-8){p.x=W-8;p.vx*=-0.6;}
+    if(p.y<8){p.y=8;p.vy*=-0.6;} else if(p.y>H-8){p.y=H-8;p.vy*=-0.6;}
+    rec(p);
+  }
 
   function physics(){
     stateT++;
@@ -378,6 +391,7 @@ document.addEventListener('DOMContentLoaded', applyLang);
       for(const s of shards){ s.x+=s.vx; s.y+=s.vy; s.life-=0.05; } shards=shards.filter(s=>s.life>0);
       if(Math.hypot(green.x-cx,green.y-cy)<24 || stateT>64){ state='ESCAPE'; stateT=0; green.r=R_NORM; }
     }
+    for(const p of extras) roam(p);
     if(impact){ impact.t++; if(impact.t>22) impact=null; }
     rec(green); rec(red);
   }
@@ -412,6 +426,8 @@ document.addEventListener('DOMContentLoaded', applyLang);
   function frame(){
     physics();
     ctx.clearRect(0,0,W,H);
+    for(const p of extras){ drawTrail(p); }                  // ambient escapees (under the focal pair)
+    for(const p of extras){ drawHead(p, p.r); }
     // tether: taut+bright during SNAP, slack otherwise
     const taut = state==='SNAP';
     ctx.strokeStyle='rgba(244,67,54,'+(taut?0.85:0.16).toFixed(3)+')'; ctx.lineWidth = taut?2.6:1.0;
@@ -527,6 +543,21 @@ document.addEventListener('DOMContentLoaded', applyLang);
   card.addEventListener('mouseleave', () => { inside = false; haveLast = false; });
   card.addEventListener('mousemove', (ev) => { if (!ensureInit()) return; const [x, y] = pos(ev); queueWake(x, y); ensureRAF(); });
   card.addEventListener('click', (ev) => { if (!ensureInit()) return; const [x, y] = pos(ev); splash(x, y); ensureRAF(); });
+  // attract: when the card first scrolls into view, auto-ripple near the "→ play" button
+  let attracted = false;
+  function attract() {
+    if (!ensureInit()) return;
+    const pb = card.querySelector('.play-btn');
+    let px = DW * 0.82, py = DH * 0.9;
+    if (pb) { const r = card.getBoundingClientRect(), pr = pb.getBoundingClientRect(); px = pr.left + pr.width / 2 - r.left; py = pr.top + pr.height / 2 - r.top; }
+    poke(px, py - 26, 9, 3); ensureRAF();                                  // a soft approaching touch...
+    setTimeout(() => { poke(px, py - 12, 13, 3); ensureRAF(); }, 150);
+    setTimeout(() => { splash(px, py); ensureRAF(); }, 320);               // ...then a splash that propagates outward
+  }
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting && !attracted) { attracted = true; io.disconnect(); setTimeout(attract, 500); } }); }, { threshold: 0.5 });
+    io.observe(card);
+  } else { setTimeout(() => { if (!attracted) { attracted = true; attract(); } }, 1100); }
   if (img.complete && img.naturalWidth) setup(); else img.addEventListener('load', setup, { once: true });
 })();
 
