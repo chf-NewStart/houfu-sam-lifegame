@@ -45,9 +45,11 @@
   .btn-row .btn{margin-bottom:0;}
 
   canvas{display:block;}
-  #plantBox{position:relative;height:284px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(#0a0d12,#0c0a08);border:1px solid #161616;border-radius:3px;}
-  #plantArt{margin:0;line-height:0.92;font-family:Consolas,'Courier New',monospace;white-space:pre;transition:font-size .3s ease;}
-  #sun{position:absolute;top:12px;right:16px;color:#ffce4d;transition:opacity .3s,font-size .3s;text-shadow:0 0 12px rgba(255,206,77,0.55);}
+  #plantBox{position:relative;height:284px;overflow:hidden;background:linear-gradient(#0a0d12,#0c0a08);border:1px solid #161616;border-radius:3px;}
+  .artpre{margin:0;line-height:0.92;font-family:Consolas,'Courier New',monospace;white-space:pre;position:absolute;transition:font-size .35s ease,opacity .35s ease;}
+  #tomatoArt{left:54%;top:56%;transform:translate(-50%,-50%);z-index:2;}
+  #leafArt{left:3%;top:5%;z-index:1;}
+  #sun{position:absolute;top:10px;right:14px;color:#ffce4d;z-index:3;transition:opacity .3s,font-size .3s;text-shadow:0 0 12px rgba(255,206,77,0.6);}
   .daybar{height:5px;background:#141414;margin-top:8px;position:relative;}
   .daybar .fill{position:absolute;left:0;top:0;bottom:0;background:#1db954;}
   .phase-tag{font-size:0.62rem;color:#777;margin-top:8px;text-align:center;letter-spacing:1px;text-transform:uppercase;}
@@ -108,8 +110,9 @@
     <div class="card">
       <div class="card-title"><span data-en="// plant" data-zh="// 植株">// plant</span><span id="dayLabel">DPA 8</span></div>
       <div id="plantBox">
-        <div id="sun">☀</div>
-        <pre id="plantArt"></pre>
+        <div id="sun">☼</div>
+        <pre id="leafArt" class="artpre"></pre>
+        <pre id="tomatoArt" class="artpre"></pre>
       </div>
       <div class="daybar"><div class="fill" id="dayFill" style="width:0%"></div></div>
       <div class="phase-tag" id="phaseTag">establishing</div>
@@ -306,21 +309,48 @@ const TOMATO_ART=[
 "⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀",
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
 ];
+const LEAF_ART=[
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡴⠋⡓⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠒⠁⠀⠀⡇⠙⢦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⢮⠁⠀⠀⠀⢠⠇⠀⠀⠳⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⡠⠃⠸⡀⠀⠀⠀⡎⠀⠀⠀⠀⢇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⢀⠇⠀⠀⢇⠀⠀⢰⠁⠀⡀⣀⠤⢺⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⢢⠇⠀⠀⠀⠈⢦⣰⠇⠊⠉⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⡜⠇⠀⠀⠀⠀⢠⠃⠀⠀⠀⠀⠀⠀⡃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⢸⠁⢘⠀⠀⠀⠀⡎⠀⠀⠀⠀⠀⠀⢀⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⢸⠀⠀⡇⠀⠀⡜⠀⠀⠀⠀⠀⢀⠤⡞⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⢸⠀⠀⠸⡀⢠⠃⠀⠀⣀⠔⠉⠀⡘⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⢸⠀⠀⠀⢉⠏⠉⠉⠁⠀⠀⢀⡔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠄⠀⠂",
+"⠀⠀⠀⠀⠀⠸⢣⠀⠀⡎⠀⠀⠀⠀⢀⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⢘⠀⡅⡜⠀⠀⠀⣀⠎⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⢸⢆⠎⠧⣀⣤⡊⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⢀⣓⡯⠖⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⡠⠏⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠠⡪⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠄⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
+];
 function renderPlant(){
   const ripe=Math.min(1,P.lyc/2.1);
-  const leaf='rgb(64,154,64)';
+  const leafCol='rgb(70,160,68)';
   const g0=[122,172,78], g1=[228,64,40];
   const b=g0.map((c,i)=>Math.round(c+(g1[i]-c)*ripe));
   const bodyCol=`rgb(${b[0]},${b[1]},${b[2]})`;
-  const fs=4.5 + Math.min(1, P.biomass/55)*8;            // grows ~4.5px → 12.5px
-  const art=document.getElementById('plantArt');
-  art.style.fontSize=fs.toFixed(1)+'px';
-  // first 5 rows = stem + leafy crown (green); rest = fruit body (green→red)
-  art.innerHTML=TOMATO_ART.map((ln,i)=>`<span style="color:${i<5?leaf:bodyCol}">${ln}</span>`).join('\n');
+  // tomato: grows with fruit size; crown rows green, body ripens green→red
+  const grow=Math.min(1, P.biomass/55);
+  const tom=document.getElementById('tomatoArt');
+  tom.style.fontSize=(4.5+grow*8).toFixed(1)+'px';
+  tom.innerHTML=TOMATO_ART.map((ln,i)=>`<span style="color:${i<5?leafCol:bodyCol}">${ln}</span>`).join('\n');
+  // leaf foliage: sprouts early (vegetative phase), reaches full size by mid-season
+  const leafGrow=Math.min(1,(Math.min(P.dpa,DPA_END)-DPA_START)/16);
+  const leaf=document.getElementById('leafArt');
+  leaf.style.fontSize=(3+leafGrow*4).toFixed(1)+'px';
+  leaf.style.opacity=(0.45+leafGrow*0.45).toFixed(2);
+  if(leaf.dataset.f!=='1'){ leaf.style.color=leafCol; leaf.innerHTML=LEAF_ART.join('\n'); leaf.dataset.f='1'; }
+  // sun brightness/size by light
   const lf=Math.max(0,Math.min(1,(ctrl.light-40)/410));
   const sun=document.getElementById('sun');
   sun.style.opacity=(0.3+lf*0.7).toFixed(2);
-  sun.style.fontSize=(15+lf*11).toFixed(0)+'px';
+  sun.style.fontSize=(16+lf*12).toFixed(0)+'px';
 }
 function drawChart(){
   const cv=document.getElementById('chart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=6;
