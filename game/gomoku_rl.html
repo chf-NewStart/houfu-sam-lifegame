@@ -53,7 +53,11 @@
   .chart-wrap{position:relative;}
   .chart-cap{font-size:0.6rem;color:#444;margin-top:6px;}
 
-  .wbars{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;}
+  .wbars{display:flex;gap:18px;}
+  .wcol{flex:1;min-width:0;}
+  .wcol-h{font-size:0.58rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .lesson{font-size:0.7rem;line-height:1.75;color:#9a9a9a;}
+  .lesson b{color:#1db954;} .lesson .d{color:#f44336;}
   .wbar{font-size:0.6rem;color:#777;}
   .wbar .bt{display:flex;justify-content:space-between;margin-bottom:2px;}
   .wbar .track{height:6px;background:#141414;position:relative;}
@@ -112,12 +116,17 @@
     <div class="card">
       <div class="card-title"><span data-en="// what it learned to value" data-zh="// 它学会重视什么">// what it learned to value</span></div>
       <div class="wbars" id="wbars"></div>
-      <div class="note" data-en="Positive (green) = the agent seeks this for itself; negative (red) = it avoids letting you have it. Watch the bars shift as it trains and as you change the rewards." data-zh="正值（绿）= 智能体为自己追求；负值（红）= 它避免让你拥有。训练时与调整奖励时观察柱状变化。">Positive (green) = the agent seeks this for itself; negative (red) = it avoids letting you have it. Watch the bars shift as it trains and as you change the rewards.</div>
+      <div class="note" data-en="Each bar is how much the agent values a line pattern. An OPEN line has both ends free (a live threat); a BLOCKED line is walled on one side. Left = its own lines (it builds these, green); right = your lines (it avoids them, red). Bars shift as it trains and as you change the rewards." data-zh="每根柱表示智能体对某种连线的重视程度。活=两端开放（活威胁）；眠=一端被堵。左=自己的连线（构建，绿）；右=对手的连线（避免，红）。训练与调整奖励时柱状会变化。">Each bar is how much the agent values a line pattern. An OPEN line has both ends free (a live threat); a BLOCKED line is walled on one side. Left = its own lines (it builds these, green); right = your lines (it avoids them, red). Bars shift as it trains and as you change the rewards.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// what this agent learned" data-zh="// 这个智能体学到了什么">// what this agent learned</span></div>
+      <div class="lesson" id="lesson"></div>
     </div>
 
     <div class="card">
       <div class="card-title"><span data-en="// use your agent" data-zh="// 使用你的智能体">// use your agent</span></div>
-      <button class="btn" id="btnUse" onclick="saveForGame()" data-en="✓ Load into Gomoku (RL ▷ slot)" data-zh="✓ 加载到五子棋（RL ▷ 槽位）">✓ Load into Gomoku (RL ▷ slot)</button>
+      <button class="btn primary" id="btnUse" onclick="saveForGame()" data-en="✓ Save &amp; play in Gomoku →" data-zh="✓ 保存并前往五子棋 →">✓ Save &amp; play in Gomoku →</button>
       <button class="btn ghost" onclick="downloadJSON()" data-en="⤓ Download weights (.json)" data-zh="⤓ 下载权重 (.json)">⤓ Download weights (.json)</button>
       <button class="btn ghost" onclick="copyCode()" data-en="⧉ Copy shareable code" data-zh="⧉ 复制分享码">⧉ Copy shareable code</button>
       <textarea class="codebox" id="codebox" readonly placeholder="train, then copy a code to share your agent"></textarea>
@@ -201,7 +210,8 @@ let rng=mulberry32(12345);
 /* ════════════════════════════════════════════════════════════
    UI / training driver
    ════════════════════════════════════════════════════════════ */
-const FEAT_LABELS=['my 2','my 2·','my 3','my 3·','my 4','my 4+','foe 2','foe 2·','foe 3','foe 3·','foe 4','foe 4+'];
+// 6 line-pattern names, reused for the agent's own lines (0-5) and the opponent's (6-11)
+const FEAT=[{en:'open two',zh:'活二'},{en:'blocked two',zh:'眠二'},{en:'open three',zh:'活三'},{en:'blocked three',zh:'眠三'},{en:'four',zh:'四'},{en:'open four',zh:'活四'}];
 const SLIDERS=[
   {key:'makeFour',  min:0,max:3,  def:1.0, pen:false, en:'reward: make a four',        zh:'奖励：形成四', hen:'four-in-a-row threat (one move from winning)', hzh:'四连威胁（一步制胜）'},
   {key:'makeThree', min:0,max:1.5,def:0.4, pen:false, en:'reward: make an open three', zh:'奖励：形成活三', hen:'open three — a developing double threat', hzh:'活三——发展中的双重威胁'},
@@ -291,6 +301,7 @@ function refresh(){
   document.getElementById('sWR').textContent=wr==null?'—':`${(wr*100)|0}%`;
   document.getElementById('curvePct').textContent=wr==null?'—':`${(wr*100)|0}%`;
   drawChart();drawWeights();
+  document.getElementById('lesson').innerHTML=describeAgent();
 }
 function drawChart(){
   const cv=document.getElementById('chart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=24;
@@ -307,15 +318,34 @@ function drawChart(){
   x.stroke();
 }
 function drawWeights(){
-  const host=document.getElementById('wbars');
   const mx=Math.max(1,...w.map(Math.abs));
-  host.innerHTML=w.map((val,i)=>{
-    const frac=Math.min(1,Math.abs(val)/mx)*50, pos=val>=0;
-    const col=pos?'#1db954':'#f44336';
+  const nm=i=>lang==='zh'?FEAT[i].zh:FEAT[i].en;
+  const bar=(idx,label)=>{const val=w[idx];const frac=Math.min(1,Math.abs(val)/mx)*50,pos=val>=0,col=pos?'#1db954':'#f44336';
     const fill=pos?`left:50%;width:${frac}%;background:${col};`:`right:50%;width:${frac}%;background:${col};`;
-    return `<div class="wbar"><div class="bt"><span>${FEAT_LABELS[i]}</span><span style="color:${col}">${val.toFixed(1)}</span></div>
-      <div class="track"><div class="fill" style="${fill}"></div></div></div>`;
-  }).join('');
+    return `<div class="wbar"><div class="bt"><span>${label}</span><span style="color:${col}">${pos?'+':''}${val.toFixed(1)}</span></div>
+      <div class="track"><div class="fill" style="${fill}"></div></div></div>`;};
+  const mine=[0,1,2,3,4,5].map(i=>bar(i,nm(i))).join('');
+  const foe =[0,1,2,3,4,5].map(i=>bar(i+6,nm(i))).join('');
+  document.getElementById('wbars').innerHTML=
+    `<div class="wcol"><div class="wcol-h" style="color:#1db954">${t('▸ my lines · build','▸ 我方连线 · 构建')}</div>${mine}</div>`+
+    `<div class="wcol"><div class="wcol-h" style="color:#f44336">${t('▸ your lines · block','▸ 对手连线 · 封堵')}</div>${foe}</div>`;
+}
+// plain-language read of the learned strategy, derived from the weights
+function describeAgent(){
+  if(!episode) return t('Train the agent — a plain-language read of its learned strategy will appear here.','开始训练——这里会用通俗语言解读它学到的策略。');
+  const mine=w.slice(0,6), foe=w.slice(6,12);
+  let tm=0; for(let i=1;i<6;i++) if(mine[i]>mine[tm]) tm=i;   // strongest thing it builds
+  let tf=0; for(let i=1;i<6;i++) if(foe[i]<foe[tf]) tf=i;     // thing it most avoids letting you have
+  const offense=mine.reduce((a,b)=>a+Math.max(0,b),0);
+  const defense=foe.reduce((a,b)=>a+Math.max(0,-b),0);
+  const aggr=offense>defense*1.4, defn=defense>offense*1.4;
+  const en=`Style: <b>${aggr?'aggressive':defn?'defensive':'balanced'}</b> (attack ${offense.toFixed(0)} vs defense ${defense.toFixed(0)}). `
+    +`The line it most wants to build is the <b>${FEAT[tm].en}</b> (+${mine[tm].toFixed(1)}); the one it most wants to deny you is the <span class="d">${FEAT[tf].en}</span> (${foe[tf].toFixed(1)}). `
+    +`So in play: <b>it pushes toward fours when it can</b>, and <b>blocks your threats first</b> before chasing its own attack.`;
+  const zh=`风格：<b>${aggr?'激进':defn?'防守':'均衡'}</b>（进攻 ${offense.toFixed(0)} / 防守 ${defense.toFixed(0)}）。`
+    +`它最想形成<b>${FEAT[tm].zh}</b>（+${mine[tm].toFixed(1)}），并把让你形成<span class="d">${FEAT[tf].zh}</span>视为最大失误（${foe[tf].toFixed(1)}）。`
+    +`所以实战中：<b>有机会冲四就冲</b>，而<b>当你威胁${FEAT[tf].zh}时先封堵</b>，再考虑自己的进攻。`;
+  return lang==='zh'?zh:en;
 }
 
 /* export / share */
@@ -325,9 +355,8 @@ function updateCode(){document.getElementById('codebox').value=episode?encodeCod
 function saveForGame(){
   if(!episode){alert(t('Train the agent first.','请先训练智能体。'));return;}
   localStorage.setItem('gomoku_rl_agent',JSON.stringify(agentObj()));
-  log(t('✓ saved — open Gomoku and pick the RL ▷ opponent','✓ 已保存——打开五子棋并选择 RL ▷ 对手'));
-  document.getElementById('btnUse').textContent=t('✓ Loaded — open Gomoku','✓ 已加载——打开五子棋');
-  setTimeout(()=>document.getElementById('btnUse').textContent=t('✓ Load into Gomoku (RL ▷ slot)','✓ 加载到五子棋（RL ▷ 槽位）'),2200);
+  // hand off to Gomoku — it auto-loads this agent into the RL ▷ slot on open
+  window.location.href='/game/gomoku.html';
 }
 function downloadJSON(){
   if(!episode){alert(t('Train the agent first.','请先训练智能体。'));return;}

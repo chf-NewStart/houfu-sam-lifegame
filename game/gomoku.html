@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gomoku // houfu.xyz</title>
+  <link rel="icon" type="image/png" href="/game/stones.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Consolas, 'Courier New', monospace; background: #080808; color: #ccc; min-height: 100vh; padding: 20px 16px; }
@@ -181,12 +182,15 @@
         <button class="tog"     data-diff="hard"   onclick="setDiff('hard')"   data-en="Hard"    data-zh="困难">Hard</button>
         <button class="tog rl-slot locked" id="btnRL" data-diff="rl" onclick="selectRL()" title="Your trained RL agent" data-en="RL ▷" data-zh="RL ▷">RL ▷</button>
       </div>
+      <div style="margin-top:7px;text-align:right;">
+        <a id="rlManage" href="javascript:void(0)" onclick="toggleRlLoad()" style="font-size:0.6rem;color:#777;text-decoration:none;" data-en="⚙ train / load RL agent" data-zh="⚙ 训练 / 加载 RL 智能体">⚙ train / load RL agent</a>
+      </div>
       <div id="rlLoad" style="display:none;margin-top:8px;">
-        <div style="font-size:0.62rem;color:#555;margin-bottom:5px;" data-en="No agent loaded. Paste a shared code, or train your own:" data-zh="未加载智能体。粘贴分享码，或训练你自己的：">No agent loaded. Paste a shared code, or train your own:</div>
+        <div id="rlStatus" style="font-size:0.62rem;color:#555;margin-bottom:5px;" data-en="Train your own agent, or paste a shared code:" data-zh="训练你自己的智能体，或粘贴分享码：">Train your own agent, or paste a shared code:</div>
         <input id="rlCode" placeholder="GRL1…" spellcheck="false">
         <div class="rl-row">
-          <button onclick="loadRLCode()" data-en="Load" data-zh="加载">Load</button>
-          <a href="/game/gomoku_rl.html" data-en="train an agent →" data-zh="训练智能体 →">train an agent →</a>
+          <button onclick="loadRLCode()" data-en="Load code" data-zh="加载分享码">Load code</button>
+          <a href="/game/gomoku_rl.html" data-en="⚙ train an agent →" data-zh="⚙ 训练智能体 →">⚙ train an agent →</a>
         </div>
         <div id="rlMsg"></div>
       </div>
@@ -793,10 +797,19 @@ function rlInit(){
     if(o&&Array.isArray(o.w)&&o.w.length===12) rlWeights={w:o.w, scale:o.scale||o.s||RL_SCALE}; } }catch(e){}
   const btn=document.getElementById('btnRL');
   if(rlWeights && btn){ btn.classList.remove('locked'); btn.title='Your trained RL agent (loaded ✓)'; }
+  updateRlStatus();
 }
+function updateRlStatus(){
+  const mng=document.getElementById('rlManage'), st=document.getElementById('rlStatus');
+  if(rlWeights){
+    if(mng){ mng.dataset.en='⚙ swap / retrain agent'; mng.dataset.zh='⚙ 更换 / 重新训练'; mng.textContent=t('⚙ swap / retrain agent','⚙ 更换 / 重新训练'); }
+    if(st){ st.dataset.en='Agent loaded ✓ — retrain a new one, or paste a friend’s code:'; st.dataset.zh='已加载智能体 ✓ — 重新训练，或粘贴好友的分享码：'; st.textContent=t(st.dataset.en,st.dataset.zh); }
+  }
+}
+function toggleRlLoad(){ const el=document.getElementById('rlLoad'); el.style.display = (!el.style.display || el.style.display==='none') ? '' : 'none'; }
 function selectRL(){
   if(rlWeights){ document.getElementById('rlLoad').style.display='none'; setDiff('rl'); }
-  else { const el=document.getElementById('rlLoad'); el.style.display = (el.style.display==='none') ? '' : 'none'; }
+  else { toggleRlLoad(); }
 }
 function loadRLCode(){
   const w=rlDecode(document.getElementById('rlCode').value.trim());
@@ -806,6 +819,7 @@ function loadRLCode(){
   try{ localStorage.setItem('gomoku_rl_agent', JSON.stringify({v:1,type:'gomoku-rl',scale:w.scale,w:w.w})); }catch(e){}
   document.getElementById('btnRL').classList.remove('locked');
   document.getElementById('rlLoad').style.display='none';
+  updateRlStatus();
   setDiff('rl');
 }
 
