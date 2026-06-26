@@ -771,22 +771,24 @@ document.addEventListener('DOMContentLoaded', applyLang);
   canvas.className = 'tsw-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
   const ctx = canvas.getContext('2d');
   const C = 19;
-  let W, H, cols, rows, tom, t = 0, raf = 0, inside = false;
+  let W, H, cols, rows, tom, topH, t = 0, raf = 0, inside = false;
   function build() {
     W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
     cols = Math.ceil(W / C); rows = Math.ceil(H / C);
+    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight + 4 : Math.round(H * 0.4);   // keep it over the thumbnail, off the text/button
     tom = new Uint8Array(cols * rows); for (let i = 0; i < tom.length; i++) tom[i] = Math.random() < 0.15 ? 1 : 0;
   }
   function frame() {
-    t += 0.009; ctx.clearRect(0, 0, W, H);
-    const maxd = cols + rows, wave = (t % 1) * (maxd + 7);
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      const dd = wave - (x + y);
-      if (dd > 0) continue;                                   // dug away -> reveal the thumbnail beneath
-      const cx = x * C, cy = y * C, front = dd > -1.3;
-      ctx.fillStyle = front ? 'rgba(52,92,32,0.96)' : 'rgba(20,40,12,0.93)';   // soil plot
-      ctx.fillRect(cx + 1, cy + 1, C - 2, C - 2);
-      if (front) { ctx.fillStyle = tom[y * cols + x] ? 'rgba(226,82,62,0.6)' : 'rgba(124,206,90,0.5)'; ctx.fillRect(cx + 1, cy + 1, C - 2, 2); }
+    t += 0.0038; ctx.clearRect(0, 0, W, H);                                   // slow
+    const maxd = cols + rows, wave = (t % 1) * (maxd + 9), BAND = 4;
+    for (let y = 0; y < rows; y++) { const cy = y * C; if (cy >= topH) break;
+      for (let x = 0; x < cols; x++) {
+        const e = wave - (x + y); if (e < 0 || e > BAND) continue;            // just a thin, fading diagonal band of turned soil
+        const a = (1 - e / BAND) * 0.4, cx = x * C;
+        ctx.fillStyle = 'rgba(46,84,28,' + a.toFixed(3) + ')';
+        ctx.fillRect(cx + 1, cy + 1, C - 2, C - 2);
+        if (e < 1) { ctx.fillStyle = (tom[y * cols + x] ? 'rgba(226,82,62,' : 'rgba(124,206,90,') + (a * 1.4).toFixed(3) + ')'; ctx.fillRect(cx + 1, cy + 1, C - 2, 2); }
+      }
     }
     raf = inside ? requestAnimationFrame(frame) : 0;
   }

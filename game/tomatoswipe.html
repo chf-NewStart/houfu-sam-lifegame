@@ -28,7 +28,7 @@
 
   .board{display:grid;gap:2px;width:min(92vw,460px);margin:0 auto;background:#0a0a0a;border:1px solid #1a1a1a;padding:4px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;}
   .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1;border-radius:2px;cursor:pointer;overflow:hidden;}
-  .tmt{margin:0;line-height:0.82;white-space:pre;font-family:Consolas,'Courier New',monospace;color:#e2523e;font-size:var(--tmt-fs,3px);text-shadow:0 0 2px rgba(226,82,62,0.5);}
+  .tmt{margin:0;line-height:1.0;white-space:pre;font-family:Consolas,'Courier New',monospace;color:#e2523e;font-size:var(--tmt-fs,3px);transform:scaleX(0.78);text-shadow:0 0 2px rgba(226,82,62,0.5);}
   .tmt.can{color:#dcdcdc;text-shadow:0 0 2px rgba(0,0,0,0.6);}
   .cell.hidden{background:linear-gradient(145deg,#1f3416,#13200d);box-shadow:inset 1px 1px 0 rgba(124,206,90,0.13),inset -1px -1px 0 rgba(0,0,0,0.4);}
   .cell.hidden:hover{background:linear-gradient(145deg,#274119,#192b10);}
@@ -187,7 +187,7 @@ const game = (function () {
     const w = board.clientWidth - 8 - (cols - 1) * 2;        // minus padding + gaps
     const cw = w / cols;
     board.style.fontSize = Math.max(8, Math.round(cw * 0.52)) + 'px';
-    board.style.setProperty('--tmt-fs', Math.max(1, cw * 0.055).toFixed(2) + 'px');   // braille tomato/can fills the cell (full art, no clip)
+    board.style.setProperty('--tmt-fs', Math.max(1, cw * 0.062).toFixed(2) + 'px');   // braille tomato/can fills the cell (scaleX squashes the wide monospace art back round)
   }
 
   function placeMines(safe) {
