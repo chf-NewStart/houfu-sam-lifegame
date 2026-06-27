@@ -40,9 +40,13 @@
   .btn:hover{background:#36c5d0;color:#06181b;}
   .btn.alt{border-color:#1db954;color:#1db954;}
   .btn.alt:hover{background:#1db954;color:#07120b;}
-  .remote-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
-  .room-code{color:#36c5d0;letter-spacing:2px;font-size:1rem;}
-  .join-input{flex:1;background:#0a0a0a;border:1px solid #2a2a2a;color:#ccc;font-family:inherit;font-size:0.74rem;padding:8px;min-width:0;}
+  .code-box{display:none;margin:10px 0;text-align:center;}
+  .code-label{font-size:0.6rem;color:#7a7a7a;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+  .room-code-big{font-size:1.9rem;letter-spacing:5px;color:#36c5d0;font-weight:700;padding:9px;border:1px dashed #2a6e78;border-radius:6px;cursor:pointer;user-select:all;}
+  .room-code-big:hover{background:rgba(54,197,208,0.08);}
+  .or-sep{text-align:center;font-size:0.62rem;color:#555;margin:12px 0 8px;}
+  .join-input{width:100%;background:#0a0a0a;border:1px solid #2a2a2a;color:#36c5d0;font-family:inherit;font-size:1.15rem;letter-spacing:3px;text-align:center;text-transform:uppercase;padding:12px;margin-bottom:8px;}
+  .join-input::placeholder{color:#3a3a3a;letter-spacing:2px;}
   .conn{font-size:0.66rem;color:#666;min-height:1em;margin-top:2px;}
   .conn.ok{color:#1db954;} .conn.err{color:#e2523e;}
   .help{font-size:0.7rem;color:#9a9a9a;line-height:1.7;}
@@ -90,16 +94,16 @@
 
     <div class="card">
       <div class="card-title"><span data-en="// play together (remote)" data-zh="// 一起玩（联机）">// play together (remote)</span></div>
-      <div class="remote-row">
-        <button class="btn alt" style="flex:0 0 auto;margin-bottom:0" onclick="game.createRoom()" data-en="Create Room" data-zh="创建房间">Create Room</button>
-        <span class="room-code" id="roomCode">—</span>
+      <button class="btn alt" onclick="game.createRoom()" data-en="Create Room" data-zh="创建房间">Create Room</button>
+      <div class="code-box" id="codeBox">
+        <div class="code-label" data-en="share this code →" data-zh="把房间码发给对方 →">share this code →</div>
+        <div class="room-code-big" id="roomCode" onclick="game.copyCode()" title="tap to copy">—</div>
       </div>
-      <div class="remote-row">
-        <input class="join-input" id="joinCode" placeholder="room code" maxlength="8">
-        <button class="btn alt" style="flex:0 0 auto;margin-bottom:0" onclick="game.joinRoom()" data-en="Join" data-zh="加入">Join</button>
-      </div>
+      <div class="or-sep" data-en="— or join a room —" data-zh="— 或加入房间 —">— or join a room —</div>
+      <input class="join-input" id="joinCode" placeholder="ROOM CODE" maxlength="8">
+      <button class="btn alt" onclick="game.joinRoom()" data-en="Join" data-zh="加入">Join</button>
       <div class="conn" id="conn"></div>
-      <button class="btn" style="margin-top:6px" onclick="game.playLocal()" data-en="↺ Local / solo practice" data-zh="↺ 本地 / 单人练习">↺ Local / solo practice</button>
+      <button class="btn" style="margin-top:10px" onclick="game.playLocal()" data-en="↺ Local / solo practice" data-zh="↺ 本地 / 单人练习">↺ Local / solo practice</button>
     </div>
 
     <div class="card">
@@ -133,7 +137,7 @@ const game = (function () {
   const $ = (id) => document.getElementById(id);
   const W = 640, H = 460;
   const PAD_W = 14, PAD_H = 112, PAD_INSET = 22, PAD_SPD = 9;
-  const BALL_R = 10, BASE = 3.6, SPD_CAP = 3.2, POWER_EVERY = 6.5;
+  const BALL_R = 10, BASE = 3.0, SPD_CAP = 2.9, POWER_EVERY = 6.5;
 
   let canvas, ctx, DPR = 1;
   let mode = 'local';                 // 'local' | 'host' | 'guest'
@@ -159,8 +163,8 @@ const game = (function () {
     const b = { x: x == null ? W / 2 : x, y: y == null ? H / 2 : y, dx: dir * rand(0.6, 0.9), dy: rand(-0.5, 0.5), r: BALL_R, trail: [] };
     const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m; lively(b); return b;
   }
-  function lively(b) {                  // keep enough sideways travel (must reach a paddle) + some vertical variety
-    const MINX = 0.42, MINY = 0.16, sx = b.dx < 0 ? -1 : 1, sy = b.dy < 0 ? -1 : 1;
+  function lively(b) {                  // keep a balanced diagonal — enough sideways travel, but not a frantic flat blur
+    const MINX = 0.30, MINY = 0.24, sx = b.dx < 0 ? -1 : 1, sy = b.dy < 0 ? -1 : 1;
     let ax = Math.abs(b.dx), ay = Math.abs(b.dy); if (ax < MINX) ax = MINX; if (ay < MINY) ay = MINY;
     const m = Math.hypot(ax, ay) || 1; b.dx = sx * ax / m; b.dy = sy * ay / m;
   }
@@ -170,12 +174,13 @@ const game = (function () {
     running = true; t0 = performance.now(); lastTs = t0; loadBest();
     if (!raf) raf = requestAnimationFrame(loop);
   }
-  function playLocal() { mode = 'local'; setRole(''); setConn(''); $('roomCode').textContent = '—'; teardownNet(); startSim(); }
+  function playLocal() { mode = 'local'; setRole(''); setConn(''); $('roomCode').textContent = '—'; $('codeBox').style.display = 'none'; teardownNet(); startSim(); }
+  function copyCode() { if (!_code) return; try { navigator.clipboard.writeText(_code); } catch (e) {} setConn(t('Code copied — send it to your friend.', '已复制房间码——发给好友。'), 'ok'); }
   function restart() { if (mode === 'guest') { gameRef('gi').update({ rs: Date.now() }); return; } startSim(); }
 
   function speedNow() {
-    let s = Math.min(BASE * Math.pow(1.021, elapsed), BASE * SPD_CAP);
-    if (performance.now() < rushUntil) s *= 1.45;
+    let s = Math.min(BASE * Math.pow(1.018, elapsed), BASE * SPD_CAP);
+    if (performance.now() < rushUntil) s *= 1.4;
     return s;
   }
   // ball reaches a side paddle → return it; where it hits sets the angle (Pong-style)
@@ -184,8 +189,9 @@ const game = (function () {
     if ((left && b.dx > 0) || (!left && b.dx < 0)) return;
     if (b.x + b.r < p.x || b.x - b.r > p.x + p.w || b.y + b.r < p.y || b.y - b.r > p.y + p.h) return;
     const off = Math.max(-1, Math.min(1, (b.y - (p.y + p.h / 2)) / (p.h / 2)));
-    b.dy = off * 0.85;
-    b.dx = (left ? 1 : -1) * Math.max(0.4, Math.sqrt(Math.max(0, 1 - b.dy * b.dy)));
+    b.dy = off * 0.92;
+    if (Math.abs(b.dy) < 0.25) b.dy = (Math.random() < 0.5 ? -1 : 1) * (0.25 + Math.random() * 0.2);   // centre hits arc up/down, never a flat line
+    b.dx = (left ? 1 : -1) * Math.max(0.34, Math.sqrt(Math.max(0, 1 - b.dy * b.dy)));
     const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m; lively(b);
     b.x = left ? p.x + p.w + b.r + 0.5 : p.x - b.r - 0.5;
   }
@@ -231,7 +237,7 @@ const game = (function () {
         }
         if (b.x - b.r < 0 || b.x + b.r > W) dead = true;                   // slipped past a side
       }
-      (b.trail || (b.trail = [])).push([b.x, b.y]); if (b.trail.length > 8) b.trail.shift();
+      (b.trail || (b.trail = [])).push([b.x, b.y]); if (b.trail.length > 6) b.trail.shift();
       if (dead) { if (balls.length === 1) { gameOver(); return; } balls.splice(i, 1); }
     }
     if (elapsed >= nextPower) { spawnPower(); nextPower += POWER_EVERY; }
@@ -270,12 +276,12 @@ const game = (function () {
     ctx.fillStyle = '#2bd46a'; roundRect(p0.x, p0.y, p0.w, p0.h);
     ctx.fillStyle = '#36c5d0'; roundRect(p1.x, p1.y, p1.w, p1.h);
     for (const b of bs) {
-      if (b.trail) for (let i = 0; i < b.trail.length; i++) { const a = (i + 1) / b.trail.length; ctx.fillStyle = (rush ? 'rgba(255,120,90,' : 'rgba(54,197,208,') + (a * a * 0.42).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(b.trail[i][0], b.trail[i][1], b.r * (0.35 + a * 0.7), 0, 7); ctx.fill(); }
-      const gr = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 2);
+      if (b.trail) for (let i = 0; i < b.trail.length; i++) { const a = (i + 1) / b.trail.length; ctx.fillStyle = (rush ? 'rgba(255,120,90,' : 'rgba(54,197,208,') + (a * a * 0.3).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(b.trail[i][0], b.trail[i][1], b.r * (0.28 + a * 0.5), 0, 7); ctx.fill(); }
+      const gr = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 1.7);
       gr.addColorStop(0, rush ? 'rgba(255,150,120,1)' : 'rgba(255,255,255,1)');
-      gr.addColorStop(0.5, rush ? 'rgba(226,82,62,0.6)' : 'rgba(54,197,208,0.6)');
+      gr.addColorStop(0.55, rush ? 'rgba(226,82,62,0.55)' : 'rgba(54,197,208,0.55)');
       gr.addColorStop(1, 'rgba(54,197,208,0)');
-      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2, 0, 7); ctx.fill();
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.7, 0, 7); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.62, 0, 7); ctx.fill();
     }
     if (pausedShown()) {
@@ -293,7 +299,7 @@ const game = (function () {
       if (!st) { ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0a0c0d'; ctx.fillRect(0, 0, W, H); return; }
       const tg = st.b || [];
       if (!guestBalls || guestBalls.length !== tg.length) guestBalls = tg.map(a => ({ x: a[0], y: a[1], r: BALL_R, trail: [] }));
-      for (let i = 0; i < tg.length; i++) { const gb = guestBalls[i]; gb.x += (tg[i][0] - gb.x) * 0.35; gb.y += (tg[i][1] - gb.y) * 0.35; gb.trail.push([gb.x, gb.y]); if (gb.trail.length > 8) gb.trail.shift(); }
+      for (let i = 0; i < tg.length; i++) { const gb = guestBalls[i]; gb.x += (tg[i][0] - gb.x) * 0.35; gb.y += (tg[i][1] - gb.y) * 0.35; gb.trail.push([gb.x, gb.y]); if (gb.trail.length > 6) gb.trail.shift(); }
       const ph = st.ph || PAD_H;
       const p0 = { x: PAD_INSET, y: st.p1 || 0, w: PAD_W, h: ph };
       const p1 = { x: W - PAD_INSET - PAD_W, y: clampY(myY - ph / 2, ph), w: PAD_W, h: ph };   // my paddle: local prediction
@@ -398,7 +404,7 @@ const game = (function () {
 
   async function createRoom() {
     _code = shortId(); mode = 'host'; teardownNet();
-    $('roomCode').textContent = _code; setRole(t('you: green', '你：绿')); setConn(t('Waiting for a friend to join…', '等待好友加入…'));
+    $('roomCode').textContent = _code; $('codeBox').style.display = 'block'; setRole(t('you: green', '你：绿')); setConn(t('Waiting for a friend to join…', '等待好友加入…'));
     await gameRef('meta').set({ created: Date.now() }); await gameRef('gi').set({ y: H / 2 }); await gameRef('joined').set(false);
     _giRef = gameRef('gi'); _giCb = _giRef.on('value', s => { const v = s.val(); if (!v) return; netGuestY = v.y; if (v.rs && v.rs !== _lastRs) { _lastRs = v.rs; startSim(); } if (v.pz && v.pz !== _lastPz) { _lastPz = v.pz; doPause(!paused); } });
     _joinRef = gameRef('joined'); _joinCb = _joinRef.on('value', s => { if (s.val()) { setConn(t('Connected! You guard the LEFT (green).', '已连接！你守左侧（绿）。'), 'ok'); startSim(); } });
@@ -418,7 +424,7 @@ const game = (function () {
 
   function t(en, zh) { return document.documentElement.lang === 'zh' ? zh : en; }
   function init() { canvas = $('field'); ctx = canvas.getContext('2d'); layout(); bind(); startSim(); }
-  return { init: init, restart: restart, playLocal: playLocal, createRoom: createRoom, joinRoom: joinRoom, togglePause: togglePause };
+  return { init: init, restart: restart, playLocal: playLocal, createRoom: createRoom, joinRoom: joinRoom, togglePause: togglePause, copyCode: copyCode };
 })();
 
 function toggleLang() {
