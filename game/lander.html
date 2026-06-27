@@ -30,7 +30,7 @@
   .over .btn{max-width:220px;}
 
   .padbar{display:flex;gap:8px;width:min(94vw,600px);margin:10px auto 0;}
-  .padbtn{flex:1;background:#0d0d0d;border:1px solid #2a2a2a;color:#cfcfcf;font-family:inherit;font-size:1.4rem;padding:12px 0;cursor:pointer;border-radius:6px;user-select:none;-webkit-user-select:none;transition:background .08s,border-color .08s;}
+  .padbtn{flex:1;background:#0d0d0d;border:1px solid #2a2a2a;color:#cfcfcf;font-family:inherit;font-size:1.4rem;padding:14px 0;cursor:pointer;border-radius:6px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;transition:background .08s,border-color .08s;}
   .padbtn:active,.padbtn.on{background:rgba(232,176,74,0.16);border-color:#e8b04a;}
   .padbtn.thrust{flex:1.6;color:#e8b04a;}
   .padbtn[disabled]{opacity:0.25;pointer-events:none;}
@@ -288,8 +288,8 @@ const game = (function () {
     window.addEventListener('keydown', (e) => {
       const k = e.key;
       if (k === 'w' || k === 'W' || k === 'ArrowUp' || k === ' ') { keys.thrust = true; e.preventDefault(); }
-      else if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = true;
-      else if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = true;
+      else if (k === 'ArrowLeft' || k === 'a' || k === 'A') { keys.left = true; e.preventDefault(); }
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') { keys.right = true; e.preventDefault(); }
     });
     window.addEventListener('keyup', (e) => {
       const k = e.key;
@@ -299,9 +299,14 @@ const game = (function () {
     });
     document.querySelectorAll('.padbtn').forEach(b => {
       const act = b.dataset.act;
-      const dn = (e) => { e.preventDefault(); btn[act] = true; b.classList.add('on'); };
+      // capture the pointer so a press-and-hold sticks even if the finger drifts or iOS
+      // would otherwise fire a spurious pointercancel/leave (which dropped thrust/tilt)
+      const dn = (e) => { if (b.disabled) return; e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (_) {} btn[act] = true; b.classList.add('on'); };
       const up = (e) => { e.preventDefault(); btn[act] = false; b.classList.remove('on'); };
-      b.addEventListener('pointerdown', dn); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+      b.addEventListener('pointerdown', dn);
+      b.addEventListener('pointerup', up);
+      b.addEventListener('pointercancel', up);
+      b.addEventListener('lostpointercapture', up);
     });
     window.addEventListener('resize', layout);
   }
