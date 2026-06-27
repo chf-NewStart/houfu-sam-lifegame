@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keep-Up // houfu.xyz</title>
+<meta name="description" content="A 2-player co-op Pong variant played remotely — keep the bouncing ball off the floor with a paddle each. Escalating speed, chaotic power-ups.">
+<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:22px 18px 40px;}
+  a{color:#1db954;}
+  .hdr{max-width:920px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .hdr .title{color:#36c5d0;font-size:1.3rem;text-transform:uppercase;letter-spacing:-1px;}
+  .hdr .sub{color:#9a9a9a;font-size:0.76rem;margin-top:5px;line-height:1.6;max-width:560px;}
+  .hdr .back{color:#1db954;font-size:0.7rem;text-decoration:none;display:inline-block;margin-top:7px;}
+  .hdr .back:hover{text-decoration:underline;}
+  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.7rem;padding:5px 11px;cursor:pointer;flex-shrink:0;transition:background .12s;}
+  .lang-btn:hover{background:rgba(29,185,84,0.1);}
+
+  .wrap{max-width:920px;margin:0 auto;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;justify-content:center;}
+  .stage{flex:0 0 auto;position:relative;}
+  #field{display:block;width:min(94vw,640px);background:#0a0c0d;border:1px solid #173034;border-radius:4px;touch-action:none;box-shadow:0 0 44px -16px rgba(54,197,208,0.5);}
+  .over{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,8,9,0.84);border-radius:4px;text-align:center;padding:20px;}
+  .over.show{display:flex;}
+  .over .big{font-size:1.7rem;color:#e2523e;letter-spacing:2px;margin-bottom:4px;}
+  .over .res{font-size:0.82rem;color:#cfcfcf;margin-bottom:4px;}
+  .over .nb{font-size:0.72rem;color:#ffce4d;min-height:1em;margin-bottom:16px;}
+  .over .btn{max-width:220px;}
+
+  .side{flex:1;min-width:230px;max-width:300px;}
+  .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:13px 14px;margin-bottom:11px;}
+  .card-title{color:#36c5d0;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:11px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
+  .hud{display:flex;gap:8px;}
+  .stat{flex:1;text-align:center;}
+  .stat .k{font-size:0.56rem;text-transform:uppercase;letter-spacing:1px;color:#7a7a7a;}
+  .stat .v{font-size:1.35rem;color:#f0f0f0;margin-top:3px;font-variant-numeric:tabular-nums;}
+  .stat .v.best{color:#ffce4d;}
+  .btn{display:block;width:100%;background:transparent;border:1px solid #36c5d0;color:#36c5d0;font-family:inherit;font-size:0.78rem;padding:10px;cursor:pointer;transition:background .12s,color .12s;margin-bottom:8px;}
+  .btn:hover{background:#36c5d0;color:#06181b;}
+  .btn.alt{border-color:#1db954;color:#1db954;}
+  .btn.alt:hover{background:#1db954;color:#07120b;}
+  .remote-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .room-code{color:#36c5d0;letter-spacing:2px;font-size:1rem;}
+  .join-input{flex:1;background:#0a0a0a;border:1px solid #2a2a2a;color:#ccc;font-family:inherit;font-size:0.74rem;padding:8px;min-width:0;}
+  .conn{font-size:0.66rem;color:#666;min-height:1em;margin-top:2px;}
+  .conn.ok{color:#1db954;} .conn.err{color:#e2523e;}
+  .help{font-size:0.7rem;color:#9a9a9a;line-height:1.7;}
+  .help b{color:#cfcfcf;font-weight:normal;}
+  .help > div{margin-bottom:5px;}
+  .keycap{display:inline-block;border:1px solid #2a2a2a;border-radius:3px;padding:0 5px;color:#cfcfcf;font-size:0.66rem;}
+  .leg{display:flex;align-items:center;gap:8px;margin-top:5px;font-size:0.7rem;}
+  .pchip{width:14px;height:14px;border-radius:3px;flex-shrink:0;display:inline-block;}
+
+  html, body, button, a, input, select, label { touch-action: manipulation; }
+  #field { touch-action: none; }
+</style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="title" id="pgTitle">&gt;_ Keep-Up</div>
+    <div class="sub" id="pgSub" data-en="Co-op Pong, flipped: don't let the ball hit the floor. You each control one paddle — every bounce kicks the ball back up, and where it lands sets the angle. Play on one device, or Create/Join a room to play remotely. It only gets faster." data-zh="合作版 Pong，翻转规则：别让球落地。你们各控制一块挡板——每次接球都会把球弹起，落点决定角度。可同设备双人，或创建/加入房间远程对玩。球只会越来越快。">Co-op Pong, flipped: don't let the ball hit the floor. You each control one paddle — every bounce kicks the ball back up, and where it lands sets the angle. Play on one device, or Create/Join a room to play remotely. It only gets faster.</div>
+    <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+</div>
+
+<div class="wrap">
+  <div class="stage">
+    <canvas id="field" width="640" height="460"></canvas>
+    <div class="over" id="over">
+      <div class="big" data-en="▼ DROPPED ▼" data-zh="▼ 落地了 ▼">▼ DROPPED ▼</div>
+      <div class="res" id="overRes"></div>
+      <div class="nb" id="overNb"></div>
+      <button class="btn" onclick="game.restart()" data-en="↻ Restart" data-zh="↻ 重新开始">↻ Restart</button>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <div class="card-title"><span data-en="// survival" data-zh="// 生存">// survival</span><span id="roleTag" style="color:#666"></span></div>
+      <div class="hud">
+        <div class="stat"><div class="k" data-en="time" data-zh="时间">time</div><div class="v" id="vTime">0.0</div></div>
+        <div class="stat"><div class="k" data-en="best" data-zh="最佳">best</div><div class="v best" id="vBest">0.0</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// play together (remote)" data-zh="// 一起玩（联机）">// play together (remote)</span></div>
+      <div class="remote-row">
+        <button class="btn alt" style="flex:0 0 auto;margin-bottom:0" onclick="game.createRoom()" data-en="Create Room" data-zh="创建房间">Create Room</button>
+        <span class="room-code" id="roomCode">—</span>
+      </div>
+      <div class="remote-row">
+        <input class="join-input" id="joinCode" placeholder="room code" maxlength="8">
+        <button class="btn alt" style="flex:0 0 auto;margin-bottom:0" onclick="game.joinRoom()" data-en="Join" data-zh="加入">Join</button>
+      </div>
+      <div class="conn" id="conn"></div>
+      <button class="btn" style="margin-top:6px" onclick="game.playLocal()" data-en="↺ Local / solo practice" data-zh="↺ 本地 / 单人练习">↺ Local / solo practice</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// controls" data-zh="// 控制">// controls</span></div>
+      <div class="help">
+        <div data-en="Move your paddle: <b class='keycap'>↑</b>/<b class='keycap'>↓</b> or <b class='keycap'>W</b>/<b class='keycap'>S</b>, or drag." data-zh="移动你的挡板：<b class='keycap'>↑</b>/<b class='keycap'>↓</b> 或 <b class='keycap'>W</b>/<b class='keycap'>S</b>，或拖动。">Move your paddle: <b class="keycap">↑</b>/<b class="keycap">↓</b> or <b class="keycap">W</b>/<b class="keycap">S</b>, or drag.</div>
+        <div id="localHint" data-en="Local: left paddle = W/S, right paddle = ↑/↓ (or drag each half)." data-zh="本地：左挡板 = W/S，右挡板 = ↑/↓（或拖动两半）。">Local: left paddle = W/S, right paddle = ↑/↓ (or drag each half).</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// power-ups" data-zh="// 道具">// power-ups</span></div>
+      <div class="help">
+        <div class="leg"><span class="pchip" style="background:#f0973a"></span><span data-en="▼ shrink — paddles get smaller" data-zh="▼ 缩小——挡板变短">▼ shrink — paddles get smaller</span></div>
+        <div class="leg"><span class="pchip" style="background:#e2523e"></span><span data-en="⚡ rush — the ball speeds up" data-zh="⚡ 加速——球变快">⚡ rush — the ball speeds up</span></div>
+        <div class="leg"><span class="pchip" style="background:#36c5d0"></span><span data-en="✦ split — a second ball appears" data-zh="✦ 分裂——多一颗球">✦ split — a second ball appears</span></div>
+        <div style="margin-top:7px;color:#7a7a7a" data-en="Any ball that hits the floor ends the run." data-zh="任意一颗球落地即结束。">Any ball that hits the floor ends the run.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   keepup.exe — co-op "keep the ball off the floor"; local or host-authoritative remote
+   AABB collisions · escalating speed · power-ups · multi-ball. (c) houfu.xyz
+   ============================================================================ */
+const game = (function () {
+  const $ = (id) => document.getElementById(id);
+  const W = 640, H = 460;
+  const PAD_W = 14, PAD_INSET = 26, PAD_H0 = 96, PAD_SPD = 8;
+  const BALL_R = 9, BASE = 4.0, SPD_CAP = 4.6, POWER_EVERY = 6.5;
+
+  let canvas, ctx, DPR = 1;
+  let mode = 'local';                 // 'local' | 'host' | 'guest'
+  let pads, balls, powers, keys = {};
+  let running = false, t0 = 0, elapsed = 0, nextPower = 0;
+  let shrinkUntil = 0, rushUntil = 0, lastTs = 0, raf = 0;
+  let myY = H / 2 - PAD_H0 / 2;        // remote: my paddle target y (local prediction)
+  let netState = null, lastWrite = 0;  // guest: latest host snapshot
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const isHost = () => mode === 'host' || mode === 'local';   // who runs the simulation
+
+  function fresh() {
+    pads = [
+      { x: PAD_INSET, y: H / 2 - PAD_H0 / 2, w: PAD_W, h: PAD_H0 },
+      { x: W - PAD_INSET - PAD_W, y: H / 2 - PAD_H0 / 2, w: PAD_W, h: PAD_H0 },
+    ];
+    balls = [mkBall()]; powers = [];
+    shrinkUntil = 0; rushUntil = 0; elapsed = 0; nextPower = POWER_EVERY;
+  }
+  function mkBall(x, y) {
+    const ang = rand(-0.5, 0.5) + (Math.random() < 0.5 ? Math.PI : 0);
+    return { x: x == null ? W / 2 : x, y: y == null ? H * 0.4 : y, dx: Math.cos(ang), dy: Math.abs(Math.sin(ang)) * (Math.random() < 0.5 ? 1 : -1), r: BALL_R };
+  }
+
+  function startSim() {
+    fresh(); $('over').classList.remove('show');
+    running = true; t0 = performance.now(); lastTs = t0; loadBest();
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+  function playLocal() { mode = 'local'; setRole(''); setConn(''); $('roomCode').textContent = '—'; teardownNet(); startSim(); }
+  function restart() {
+    if (mode === 'guest') { gameRef('gi').update({ rs: Date.now() }); return; }   // ask host to restart
+    startSim();
+  }
+
+  function speedNow() {
+    let s = Math.min(BASE * Math.pow(1.026, elapsed), BASE * SPD_CAP);
+    if (performance.now() < rushUntil) s *= 1.7;
+    return s;
+  }
+  function paddleHit(b, p) {
+    if (b.x + b.r < p.x || b.x - b.r > p.x + p.w || b.y + b.r < p.y || b.y - b.r > p.y + p.h) return;
+    const left = p.x < W / 2;
+    if ((left && b.dx > 0) || (!left && b.dx < 0)) return;
+    const off = Math.max(-1, Math.min(1, (b.y - (p.y + p.h / 2)) / (p.h / 2)));
+    b.dx = left ? Math.abs(b.dx) : -Math.abs(b.dx);
+    b.dy = off * 0.95;
+    const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m;
+    b.x = left ? p.x + p.w + b.r + 0.5 : p.x - b.r - 0.5;
+  }
+  function spawnPower() {
+    if (powers.length >= 2) return;
+    const types = ['shrink', 'rush', 'split'];
+    powers.push({ x: rand(W * 0.3, W * 0.7), y: rand(H * 0.25, H * 0.7), s: 26, type: types[(Math.random() * 3) | 0] });
+  }
+  function trigger(type, px, py) {
+    if (type === 'shrink') shrinkUntil = performance.now() + 6000;
+    else if (type === 'rush') rushUntil = performance.now() + 4000;
+    else if (type === 'split') { if (balls.length < 5) balls.push(mkBall(px, py)); }
+  }
+
+  // host/local physics tick
+  function step(f) {
+    const ph = performance.now() < shrinkUntil ? PAD_H0 * 0.55 : PAD_H0;
+    for (const p of pads) { const cy = p.y + p.h / 2; p.h = ph; p.y = cy - ph / 2; }
+    // paddle inputs
+    if (mode === 'local') {
+      if (keys.w) pads[0].y -= PAD_SPD * f; if (keys.s) pads[0].y += PAD_SPD * f;
+      if (keys.up) pads[1].y -= PAD_SPD * f; if (keys.down) pads[1].y += PAD_SPD * f;
+    } else {                              // host controls left; guest paddle comes from net
+      if (keys.up || keys.w) pads[0].y -= PAD_SPD * f; if (keys.down || keys.s) pads[0].y += PAD_SPD * f;
+      if (drag.active) pads[0].y = drag.y - pads[0].h / 2;
+      if (netGuestY != null) pads[1].y = netGuestY - pads[1].h / 2;
+    }
+    for (const p of pads) p.y = Math.max(0, Math.min(H - p.h, p.y));
+
+    const s = speedNow();
+    for (let i = balls.length - 1; i >= 0; i--) {
+      const b = balls[i];
+      const m = Math.hypot(b.dx, b.dy) || 1; b.dx = b.dx / m * s; b.dy = b.dy / m * s;
+      b.x += b.dx * f; b.y += b.dy * f;
+      if (b.y - b.r < 0) { b.y = b.r; b.dy = Math.abs(b.dy); }
+      if (b.x - b.r < 0) { b.x = b.r; b.dx = Math.abs(b.dx); }
+      if (b.x + b.r > W) { b.x = W - b.r; b.dx = -Math.abs(b.dx); }
+      paddleHit(b, pads[0]); paddleHit(b, pads[1]);
+      for (let k = powers.length - 1; k >= 0; k--) {
+        const pw = powers[k];
+        if (b.x + b.r > pw.x - pw.s / 2 && b.x - b.r < pw.x + pw.s / 2 && b.y + b.r > pw.y - pw.s / 2 && b.y - b.r < pw.y + pw.s / 2) { trigger(pw.type, pw.x, pw.y); powers.splice(k, 1); }
+      }
+      if (b.y - b.r > H) { if (balls.length === 1) { gameOver(); return; } balls.splice(i, 1); }
+    }
+    for (const b of balls) { const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m; }
+    if (elapsed >= nextPower) { spawnPower(); nextPower += POWER_EVERY; }
+  }
+
+  function gameOver() {
+    running = false;
+    const best = saveBest(elapsed);
+    $('overRes').textContent = t('survived ', '坚持了 ') + elapsed.toFixed(1) + 's';
+    $('overNb').textContent = best.isNew ? t('★ new best!', '★ 新纪录！') : (t('best ', '最佳 ') + best.val.toFixed(1) + 's');
+    $('over').classList.add('show');
+    if (mode === 'host') writeState();   // push the final/over snapshot
+  }
+
+  // ---- best ----
+  function loadBest() { let b = 0; try { b = +localStorage.getItem('keepup_best') || 0; } catch (e) {} $('vBest').textContent = b.toFixed(1); return b; }
+  function saveBest(v) { let b = 0; try { b = +localStorage.getItem('keepup_best') || 0; } catch (e) {} let isNew = false; if (v > b) { b = v; isNew = true; try { localStorage.setItem('keepup_best', String(v)); } catch (e) {} } $('vBest').textContent = b.toFixed(1); return { val: b, isNew: isNew }; }
+
+  // ---- render (works from local sim OR a net snapshot) ----
+  function drawScene(bs, p0, p1, pws, rush) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0a0c0d'; ctx.fillRect(0, 0, W, H);
+    const g = ctx.createLinearGradient(0, H - 26, 0, H); g.addColorStop(0, 'rgba(226,82,62,0)'); g.addColorStop(1, 'rgba(226,82,62,0.28)');
+    ctx.fillStyle = g; ctx.fillRect(0, H - 26, W, 26);
+    ctx.strokeStyle = 'rgba(54,197,208,0.35)'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(1, H); ctx.lineTo(1, 1); ctx.lineTo(W - 1, 1); ctx.lineTo(W - 1, H); ctx.stroke();
+    for (const pw of pws) {
+      const col = pw.type === 'shrink' ? '#f0973a' : pw.type === 'rush' ? '#e2523e' : '#36c5d0';
+      const sym = pw.type === 'shrink' ? '▼' : pw.type === 'rush' ? '⚡' : '✦';
+      ctx.fillStyle = col + '22'; ctx.strokeStyle = col; ctx.lineWidth = 2;
+      const s = pw.s || 26; ctx.fillRect(pw.x - s / 2, pw.y - s / 2, s, s); ctx.strokeRect(pw.x - s / 2, pw.y - s / 2, s, s);
+      ctx.fillStyle = col; ctx.font = '15px Consolas,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(sym, pw.x, pw.y + 1);
+    }
+    ctx.fillStyle = '#2bd46a'; ctx.fillRect(p0.x, p0.y, p0.w, p0.h);
+    ctx.fillStyle = '#36c5d0'; ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
+    for (const b of bs) {
+      const gr = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 2);
+      gr.addColorStop(0, rush ? 'rgba(255,120,90,0.95)' : 'rgba(255,255,255,0.95)');
+      gr.addColorStop(0.5, rush ? 'rgba(226,82,62,0.5)' : 'rgba(54,197,208,0.5)');
+      gr.addColorStop(1, 'rgba(54,197,208,0)');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.55, 0, 7); ctx.fill();
+    }
+  }
+  function render() {
+    if (mode === 'guest') {
+      const st = netState;
+      if (!st) { ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0a0c0d'; ctx.fillRect(0, 0, W, H); return; }
+      const bs = (st.b || []).map(a => ({ x: a[0], y: a[1], r: BALL_R }));
+      const p0 = { x: PAD_INSET, y: st.p1 || 0, w: PAD_W, h: st.ph || PAD_H0 };
+      const myH = st.ph || PAD_H0, p1 = { x: W - PAD_INSET - PAD_W, y: Math.max(0, Math.min(H - myH, myY)), w: PAD_W, h: myH };  // my paddle: local prediction
+      const pws = (st.pw || []).map(a => ({ x: a[0], y: a[1], type: a[2], s: 26 }));
+      drawScene(bs, p0, p1, pws, !!st.r);
+    } else {
+      drawScene(balls, pads[0], pads[1], powers, performance.now() < rushUntil);
+    }
+  }
+
+  function loop(ts) {
+    const f = Math.min(2.2, (ts - lastTs) / 16.667) || 1; lastTs = ts;
+    if (mode === 'guest') {
+      // apply my input locally (responsive) + ship it to the host
+      const pv = PAD_SPD * f;
+      if (keys.up || keys.w) myY -= pv; if (keys.down || keys.s) myY += pv;
+      if (drag.active) myY = drag.y;
+      myY = Math.max(PAD_H0 / 2, Math.min(H - PAD_H0 / 2, myY));
+      if (ts - lastWrite > 55) { lastWrite = ts; gameRef('gi').update({ y: myY }); }
+      if (netState) { elapsed = netState.t || 0; $('vTime').textContent = elapsed.toFixed(1); $('over').classList.toggle('show', !!netState.o); if (netState.o) showGuestOver(); }
+      render();
+    } else {
+      if (running) { elapsed = (performance.now() - t0) / 1000; $('vTime').textContent = elapsed.toFixed(1); step(f); }
+      if (mode === 'host' && ts - lastWrite > 55) { lastWrite = ts; writeState(); }
+      render();
+    }
+    raf = requestAnimationFrame(loop);
+  }
+  let _guestOverShown = false;
+  function showGuestOver() {
+    if (_guestOverShown) return; _guestOverShown = true;
+    const v = netState.t || 0; const best = saveBest(v);
+    $('overRes').textContent = t('survived ', '坚持了 ') + v.toFixed(1) + 's';
+    $('overNb').textContent = best.isNew ? t('★ new best!', '★ 新纪录！') : (t('best ', '最佳 ') + best.val.toFixed(1) + 's');
+  }
+
+  // ---- input ----
+  let drag = { active: false, y: 0 };
+  function bind() {
+    window.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if (k === 'ArrowUp') { keys.up = true; e.preventDefault(); } else if (k === 'ArrowDown') { keys.down = true; e.preventDefault(); }
+      else if (k === 'w' || k === 'W') keys.w = true; else if (k === 's' || k === 'S') keys.s = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      const k = e.key;
+      if (k === 'ArrowUp') keys.up = false; else if (k === 'ArrowDown') keys.down = false;
+      else if (k === 'w' || k === 'W') keys.w = false; else if (k === 's' || k === 'S') keys.s = false;
+    });
+    function pt(e) {
+      e.preventDefault(); const r = canvas.getBoundingClientRect();
+      if (mode === 'local') { for (const tch of e.touches) { const lx = (tch.clientX - r.left) / r.width, y = (tch.clientY - r.top) / r.height * H; if (lx < 0.5) pads[0].y = y - pads[0].h / 2; else pads[1].y = y - pads[1].h / 2; } }
+      else { const tch = e.touches[0]; drag.active = true; drag.y = (tch.clientY - r.top) / r.height * H; }
+    }
+    canvas.addEventListener('touchstart', pt, { passive: false });
+    canvas.addEventListener('touchmove', pt, { passive: false });
+    canvas.addEventListener('touchend', () => { drag.active = false; }, { passive: false });
+    let md = false;
+    canvas.addEventListener('mousedown', (e) => { md = true; mv(e); });
+    window.addEventListener('mouseup', () => { md = false; drag.active = false; });
+    canvas.addEventListener('mousemove', (e) => { if (md) mv(e); });
+    function mv(e) {
+      const r = canvas.getBoundingClientRect(), y = (e.clientY - r.top) / r.height * H;
+      if (mode === 'local') { const lx = (e.clientX - r.left) / r.width; if (pads) (lx < 0.5 ? pads[0] : pads[1]).y = y - PAD_H0 / 2; }
+      else { drag.active = true; drag.y = y; }
+    }
+    window.addEventListener('resize', layout);
+  }
+  function layout() {
+    DPR = window.devicePixelRatio || 1;
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    canvas.style.height = (canvas.clientWidth * H / W) + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  /* ── Firebase remote (host-authoritative) ───────── */
+  const firebaseConfig = { apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
+  let _db = null, _code = null, _stateRef = null, _stateCb = null, _giRef = null, _giCb = null, _joinRef = null, _joinCb = null;
+  let netGuestY = null, _lastRs = 0;
+  function db() { if (!_db) { firebase.initializeApp(firebaseConfig); _db = firebase.database(); } return _db; }
+  function gameRef(sub) { return db().ref(`games/${_code}/ku/${sub}`); }
+  function shortId() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += c[(Math.random() * c.length) | 0]; return s; }
+  function setConn(m, cls) { const el = $('conn'); el.textContent = m; el.className = 'conn' + (cls ? ' ' + cls : ''); }
+  function setRole(m) { $('roleTag').textContent = m; }
+  function teardownNet() { if (_stateCb) _stateRef.off('value', _stateCb); if (_giCb) _giRef.off('value', _giCb); if (_joinCb) _joinRef.off('value', _joinCb); _stateCb = _giCb = _joinCb = null; netState = null; netGuestY = null; }
+
+  function writeState() {
+    gameRef('state').set({
+      b: balls.map(b => [Math.round(b.x), Math.round(b.y)]),
+      p1: Math.round(pads[0].y), p2: Math.round(pads[1].y), ph: Math.round(pads[0].h),
+      pw: powers.map(p => [Math.round(p.x), Math.round(p.y), p.type]),
+      t: +elapsed.toFixed(1), o: !running, r: performance.now() < rushUntil ? 1 : 0,
+    });
+  }
+  async function createRoom() {
+    _code = shortId(); mode = 'host'; teardownNet(); _code = _code;
+    $('roomCode').textContent = _code; setRole(t('you: left ●', '你：左 ●')); setConn(t('Waiting for a friend to join…', '等待好友加入…'));
+    await gameRef('meta').set({ created: Date.now() }); await gameRef('gi').set({ y: H / 2 }); await gameRef('joined').set(false);
+    _giRef = gameRef('gi'); _giCb = _giRef.on('value', s => { const v = s.val(); if (!v) return; netGuestY = v.y; if (v.rs && v.rs !== _lastRs) { _lastRs = v.rs; startSim(); } });
+    _joinRef = gameRef('joined'); _joinCb = _joinRef.on('value', s => { if (s.val()) { setConn(t('Connected! You control the left paddle.', '已连接！你控制左挡板。'), 'ok'); startSim(); } });
+  }
+  async function joinRoom() {
+    const code = $('joinCode').value.trim().toUpperCase(); if (!code) return;
+    _code = code; setConn(t('Connecting…', '连接中…'));
+    const snap = await db().ref(`games/${code}/ku/meta`).once('value');
+    if (!snap.exists()) { setConn(t('Room not found — check the code.', '未找到房间，请检查代码。'), 'err'); return; }
+    mode = 'guest'; teardownNet(); _code = code;
+    setRole(t('you: right ●', '你：右 ●')); setConn(t('Connected! You control the right paddle.', '已连接！你控制右挡板。'), 'ok');
+    _guestOverShown = false; myY = H / 2;
+    await gameRef('joined').set(true);
+    _stateRef = gameRef('state'); _stateCb = _stateRef.on('value', s => { netState = s.val(); if (netState && !netState.o) _guestOverShown = false; });
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+
+  function t(en, zh) { return document.documentElement.lang === 'zh' ? zh : en; }
+  function init() { canvas = $('field'); ctx = canvas.getContext('2d'); layout(); bind(); startSim(); }
+  return { init: init, restart: restart, playLocal: playLocal, createRoom: createRoom, joinRoom: joinRoom };
+})();
+
+function toggleLang() {
+  const zh = document.documentElement.lang !== 'zh';
+  document.documentElement.lang = zh ? 'zh' : 'en';
+  document.querySelectorAll('[data-en]').forEach((el) => { el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
+  document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
+}
+
+game.init();
+</script>
+</body>
+</html>

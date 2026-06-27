@@ -73,6 +73,11 @@
     .glow-sudoku .sudoku-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
     .card.glow-sudoku:hover .sudoku-canvas { opacity: 1; }
 
+    /* Keep-Up — on hover, a ball bounces between two tracking paddles */
+    .card.glow-keepup:hover { border-color: #2a6e78; box-shadow: 0 0 22px -8px rgba(54,197,208,0.5); }
+    .glow-keepup .ku-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+    .card.glow-keepup:hover .ku-canvas { opacity: 1; }
+
 /* ===== Gomoku — Canvas WATER RIPPLE across the whole card ===== */
 /* The water canvas IS the card background: stones in the top band, dark body
    below. On hover the whole surface ripples — mousemove wakes, click splashes —
@@ -249,6 +254,22 @@
     <div class="card-footer">
       <span class="card-meta" data-en="JS · constraint solver" data-zh="JS · 约束求解">JS · constraint solver</span>
       <a class="play-btn" href="/game/sudoku.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
+    </div>
+  </div>
+
+  <div class="card glow-keepup">
+    <img class="card-thumb" src="/game/thumbs/keepup.png?v=1" alt="Keep-Up co-op pong" loading="lazy" width="440" height="240">
+    <div class="card-icon" style="color:#36c5d0">[◖●◗]</div>
+    <div class="card-title" data-en="keep_up.exe" data-zh="接力球.exe">keep_up.exe</div>
+    <div class="card-desc" data-en="Co-op Pong, flipped — you each control one paddle and keep the bouncing ball off the floor. Play remotely (Create/Join a room) or on one device. It only gets faster." data-zh="合作版 Pong——你们各控制一块挡板，别让球落地。可联机（创建/加入房间）或同设备双人。球只会越来越快。">Co-op Pong, flipped — you each control one paddle and keep the bouncing ball off the floor. Play remotely (Create/Join a room) or on one device. It only gets faster.</div>
+    <div class="card-tags">
+      <span class="tag green" data-en="co-op" data-zh="合作">co-op</span>
+      <span class="tag" data-en="remote" data-zh="联机">remote</span>
+      <span class="tag" data-en="survival" data-zh="生存">survival</span>
+    </div>
+    <div class="card-footer">
+      <span class="card-meta" data-en="JS · realtime sync" data-zh="JS · 实时同步">JS · realtime sync</span>
+      <a class="play-btn" href="/game/keepup.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
     </div>
   </div>
 
@@ -845,6 +866,36 @@ document.addEventListener('DOMContentLoaded', applyLang);
     raf = inside ? requestAnimationFrame(frame) : 0;
   }
   card.addEventListener('mouseenter', () => { if (raf) return; build(); t = 0; inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Keep-Up card — a ball bounces in the card while two side paddles track it (hover) */
+(function () {
+  const card = document.querySelector('.card.glow-keepup');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'ku-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let W, H, ball, trail, pL, pR, raf = 0, inside = false;
+  function build() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; ball = { x: W / 2, y: H * 0.4, dx: 2, dy: 1.5, r: 5 }; trail = []; pL = H / 2; pR = H / 2; }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    ball.x += ball.dx; ball.y += ball.dy;
+    if (ball.y < 6) { ball.y = 6; ball.dy = Math.abs(ball.dy); }
+    if (ball.y > H - 6) { ball.y = H - 6; ball.dy = -Math.abs(ball.dy); }
+    const inset = 14;
+    if (ball.x < inset + ball.r) { ball.x = inset + ball.r; ball.dx = Math.abs(ball.dx); ball.dy += (ball.y - pL) * 0.03; }
+    if (ball.x > W - inset - ball.r) { ball.x = W - inset - ball.r; ball.dx = -Math.abs(ball.dx); ball.dy += (ball.y - pR) * 0.03; }
+    const sp = 2.7, m = Math.hypot(ball.dx, ball.dy) || 1; ball.dx = ball.dx / m * sp; ball.dy = ball.dy / m * sp;
+    pL += (ball.y - pL) * 0.08; pR += (ball.y - pR) * 0.08;
+    trail.push([ball.x, ball.y]); if (trail.length > 14) trail.shift();
+    ctx.fillStyle = 'rgba(43,212,106,0.75)'; ctx.fillRect(inset - 3, pL - 16, 4, 32);
+    ctx.fillStyle = 'rgba(54,197,208,0.75)'; ctx.fillRect(W - inset - 1, pR - 16, 4, 32);
+    for (let i = 0; i < trail.length; i++) { const a = i / trail.length; ctx.fillStyle = 'rgba(54,197,208,' + (a * 0.5).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(trail[i][0], trail[i][1], 2 + a * 3, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#eafdff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, 7); ctx.fill();
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  card.addEventListener('mouseenter', () => { if (raf) return; build(); inside = true; raf = requestAnimationFrame(frame); });
   card.addEventListener('mouseleave', () => { inside = false; });
 })();
 
