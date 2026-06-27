@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Keep-Up // houfu.xyz</title>
-<meta name="description" content="A 2-player co-op keep-up game played remotely — slide your paddle under the falling ball and keep it off the floor. Escalating speed, chaotic power-ups.">
+<meta name="description" content="A 2-player co-op Pong played remotely — you each guard a side with a vertical paddle and keep the ball from slipping past. Escalating speed, chaotic power-ups.">
 <link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -62,7 +62,7 @@
 <div class="hdr">
   <div>
     <div class="title" id="pgTitle">&gt;_ Keep-Up</div>
-    <div class="sub" id="pgSub" data-en="Co-op survival: slide your paddle under the falling ball and keep it off the floor. You each guard the bottom with a paddle that moves left↔right — every catch kicks the ball up, and where it lands sets the angle. Play remotely (Create/Join) or on one device. It only gets faster." data-zh="合作生存：把挡板移到下落的球下方，别让球落地。你们各用一块左右移动的挡板守住底部——每次接球都会把球弹起，落点决定角度。可联机（创建/加入）或同设备双人。球只会越来越快。">Co-op survival: slide your paddle under the falling ball and keep it off the floor. You each guard the bottom with a paddle that moves left↔right — every catch kicks the ball up, and where it lands sets the angle. Play remotely (Create/Join) or on one device. It only gets faster.</div>
+    <div class="sub" id="pgSub" data-en="Co-op Pong: you each guard one side with a vertical paddle. The top and bottom bounce; the left and right edges are open — don't let the ball slip past either of you. Move up/down to return it; where it hits your paddle sets the angle. Play remotely (Create/Join) or on one device. The rally only gets faster." data-zh="合作版 Pong：你们各用一块竖直挡板守住一侧。上下会反弹；左右是缺口——别让球从任一侧溜走。上下移动接球，落点决定角度。可联机（创建/加入）或同设备双人。回合只会越来越快。">Co-op Pong: you each guard one side with a vertical paddle. The top and bottom bounce; the left and right edges are open — don't let the ball slip past either of you. Move up/down to return it; where it hits your paddle sets the angle. Play remotely (Create/Join) or on one device. The rally only gets faster.</div>
     <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
@@ -72,7 +72,7 @@
   <div class="stage">
     <canvas id="field" width="640" height="460"></canvas>
     <div class="over" id="over">
-      <div class="big" data-en="▼ DROPPED ▼" data-zh="▼ 落地了 ▼">▼ DROPPED ▼</div>
+      <div class="big" data-en="✕ MISSED ✕" data-zh="✕ 漏球了 ✕">✕ MISSED ✕</div>
       <div class="res" id="overRes"></div>
       <div class="nb" id="overNb"></div>
       <button class="btn" onclick="game.restart()" data-en="↻ Restart" data-zh="↻ 重新开始">↻ Restart</button>
@@ -105,8 +105,8 @@
     <div class="card">
       <div class="card-title"><span data-en="// controls" data-zh="// 控制">// controls</span></div>
       <div class="help">
-        <div data-en="Move your paddle: <b class='keycap'>←</b>/<b class='keycap'>→</b> or <b class='keycap'>A</b>/<b class='keycap'>D</b>, or drag." data-zh="移动你的挡板：<b class='keycap'>←</b>/<b class='keycap'>→</b> 或 <b class='keycap'>A</b>/<b class='keycap'>D</b>，或拖动。">Move your paddle: <b class="keycap">←</b>/<b class="keycap">→</b> or <b class="keycap">A</b>/<b class="keycap">D</b>, or drag.</div>
-        <div id="localHint" data-en="Local: left paddle = A/D, right paddle = ←/→ (or drag)." data-zh="本地：左挡板 = A/D，右挡板 = ←/→（或拖动）。">Local: left paddle = A/D, right paddle = ←/→ (or drag).</div>
+        <div data-en="Move your paddle: <b class='keycap'>↑</b>/<b class='keycap'>↓</b> or <b class='keycap'>W</b>/<b class='keycap'>S</b>, or drag." data-zh="移动你的挡板：<b class='keycap'>↑</b>/<b class='keycap'>↓</b> 或 <b class='keycap'>W</b>/<b class='keycap'>S</b>，或拖动。">Move your paddle: <b class="keycap">↑</b>/<b class="keycap">↓</b> or <b class="keycap">W</b>/<b class="keycap">S</b>, or drag.</div>
+        <div id="localHint" data-en="Local: left paddle = W/S, right paddle = ↑/↓ (or drag each half)." data-zh="本地：左挡板 = W/S，右挡板 = ↑/↓（或拖动两半）。">Local: left paddle = W/S, right paddle = ↑/↓ (or drag each half).</div>
       </div>
       <button class="btn" id="pauseBtn" style="margin-top:10px" onclick="game.togglePause()" data-en="⏸ Pause" data-zh="⏸ 暂停">⏸ Pause</button>
     </div>
@@ -117,7 +117,7 @@
         <div class="leg"><span class="pchip" style="background:#f0973a"></span><span data-en="▼ shrink — paddles get smaller" data-zh="▼ 缩小——挡板变短">▼ shrink — paddles get smaller</span></div>
         <div class="leg"><span class="pchip" style="background:#e2523e"></span><span data-en="⚡ rush — the ball speeds up" data-zh="⚡ 加速——球变快">⚡ rush — the ball speeds up</span></div>
         <div class="leg"><span class="pchip" style="background:#36c5d0"></span><span data-en="✦ split — a second ball appears" data-zh="✦ 分裂——多一颗球">✦ split — a second ball appears</span></div>
-        <div style="margin-top:7px;color:#7a7a7a" data-en="Any ball that hits the floor ends the run." data-zh="任意一颗球落地即结束。">Any ball that hits the floor ends the run.</div>
+        <div style="margin-top:7px;color:#7a7a7a" data-en="If a ball slips past either side, the run ends." data-zh="任一颗球从两侧溜走即结束。">If a ball slips past either side, the run ends.</div>
       </div>
     </div>
   </div>
@@ -125,13 +125,14 @@
 
 <script>
 /* ============================================================================
-   keepup.exe — co-op "keep the ball off the floor"; bottom paddles slide left↔right.
-   Local or host-authoritative remote. AABB · escalating speed · power-ups · multi-ball.
+   keepup.exe — co-op Pong: vertical paddles guard the two open SIDES;
+   top & bottom bounce. Local or host-authoritative remote.
+   AABB · escalating speed · power-ups · multi-ball. (c) houfu.xyz
    ============================================================================ */
 const game = (function () {
   const $ = (id) => document.getElementById(id);
   const W = 640, H = 460;
-  const PAD_W = 112, PAD_TH = 14, PAD_Y = H - 30, PAD_SPD = 9;
+  const PAD_W = 14, PAD_H = 112, PAD_INSET = 22, PAD_SPD = 9;
   const BALL_R = 10, BASE = 3.6, SPD_CAP = 3.2, POWER_EVERY = 6.5;
 
   let canvas, ctx, DPR = 1;
@@ -139,26 +140,27 @@ const game = (function () {
   let pads, balls, powers, keys = {};
   let running = false, paused = false, pausedAt = 0, t0 = 0, elapsed = 0, nextPower = 0;
   let shrinkUntil = 0, rushUntil = 0, lastTs = 0, raf = 0;
-  let myX = W / 2;                     // remote: my paddle CENTRE x (local prediction)
+  let myY = H / 2;                     // remote: my paddle CENTRE y (local prediction)
   let netState = null, lastWrite = 0, guestBalls = null;
 
   const rand = (a, b) => a + Math.random() * (b - a);
-  const clampX = (x, w) => Math.max(0, Math.min(W - w, x));
+  const clampY = (y, h) => Math.max(0, Math.min(H - h, y));
 
   function fresh() {
     pads = [
-      { x: W * 0.25 - PAD_W / 2, y: PAD_Y, w: PAD_W, h: PAD_TH },   // P1 (green)
-      { x: W * 0.75 - PAD_W / 2, y: PAD_Y, w: PAD_W, h: PAD_TH },   // P2 (cyan)
+      { x: PAD_INSET, y: H / 2 - PAD_H / 2, w: PAD_W, h: PAD_H },                 // P1 left (green)
+      { x: W - PAD_INSET - PAD_W, y: H / 2 - PAD_H / 2, w: PAD_W, h: PAD_H },     // P2 right (cyan)
     ];
     balls = [mkBall()]; powers = [];
     shrinkUntil = 0; rushUntil = 0; elapsed = 0; nextPower = POWER_EVERY; paused = false; pausedAt = 0;
   }
   function mkBall(x, y) {
-    const b = { x: x == null ? W / 2 : x, y: y == null ? H * 0.22 : y, dx: rand(-0.6, 0.6), dy: rand(0.45, 0.85), r: BALL_R, trail: [] };
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    const b = { x: x == null ? W / 2 : x, y: y == null ? H / 2 : y, dx: dir * rand(0.6, 0.9), dy: rand(-0.5, 0.5), r: BALL_R, trail: [] };
     const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m; lively(b); return b;
   }
-  function lively(b) {                  // keep a lively diagonal — never a flat/stuck axis bounce
-    const MINX = 0.26, MINY = 0.30, sx = b.dx < 0 ? -1 : 1, sy = b.dy < 0 ? -1 : 1;
+  function lively(b) {                  // keep enough sideways travel (must reach a paddle) + some vertical variety
+    const MINX = 0.42, MINY = 0.16, sx = b.dx < 0 ? -1 : 1, sy = b.dy < 0 ? -1 : 1;
     let ax = Math.abs(b.dx), ay = Math.abs(b.dy); if (ax < MINX) ax = MINX; if (ay < MINY) ay = MINY;
     const m = Math.hypot(ax, ay) || 1; b.dx = sx * ax / m; b.dy = sy * ay / m;
   }
@@ -176,20 +178,21 @@ const game = (function () {
     if (performance.now() < rushUntil) s *= 1.45;
     return s;
   }
-  // ball lands on a paddle from above → kick it up, angle from where it hit
+  // ball reaches a side paddle → return it; where it hits sets the angle (Pong-style)
   function paddleHit(b, p) {
-    if (b.dy <= 0) return;
+    const left = p.x < W / 2;
+    if ((left && b.dx > 0) || (!left && b.dx < 0)) return;
     if (b.x + b.r < p.x || b.x - b.r > p.x + p.w || b.y + b.r < p.y || b.y - b.r > p.y + p.h) return;
-    const off = Math.max(-1, Math.min(1, (b.x - (p.x + p.w / 2)) / (p.w / 2)));
-    b.dx = off * 0.85;
-    b.dy = -Math.max(0.4, Math.sqrt(Math.max(0, 1 - b.dx * b.dx)));
+    const off = Math.max(-1, Math.min(1, (b.y - (p.y + p.h / 2)) / (p.h / 2)));
+    b.dy = off * 0.85;
+    b.dx = (left ? 1 : -1) * Math.max(0.4, Math.sqrt(Math.max(0, 1 - b.dy * b.dy)));
     const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m; lively(b);
-    b.y = p.y - b.r - 0.5;
+    b.x = left ? p.x + p.w + b.r + 0.5 : p.x - b.r - 0.5;
   }
   function spawnPower() {
     if (powers.length >= 2) return;
     const types = ['shrink', 'rush', 'split'];
-    powers.push({ x: rand(W * 0.2, W * 0.8), y: rand(H * 0.22, H * 0.55), s: 26, type: types[(Math.random() * 3) | 0] });
+    powers.push({ x: rand(W * 0.32, W * 0.68), y: rand(H * 0.2, H * 0.8), s: 26, type: types[(Math.random() * 3) | 0] });
   }
   function trigger(type, px, py) {
     if (type === 'shrink') shrinkUntil = performance.now() + 6000;
@@ -198,19 +201,19 @@ const game = (function () {
   }
 
   function step(f) {
-    const pw = performance.now() < shrinkUntil ? PAD_W * 0.58 : PAD_W;
-    for (const p of pads) { const cx = p.x + p.w / 2; p.w = pw; p.x = cx - pw / 2; }
-    // paddle inputs (horizontal)
+    const ph = performance.now() < shrinkUntil ? PAD_H * 0.55 : PAD_H;
+    for (const p of pads) { const cy = p.y + p.h / 2; p.h = ph; p.y = cy - ph / 2; }
+    // paddle inputs (vertical)
     if (mode === 'local') {
-      pads[0].x += ((keys.d ? 1 : 0) - (keys.a ? 1 : 0)) * PAD_SPD * f;
-      pads[1].x += ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * PAD_SPD * f;
-      if (drag.active) pads[drag.which].x = drag.x - pads[drag.which].w / 2;
+      pads[0].y += ((keys.s ? 1 : 0) - (keys.w ? 1 : 0)) * PAD_SPD * f;
+      pads[1].y += ((keys.down ? 1 : 0) - (keys.up ? 1 : 0)) * PAD_SPD * f;
+      if (drag.active) pads[drag.which].y = drag.y - pads[drag.which].h / 2;
     } else {
-      pads[0].x += (((keys.right || keys.d) ? 1 : 0) - ((keys.left || keys.a) ? 1 : 0)) * PAD_SPD * f;
-      if (drag.active) pads[0].x = drag.x - pads[0].w / 2;
-      if (netGuestX != null) pads[1].x = netGuestX - pads[1].w / 2;
+      pads[0].y += (((keys.down || keys.s) ? 1 : 0) - ((keys.up || keys.w) ? 1 : 0)) * PAD_SPD * f;
+      if (drag.active) pads[0].y = drag.y - pads[0].h / 2;
+      if (netGuestY != null) pads[1].y = netGuestY - pads[1].h / 2;
     }
-    for (const p of pads) p.x = clampX(p.x, p.w);
+    for (const p of pads) p.y = clampY(p.y, p.h);
 
     const s = speedNow();
     for (let i = balls.length - 1; i >= 0; i--) {
@@ -219,15 +222,14 @@ const game = (function () {
       let dead = false;
       for (let n = 0; n < sub && !dead; n++) {
         b.x += b.dx * sd; b.y += b.dy * sd;
-        if (b.y - b.r < 0) { b.y = b.r; b.dy = Math.abs(b.dy); }
-        if (b.x - b.r < 0) { b.x = b.r; b.dx = Math.abs(b.dx); lively(b); }
-        else if (b.x + b.r > W) { b.x = W - b.r; b.dx = -Math.abs(b.dx); lively(b); }
+        if (b.y - b.r < 0) { b.y = b.r; b.dy = Math.abs(b.dy); }          // top wall
+        else if (b.y + b.r > H) { b.y = H - b.r; b.dy = -Math.abs(b.dy); } // bottom wall
         paddleHit(b, pads[0]); paddleHit(b, pads[1]);
         for (let k = powers.length - 1; k >= 0; k--) {
           const q = powers[k];
           if (b.x + b.r > q.x - q.s / 2 && b.x - b.r < q.x + q.s / 2 && b.y + b.r > q.y - q.s / 2 && b.y - b.r < q.y + q.s / 2) { trigger(q.type, q.x, q.y); powers.splice(k, 1); }
         }
-        if (b.y - b.r > H) dead = true;
+        if (b.x - b.r < 0 || b.x + b.r > W) dead = true;                   // slipped past a side
       }
       (b.trail || (b.trail = [])).push([b.x, b.y]); if (b.trail.length > 8) b.trail.shift();
       if (dead) { if (balls.length === 1) { gameOver(); return; } balls.splice(i, 1); }
@@ -250,10 +252,14 @@ const game = (function () {
   function drawScene(bs, p0, p1, pws, rush) {
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = '#0a0c0d'; ctx.fillRect(0, 0, W, H);
-    const g = ctx.createLinearGradient(0, H - 18, 0, H); g.addColorStop(0, 'rgba(226,82,62,0)'); g.addColorStop(1, 'rgba(226,82,62,0.30)');
-    ctx.fillStyle = g; ctx.fillRect(0, H - 18, W, 18);
+    // danger zones on the two open sides
+    let g = ctx.createLinearGradient(0, 0, 16, 0); g.addColorStop(0, 'rgba(226,82,62,0.30)'); g.addColorStop(1, 'rgba(226,82,62,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 16, H);
+    g = ctx.createLinearGradient(W, 0, W - 16, 0); g.addColorStop(0, 'rgba(226,82,62,0.30)'); g.addColorStop(1, 'rgba(226,82,62,0)');
+    ctx.fillStyle = g; ctx.fillRect(W - 16, 0, 16, H);
+    // top & bottom walls glow
     ctx.strokeStyle = 'rgba(54,197,208,0.35)'; ctx.lineWidth = 2; ctx.beginPath();
-    ctx.moveTo(1, H); ctx.lineTo(1, 1); ctx.lineTo(W - 1, 1); ctx.lineTo(W - 1, H); ctx.stroke();
+    ctx.moveTo(0, 1); ctx.lineTo(W, 1); ctx.moveTo(0, H - 1); ctx.lineTo(W, H - 1); ctx.stroke();
     for (const q of pws) {
       const col = q.type === 'shrink' ? '#f0973a' : q.type === 'rush' ? '#e2523e' : '#36c5d0';
       const sym = q.type === 'shrink' ? '▼' : q.type === 'rush' ? '⚡' : '✦';
@@ -288,9 +294,9 @@ const game = (function () {
       const tg = st.b || [];
       if (!guestBalls || guestBalls.length !== tg.length) guestBalls = tg.map(a => ({ x: a[0], y: a[1], r: BALL_R, trail: [] }));
       for (let i = 0; i < tg.length; i++) { const gb = guestBalls[i]; gb.x += (tg[i][0] - gb.x) * 0.35; gb.y += (tg[i][1] - gb.y) * 0.35; gb.trail.push([gb.x, gb.y]); if (gb.trail.length > 8) gb.trail.shift(); }
-      const pwid = st.pw0 || PAD_W;
-      const p0 = { x: st.p1 || 0, y: PAD_Y, w: pwid, h: PAD_TH };
-      const p1 = { x: clampX(myX - pwid / 2, pwid), y: PAD_Y, w: pwid, h: PAD_TH };   // my paddle: local prediction
+      const ph = st.ph || PAD_H;
+      const p0 = { x: PAD_INSET, y: st.p1 || 0, w: PAD_W, h: ph };
+      const p1 = { x: W - PAD_INSET - PAD_W, y: clampY(myY - ph / 2, ph), w: PAD_W, h: ph };   // my paddle: local prediction
       const pws = (st.pu || []).map(a => ({ x: a[0], y: a[1], type: a[2], s: 26 }));
       drawScene(guestBalls, p0, p1, pws, !!st.r);
     } else {
@@ -302,10 +308,10 @@ const game = (function () {
     const f = Math.min(2.2, (ts - lastTs) / 16.667) || 1; lastTs = ts;
     if (mode === 'guest') {
       const pv = PAD_SPD * f;
-      myX += (((keys.right || keys.d) ? 1 : 0) - ((keys.left || keys.a) ? 1 : 0)) * pv;
-      if (drag.active) myX = drag.x;
-      myX = Math.max(PAD_W / 2, Math.min(W - PAD_W / 2, myX));
-      if (ts - lastWrite > 55) { lastWrite = ts; gameRef('gi').update({ x: Math.round(myX) }); }
+      myY += (((keys.down || keys.s) ? 1 : 0) - ((keys.up || keys.w) ? 1 : 0)) * pv;
+      if (drag.active) myY = drag.y;
+      myY = Math.max(PAD_H / 2, Math.min(H - PAD_H / 2, myY));
+      if (ts - lastWrite > 55) { lastWrite = ts; gameRef('gi').update({ y: Math.round(myY) }); }
       if (netState) { elapsed = netState.t || 0; $('vTime').textContent = elapsed.toFixed(1); $('over').classList.toggle('show', !!netState.o); if (netState.o) showGuestOver(); else _guestOverShown = false; }
       render();
     } else {
@@ -324,22 +330,23 @@ const game = (function () {
   }
 
   // ---- input ----
-  let drag = { active: false, x: 0, which: 0 };
+  let drag = { active: false, y: 0, which: 0 };
   function bind() {
     window.addEventListener('keydown', (e) => {
       const k = e.key;
-      if (k === 'ArrowLeft') { keys.left = true; e.preventDefault(); } else if (k === 'ArrowRight') { keys.right = true; e.preventDefault(); }
-      else if (k === 'a' || k === 'A') keys.a = true; else if (k === 'd' || k === 'D') keys.d = true;
+      if (k === 'ArrowUp') { keys.up = true; e.preventDefault(); } else if (k === 'ArrowDown') { keys.down = true; e.preventDefault(); }
+      else if (k === 'w' || k === 'W') keys.w = true; else if (k === 's' || k === 'S') keys.s = true;
     });
     window.addEventListener('keyup', (e) => {
       const k = e.key;
-      if (k === 'ArrowLeft') keys.left = false; else if (k === 'ArrowRight') keys.right = false;
-      else if (k === 'a' || k === 'A') keys.a = false; else if (k === 'd' || k === 'D') keys.d = false;
+      if (k === 'ArrowUp') keys.up = false; else if (k === 'ArrowDown') keys.down = false;
+      else if (k === 'w' || k === 'W') keys.w = false; else if (k === 's' || k === 'S') keys.s = false;
     });
     function pt(e) {
-      e.preventDefault(); const r = canvas.getBoundingClientRect(), x = (e.touches[0].clientX - r.left) / r.width * W;
-      drag.active = true; drag.x = x;
-      if (mode === 'local') drag.which = Math.abs(x - (pads[0].x + pads[0].w / 2)) <= Math.abs(x - (pads[1].x + pads[1].w / 2)) ? 0 : 1;
+      e.preventDefault(); const r = canvas.getBoundingClientRect(), tch = e.touches[0];
+      const x = (tch.clientX - r.left) / r.width * W, y = (tch.clientY - r.top) / r.height * H;
+      drag.active = true; drag.y = y;
+      if (mode === 'local') drag.which = x < W / 2 ? 0 : 1;
     }
     canvas.addEventListener('touchstart', pt, { passive: false });
     canvas.addEventListener('touchmove', pt, { passive: false });
@@ -349,9 +356,9 @@ const game = (function () {
     window.addEventListener('mouseup', () => { md = false; drag.active = false; });
     canvas.addEventListener('mousemove', (e) => { if (md) mv(e); });
     function mv(e) {
-      const r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W;
-      drag.active = true; drag.x = x;
-      if (mode === 'local' && pads) drag.which = Math.abs(x - (pads[0].x + pads[0].w / 2)) <= Math.abs(x - (pads[1].x + pads[1].w / 2)) ? 0 : 1;
+      const r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+      drag.active = true; drag.y = y;
+      if (mode === 'local') drag.which = x < W / 2 ? 0 : 1;
     }
     window.addEventListener('resize', layout);
   }
@@ -365,18 +372,18 @@ const game = (function () {
   /* ── Firebase remote (host-authoritative) ───────── */
   const firebaseConfig = { apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
   let _db = null, _code = null, _stateRef = null, _stateCb = null, _giRef = null, _giCb = null, _joinRef = null, _joinCb = null;
-  let netGuestX = null, _lastRs = 0, _lastPz = 0;
+  let netGuestY = null, _lastRs = 0, _lastPz = 0;
   function db() { if (!_db) { firebase.initializeApp(firebaseConfig); _db = firebase.database(); } return _db; }
   function gameRef(sub) { return db().ref(`games/${_code}/ku/${sub}`); }
   function shortId() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += c[(Math.random() * c.length) | 0]; return s; }
   function setConn(m, cls) { const el = $('conn'); el.textContent = m; el.className = 'conn' + (cls ? ' ' + cls : ''); }
   function setRole(m) { $('roleTag').textContent = m; }
-  function teardownNet() { if (_stateCb) _stateRef.off('value', _stateCb); if (_giCb) _giRef.off('value', _giCb); if (_joinCb) _joinRef.off('value', _joinCb); _stateCb = _giCb = _joinCb = null; netState = null; netGuestX = null; }
+  function teardownNet() { if (_stateCb) _stateRef.off('value', _stateCb); if (_giCb) _giRef.off('value', _giCb); if (_joinCb) _joinRef.off('value', _joinCb); _stateCb = _giCb = _joinCb = null; netState = null; netGuestY = null; }
 
   function writeState() {
     gameRef('state').set({
       b: balls.map(b => [Math.round(b.x), Math.round(b.y)]),
-      p1: Math.round(pads[0].x), p2: Math.round(pads[1].x), pw0: Math.round(pads[0].w),
+      p1: Math.round(pads[0].y), p2: Math.round(pads[1].y), ph: Math.round(pads[0].h),
       pu: powers.map(p => [Math.round(p.x), Math.round(p.y), p.type]),
       t: +elapsed.toFixed(1), o: !running, r: performance.now() < rushUntil ? 1 : 0, pz: paused ? 1 : 0,
     });
@@ -392,9 +399,9 @@ const game = (function () {
   async function createRoom() {
     _code = shortId(); mode = 'host'; teardownNet();
     $('roomCode').textContent = _code; setRole(t('you: green', '你：绿')); setConn(t('Waiting for a friend to join…', '等待好友加入…'));
-    await gameRef('meta').set({ created: Date.now() }); await gameRef('gi').set({ x: W * 0.75 }); await gameRef('joined').set(false);
-    _giRef = gameRef('gi'); _giCb = _giRef.on('value', s => { const v = s.val(); if (!v) return; netGuestX = v.x; if (v.rs && v.rs !== _lastRs) { _lastRs = v.rs; startSim(); } if (v.pz && v.pz !== _lastPz) { _lastPz = v.pz; doPause(!paused); } });
-    _joinRef = gameRef('joined'); _joinCb = _joinRef.on('value', s => { if (s.val()) { setConn(t('Connected! You control the green paddle.', '已连接！你控制绿色挡板。'), 'ok'); startSim(); } });
+    await gameRef('meta').set({ created: Date.now() }); await gameRef('gi').set({ y: H / 2 }); await gameRef('joined').set(false);
+    _giRef = gameRef('gi'); _giCb = _giRef.on('value', s => { const v = s.val(); if (!v) return; netGuestY = v.y; if (v.rs && v.rs !== _lastRs) { _lastRs = v.rs; startSim(); } if (v.pz && v.pz !== _lastPz) { _lastPz = v.pz; doPause(!paused); } });
+    _joinRef = gameRef('joined'); _joinCb = _joinRef.on('value', s => { if (s.val()) { setConn(t('Connected! You guard the LEFT (green).', '已连接！你守左侧（绿）。'), 'ok'); startSim(); } });
   }
   async function joinRoom() {
     const code = $('joinCode').value.trim().toUpperCase(); if (!code) return;
@@ -402,8 +409,8 @@ const game = (function () {
     const snap = await db().ref(`games/${code}/ku/meta`).once('value');
     if (!snap.exists()) { setConn(t('Room not found — check the code.', '未找到房间，请检查代码。'), 'err'); return; }
     mode = 'guest'; teardownNet();
-    setRole(t('you: cyan', '你：青')); setConn(t('Connected! You control the cyan paddle.', '已连接！你控制青色挡板。'), 'ok');
-    _guestOverShown = false; myX = W * 0.75;
+    setRole(t('you: cyan', '你：青')); setConn(t('Connected! You guard the RIGHT (cyan).', '已连接！你守右侧（青）。'), 'ok');
+    _guestOverShown = false; myY = H / 2;
     await gameRef('joined').set(true);
     _stateRef = gameRef('state'); _stateCb = _stateRef.on('value', s => { netState = s.val(); });
     if (!raf) raf = requestAnimationFrame(loop);
