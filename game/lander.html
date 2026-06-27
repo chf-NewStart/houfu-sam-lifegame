@@ -145,9 +145,9 @@
 const game = (function () {
   const $ = (id) => document.getElementById(id);
   const W = 600, H = 480;
-  const GRAV = 0.040, THRUST = 0.105, ANG_ACC = 0.0060, ANG_DAMP = 0.992;
-  const SAFE_SPEED = 1.9, SAFE_ANGLE = 0.28;           // |v| px/frame, |angle| rad
-  const GROUND_Y = H - 16, PAD_W = 92, SHIP_R = 13;
+  const GRAV = 0.023, THRUST = 0.070, ANG_ACC = 0.0058, ANG_DAMP = 0.987;
+  const SAFE_SPEED = 2.3, SAFE_ANGLE = 0.34;           // |v| px/frame, |angle| rad
+  const GROUND_Y = H - 16, PAD_W = 108, SHIP_R = 13;
 
   let canvas, ctx, DPR = 1, stars = [];
   let mode = 'local';                                  // 'local' | 'host' | 'guest'
