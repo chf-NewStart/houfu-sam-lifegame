@@ -113,6 +113,19 @@
     /* Board overlay (waiting for remote opponent) */
     #boardWrap { position: relative; display: inline-block; }
     .board-overlay { position: absolute; inset: 0; background: rgba(8,8,8,0.82); display: none; align-items: center; justify-content: center; text-align: center; font-size: 0.75rem; color: #1db954; line-height: 1.8; padding: 20px; }
+
+    /* remote tools: swap + emoji reactions */
+    .emoji-bar { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .emoji-bar button { flex: 1 1 auto; min-width: 36px; background: #0d0d0d; border: 1px solid #1e1e1e; font-size: 1.1rem; padding: 5px 0; cursor: pointer; border-radius: 4px; transition: all 0.1s; }
+    .emoji-bar button:hover { border-color: #1db954; background: rgba(29,185,84,0.08); }
+    .react-float { position: fixed; left: 50%; top: 40%; transform: translate(-50%,-50%); font-size: 4rem; pointer-events: none; opacity: 0; z-index: 300; }
+    .react-float.go { animation: reactPop 1.8s ease-out forwards; }
+    @keyframes reactPop { 0%{opacity:0;transform:translate(-50%,-30%) scale(.4);} 16%{opacity:1;transform:translate(-50%,-50%) scale(1.15);} 70%{opacity:1;transform:translate(-50%,-60%) scale(1);} 100%{opacity:0;transform:translate(-50%,-140%) scale(1);} }
+    .prompt-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(4,6,4,0.72); z-index: 320; }
+    .prompt-box { background: #0c0f0c; border: 1px solid #1db95466; border-radius: 6px; padding: 22px 26px; max-width: 320px; text-align: center; box-shadow: 0 0 50px -16px rgba(29,185,84,0.7); }
+    .prompt-msg { color: #ddd; font-size: 0.86rem; margin-bottom: 16px; line-height: 1.55; }
+    .prompt-btns { display: flex; gap: 10px; } .prompt-btns .btn { flex: 1; }
+
     /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch */
   html, body, button, a, input, select, label { touch-action: manipulation; }
 </style>
@@ -221,9 +234,35 @@
       <div id="connStatus" class="conn-status"></div>
     </div>
 
+    <div class="pcard" id="remoteToolsCard" style="display:none">
+      <div class="pcard-title" data-en="// remote tools" data-zh="// 联机工具">// remote tools</div>
+      <button class="btn" id="swapBtn" onclick="requestSwap()" data-en="↔ Swap sides &amp; restart" data-zh="↔ 交换先后手并重开">↔ Swap sides &amp; restart</button>
+      <div class="emoji-bar">
+        <button onclick="sendReact('👍')" title="nice">👍</button>
+        <button onclick="sendReact('😌')" title="chilling">😌</button>
+        <button onclick="sendReact('🤔')" title="thinking">🤔</button>
+        <button onclick="sendReact('😅')" title="phew">😅</button>
+        <button onclick="sendReact('😠')" title="grr">😠</button>
+        <button onclick="sendReact('🔥')" title="fire">🔥</button>
+        <button onclick="sendReact('💣')" title="boom">💣</button>
+        <button onclick="sendReact('🏳️')" title="i give up">🏳️</button>
+      </div>
+    </div>
+
     <div class="pcard">
       <div class="pcard-title" data-en="// log" data-zh="// 棋谱">// log</div>
       <div class="log" id="gameLog"></div>
+    </div>
+  </div>
+</div>
+
+<div id="reactFloat" class="react-float" aria-hidden="true"></div>
+<div id="prompt" class="prompt-modal" style="display:none">
+  <div class="prompt-box">
+    <div id="promptMsg" class="prompt-msg"></div>
+    <div class="prompt-btns">
+      <button class="btn" id="promptYes" data-en="✓ Allow" data-zh="✓ 同意">✓ Allow</button>
+      <button class="btn" id="promptNo" data-en="✗ Decline" data-zh="✗ 拒绝">✗ Decline</button>
     </div>
   </div>
 </div>
@@ -354,7 +393,13 @@ function scheduleAI() {
 
 /* ── Undo ─────────────────────────────────────── */
 function undoMove() {
-  if (history.length === 0 || remoteMode || aiThinking) return;
+  if (remoteMode) {
+    if (gameOver || _remoteMoves.length === 0) return;
+    gameRef('req').set({ type: 'undo', by: myColor, status: 'pending' });
+    setConnStatus(t('Undo requested — waiting for opponent…', '已请求悔棋 — 等待对方…'));
+    return;
+  }
+  if (history.length === 0 || aiThinking) return;
   const state = history.pop();
   board     = state.board;
   curP      = state.curP;
@@ -876,9 +921,8 @@ const firebaseConfig = {
 };
 
 let _fbDb = null, _fbCode = null, _fbSession = 0;
-let _fbMoveRef = null, _fbMoveCb = null;
-let _fbSessRef = null, _fbSessCb = null;
-let _fbJoinRef = null, _fbJoinCb = null;
+let _isHost = false, _curHost = 1, _remoteMoves = [], _remoteOver = false, _prevLen = 0, _reactSeen = 0;
+let _fbJoinRef=null,_fbJoinCb=null, _fbPlayRef=null,_fbPlayCb=null, _fbHostRef=null,_fbHostCb=null, _fbReqRef=null,_fbReqCb=null, _fbReactRef=null,_fbReactCb=null;
 
 function fbDb() {
   if (!_fbDb) { firebase.initializeApp(firebaseConfig); _fbDb = firebase.database(); }
@@ -892,99 +936,133 @@ function shortId() {
   for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
   return id;
 }
-
-function setConnStatus(msg, cls='') {
-  const el = document.getElementById('connStatus');
-  el.textContent = msg; el.className = 'conn-status' + (cls ? ' '+cls : '');
-}
-function showOverlay(msg) {
-  document.getElementById('boardOverlayMsg').textContent = msg;
-  document.getElementById('boardOverlay').style.display = 'flex';
-}
+function setConnStatus(msg, cls='') { const el = document.getElementById('connStatus'); el.textContent = msg; el.className = 'conn-status' + (cls ? ' '+cls : ''); }
+function showOverlay(msg) { document.getElementById('boardOverlayMsg').textContent = msg; document.getElementById('boardOverlay').style.display = 'flex'; }
 function hideOverlay() { document.getElementById('boardOverlay').style.display = 'none'; }
 
-function fbListenMoves(session) {
-  if (_fbMoveRef && _fbMoveCb) { _fbMoveRef.off('child_added', _fbMoveCb); }
-  _fbMoveRef = gameRef('moves');
-  _fbMoveCb = _fbMoveRef.on('child_added', snap => {
-    const d = snap.val();
-    if (d.s === session) placeStone(d.r, d.c);
-  });
+function computeMyColor() { myColor = _isHost ? _curHost : (3 - _curHost); }
+function updateUndoBtn() { document.getElementById('undoBtn').disabled = remoteMode ? (gameOver || _remoteMoves.length === 0) : (history.length === 0); }
+
+/* Rebuild the whole board from the authoritative move list — one source of truth,
+   so an undo is simply a shorter list and both sides converge. */
+function applyState(moves) {
+  _remoteMoves = moves.slice();
+  board = Array.from({ length: N }, () => new Array(N).fill(0));
+  curP = 1; moveCount = 0; lastMove = null; gameOver = false; winResult = null; hoverCell = null;
+  let winner = null;
+  for (const m of moves) {
+    const r = m[0], c = m[1];
+    if (r == null || c == null || board[r][c] !== 0) continue;
+    board[r][c] = curP; lastMove = [r, c]; moveCount++;
+    const wr = checkWin(board, r, c);
+    if (wr) { winner = wr; winResult = wr; gameOver = true; break; }
+    curP = curP === 1 ? 2 : 1;
+  }
+  const wb = document.getElementById('winBanner');
+  if (winner) {
+    if (!_remoteOver) { _remoteOver = true; scores[winner.player]++; log(winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！'), winner.player === 1 ? 'lwin' : 'lwin-r'); }
+    wb.className = 'win-banner ' + (winner.player === 1 ? 'win-g' : 'win-r');
+    wb.textContent = winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！');
+    document.getElementById('newBtn').className = 'btn ' + (winner.player === 1 ? 'glow-g' : 'glow-r');
+  } else {
+    _remoteOver = false; wb.className = 'win-banner'; document.getElementById('newBtn').className = 'btn';
+  }
+  updateUndoBtn(); draw(); renderPanel();
 }
 
-function fbSendMove(r, c) {
-  gameRef('moves').push({ r, c, s: _fbSession });
+function onPlay(snap) {
+  const v = snap.val(); if (!v) return;
+  const s = v.s || 0;
+  const moves = v.moves ? (Array.isArray(v.moves) ? v.moves : Object.values(v.moves)) : [];
+  if (s !== _fbSession) { _fbSession = s; _remoteOver = false; _prevLen = 0; log(t('── new game ──', '── 新游戏 ──'), 'lround'); }
+  if (moves.length > _prevLen) {
+    for (let i = _prevLen; i < moves.length; i++) { const r = moves[i][0], c = moves[i][1], who = (i % 2 === 0) ? 1 : 2; log(`${i + 1}. ${t(who === 1 ? 'Lime' : 'Tomato', who === 1 ? '青柠' : '番茄')} ${COLS[c]}${N - r}`, 'lmove'); }
+  } else if (moves.length < _prevLen) { log(t('↩ undo', '↩ 悔棋'), 'lround'); }
+  _prevLen = moves.length;
+  applyState(moves);
+}
+function onHost(snap) {
+  _curHost = snap.val() || 1; computeMyColor();
+  setConnStatus(t('Connected — you play ', '已连接 — 你执 ') + (myColor === 1 ? t('Lime', '青柠') : t('Tomato', '番茄')), 'ok');
+  renderPanel();
+}
+function onReq(snap) {
+  const req = snap.val();
+  if (!req) { hidePrompt(); return; }
+  if (req.status === 'declined') { if (req.by === myColor) { setConnStatus(t('Opponent declined.', '对方拒绝了。')); gameRef('req').remove(); } return; }
+  if (req.by === myColor) return;                            // my own pending request — just wait
+  const msg = req.type === 'undo'
+    ? t('Opponent asks to undo the last move. Allow?', '对方请求悔最后一步，同意吗？')
+    : t('Opponent asks to swap sides & restart. Allow?', '对方请求交换先后手并重开，同意吗？');
+  showPrompt(msg, () => approveReq(req), () => { gameRef('req').set({ type: req.type, by: req.by, status: 'declined' }); hidePrompt(); });
+}
+function approveReq(req) {
+  hidePrompt();
+  if (req.type === 'undo') gameRef('play').set({ s: _fbSession, moves: _remoteMoves.slice(0, -1) });
+  else if (req.type === 'swap') { gameRef('host').set(3 - _curHost); gameRef('play').set({ s: _fbSession + 1 }); }
+  gameRef('req').remove();
+}
+function onReact(snap) {
+  const r = snap.val(); if (!r || !r.id || r.id === _reactSeen) return;
+  _reactSeen = r.id; floatReact(r.e);
+  log((r.by === myColor ? t('You', '你') : t('Opponent', '对方')) + ' ' + r.e, 'lround');
 }
 
-function fbListenSession() {
-  if (_fbSessRef && _fbSessCb) { _fbSessRef.off('value', _fbSessCb); }
-  _fbSessRef = gameRef('session');
-  _fbSessCb = _fbSessRef.on('value', snap => {
-    const s = snap.val() ?? 0;
-    if (remoteMode && s !== _fbSession) {
-      _fbSession = s;
-      fbListenMoves(s);
-      newGame();
-    }
-  });
+function startRemoteListeners() {
+  if (_fbPlayCb) _fbPlayRef.off('value', _fbPlayCb);     _fbPlayRef = gameRef('play');   _fbPlayCb = _fbPlayRef.on('value', onPlay);
+  if (_fbHostCb) _fbHostRef.off('value', _fbHostCb);     _fbHostRef = gameRef('host');   _fbHostCb = _fbHostRef.on('value', onHost);
+  if (_fbReqCb) _fbReqRef.off('value', _fbReqCb);        _fbReqRef = gameRef('req');     _fbReqCb = _fbReqRef.on('value', onReq);
+  if (_fbReactCb) _fbReactRef.off('value', _fbReactCb);  _fbReactRef = gameRef('react'); _fbReactCb = _fbReactRef.on('value', onReact);
 }
+function fbSendMove(r, c) { gameRef('play').set({ s: _fbSession, moves: _remoteMoves.concat([[r, c]]) }); }
 
 async function createRoom() {
-  _fbCode = shortId();
-  myColor = 1; remoteMode = false; _fbSession = 0;
+  _fbCode = shortId(); _isHost = true; _curHost = 1; remoteMode = false; _fbSession = 0; _prevLen = 0; _remoteOver = false; _remoteMoves = [];
+  computeMyColor();
   document.getElementById('roomCode').textContent = _fbCode;
   setConnStatus(t('Waiting for opponent — share the code above', '等待对方加入，分享上方代码'));
   showOverlay(t('Waiting for opponent…\nShare the room code on the right.', '等待对方加入…\n将房间码分享给对方。'));
-
-  await gameRef('meta').set({ created: Date.now(), session: 0 });
-
-  if (_fbJoinRef && _fbJoinCb) { _fbJoinRef.off('value', _fbJoinCb); }
+  await gameRef('meta').set({ created: Date.now() });
+  await gameRef('host').set(1);
+  await gameRef('play').set({ s: 0 });
+  await gameRef('react').remove(); await gameRef('req').remove(); await gameRef('joined').set(false);
+  if (_fbJoinCb) _fbJoinRef.off('value', _fbJoinCb);
   _fbJoinRef = gameRef('joined');
   _fbJoinCb = _fbJoinRef.on('value', snap => {
-    if (snap.val() && !remoteMode) {
-      remoteMode = true;
-      hideOverlay();
-      setConnStatus(t('Connected! You play Lime.', '已连接！你执青柠。'), 'ok');
-      updatePauseBtn();
-      fbListenMoves(0);
-      fbListenSession();
-      newGame();
-    }
+    if (snap.val() && !remoteMode) { remoteMode = true; hideOverlay(); updatePauseBtn(); showRemoteUI(true); startRemoteListeners(); }
   });
 }
 
 async function joinRoom() {
   const code = document.getElementById('joinCode').value.trim().toUpperCase();
   if (!code) return;
-  setConnStatus(t('Looking up room…', '查找房间…'));
-  showOverlay(t('Connecting…', '连接中…'));
-
+  setConnStatus(t('Looking up room…', '查找房间…')); showOverlay(t('Connecting…', '连接中…'));
   const snap = await fbDb().ref(`games/${code}/meta`).once('value');
-  if (!snap.exists()) {
-    hideOverlay();
-    setConnStatus(t('Room not found — check the code.', '未找到房间，请检查代码。'), 'err');
-    return;
-  }
-
-  _fbCode = code; myColor = 2; remoteMode = true;
-  _fbSession = snap.val().session ?? 0;
-  await fbDb().ref(`games/${code}/joined`).set(true);
-
-  hideOverlay();
-  setConnStatus(t('Connected! You play Tomato.', '已连接！你执番茄。'), 'ok');
-  updatePauseBtn();
-  fbListenMoves(_fbSession);
-  fbListenSession();
+  if (!snap.exists()) { hideOverlay(); setConnStatus(t('Room not found — check the code.', '未找到房间，请检查代码。'), 'err'); return; }
+  _fbCode = code; _isHost = false; remoteMode = true; _fbSession = 0; _prevLen = 0; _remoteOver = false; _remoteMoves = [];
+  computeMyColor();
+  await gameRef('joined').set(true);
+  hideOverlay(); updatePauseBtn(); showRemoteUI(true);
+  startRemoteListeners();
 }
 
 function requestNewGame() {
   if (!remoteMode) { newGame(); return; }
-  if (myColor !== 1) {
-    setConnStatus(t('Only Lime (host) can start a new game.', '只有青柠（主机）可发起新游戏。'));
-    return;
-  }
-  gameRef('session').set(_fbSession + 1); // both sides' listeners will call newGame()
+  gameRef('req').remove();
+  gameRef('play').set({ s: (_fbSession || 0) + 1 });
 }
+function requestSwap() {
+  if (!remoteMode) { setConnStatus(t('Swap sides is for remote games.', '换边仅用于联机对战。')); return; }
+  gameRef('req').set({ type: 'swap', by: myColor, status: 'pending' });
+  setConnStatus(t('Swap requested — waiting for opponent…', '已请求换边 — 等待对方…'));
+}
+function sendReact(e) { if (!remoteMode) return; gameRef('react').set({ e: e, by: myColor, id: Date.now() }); }
+
+function showRemoteUI(on) { const c = document.getElementById('remoteToolsCard'); if (c) c.style.display = on ? '' : 'none'; }
+function showPrompt(msg, onYes, onNo) { document.getElementById('promptMsg').textContent = msg; document.getElementById('promptYes').onclick = onYes; document.getElementById('promptNo').onclick = onNo; document.getElementById('prompt').style.display = 'flex'; }
+function hidePrompt() { document.getElementById('prompt').style.display = 'none'; }
+let _reactTimer = 0;
+function floatReact(e) { const el = document.getElementById('reactFloat'); el.textContent = e; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); clearTimeout(_reactTimer); _reactTimer = setTimeout(() => el.classList.remove('go'), 1800); }
 
 /* ── Init ─────────────────────────────────────── */
 function init() {
