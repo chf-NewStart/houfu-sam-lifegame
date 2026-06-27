@@ -108,6 +108,7 @@
         <div data-en="Move your paddle: <b class='keycap'>↑</b>/<b class='keycap'>↓</b> or <b class='keycap'>W</b>/<b class='keycap'>S</b>, or drag." data-zh="移动你的挡板：<b class='keycap'>↑</b>/<b class='keycap'>↓</b> 或 <b class='keycap'>W</b>/<b class='keycap'>S</b>，或拖动。">Move your paddle: <b class="keycap">↑</b>/<b class="keycap">↓</b> or <b class="keycap">W</b>/<b class="keycap">S</b>, or drag.</div>
         <div id="localHint" data-en="Local: left paddle = W/S, right paddle = ↑/↓ (or drag each half)." data-zh="本地：左挡板 = W/S，右挡板 = ↑/↓（或拖动两半）。">Local: left paddle = W/S, right paddle = ↑/↓ (or drag each half).</div>
       </div>
+      <button class="btn" id="pauseBtn" style="margin-top:10px" onclick="game.togglePause()" data-en="⏸ Pause" data-zh="⏸ 暂停">⏸ Pause</button>
     </div>
 
     <div class="card">
@@ -131,15 +132,15 @@ const game = (function () {
   const $ = (id) => document.getElementById(id);
   const W = 640, H = 460;
   const PAD_W = 14, PAD_INSET = 26, PAD_H0 = 96, PAD_SPD = 8;
-  const BALL_R = 9, BASE = 4.0, SPD_CAP = 4.6, POWER_EVERY = 6.5;
+  const BALL_R = 10, BASE = 3.8, SPD_CAP = 3.3, POWER_EVERY = 6.5;
 
   let canvas, ctx, DPR = 1;
   let mode = 'local';                 // 'local' | 'host' | 'guest'
   let pads, balls, powers, keys = {};
-  let running = false, t0 = 0, elapsed = 0, nextPower = 0;
+  let running = false, paused = false, pausedAt = 0, t0 = 0, elapsed = 0, nextPower = 0;
   let shrinkUntil = 0, rushUntil = 0, lastTs = 0, raf = 0;
-  let myY = H / 2 - PAD_H0 / 2;        // remote: my paddle target y (local prediction)
-  let netState = null, lastWrite = 0;  // guest: latest host snapshot
+  let myY = H / 2;                     // remote: my paddle CENTRE y (local prediction)
+  let netState = null, lastWrite = 0, guestBalls = null;  // guest: latest host snapshot + smoothed render balls
 
   const rand = (a, b) => a + Math.random() * (b - a);
   const isHost = () => mode === 'host' || mode === 'local';   // who runs the simulation
@@ -150,11 +151,15 @@ const game = (function () {
       { x: W - PAD_INSET - PAD_W, y: H / 2 - PAD_H0 / 2, w: PAD_W, h: PAD_H0 },
     ];
     balls = [mkBall()]; powers = [];
-    shrinkUntil = 0; rushUntil = 0; elapsed = 0; nextPower = POWER_EVERY;
+    shrinkUntil = 0; rushUntil = 0; elapsed = 0; nextPower = POWER_EVERY; paused = false; pausedAt = 0;
   }
   function mkBall(x, y) {
     const ang = rand(-0.5, 0.5) + (Math.random() < 0.5 ? Math.PI : 0);
-    return { x: x == null ? W / 2 : x, y: y == null ? H * 0.4 : y, dx: Math.cos(ang), dy: Math.abs(Math.sin(ang)) * (Math.random() < 0.5 ? 1 : -1), r: BALL_R };
+    const b = { x: x == null ? W / 2 : x, y: y == null ? H * 0.4 : y, dx: Math.cos(ang), dy: Math.abs(Math.sin(ang)) * (Math.random() < 0.5 ? 1 : -1), r: BALL_R, trail: [] };
+    lively(b); return b;
+  }
+  function lively(b) {                  // keep a healthy diagonal so the ball never settles into a flat back-and-forth
+    const MINX = 0.30; if (Math.abs(b.dx) < MINX) { b.dx = (b.dx >= 0 ? 1 : -1) * MINX; const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m; }
   }
 
   function startSim() {
@@ -169,8 +174,8 @@ const game = (function () {
   }
 
   function speedNow() {
-    let s = Math.min(BASE * Math.pow(1.026, elapsed), BASE * SPD_CAP);
-    if (performance.now() < rushUntil) s *= 1.7;
+    let s = Math.min(BASE * Math.pow(1.021, elapsed), BASE * SPD_CAP);
+    if (performance.now() < rushUntil) s *= 1.45;
     return s;
   }
   function paddleHit(b, p) {
@@ -180,7 +185,9 @@ const game = (function () {
     const off = Math.max(-1, Math.min(1, (b.y - (p.y + p.h / 2)) / (p.h / 2)));
     b.dx = left ? Math.abs(b.dx) : -Math.abs(b.dx);
     b.dy = off * 0.95;
+    if (Math.abs(b.dy) < 0.22) b.dy = -(0.22 + Math.random() * 0.14);   // centre/glancing hits float up — never a dull flat loop
     const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m;
+    lively(b);
     b.x = left ? p.x + p.w + b.r + 0.5 : p.x - b.r - 0.5;
   }
   function spawnPower() {
@@ -209,22 +216,26 @@ const game = (function () {
     }
     for (const p of pads) p.y = Math.max(0, Math.min(H - p.h, p.y));
 
-    const s = speedNow();
+    const s = speedNow();                                  // velocities stay UNIT; speed applied via sub-step distance
     for (let i = balls.length - 1; i >= 0; i--) {
       const b = balls[i];
-      const m = Math.hypot(b.dx, b.dy) || 1; b.dx = b.dx / m * s; b.dy = b.dy / m * s;
-      b.x += b.dx * f; b.y += b.dy * f;
-      if (b.y - b.r < 0) { b.y = b.r; b.dy = Math.abs(b.dy); }
-      if (b.x - b.r < 0) { b.x = b.r; b.dx = Math.abs(b.dx); }
-      if (b.x + b.r > W) { b.x = W - b.r; b.dx = -Math.abs(b.dx); }
-      paddleHit(b, pads[0]); paddleHit(b, pads[1]);
-      for (let k = powers.length - 1; k >= 0; k--) {
-        const pw = powers[k];
-        if (b.x + b.r > pw.x - pw.s / 2 && b.x - b.r < pw.x + pw.s / 2 && b.y + b.r > pw.y - pw.s / 2 && b.y - b.r < pw.y + pw.s / 2) { trigger(pw.type, pw.x, pw.y); powers.splice(k, 1); }
+      const dist = s * f, sub = Math.min(8, Math.max(1, Math.ceil(dist / (BALL_R * 0.9)))), sd = dist / sub;
+      let dead = false;
+      for (let n = 0; n < sub && !dead; n++) {             // sub-step so a fast ball can't tunnel through a paddle
+        b.x += b.dx * sd; b.y += b.dy * sd;
+        if (b.y - b.r < 0) { b.y = b.r; b.dy = Math.abs(b.dy); }
+        if (b.x - b.r < 0) { b.x = b.r; b.dx = Math.abs(b.dx); lively(b); }
+        else if (b.x + b.r > W) { b.x = W - b.r; b.dx = -Math.abs(b.dx); lively(b); }
+        paddleHit(b, pads[0]); paddleHit(b, pads[1]);
+        for (let k = powers.length - 1; k >= 0; k--) {
+          const pw = powers[k];
+          if (b.x + b.r > pw.x - pw.s / 2 && b.x - b.r < pw.x + pw.s / 2 && b.y + b.r > pw.y - pw.s / 2 && b.y - b.r < pw.y + pw.s / 2) { trigger(pw.type, pw.x, pw.y); powers.splice(k, 1); }
+        }
+        if (b.y - b.r > H) dead = true;
       }
-      if (b.y - b.r > H) { if (balls.length === 1) { gameOver(); return; } balls.splice(i, 1); }
+      (b.trail || (b.trail = [])).push([b.x, b.y]); if (b.trail.length > 8) b.trail.shift();
+      if (dead) { if (balls.length === 1) { gameOver(); return; } balls.splice(i, 1); }
     }
-    for (const b of balls) { const m = Math.hypot(b.dx, b.dy) || 1; b.dx /= m; b.dy /= m; }
     if (elapsed >= nextPower) { spawnPower(); nextPower += POWER_EVERY; }
   }
 
@@ -259,23 +270,32 @@ const game = (function () {
     ctx.fillStyle = '#2bd46a'; ctx.fillRect(p0.x, p0.y, p0.w, p0.h);
     ctx.fillStyle = '#36c5d0'; ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
     for (const b of bs) {
+      if (b.trail) for (let i = 0; i < b.trail.length; i++) { const a = (i + 1) / b.trail.length; ctx.fillStyle = (rush ? 'rgba(255,120,90,' : 'rgba(54,197,208,') + (a * a * 0.42).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(b.trail[i][0], b.trail[i][1], b.r * (0.35 + a * 0.7), 0, 7); ctx.fill(); }
       const gr = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 2);
-      gr.addColorStop(0, rush ? 'rgba(255,120,90,0.95)' : 'rgba(255,255,255,0.95)');
-      gr.addColorStop(0.5, rush ? 'rgba(226,82,62,0.5)' : 'rgba(54,197,208,0.5)');
+      gr.addColorStop(0, rush ? 'rgba(255,150,120,1)' : 'rgba(255,255,255,1)');
+      gr.addColorStop(0.5, rush ? 'rgba(226,82,62,0.6)' : 'rgba(54,197,208,0.6)');
       gr.addColorStop(1, 'rgba(54,197,208,0)');
       ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2, 0, 7); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.55, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.62, 0, 7); ctx.fill();
+    }
+    if (pausedShown()) {
+      ctx.fillStyle = 'rgba(5,8,9,0.55)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#36c5d0'; ctx.font = 'bold 30px Consolas,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(t('❚❚ PAUSED', '❚❚ 已暂停'), W / 2, H / 2);
     }
   }
+  function pausedShown() { return mode === 'guest' ? !!(netState && netState.pz) : paused; }
   function render() {
     if (mode === 'guest') {
       const st = netState;
       if (!st) { ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0a0c0d'; ctx.fillRect(0, 0, W, H); return; }
-      const bs = (st.b || []).map(a => ({ x: a[0], y: a[1], r: BALL_R }));
+      const tg = st.b || [];
+      if (!guestBalls || guestBalls.length !== tg.length) guestBalls = tg.map(a => ({ x: a[0], y: a[1], r: BALL_R, trail: [] }));
+      for (let i = 0; i < tg.length; i++) { const g = guestBalls[i]; g.x += (tg[i][0] - g.x) * 0.35; g.y += (tg[i][1] - g.y) * 0.35; g.trail.push([g.x, g.y]); if (g.trail.length > 8) g.trail.shift(); }   // smooth the ~18Hz snapshots up to 60fps
       const p0 = { x: PAD_INSET, y: st.p1 || 0, w: PAD_W, h: st.ph || PAD_H0 };
-      const myH = st.ph || PAD_H0, p1 = { x: W - PAD_INSET - PAD_W, y: Math.max(0, Math.min(H - myH, myY)), w: PAD_W, h: myH };  // my paddle: local prediction
+      const myH = st.ph || PAD_H0, p1 = { x: W - PAD_INSET - PAD_W, y: Math.max(0, Math.min(H - myH, myY - myH / 2)), w: PAD_W, h: myH };  // my paddle: local prediction
       const pws = (st.pw || []).map(a => ({ x: a[0], y: a[1], type: a[2], s: 26 }));
-      drawScene(bs, p0, p1, pws, !!st.r);
+      drawScene(guestBalls, p0, p1, pws, !!st.r);
     } else {
       drawScene(balls, pads[0], pads[1], powers, performance.now() < rushUntil);
     }
@@ -293,7 +313,7 @@ const game = (function () {
       if (netState) { elapsed = netState.t || 0; $('vTime').textContent = elapsed.toFixed(1); $('over').classList.toggle('show', !!netState.o); if (netState.o) showGuestOver(); }
       render();
     } else {
-      if (running) { elapsed = (performance.now() - t0) / 1000; $('vTime').textContent = elapsed.toFixed(1); step(f); }
+      if (running && !paused) { elapsed = (performance.now() - t0) / 1000; $('vTime').textContent = elapsed.toFixed(1); step(f); }
       if (mode === 'host' && ts - lastWrite > 55) { lastWrite = ts; writeState(); }
       render();
     }
@@ -349,7 +369,7 @@ const game = (function () {
   /* ── Firebase remote (host-authoritative) ───────── */
   const firebaseConfig = { apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
   let _db = null, _code = null, _stateRef = null, _stateCb = null, _giRef = null, _giCb = null, _joinRef = null, _joinCb = null;
-  let netGuestY = null, _lastRs = 0;
+  let netGuestY = null, _lastRs = 0, _lastPz = 0;
   function db() { if (!_db) { firebase.initializeApp(firebaseConfig); _db = firebase.database(); } return _db; }
   function gameRef(sub) { return db().ref(`games/${_code}/ku/${sub}`); }
   function shortId() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += c[(Math.random() * c.length) | 0]; return s; }
@@ -362,14 +382,25 @@ const game = (function () {
       b: balls.map(b => [Math.round(b.x), Math.round(b.y)]),
       p1: Math.round(pads[0].y), p2: Math.round(pads[1].y), ph: Math.round(pads[0].h),
       pw: powers.map(p => [Math.round(p.x), Math.round(p.y), p.type]),
-      t: +elapsed.toFixed(1), o: !running, r: performance.now() < rushUntil ? 1 : 0,
+      t: +elapsed.toFixed(1), o: !running, r: performance.now() < rushUntil ? 1 : 0, pz: paused ? 1 : 0,
     });
+  }
+  function togglePause() {
+    if (mode === 'guest') { gameRef('gi').update({ pz: Date.now() }); return; }   // ask the host to pause/resume
+    doPause(!paused);
+  }
+  function doPause(p) {
+    if (!running) return;
+    paused = p;
+    if (p) pausedAt = performance.now(); else if (pausedAt) { t0 += performance.now() - pausedAt; pausedAt = 0; }
+    const b = $('pauseBtn'); if (b) b.textContent = paused ? t('▶ Resume', '▶ 继续') : t('⏸ Pause', '⏸ 暂停');
+    if (mode === 'host') writeState();
   }
   async function createRoom() {
     _code = shortId(); mode = 'host'; teardownNet(); _code = _code;
     $('roomCode').textContent = _code; setRole(t('you: left ●', '你：左 ●')); setConn(t('Waiting for a friend to join…', '等待好友加入…'));
     await gameRef('meta').set({ created: Date.now() }); await gameRef('gi').set({ y: H / 2 }); await gameRef('joined').set(false);
-    _giRef = gameRef('gi'); _giCb = _giRef.on('value', s => { const v = s.val(); if (!v) return; netGuestY = v.y; if (v.rs && v.rs !== _lastRs) { _lastRs = v.rs; startSim(); } });
+    _giRef = gameRef('gi'); _giCb = _giRef.on('value', s => { const v = s.val(); if (!v) return; netGuestY = v.y; if (v.rs && v.rs !== _lastRs) { _lastRs = v.rs; startSim(); } if (v.pz && v.pz !== _lastPz) { _lastPz = v.pz; doPause(!paused); } });
     _joinRef = gameRef('joined'); _joinCb = _joinRef.on('value', s => { if (s.val()) { setConn(t('Connected! You control the left paddle.', '已连接！你控制左挡板。'), 'ok'); startSim(); } });
   }
   async function joinRoom() {
@@ -387,7 +418,7 @@ const game = (function () {
 
   function t(en, zh) { return document.documentElement.lang === 'zh' ? zh : en; }
   function init() { canvas = $('field'); ctx = canvas.getContext('2d'); layout(); bind(); startSim(); }
-  return { init: init, restart: restart, playLocal: playLocal, createRoom: createRoom, joinRoom: joinRoom };
+  return { init: init, restart: restart, playLocal: playLocal, createRoom: createRoom, joinRoom: joinRoom, togglePause: togglePause };
 })();
 
 function toggleLang() {
