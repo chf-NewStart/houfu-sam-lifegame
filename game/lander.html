@@ -89,7 +89,7 @@
       <div class="big" id="overBig">—</div>
       <div class="res" id="overRes"></div>
       <div class="nb" id="overNb"></div>
-      <button class="btn" onclick="game.restart()" data-en="↻ Try again" data-zh="↻ 再试一次">↻ Try again</button>
+      <button class="btn" id="overBtn" onclick="game.restart()" data-en="↻ Try again" data-zh="↻ 再试一次">↻ Try again</button>
     </div>
   </div>
 
@@ -131,7 +131,7 @@
       <div class="card-title"><span data-en="// safe landing" data-zh="// 安全着陆">// safe landing</span></div>
       <div class="help">
         <div data-en="✓ on the <b>pad</b>, ✓ <b>slow</b> (gauge green), ✓ near <b>upright</b>." data-zh="✓ 落在<b>平台</b>上，✓ <b>速度慢</b>（仪表为绿），✓ 接近<b>竖直</b>。">✓ on the <b>pad</b>, ✓ <b>slow</b> (gauge green), ✓ near <b>upright</b>.</div>
-        <div style="color:#7a7a7a" data-en="Land softly to bank it and get a fresh pad. One bad touchdown ends the streak." data-zh="平稳着陆即可计入连胜并刷新平台。一次失误就中断连胜。">Land softly to bank it and get a fresh pad. One bad touchdown ends the streak.</div>
+        <div style="color:#7a7a7a" data-en="Each safe landing banks your streak; the next pad is a little smaller and faster. One bad touchdown ends the run." data-zh="每次安全着陆都会计入连胜；下一个平台会更小、更快一点。一次失误就结束本局。">Each safe landing banks your streak; the next pad is a little smaller and faster. One bad touchdown ends the run.</div>
       </div>
     </div>
   </div>
@@ -160,11 +160,15 @@ const game = (function () {
   const norm = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 
   function newRound(keepStreak) {
-    pad = { x: rand(60, W - 60 - PAD_W), w: PAD_W };
-    ship = { x: rand(W * 0.25, W * 0.75), y: 46, vx: rand(-0.6, 0.6), vy: 0, a: rand(-0.2, 0.2), va: 0, th: false };
-    st = 0; resultAt = 0;
     if (!keepStreak) streak = 0;
+    const lvl = streak;                                 // each banked landing makes the next a bit harder:
+    const pw = Math.max(74, PAD_W - Math.min(lvl, 9) * 4);   // narrower pad …
+    pad = { x: rand(56, W - 56 - pw), w: pw };
+    const drift = 0.6 + Math.min(lvl, 8) * 0.13;        // … and more sideways drift to cancel.
+    ship = { x: rand(W * 0.22, W * 0.78), y: 46, vx: rand(-drift, drift), vy: 0, a: rand(-0.22, 0.22), va: 0, th: false };
+    st = 0; resultAt = 0;
   }
+  function gravNow() { return GRAV * (1 + Math.min(streak, 6) * 0.04); }   // gentle speed ramp (up to +24%)
   function startGame() { newRound(false); $('over').classList.remove('show'); paused = false; pausedAt = 0; running = true; lastTs = performance.now(); loadBest(); if (!raf) raf = requestAnimationFrame(loop); }
   function playLocal() { mode = 'local'; setRole(''); setConn(''); $('roomCode').textContent = '—'; $('codeBox').style.display = 'none'; roleButtons(); teardownNet(); startGame(); }
   function restart() { if (mode === 'guest') { gameRef('gi').update({ rs: Date.now() }); return; } startGame(); }
@@ -178,7 +182,7 @@ const game = (function () {
     ship.a += ship.va * f;
     ship.th = thrustOn;
     if (thrustOn) { ship.vx += Math.sin(ship.a) * THRUST * f; ship.vy += -Math.cos(ship.a) * THRUST * f; }
-    ship.vy += GRAV * f;
+    ship.vy += gravNow() * f;
     ship.x += ship.vx * f; ship.y += ship.vy * f;
     if (ship.x < SHIP_R) { ship.x = SHIP_R; ship.vx = Math.abs(ship.vx) * 0.4; }
     if (ship.x > W - SHIP_R) { ship.x = W - SHIP_R; ship.vx = -Math.abs(ship.vx) * 0.4; }
@@ -189,21 +193,23 @@ const game = (function () {
       const onPad = ship.x > pad.x && ship.x < pad.x + pad.w;
       ship.lastSpd = spd; ship.lastAng = ang;
       if (onPad && spd < SAFE_SPEED && ang < SAFE_ANGLE) { st = 1; streak++; saveBest(streak); }
-      else st = 2;
+      else { st = 2; ship.rc = !onPad ? 1 : (spd >= SAFE_SPEED ? 2 : 3); }   // why it crashed
       resultAt = performance.now(); running = false;
       if (mode !== 'guest') showResult();
     }
   }
+  function reasonText(rc) { return rc === 1 ? t('You missed the pad', '没落在平台上') : rc === 2 ? t('Came in too fast', '速度太快') : rc === 3 ? t('Landed too steep', '落得太斜') : ''; }
   function showResult() {
     const safe = st === 1;
     $('overBig').className = 'big ' + (safe ? 'safe' : 'crash');
     $('overBig').textContent = safe ? t('✓ SAFE LANDING!', '✓ 安全着陆！') : t('✕ CRASH!', '✕ 坠毁！');
     const spd = (ship.lastSpd || 0).toFixed(2), deg = Math.round((ship.lastAng || 0) * 180 / Math.PI);
-    $('overRes').textContent = t('speed ', '速度 ') + spd + ' · ' + t('tilt ', '倾角 ') + deg + '°';
-    $('overNb').textContent = safe ? (t('landing #', '第 ') + streak + t('', ' 次着陆')) : (t('best streak ', '最佳连胜 ') + bestVal());
-    if (safe) { document.getElementById('overBig'); setTimeout(() => { if (st === 1 && mode !== 'guest') { newRound(true); $('over').classList.remove('show'); running = true; lastTs = performance.now(); } }, 1100); }
-    else $('over').classList.add('show');
+    $('overRes').textContent = (safe ? '' : reasonText(ship.rc) + ' · ') + t('speed ', '速度 ') + spd + ' · ' + t('tilt ', '倾角 ') + deg + '°';
+    $('overNb').textContent = safe ? (t('Landing #', '第 ') + streak + t(' — next pad incoming…', ' 次着陆——下一个平台马上来…')) : (t('best streak ', '最佳连胜 ') + bestVal());
+    $('overBtn').style.display = safe ? 'none' : '';
+    $('over').classList.add('show');
     $('vStreak').textContent = streak;
+    if (safe && mode !== 'guest') setTimeout(() => { if (st === 1) { newRound(true); $('over').classList.remove('show'); running = true; lastTs = performance.now(); if (mode === 'host') writeState(); } }, 1500);
   }
 
   // ---- best (streak) ----
@@ -266,7 +272,7 @@ const game = (function () {
     const f = Math.min(2.2, (ts - lastTs) / 16.667) || 1; lastTs = ts;
     if (mode === 'guest') {
       if (ts - lastWrite > 55) { lastWrite = ts; gameRef('gi').update({ tl: myTilt() }); }
-      if (netState) { $('vStreak').textContent = netState.sk || 0; if (netState.st && !_resShown) showGuestResult(); if (!netState.st) _resShown = false; }
+      if (netState) { $('vStreak').textContent = netState.sk || 0; if (netState.st && !_resShown) showGuestResult(); if (!netState.st && _resShown) { _resShown = false; $('over').classList.remove('show'); } }
       render();
     } else {
       if (running && !paused && st === 0) step(f, myThrust(), (mode === 'host' ? (netTilt || 0) : myTilt()));
@@ -279,10 +285,11 @@ const game = (function () {
   function showGuestResult() {
     _resShown = true; const s = netState, safe = s.st === 1;
     $('overBig').className = 'big ' + (safe ? 'safe' : 'crash'); $('overBig').textContent = safe ? t('✓ SAFE LANDING!', '✓ 安全着陆！') : t('✕ CRASH!', '✕ 坠毁！');
-    $('overRes').textContent = t('speed ', '速度 ') + (s.spd || 0).toFixed(2) + ' · ' + t('tilt ', '倾角 ') + Math.round((s.ang || 0) * 180 / Math.PI) + '°';
-    $('overNb').textContent = safe ? (t('landing #', '第 ') + (s.sk || 0)) : (t('best streak ', '最佳连胜 ') + bestVal());
+    $('overRes').textContent = (safe ? '' : reasonText(s.rc) + ' · ') + t('speed ', '速度 ') + (s.spd || 0).toFixed(2) + ' · ' + t('tilt ', '倾角 ') + Math.round((s.ang || 0) * 180 / Math.PI) + '°';
+    $('overNb').textContent = safe ? (t('Landing #', '第 ') + (s.sk || 0) + t(' — next pad incoming…', ' 次着陆——下一个平台马上来…')) : (t('best streak ', '最佳连胜 ') + bestVal());
     if (safe) saveBest(s.sk || 0);
-    if (!safe) $('over').classList.add('show'); else { $('over').classList.remove('show'); }
+    $('overBtn').style.display = safe ? 'none' : '';
+    $('over').classList.add('show');
   }
 
   // ---- input ----
@@ -338,7 +345,7 @@ const game = (function () {
   function writeState() {
     gameRef('state').set({
       x: Math.round(ship.x), y: Math.round(ship.y), a: +ship.a.toFixed(3), th: ship.th ? 1 : 0,
-      px: Math.round(pad.x), pw: pad.w, sk: streak, st: st,
+      px: Math.round(pad.x), pw: pad.w, sk: streak, st: st, rc: st === 2 ? (ship.rc || 0) : 0,
       spd: +(ship.lastSpd != null && st ? ship.lastSpd : Math.hypot(ship.vx, ship.vy)).toFixed(2),
       ang: +(ship.lastAng != null && st ? ship.lastAng : Math.abs(norm(ship.a))).toFixed(3),
       pz: paused ? 1 : 0,
