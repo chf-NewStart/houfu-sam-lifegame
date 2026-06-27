@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Co-op Lander // houfu.xyz</title>
+<meta name="description" content="A 2-player co-op lunar lander played remotely — one pilots the thrust, the other steers the tilt. Land softly and flat on the pad, together.">
+<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:22px 18px 40px;}
+  a{color:#1db954;}
+  .hdr{max-width:920px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .hdr .title{color:#e8b04a;font-size:1.3rem;text-transform:uppercase;letter-spacing:-1px;}
+  .hdr .sub{color:#9a9a9a;font-size:0.76rem;margin-top:5px;line-height:1.6;max-width:560px;}
+  .hdr .back{color:#1db954;font-size:0.7rem;text-decoration:none;display:inline-block;margin-top:7px;}
+  .hdr .back:hover{text-decoration:underline;}
+  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.7rem;padding:5px 11px;cursor:pointer;flex-shrink:0;transition:background .12s;}
+  .lang-btn:hover{background:rgba(29,185,84,0.1);}
+
+  .wrap{max-width:920px;margin:0 auto;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;justify-content:center;}
+  .stage{flex:0 0 auto;position:relative;}
+  #field{display:block;width:min(94vw,600px);background:#06070b;border:1px solid #20243a;border-radius:4px;touch-action:none;box-shadow:0 0 44px -16px rgba(232,176,74,0.4);}
+  .over{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,6,10,0.82);border-radius:4px;text-align:center;padding:20px;}
+  .over.show{display:flex;}
+  .over .big{font-size:1.7rem;letter-spacing:2px;margin-bottom:4px;}
+  .over .big.safe{color:#2bd46a;} .over .big.crash{color:#e2523e;}
+  .over .res{font-size:0.82rem;color:#cfcfcf;margin-bottom:4px;}
+  .over .nb{font-size:0.72rem;color:#ffce4d;min-height:1em;margin-bottom:16px;}
+  .over .btn{max-width:220px;}
+
+  .padbar{display:flex;gap:8px;width:min(94vw,600px);margin:10px auto 0;}
+  .padbtn{flex:1;background:#0d0d0d;border:1px solid #2a2a2a;color:#cfcfcf;font-family:inherit;font-size:1.4rem;padding:12px 0;cursor:pointer;border-radius:6px;user-select:none;-webkit-user-select:none;transition:background .08s,border-color .08s;}
+  .padbtn:active,.padbtn.on{background:rgba(232,176,74,0.16);border-color:#e8b04a;}
+  .padbtn.thrust{flex:1.6;color:#e8b04a;}
+  .padbtn[disabled]{opacity:0.25;pointer-events:none;}
+
+  .side{flex:1;min-width:230px;max-width:300px;}
+  .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:13px 14px;margin-bottom:11px;}
+  .card-title{color:#e8b04a;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:11px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
+  .hud{display:flex;gap:8px;}
+  .stat{flex:1;text-align:center;}
+  .stat .k{font-size:0.56rem;text-transform:uppercase;letter-spacing:1px;color:#7a7a7a;}
+  .stat .v{font-size:1.35rem;color:#f0f0f0;margin-top:3px;font-variant-numeric:tabular-nums;}
+  .stat .v.best{color:#ffce4d;}
+  .btn{display:block;width:100%;background:transparent;border:1px solid #e8b04a;color:#e8b04a;font-family:inherit;font-size:0.78rem;padding:10px;cursor:pointer;transition:background .12s,color .12s;margin-bottom:8px;}
+  .btn:hover{background:#e8b04a;color:#1a1205;}
+  .btn.alt{border-color:#1db954;color:#1db954;}
+  .btn.alt:hover{background:#1db954;color:#07120b;}
+  .code-box{display:none;margin:10px 0;text-align:center;}
+  .code-label{font-size:0.6rem;color:#7a7a7a;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+  .room-code-big{font-size:1.9rem;letter-spacing:5px;color:#e8b04a;font-weight:700;padding:9px;border:1px dashed #6e5a2a;border-radius:6px;cursor:pointer;user-select:all;}
+  .room-code-big:hover{background:rgba(232,176,74,0.08);}
+  .or-sep{text-align:center;font-size:0.62rem;color:#555;margin:12px 0 8px;}
+  .join-input{width:100%;background:#0a0a0a;border:1px solid #2a2a2a;color:#e8b04a;font-family:inherit;font-size:1.15rem;letter-spacing:3px;text-align:center;text-transform:uppercase;padding:12px;margin-bottom:8px;}
+  .join-input::placeholder{color:#3a3a3a;letter-spacing:2px;}
+  .conn{font-size:0.66rem;color:#666;min-height:1em;margin-top:2px;}
+  .conn.ok{color:#1db954;} .conn.err{color:#e2523e;}
+  .help{font-size:0.7rem;color:#9a9a9a;line-height:1.7;}
+  .help b{color:#cfcfcf;font-weight:normal;}
+  .help > div{margin-bottom:5px;}
+  .keycap{display:inline-block;border:1px solid #2a2a2a;border-radius:3px;padding:0 5px;color:#cfcfcf;font-size:0.66rem;}
+
+  html, body, button, a, input, select, label { touch-action: manipulation; }
+  #field { touch-action: none; }
+</style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="title" id="pgTitle">&gt;_ Co-op Lander</div>
+    <div class="sub" id="pgSub" data-en="One ship, two pilots: one of you fires the main engine (thrust), the other steers the tilt. Gravity pulls you down and the steering is slippery — work together to set it down softly and upright on the pad. Fast, off-pad, or upside-down = crash. Play remotely (Create/Join) or on one device." data-zh="一艘飞船，两名驾驶员：一人点燃主引擎（推力），另一人控制倾斜。重力把你拉向地面、转向又很滑——齐心协力，平稳且端正地降落在着陆台上。太快、偏离平台或倒着落地都会坠毁。可联机（创建/加入）或同设备双人。">One ship, two pilots: one fires the main engine (thrust), the other steers the tilt. Gravity pulls you down and the steering is slippery — work together to set it down softly and upright on the pad. Fast, off-pad, or upside-down = crash. Play remotely (Create/Join) or on one device.</div>
+    <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+</div>
+
+<div class="wrap">
+  <div class="stage">
+    <canvas id="field" width="600" height="480"></canvas>
+    <div class="padbar" id="padbar">
+      <button class="padbtn" id="btnL" data-act="left">◀</button>
+      <button class="padbtn thrust" id="btnT" data-act="thrust">▲ THRUST</button>
+      <button class="padbtn" id="btnR" data-act="right">▶</button>
+    </div>
+    <div class="over" id="over">
+      <div class="big" id="overBig">—</div>
+      <div class="res" id="overRes"></div>
+      <div class="nb" id="overNb"></div>
+      <button class="btn" onclick="game.restart()" data-en="↻ Try again" data-zh="↻ 再试一次">↻ Try again</button>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <div class="card-title"><span data-en="// mission" data-zh="// 任务">// mission</span><span id="roleTag" style="color:#666"></span></div>
+      <div class="hud">
+        <div class="stat"><div class="k" data-en="landings" data-zh="着陆">landings</div><div class="v" id="vStreak">0</div></div>
+        <div class="stat"><div class="k" data-en="best" data-zh="最佳">best</div><div class="v best" id="vBest">0</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// play together (remote)" data-zh="// 一起玩（联机）">// play together (remote)</span></div>
+      <button class="btn alt" onclick="game.createRoom()" data-en="Create Room" data-zh="创建房间">Create Room</button>
+      <div class="code-box" id="codeBox">
+        <div class="code-label" data-en="share this code →" data-zh="把房间码发给对方 →">share this code →</div>
+        <div class="room-code-big" id="roomCode" onclick="game.copyCode()" title="tap to copy">—</div>
+      </div>
+      <div class="or-sep" data-en="— or join a room —" data-zh="— 或加入房间 —">— or join a room —</div>
+      <input class="join-input" id="joinCode" placeholder="ROOM CODE" maxlength="8">
+      <button class="btn alt" onclick="game.joinRoom()" data-en="Join" data-zh="加入">Join</button>
+      <div class="conn" id="conn"></div>
+      <button class="btn" style="margin-top:10px" onclick="game.playLocal()" data-en="↺ Local / solo practice" data-zh="↺ 本地 / 单人练习">↺ Local / solo practice</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// controls" data-zh="// 控制">// controls</span></div>
+      <div class="help">
+        <div data-en="<b>Thrust</b>: <b class='keycap'>W</b> / <b class='keycap'>↑</b> / Space (or hold ▲)." data-zh="<b>推力</b>：<b class='keycap'>W</b> / <b class='keycap'>↑</b> / 空格（或按住 ▲）。">Thrust: <b class="keycap">W</b> / <b class="keycap">↑</b> / Space (or hold ▲).</div>
+        <div data-en="<b>Tilt</b>: <b class='keycap'>←</b> / <b class='keycap'>→</b> (or the ◀ ▶ buttons)." data-zh="<b>倾斜</b>：<b class='keycap'>←</b> / <b class='keycap'>→</b>（或 ◀ ▶ 按钮）。">Tilt: <b class="keycap">←</b> / <b class="keycap">→</b> (or the ◀ ▶ buttons).</div>
+        <div id="localHint" data-en="Local: one of you on thrust, one on tilt — same keyboard." data-zh="本地：一人控推力，一人控倾斜——同一键盘。">Local: one of you on thrust, one on tilt — same keyboard.</div>
+      </div>
+      <button class="btn" id="pauseBtn" style="margin-top:10px" onclick="game.togglePause()" data-en="⏸ Pause" data-zh="⏸ 暂停">⏸ Pause</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span data-en="// safe landing" data-zh="// 安全着陆">// safe landing</span></div>
+      <div class="help">
+        <div data-en="✓ on the <b>pad</b>, ✓ <b>slow</b> (gauge green), ✓ near <b>upright</b>." data-zh="✓ 落在<b>平台</b>上，✓ <b>速度慢</b>（仪表为绿），✓ 接近<b>竖直</b>。">✓ on the <b>pad</b>, ✓ <b>slow</b> (gauge green), ✓ near <b>upright</b>.</div>
+        <div style="color:#7a7a7a" data-en="Land softly to bank it and get a fresh pad. One bad touchdown ends the streak." data-zh="平稳着陆即可计入连胜并刷新平台。一次失误就中断连胜。">Land softly to bank it and get a fresh pad. One bad touchdown ends the streak.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   lander.exe — co-op lunar lander; one pilot thrusts, one tilts.
+   Local or host-authoritative remote. rAF physics (gravity + trig thrust + slippery
+   angular velocity). (c) houfu.xyz
+   ============================================================================ */
+const game = (function () {
+  const $ = (id) => document.getElementById(id);
+  const W = 600, H = 480;
+  const GRAV = 0.040, THRUST = 0.105, ANG_ACC = 0.0060, ANG_DAMP = 0.992;
+  const SAFE_SPEED = 1.9, SAFE_ANGLE = 0.28;           // |v| px/frame, |angle| rad
+  const GROUND_Y = H - 16, PAD_W = 92, SHIP_R = 13;
+
+  let canvas, ctx, DPR = 1, stars = [];
+  let mode = 'local';                                  // 'local' | 'host' | 'guest'
+  let ship, pad, st, streak, keys = {}, btn = {};      // st: 0 flying, 1 safe, 2 crash
+  let running = false, paused = false, pausedAt = 0, lastTs = 0, raf = 0, resultAt = 0;
+  let netState = null, lastWrite = 0;                   // guest snapshot
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const norm = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+
+  function newRound(keepStreak) {
+    pad = { x: rand(60, W - 60 - PAD_W), w: PAD_W };
+    ship = { x: rand(W * 0.25, W * 0.75), y: 46, vx: rand(-0.6, 0.6), vy: 0, a: rand(-0.2, 0.2), va: 0, th: false };
+    st = 0; resultAt = 0;
+    if (!keepStreak) streak = 0;
+  }
+  function startGame() { newRound(false); $('over').classList.remove('show'); paused = false; pausedAt = 0; running = true; lastTs = performance.now(); loadBest(); if (!raf) raf = requestAnimationFrame(loop); }
+  function playLocal() { mode = 'local'; setRole(''); setConn(''); $('roomCode').textContent = '—'; $('codeBox').style.display = 'none'; roleButtons(); teardownNet(); startGame(); }
+  function restart() { if (mode === 'guest') { gameRef('gi').update({ rs: Date.now() }); return; } startGame(); }
+
+  // host/local physics
+  function step(f, thrustOn, tilt) {
+    if (st !== 0) return;
+    ship.va += tilt * ANG_ACC * f;
+    ship.va *= ANG_DAMP;                                // slippery: angle keeps drifting
+    ship.a += ship.va * f;
+    ship.th = thrustOn;
+    if (thrustOn) { ship.vx += Math.sin(ship.a) * THRUST * f; ship.vy += -Math.cos(ship.a) * THRUST * f; }
+    ship.vy += GRAV * f;
+    ship.x += ship.vx * f; ship.y += ship.vy * f;
+    if (ship.x < SHIP_R) { ship.x = SHIP_R; ship.vx = Math.abs(ship.vx) * 0.4; }
+    if (ship.x > W - SHIP_R) { ship.x = W - SHIP_R; ship.vx = -Math.abs(ship.vx) * 0.4; }
+    if (ship.y < SHIP_R) { ship.y = SHIP_R; if (ship.vy < 0) ship.vy = 0; }
+    if (ship.y + SHIP_R >= GROUND_Y) {                 // touchdown
+      ship.y = GROUND_Y - SHIP_R;
+      const spd = Math.hypot(ship.vx, ship.vy), ang = Math.abs(norm(ship.a));
+      const onPad = ship.x > pad.x && ship.x < pad.x + pad.w;
+      ship.lastSpd = spd; ship.lastAng = ang;
+      if (onPad && spd < SAFE_SPEED && ang < SAFE_ANGLE) { st = 1; streak++; saveBest(streak); }
+      else st = 2;
+      resultAt = performance.now(); running = false;
+      if (mode !== 'guest') showResult();
+    }
+  }
+  function showResult() {
+    const safe = st === 1;
+    $('overBig').className = 'big ' + (safe ? 'safe' : 'crash');
+    $('overBig').textContent = safe ? t('✓ SAFE LANDING!', '✓ 安全着陆！') : t('✕ CRASH!', '✕ 坠毁！');
+    const spd = (ship.lastSpd || 0).toFixed(2), deg = Math.round((ship.lastAng || 0) * 180 / Math.PI);
+    $('overRes').textContent = t('speed ', '速度 ') + spd + ' · ' + t('tilt ', '倾角 ') + deg + '°';
+    $('overNb').textContent = safe ? (t('landing #', '第 ') + streak + t('', ' 次着陆')) : (t('best streak ', '最佳连胜 ') + bestVal());
+    if (safe) { document.getElementById('overBig'); setTimeout(() => { if (st === 1 && mode !== 'guest') { newRound(true); $('over').classList.remove('show'); running = true; lastTs = performance.now(); } }, 1100); }
+    else $('over').classList.add('show');
+    $('vStreak').textContent = streak;
+  }
+
+  // ---- best (streak) ----
+  function bestVal() { try { return +localStorage.getItem('lander_best') || 0; } catch (e) { return 0; } }
+  function loadBest() { $('vBest').textContent = bestVal(); }
+  function saveBest(v) { let b = bestVal(); if (v > b) { try { localStorage.setItem('lander_best', String(v)); } catch (e) {} b = v; } $('vBest').textContent = b; $('vStreak').textContent = streak; }
+
+  // ---- render ----
+  function makeStars() { stars = []; for (let i = 0; i < 60; i++) stars.push([Math.random() * W, Math.random() * (GROUND_Y - 20), Math.random() * 1.4 + 0.3]); }
+  function drawShip(x, y, a, th, ghost) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+    if (th) {                                           // engine flame (points down in ship space, +y)
+      const fl = 10 + Math.random() * 8;
+      ctx.fillStyle = 'rgba(255,180,80,0.9)'; ctx.beginPath(); ctx.moveTo(-5, SHIP_R - 2); ctx.lineTo(5, SHIP_R - 2); ctx.lineTo(0, SHIP_R + fl); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,90,40,0.7)'; ctx.beginPath(); ctx.moveTo(-2.5, SHIP_R - 2); ctx.lineTo(2.5, SHIP_R - 2); ctx.lineTo(0, SHIP_R + fl * 0.6); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = ghost ? 'rgba(180,190,200,0.4)' : '#cfd6da'; ctx.strokeStyle = '#7d878d'; ctx.lineWidth = 1.5;
+    ctx.beginPath();                                    // body capsule
+    ctx.moveTo(-7, -SHIP_R + 4); ctx.lineTo(7, -SHIP_R + 4); ctx.lineTo(9, SHIP_R - 6); ctx.lineTo(-9, SHIP_R - 6); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#36c5d0'; ctx.beginPath(); ctx.arc(0, -3, 3.2, 0, 7); ctx.fill();   // window
+    ctx.strokeStyle = '#8a9499'; ctx.lineWidth = 2;     // legs
+    ctx.beginPath(); ctx.moveTo(-8, SHIP_R - 6); ctx.lineTo(-12, SHIP_R + 2); ctx.moveTo(8, SHIP_R - 6); ctx.lineTo(12, SHIP_R + 2); ctx.stroke();
+    ctx.restore();
+  }
+  function gauge(spd, ang) {
+    const sSafe = spd < SAFE_SPEED, aSafe = ang < SAFE_ANGLE;
+    ctx.font = '11px Consolas,monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = sSafe ? '#2bd46a' : '#e2523e'; ctx.fillText(t('SPD ', '速度 ') + spd.toFixed(2), 10, 10);
+    ctx.fillStyle = aSafe ? '#2bd46a' : '#e2523e'; ctx.fillText(t('TILT ', '倾角 ') + Math.round(ang * 180 / Math.PI) + '°', 10, 26);
+  }
+  function drawScene(sx, sy, sa, sth, pdx, spd, ang, paddw) {
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#06070b'; ctx.fillRect(0, 0, W, H);
+    for (const s of stars) { ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + s[2] * 0.3).toFixed(2) + ')'; ctx.fillRect(s[0], s[1], s[2], s[2]); }
+    // ground + pad
+    ctx.fillStyle = '#161a24'; ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+    ctx.strokeStyle = '#2a3144'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(W, GROUND_Y); ctx.stroke();
+    const pw = paddw || PAD_W;
+    ctx.fillStyle = '#2bd46a'; ctx.fillRect(pdx, GROUND_Y - 3, pw, 5);
+    ctx.fillStyle = 'rgba(43,212,106,0.16)'; ctx.fillRect(pdx, GROUND_Y - 30, pw, 30);
+    ctx.fillStyle = '#2bd46a'; ctx.font = '9px Consolas,monospace'; ctx.textAlign = 'center'; ctx.fillText('▲ PAD ▲', pdx + pw / 2, GROUND_Y - 40);
+    drawShip(sx, sy, sa, sth, false);
+    gauge(spd, ang);
+    if (pausedShown()) { ctx.fillStyle = 'rgba(5,6,10,0.55)'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#e8b04a'; ctx.font = 'bold 28px Consolas,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t('❚❚ PAUSED', '❚❚ 已暂停'), W / 2, H / 2); }
+  }
+  function pausedShown() { return mode === 'guest' ? !!(netState && netState.pz) : paused; }
+
+  function render() {
+    if (mode === 'guest') {
+      const s = netState; if (!s) { ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#06070b'; ctx.fillRect(0, 0, W, H); return; }
+      drawScene(s.x, s.y, s.a, !!s.th, s.px, s.spd || 0, s.ang || 0, s.pw);
+    } else {
+      drawScene(ship.x, ship.y, ship.a, ship.th, pad.x, Math.hypot(ship.vx, ship.vy), Math.abs(norm(ship.a)), pad.w);
+    }
+  }
+
+  function myThrust() { return !!(keys.thrust || btn.thrust); }
+  function myTilt() { return ((keys.right || btn.right) ? 1 : 0) - ((keys.left || btn.left) ? 1 : 0); }
+
+  function loop(ts) {
+    const f = Math.min(2.2, (ts - lastTs) / 16.667) || 1; lastTs = ts;
+    if (mode === 'guest') {
+      if (ts - lastWrite > 55) { lastWrite = ts; gameRef('gi').update({ tl: myTilt() }); }
+      if (netState) { $('vStreak').textContent = netState.sk || 0; if (netState.st && !_resShown) showGuestResult(); if (!netState.st) _resShown = false; }
+      render();
+    } else {
+      if (running && !paused && st === 0) step(f, myThrust(), (mode === 'host' ? (netTilt || 0) : myTilt()));
+      if (mode === 'host' && ts - lastWrite > 50) { lastWrite = ts; writeState(); }
+      render();
+    }
+    raf = requestAnimationFrame(loop);
+  }
+  let _resShown = false;
+  function showGuestResult() {
+    _resShown = true; const s = netState, safe = s.st === 1;
+    $('overBig').className = 'big ' + (safe ? 'safe' : 'crash'); $('overBig').textContent = safe ? t('✓ SAFE LANDING!', '✓ 安全着陆！') : t('✕ CRASH!', '✕ 坠毁！');
+    $('overRes').textContent = t('speed ', '速度 ') + (s.spd || 0).toFixed(2) + ' · ' + t('tilt ', '倾角 ') + Math.round((s.ang || 0) * 180 / Math.PI) + '°';
+    $('overNb').textContent = safe ? (t('landing #', '第 ') + (s.sk || 0)) : (t('best streak ', '最佳连胜 ') + bestVal());
+    if (safe) saveBest(s.sk || 0);
+    if (!safe) $('over').classList.add('show'); else { $('over').classList.remove('show'); }
+  }
+
+  // ---- input ----
+  function bind() {
+    window.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if (k === 'w' || k === 'W' || k === 'ArrowUp' || k === ' ') { keys.thrust = true; e.preventDefault(); }
+      else if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = true;
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      const k = e.key;
+      if (k === 'w' || k === 'W' || k === 'ArrowUp' || k === ' ') keys.thrust = false;
+      else if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = false;
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = false;
+    });
+    document.querySelectorAll('.padbtn').forEach(b => {
+      const act = b.dataset.act;
+      const dn = (e) => { e.preventDefault(); btn[act] = true; b.classList.add('on'); };
+      const up = (e) => { e.preventDefault(); btn[act] = false; b.classList.remove('on'); };
+      b.addEventListener('pointerdown', dn); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+    });
+    window.addEventListener('resize', layout);
+  }
+  function roleButtons() {
+    const showThrust = mode !== 'guest', showTilt = mode !== 'host';
+    $('btnT').disabled = !showThrust; $('btnL').disabled = !showTilt; $('btnR').disabled = !showTilt;
+  }
+  function layout() {
+    DPR = window.devicePixelRatio || 1;
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    canvas.style.height = (canvas.clientWidth * H / W) + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  /* ── Firebase remote (host-authoritative) ───────── */
+  const firebaseConfig = { apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
+  let _db = null, _code = null, _stateRef = null, _stateCb = null, _giRef = null, _giCb = null, _joinRef = null, _joinCb = null;
+  let netTilt = 0, _lastRs = 0, _lastPz = 0;
+  function db() { if (!_db) { firebase.initializeApp(firebaseConfig); _db = firebase.database(); } return _db; }
+  function gameRef(sub) { return db().ref(`games/${_code}/ld/${sub}`); }
+  function shortId() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += c[(Math.random() * c.length) | 0]; return s; }
+  function setConn(m, cls) { const el = $('conn'); el.textContent = m; el.className = 'conn' + (cls ? ' ' + cls : ''); }
+  function setRole(m) { $('roleTag').textContent = m; }
+  function copyCode() { if (!_code) return; try { navigator.clipboard.writeText(_code); } catch (e) {} setConn(t('Code copied — send it to your friend.', '已复制房间码——发给好友。'), 'ok'); }
+  function teardownNet() { if (_stateCb) _stateRef.off('value', _stateCb); if (_giCb) _giRef.off('value', _giCb); if (_joinCb) _joinRef.off('value', _joinCb); _stateCb = _giCb = _joinCb = null; netState = null; netTilt = 0; }
+
+  function writeState() {
+    gameRef('state').set({
+      x: Math.round(ship.x), y: Math.round(ship.y), a: +ship.a.toFixed(3), th: ship.th ? 1 : 0,
+      px: Math.round(pad.x), pw: pad.w, sk: streak, st: st,
+      spd: +(ship.lastSpd != null && st ? ship.lastSpd : Math.hypot(ship.vx, ship.vy)).toFixed(2),
+      ang: +(ship.lastAng != null && st ? ship.lastAng : Math.abs(norm(ship.a))).toFixed(3),
+      pz: paused ? 1 : 0,
+    });
+  }
+  function togglePause() { if (mode === 'guest') { gameRef('gi').update({ pz: Date.now() }); return; } doPause(!paused); }
+  function doPause(p) { paused = p; if (p) pausedAt = performance.now(); else lastTs = performance.now(); const b = $('pauseBtn'); if (b) b.textContent = paused ? t('▶ Resume', '▶ 继续') : t('⏸ Pause', '⏸ 暂停'); if (mode === 'host') writeState(); }
+
+  async function createRoom() {
+    _code = shortId(); mode = 'host'; teardownNet(); roleButtons();
+    $('roomCode').textContent = _code; $('codeBox').style.display = 'block'; setRole(t('you: thrust', '你：推力')); setConn(t('Waiting for a co-pilot…', '等待副驾加入…'));
+    await gameRef('meta').set({ created: Date.now() }); await gameRef('gi').set({ tl: 0 }); await gameRef('joined').set(false);
+    _giRef = gameRef('gi'); _giCb = _giRef.on('value', s => { const v = s.val(); if (!v) return; netTilt = v.tl || 0; if (v.rs && v.rs !== _lastRs) { _lastRs = v.rs; startGame(); } if (v.pz && v.pz !== _lastPz) { _lastPz = v.pz; doPause(!paused); } });
+    _joinRef = gameRef('joined'); _joinCb = _joinRef.on('value', s => { if (s.val()) { setConn(t('Connected! You fire the THRUST.', '已连接！你负责推力。'), 'ok'); startGame(); } });
+  }
+  async function joinRoom() {
+    const code = $('joinCode').value.trim().toUpperCase(); if (!code) return;
+    _code = code; setConn(t('Connecting…', '连接中…'));
+    const snap = await db().ref(`games/${code}/ld/meta`).once('value');
+    if (!snap.exists()) { setConn(t('Room not found — check the code.', '未找到房间，请检查代码。'), 'err'); return; }
+    mode = 'guest'; teardownNet(); roleButtons();
+    setRole(t('you: tilt', '你：倾斜')); setConn(t('Connected! You steer the TILT.', '已连接！你负责转向。'), 'ok');
+    _resShown = false;
+    await gameRef('joined').set(true);
+    _stateRef = gameRef('state'); _stateCb = _stateRef.on('value', s => { netState = s.val(); });
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+
+  function t(en, zh) { return document.documentElement.lang === 'zh' ? zh : en; }
+  function init() { canvas = $('field'); ctx = canvas.getContext('2d'); layout(); makeStars(); bind(); roleButtons(); startGame(); }
+  return { init: init, restart: restart, playLocal: playLocal, createRoom: createRoom, joinRoom: joinRoom, togglePause: togglePause, copyCode: copyCode };
+})();
+
+function toggleLang() {
+  const zh = document.documentElement.lang !== 'zh';
+  document.documentElement.lang = zh ? 'zh' : 'en';
+  document.querySelectorAll('[data-en]').forEach((el) => { el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
+  document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
+}
+
+game.init();
+</script>
+</body>
+</html>

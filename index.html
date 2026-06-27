@@ -78,6 +78,11 @@
     .glow-keepup .ku-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
     .card.glow-keepup:hover .ku-canvas { opacity: 1; }
 
+    /* Co-op Lander — a little lander descends + thrusts toward a pad on hover */
+    .card.glow-lander:hover { border-color: #6e5a2a; box-shadow: 0 0 22px -8px rgba(232,176,74,0.5); }
+    .glow-lander .ld-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+    .card.glow-lander:hover .ld-canvas { opacity: 1; }
+
 /* ===== Gomoku — Canvas WATER RIPPLE across the whole card ===== */
 /* The water canvas IS the card background: stones in the top band, dark body
    below. On hover the whole surface ripples — mousemove wakes, click splashes —
@@ -270,6 +275,22 @@
     <div class="card-footer">
       <span class="card-meta" data-en="JS · realtime sync" data-zh="JS · 实时同步">JS · realtime sync</span>
       <a class="play-btn" href="/game/keepup.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
+    </div>
+  </div>
+
+  <div class="card glow-lander">
+    <img class="card-thumb" src="/game/thumbs/lander.png?v=1" alt="Co-op lunar lander" loading="lazy" width="440" height="240">
+    <div class="card-icon" style="color:#e8b04a">[◂▴▸]</div>
+    <div class="card-title" data-en="lander.exe" data-zh="登月舱.exe">lander.exe</div>
+    <div class="card-desc" data-en="Co-op lunar lander — one of you fires the thrust, the other steers the tilt, both flying one slippery ship. Land softly and upright on the pad. Play remotely (Create/Join a room) or on one device." data-zh="合作登月——一人控推力，一人控倾斜，共同驾驶一艘很“滑”的飞船。平稳且端正地降落在着陆台。可联机（创建/加入房间）或同设备双人。">Co-op lunar lander — one of you fires the thrust, the other steers the tilt, both flying one slippery ship. Land softly and upright on the pad. Play remotely (Create/Join a room) or on one device.</div>
+    <div class="card-tags">
+      <span class="tag green" data-en="co-op" data-zh="合作">co-op</span>
+      <span class="tag" data-en="remote" data-zh="联机">remote</span>
+      <span class="tag" data-en="physics" data-zh="物理">physics</span>
+    </div>
+    <div class="card-footer">
+      <span class="card-meta" data-en="JS · realtime sync" data-zh="JS · 实时同步">JS · realtime sync</span>
+      <a class="play-btn" href="/game/lander.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
     </div>
   </div>
 
@@ -893,6 +914,37 @@ document.addEventListener('DOMContentLoaded', applyLang);
     ctx.fillStyle = 'rgba(54,197,208,0.75)'; ctx.fillRect(W - inset - 1, pR - 16, 4, 32);
     for (let i = 0; i < trail.length; i++) { const a = i / trail.length; ctx.fillStyle = 'rgba(54,197,208,' + (a * 0.5).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(trail[i][0], trail[i][1], 2 + a * 3, 0, 7); ctx.fill(); }
     ctx.fillStyle = '#eafdff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, 7); ctx.fill();
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  card.addEventListener('mouseenter', () => { if (raf) return; build(); inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Co-op Lander card — a little lander descends + thrusts toward a pad (hover) */
+(function () {
+  const card = document.querySelector('.card.glow-lander');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'ld-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let W, H, sx, sy, vy, ang, raf = 0, inside = false, stars = [], padx;
+  function reset() { sx = W * 0.5 + (Math.random() * 50 - 25); sy = 10; vy = 0.4; ang = (Math.random() * 0.4 - 0.2); }
+  function build() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; padx = W * 0.5 - 22; stars = []; for (let i = 0; i < 20; i++) stars.push([Math.random() * W, Math.random() * H * 0.75]); reset(); }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    for (const s of stars) { ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(s[0], s[1], 1, 1); }
+    const gy = H - 7;
+    ctx.fillStyle = 'rgba(43,212,106,0.85)'; ctx.fillRect(padx, gy - 2, 44, 3);
+    const thrust = sy > H * 0.32 && Math.sin(sy * 0.28) > -0.25;
+    vy += 0.018; if (thrust) vy -= 0.05; vy = Math.max(-0.6, Math.min(1.1, vy));
+    sy += vy; ang += Math.sin(sy * 0.11) * 0.004;
+    ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
+    if (thrust) { const fl = 4 + Math.random() * 4; ctx.fillStyle = 'rgba(255,170,70,0.85)'; ctx.beginPath(); ctx.moveTo(-3, 7); ctx.lineTo(3, 7); ctx.lineTo(0, 7 + fl); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = '#cfd6da'; ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(5, -5); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#36c5d0'; ctx.beginPath(); ctx.arc(0, -1, 1.8, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#8a9499'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-5, 6); ctx.lineTo(-8, 10); ctx.moveTo(5, 6); ctx.lineTo(8, 10); ctx.stroke();
+    ctx.restore();
+    if (sy > gy - 8) reset();
     raf = inside ? requestAnimationFrame(frame) : 0;
   }
   card.addEventListener('mouseenter', () => { if (raf) return; build(); inside = true; raf = requestAnimationFrame(frame); });
