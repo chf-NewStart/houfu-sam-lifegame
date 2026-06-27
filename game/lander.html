@@ -71,7 +71,7 @@
 <div class="hdr">
   <div>
     <div class="title" id="pgTitle">&gt;_ Co-op Lander</div>
-    <div class="sub" id="pgSub" data-en="One ship, two pilots: one of you fires the main engine (thrust), the other steers the tilt. Gravity pulls you down and the steering is slippery — work together to set it down softly and upright on the pad. Fast, off-pad, or upside-down = crash. Play remotely (Create/Join) or on one device." data-zh="一艘飞船，两名驾驶员：一人点燃主引擎（推力），另一人控制倾斜。重力把你拉向地面、转向又很滑——齐心协力，平稳且端正地降落在着陆台上。太快、偏离平台或倒着落地都会坠毁。可联机（创建/加入）或同设备双人。">One ship, two pilots: one fires the main engine (thrust), the other steers the tilt. Gravity pulls you down and the steering is slippery — work together to set it down softly and upright on the pad. Fast, off-pad, or upside-down = crash. Play remotely (Create/Join) or on one device.</div>
+    <div class="sub" id="pgSub" data-en="One ship, two pilots: one of you fires the main engine (thrust), the other steers the tilt. Tilt to aim the nose, then thrust to push that way — and to slow your fall. Work together to set it down softly and upright on the pad. Fast, off-pad, or upside-down = crash. Play remotely (Create/Join) or on one device." data-zh="一艘飞船，两名驾驶员：一人点燃主引擎（推力），另一人控制倾斜。倾斜用来对准机头方向，再点火朝那个方向推进——同时减缓下落。齐心协力，平稳且端正地降落在着陆台上。太快、偏离平台或倒着落地都会坠毁。可联机（创建/加入）或同设备双人。">One ship, two pilots: one fires the main engine (thrust), the other steers the tilt. Tilt to aim the nose, then thrust to push that way — and to slow your fall. Work together to set it down softly and upright on the pad. Fast, off-pad, or upside-down = crash. Play remotely (Create/Join) or on one device.</div>
     <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
@@ -121,6 +121,7 @@
       <div class="help">
         <div data-en="<b>Thrust</b>: <b class='keycap'>W</b> / <b class='keycap'>↑</b> / Space (or hold ▲)." data-zh="<b>推力</b>：<b class='keycap'>W</b> / <b class='keycap'>↑</b> / 空格（或按住 ▲）。">Thrust: <b class="keycap">W</b> / <b class="keycap">↑</b> / Space (or hold ▲).</div>
         <div data-en="<b>Tilt</b>: <b class='keycap'>←</b> / <b class='keycap'>→</b> (or the ◀ ▶ buttons)." data-zh="<b>倾斜</b>：<b class='keycap'>←</b> / <b class='keycap'>→</b>（或 ◀ ▶ 按钮）。">Tilt: <b class="keycap">←</b> / <b class="keycap">→</b> (or the ◀ ▶ buttons).</div>
+        <div style="color:#8a9499" data-en="Tip: tilt aims the ship; thrust pushes wherever the nose points. Release tilt and it stops turning." data-zh="提示：倾斜负责对准机头，推力朝机头方向推进。松开倾斜键，飞船就停止转动。">Tip: tilt aims the ship; thrust pushes wherever the nose points. Release tilt and it stops turning.</div>
         <div id="localHint" data-en="Local: one of you on thrust, one on tilt — same keyboard." data-zh="本地：一人控推力，一人控倾斜——同一键盘。">Local: one of you on thrust, one on tilt — same keyboard.</div>
       </div>
       <button class="btn" id="pauseBtn" style="margin-top:10px" onclick="game.togglePause()" data-en="⏸ Pause" data-zh="⏸ 暂停">⏸ Pause</button>
@@ -145,7 +146,7 @@
 const game = (function () {
   const $ = (id) => document.getElementById(id);
   const W = 600, H = 480;
-  const GRAV = 0.023, THRUST = 0.070, ANG_ACC = 0.0058, ANG_DAMP = 0.987;
+  const GRAV = 0.023, THRUST = 0.070, MAX_VA = 0.046;  // MAX_VA: top turn rate (rad/frame)
   const SAFE_SPEED = 2.3, SAFE_ANGLE = 0.34;           // |v| px/frame, |angle| rad
   const GROUND_Y = H - 16, PAD_W = 108, SHIP_R = 13;
 
@@ -171,8 +172,9 @@ const game = (function () {
   // host/local physics
   function step(f, thrustOn, tilt) {
     if (st !== 0) return;
-    ship.va += tilt * ANG_ACC * f;
-    ship.va *= ANG_DAMP;                                // slippery: angle keeps drifting
+    // controllable steering: turn rate eases toward the held direction and settles to 0
+    // when you let go — hold to rotate, release to stop (no runaway spin)
+    ship.va += (tilt * MAX_VA - ship.va) * Math.min(1, 0.2 * f);
     ship.a += ship.va * f;
     ship.th = thrustOn;
     if (thrustOn) { ship.vx += Math.sin(ship.a) * THRUST * f; ship.vy += -Math.cos(ship.a) * THRUST * f; }
