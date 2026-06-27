@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tether // houfu.xyz</title>
+<meta name="description" content="A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up a tower without both falling.">
+<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:20px 16px;}
+  a{color:#1db954;}
+  .pg-header{max-width:880px;margin:0 auto 16px;}
+  .pg-header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .pg-title{color:#1db954;font-size:1.4rem;text-transform:uppercase;letter-spacing:-1px;}
+  .pg-sub{color:#666;font-size:0.72rem;margin-top:3px;line-height:1.6;max-width:560px;}
+  .pg-back{font-size:0.72rem;color:#1db954;text-decoration:none;margin-top:6px;display:inline-block;}
+  .pg-back:hover{text-decoration:underline;}
+  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.72rem;padding:5px 11px;cursor:pointer;flex-shrink:0;}
+  .lang-btn:hover{background:rgba(29,185,84,0.1);}
+
+  .layout{display:flex;gap:18px;align-items:flex-start;max-width:880px;margin:0 auto;flex-wrap:wrap;}
+  .game-col{flex:0 0 auto;}
+  .panel-col{flex:1;min-width:240px;}
+
+  #stage{position:relative;width:100%;max-width:480px;}
+  #cv{display:block;width:100%;max-width:480px;height:auto;aspect-ratio:480/620;background:#0a0c10;border:1px solid #1c1c1c;border-radius:4px;touch-action:none;}
+
+  .overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(6,8,10,0.86);border-radius:4px;text-align:center;padding:20px;}
+  .overlay.show{display:flex;}
+  .overlay .ttl{color:#f44336;font-size:1.6rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+  .overlay .ttl.win{color:#1db954;}
+  .overlay .big{color:#eee;font-size:1.1rem;margin:4px 0;}
+  .overlay .sm{color:#777;font-size:0.74rem;margin:2px 0 14px;}
+  .btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.82rem;padding:10px 22px;cursor:pointer;transition:background .1s;}
+  .btn:hover{background:rgba(29,185,84,0.12);}
+
+  .pcard{background:#0d0d0d;border:1px solid #1a1a1a;padding:13px;margin-bottom:11px;}
+  .pcard-title{color:#1db954;font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #161616;}
+  .score-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .score-row .k{color:#666;font-size:0.72rem;}
+  .score-row .v{font-size:1.15rem;}
+  .v.g{color:#1db954;}.v.y{color:#ffce4d;}
+
+  .ctl{display:flex;align-items:center;gap:9px;font-size:0.74rem;margin-bottom:9px;line-height:1.5;}
+  .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+  .dot.p1{background:#1db954;}.dot.p2{background:#46c8ff;}
+  kbd{display:inline-block;border:1px solid #333;border-bottom-width:2px;border-radius:3px;padding:1px 6px;font-family:inherit;font-size:0.7rem;color:#ddd;background:#161616;margin:0 1px;}
+  .ctl .who{color:#aaa;}
+  .tip{font-size:0.66rem;color:#5e5e5e;line-height:1.6;border-left:2px solid #1db95455;padding-left:9px;}
+  .tip b{color:#1db954;}
+
+  /* touch pads */
+  .pads{display:none;max-width:480px;margin:10px auto 0;justify-content:space-between;gap:10px;}
+  .pad{display:flex;gap:8px;}
+  .pad .who{align-self:center;font-size:0.62rem;color:#555;margin:0 2px;}
+  .pad button{width:48px;height:48px;border:1px solid #2a2a2a;background:#101010;color:#ccc;font-size:1.1rem;border-radius:6px;font-family:inherit;}
+  .pad.p1 button{border-color:#1db95455;color:#1db954;}
+  .pad.p2 button{border-color:#46c8ff55;color:#46c8ff;}
+  .pad button:active{background:#1c1c1c;}
+  @media (pointer:coarse){ .pads{display:flex;} }
+</style>
+</head>
+<body>
+<div class="pg-header">
+  <div class="pg-header-row">
+    <div>
+      <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
+      <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
+      <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
+    </div>
+    <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="game-col">
+    <div id="stage">
+      <canvas id="cv" width="480" height="620"></canvas>
+      <div class="overlay" id="overlay">
+        <div class="ttl" id="ovTtl">GAME OVER</div>
+        <div class="big" id="ovBig"></div>
+        <div class="sm" id="ovBest"></div>
+        <button class="btn" id="ovBtn" onclick="reset()" data-en="↺ Climb again" data-zh="↺ 再爬一次">↺ Climb again</button>
+      </div>
+    </div>
+    <div class="pads">
+      <div class="pad p1">
+        <span class="who">P1</span>
+        <button data-act="a1L">◄</button><button data-act="a1J">▲</button><button data-act="a1R">►</button>
+      </div>
+      <div class="pad p2">
+        <button data-act="a2L">◄</button><button data-act="a2J">▲</button><button data-act="a2R">►</button>
+        <span class="who">P2</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-col">
+    <div class="pcard">
+      <div class="pcard-title"><span data-en="// height" data-zh="// 高度">// height</span></div>
+      <div class="score-row"><span class="k" data-en="now" data-zh="当前">now</span><span class="v g" id="sNow">0 m</span></div>
+      <div class="score-row"><span class="k" data-en="best" data-zh="最佳">best</span><span class="v y" id="sBest">0 m</span></div>
+    </div>
+    <div class="pcard">
+      <div class="pcard-title"><span data-en="// controls" data-zh="// 操作">// controls</span></div>
+      <div class="ctl"><span class="dot p1"></span><span class="who"><span data-en="Player 1" data-zh="玩家 1">Player 1</span>&nbsp; <kbd>A</kbd><kbd>D</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>W</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
+      <div class="ctl"><span class="dot p2"></span><span class="who"><span data-en="Player 2" data-zh="玩家 2">Player 2</span>&nbsp; <kbd>←</kbd><kbd>→</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>↑</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
+    </div>
+    <div class="pcard">
+      <div class="pcard-title"><span data-en="// how to climb" data-zh="// 怎么爬">// how to climb</span></div>
+      <div class="tip" id="howto"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   Tether — a two-player co-op rope climber.
+   Hand-coded Verlet-integration physics (no engine): the rope is a chain
+   of point masses with max-length link constraints; the two players are
+   the chain's endpoints. Gravity + ground friction + AABB platform
+   collisions. One player anchors (high friction on a platform) while the
+   other swings/jumps — but the tether pulls back, so bad timing drops
+   you both. Climb as high as you can.
+   ════════════════════════════════════════════════════════════ */
+const VW=480, VH=620;                 // logical canvas size (world is a vertical shaft of width VW)
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function fitDPR(){const dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=VW*dpr; cv.height=VH*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);}
+fitDPR(); window.addEventListener('resize',fitDPR);
+
+/* ── tunables ── */
+const GRAV=0.42, AIRDAMP=0.992, GFRICT=0.86, ITER=6;
+const R=13;                            // player radius
+const JUMP=11.4;                        // jump impulse (≈135px solo peak)
+const ROPE_LEN=180, ROPE_SEG=14, LINK=ROPE_LEN/(ROPE_SEG+1);
+const TETHER_STIFF=0.9;                // the tether only pulls when stretched past ROPE_LEN
+const PX_PER_M=30;
+
+/* ── Verlet points ── */
+function pt(x,y,inv){return {x,y,px:x,py:y,inv,grounded:false};}
+function vx(p){return p.x-p.px;} function vy(p){return p.y-p.py;}
+function setVel(p,wx,wy){p.px=p.x-wx;p.py=p.y-wy;}
+
+let P1,P2,ropeViz,allPts,platforms,topY,camY,startCam,minY,best,state,t;
+try{best=+(localStorage.getItem('rope_best')||0)||0;}catch(e){best=0;}
+
+function rand(a,b){return a+Math.random()*(b-a);}
+
+function genUpTo(targetY){
+  while(topY>targetY){
+    topY-=rand(70,104);
+    const count=Math.random()<0.42?2:1;
+    let placed=[];
+    for(let i=0;i<count;i++){
+      const w=rand(66,148);
+      let x, tries=0;
+      do{ x=rand(6,VW-w-6); tries++; }while(placed.some(p=>Math.abs(p-(x+w/2))<90)&&tries<6);
+      placed.push(x+w/2);
+      platforms.push({x,y:topY,w,h:14});
+    }
+  }
+}
+
+function reset(){
+  platforms=[{x:0,y:0,w:VW,h:46}];          // ground slab (top surface y=0)
+  topY=0; genUpTo(-VH*1.4);
+  P1=pt(VW*0.40,-30,1); P2=pt(VW*0.60,-30,1);
+  allPts=[P1,P2];
+  ropeViz=[];                          // decorative rope chain pinned to both players
+  for(let i=0;i<=ROPE_SEG+1;i++){const f=i/(ROPE_SEG+1);ropeViz.push(pt(P1.x+(P2.x-P1.x)*f, P1.y+(P2.y-P1.y)*f, 1));}
+  startCam=-(VH-150); camY=startCam; minY=0;
+  state='play'; t=0;
+  document.getElementById('overlay').classList.remove('show');
+  updateScore();
+}
+
+/* ── input ── */
+const held={a:false,d:false,l:false,r:false};
+let jq1=false, jq2=false;              // edge-triggered jump requests
+const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
+addEventListener('keydown',e=>{
+  const k=e.key;
+  if(k==='a'||k==='A')held.a=true; else if(k==='d'||k==='D')held.d=true;
+  else if(k==='ArrowLeft')held.l=true; else if(k==='ArrowRight')held.r=true;
+  if(KEYJUMP[k]===1)jq1=true; if(KEYJUMP[k]===2)jq2=true;
+  if((k==='r'||k==='R')&&state!=='play')reset();
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k))e.preventDefault();
+},{passive:false});
+addEventListener('keyup',e=>{const k=e.key;
+  if(k==='a'||k==='A')held.a=false; else if(k==='d'||k==='D')held.d=false;
+  else if(k==='ArrowLeft')held.l=false; else if(k==='ArrowRight')held.r=false;
+});
+// touch pads
+document.querySelectorAll('.pad button').forEach(b=>{
+  const act=b.dataset.act;
+  const on=e=>{e.preventDefault();
+    if(act==='a1L')held.a=true; if(act==='a1R')held.d=true; if(act==='a1J')jq1=true;
+    if(act==='a2L')held.l=true; if(act==='a2R')held.r=true; if(act==='a2J')jq2=true;};
+  const off=e=>{e.preventDefault();
+    if(act==='a1L')held.a=false; if(act==='a1R')held.d=false;
+    if(act==='a2L')held.l=false; if(act==='a2R')held.r=false;};
+  b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off);
+  b.addEventListener('pointerleave',off); b.addEventListener('pointercancel',off);
+});
+// tap left/right half of canvas = jump (jump-only quick play on touch)
+cv.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse')return;
+  const r=cv.getBoundingClientRect();
+  if(e.clientX-r.left < r.width/2) jq1=true; else jq2=true;
+});
+
+/* ── physics ── */
+function applyMove(p,dir){
+  const accel=p.grounded?1.5:0.55, maxv=p.grounded?5.2:6.4;
+  let v=vx(p)+dir*accel; v=Math.max(-maxv,Math.min(maxv,v)); p.px=p.x-v;
+}
+function integrate(p){
+  if(p.inv===0)return;
+  let wx=vx(p)*AIRDAMP, wy=vy(p)*AIRDAMP;
+  if(p.grounded)wx*=GFRICT;
+  p.px=p.x; p.py=p.y;
+  p.x+=wx; p.y+=wy+GRAV;
+}
+function solveLink(a,b,len,ropeMode,stiff){
+  let dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy)||1e-6;
+  if(ropeMode&&d<=len)return;          // a rope goes slack — only pulls when stretched past len
+  const diff=(d-len)/d, sum=a.inv+b.inv; if(sum===0)return;
+  const fa=(a.inv/sum)*stiff*diff, fb=(b.inv/sum)*stiff*diff;
+  a.x+=dx*fa; a.y+=dy*fa; b.x-=dx*fb; b.y-=dy*fb;
+}
+// decorative rope — a light chain pinned to both players each frame. Pure eye-candy: it
+// never pushes the players (the tether itself is the single ideal constraint above).
+function stepRope(){
+  const L=ropeViz.length-1;
+  ropeViz[0].x=P1.x; ropeViz[0].y=P1.y; ropeViz[L].x=P2.x; ropeViz[L].y=P2.y;
+  for(let i=1;i<L;i++){const r=ropeViz[i];let wx=(r.x-r.px)*0.97,wy=(r.y-r.py)*0.97;r.px=r.x;r.py=r.y;r.x+=wx;r.y+=wy+GRAV;}
+  for(let it=0;it<6;it++)for(let i=0;i<L;i++){
+    const a=ropeViz[i],b=ropeViz[i+1];
+    let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1e-6,diff=(d-LINK)/d;
+    const am=(i===0)?0:1, bm=(i+1===L)?0:1, tot=am+bm; if(!tot)continue;
+    a.x+=dx*diff*(am/tot); a.y+=dy*diff*(am/tot);
+    b.x-=dx*diff*(bm/tot); b.y-=dy*diff*(bm/tot);
+  }
+}
+// one-way platforms: you pass up through them from below and land on the top when
+// descending across it (continuous crossing test, so fast falls don't tunnel)
+function collide(p){
+  const feet=p.y+R, prevFeet=p.py+R, v=vy(p);
+  if(v<0)return;                                  // rising → ignore (jump through)
+  for(const pl of platforms){
+    if(p.x>pl.x-R*0.5 && p.x<pl.x+pl.w+R*0.5 && prevFeet<=pl.y+1.5 && feet>=pl.y){
+      p.y=pl.y-R; p.py=p.y; return;               // land on top, kill downward velocity
+    }
+  }
+}
+// grounded if a platform top sits right under the player's feet
+function onGround(p){
+  for(const pl of platforms)
+    if(p.x>pl.x-R*0.6 && p.x<pl.x+pl.w+R*0.6 && p.y>pl.y-R-3 && p.y<pl.y-R+7) return true;
+  return false;
+}
+function clampSides(p){ if(p.x<R){p.x=R;p.px=R;} if(p.x>VW-R){p.x=VW-R;p.px=VW-R;} }
+
+function step(){
+  t++;
+  applyMove(P1,(held.d?1:0)-(held.a?1:0));
+  applyMove(P2,(held.r?1:0)-(held.l?1:0));
+  if(jq1&&P1.grounded){setVel(P1,vx(P1),-JUMP);P1.grounded=false;} jq1=false;
+  if(jq2&&P2.grounded){setVel(P2,vx(P2),-JUMP);P2.grounded=false;} jq2=false;
+  integrate(P1); integrate(P2);
+  for(let it=0;it<ITER;it++){
+    solveLink(P1,P2,ROPE_LEN,true,TETHER_STIFF);   // the tether: an ideal max-length rope
+    collide(P1); collide(P2); clampSides(P1); clampSides(P2);
+  }
+  P1.grounded=onGround(P1); P2.grounded=onGround(P2);
+  stepRope();
+  // camera only rises, following the higher player
+  const hi=Math.min(P1.y,P2.y);
+  const want=hi-VH*0.44;
+  if(want<camY)camY+=(want-camY)*0.09;
+  genUpTo(camY-VH*0.5);
+  if(platforms.length>120)platforms=platforms.filter(pl=>pl.y-camY<VH+260);
+  minY=Math.min(minY,hi);
+  updateScore();
+  // both fallen below the view → game over
+  if(hi-camY>VH+70)gameover();
+}
+function climbM(){return Math.max(0,Math.round(-minY/PX_PER_M));}
+function updateScore(){
+  document.getElementById('sNow').textContent=climbM()+' m';
+  document.getElementById('sBest').textContent=Math.max(best,climbM())+' m';
+}
+function gameover(){
+  state='over';
+  const m=climbM(), rec=m>best;
+  if(rec){best=m; try{localStorage.setItem('rope_best',best);}catch(e){}}
+  const ov=document.getElementById('overlay');
+  document.getElementById('ovTtl').textContent=T('GAME OVER','游戏结束');
+  document.getElementById('ovBig').textContent=T(`you climbed ${m} m`,`你们爬了 ${m} 米`);
+  document.getElementById('ovBest').textContent=rec?T('★ new best!',`★ 新纪录！`):T(`best ${best} m`,`最佳 ${best} 米`);
+  ov.classList.add('show');
+}
+
+/* ── render ── */
+function sy(wy){return wy-camY;}
+function drawPlayer(p,col,face){
+  const x=p.x, y=sy(p.y);
+  ctx.save();
+  ctx.shadowColor=col; ctx.shadowBlur=12;
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,R,0,7); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle='#08110b';
+  const lean=Math.max(-3,Math.min(3,vx(p)));
+  ctx.beginPath(); ctx.arc(x-4+lean,y-2,2.1,0,7); ctx.arc(x+4+lean,y-2,2.1,0,7); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(x-4,y+3,8,1.6);
+}
+function render(){
+  // sky
+  const g=ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,'#0b1018'); g.addColorStop(1,'#0a0c0a');
+  ctx.fillStyle=g; ctx.fillRect(0,0,VW,VH);
+  // height gridlines every 5 m
+  ctx.font='9px Consolas,monospace'; ctx.textBaseline='middle';
+  const stepPx=5*PX_PER_M;
+  let m0=Math.floor((camY)/stepPx)*stepPx;
+  for(let wy=m0; wy<camY+VH; wy+=stepPx){
+    const Y=sy(wy); if(Y<-20||Y>VH+20)continue;
+    ctx.strokeStyle='rgba(255,255,255,0.035)'; ctx.beginPath(); ctx.moveTo(0,Y); ctx.lineTo(VW,Y); ctx.stroke();
+    const m=Math.round(-wy/PX_PER_M);
+    if(m>0){ctx.fillStyle='#2c352c'; ctx.fillText(m+'m',6,Y-7);}
+  }
+  // platforms
+  for(const pl of platforms){
+    const Y=sy(pl.y); if(Y>VH+30||Y+pl.h<-30)continue;
+    ctx.fillStyle='#141d16'; ctx.fillRect(pl.x,Y,pl.w,pl.h);
+    ctx.strokeStyle='rgba(29,185,84,0.35)'; ctx.lineWidth=1; ctx.strokeRect(pl.x+0.5,Y+0.5,pl.w-1,pl.h-1);
+    ctx.fillStyle='#1db954'; ctx.fillRect(pl.x,Y,pl.w,2);
+  }
+  // rope
+  ctx.strokeStyle='#9a7b4f'; ctx.lineWidth=3; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(ropeViz[0].x,sy(ropeViz[0].y));
+  for(let i=1;i<ropeViz.length;i++)ctx.lineTo(ropeViz[i].x,sy(ropeViz[i].y));
+  ctx.stroke();
+  // players
+  drawPlayer(P1,'#1db954'); drawPlayer(P2,'#46c8ff');
+  // off-screen danger arrows
+  arrowFor(P1,'#1db954'); arrowFor(P2,'#46c8ff');
+}
+function arrowFor(p,col){
+  const Y=sy(p.y);
+  if(Y>VH-6){ ctx.fillStyle=col; const x=Math.max(12,Math.min(VW-12,p.x));
+    ctx.beginPath(); ctx.moveTo(x,VH-4); ctx.lineTo(x-7,VH-16); ctx.lineTo(x+7,VH-16); ctx.fill(); }
+}
+
+/* ── loop ── */
+let last=performance.now(), acc=0; const FT=1000/60;
+function frame(now){
+  acc+=Math.min(now-last,100); last=now;
+  let n=0; while(acc>=FT&&n<5){ if(state==='play')step(); acc-=FT; n++; }
+  render(); requestAnimationFrame(frame);
+}
+
+/* ── language ── */
+let lang='en';
+function T(en,zh){return lang==='zh'?zh:en;}
+function howtoHTML(){return T(
+  'Only one of you needs to be standing — the other can <b>swing on the rope</b> like a pendulum. Anchor on a platform, let your partner swing out and jump to the next ledge, then follow. Jump <b>together</b> across big gaps. But the rope pulls back: yank too hard and you drag each other off.',
+  '只要一人站稳，另一人就能像钟摆一样<b>荡绳子</b>。一人在平台上做锚，让同伴荡出去跳上下一个台子，再跟上。大缺口要<b>一起跳</b>。但绳子会回拉：拽太猛会把对方拖下去。');}
+function applyLang(){
+  document.getElementById('pgTitle').textContent=T('>_ Tether','>_ 默契绳');
+  document.getElementById('pgSub').textContent=T(
+    'A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.',
+    '双人合作物理攀爬。你和好友被绳子拴在一起——跳跃、摆荡、互相做锚往上爬。拽得太猛就一起摔下去。');
+  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=T(el.dataset.en,el.dataset.zh);});
+  document.getElementById('howto').innerHTML=howtoHTML();
+  if(state==='over'){ // refresh overlay text in new lang
+    document.getElementById('ovTtl').textContent=T('GAME OVER','游戏结束');
+    document.getElementById('ovBig').textContent=T(`you climbed ${climbM()} m`,`你们爬了 ${climbM()} 米`);
+  }
+}
+function toggleLang(){lang=lang==='en'?'zh':'en';document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();}
+
+reset(); applyLang(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
