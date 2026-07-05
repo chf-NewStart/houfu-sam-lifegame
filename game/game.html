@@ -59,12 +59,10 @@
       transition: transform .34s cubic-bezier(.34,.7,.3,1), opacity .25s, box-shadow .2s; will-change: transform; }
     .utoken.participant { background: rgba(29,185,84,0.2); border-color: #1db954; color: #7ff0a8; }
     .utoken.hunter      { background: rgba(244,67,54,0.22); border-color: #f44336; color: #ff8a80; }
-    .utoken.current     { box-shadow: 0 0 0 2px currentColor, 0 0 14px currentColor; }
-    .utoken.gone        { opacity: 0; transform: scale(0.2) !important; }
-    .utoken.acted       { animation: tok-pop .34s ease; }
-    .utoken.hit         { animation: tok-hit .4s ease; }
-    @keyframes tok-pop { 0%{} 40%{ box-shadow: 0 0 0 4px currentColor, 0 0 18px currentColor; } 100%{} }
-    @keyframes tok-hit { 0%,100%{} 25%{ transform: scale(1.35); } 50%{ filter: brightness(2.2); } }
+    .utoken.current     { box-shadow: 0 0 0 2px currentColor, 0 0 12px currentColor; }
+    .utoken.gone        { opacity: 0; }                    /* fade out in place — no scaling */
+    .utoken.hit         { animation: tok-hit .45s ease; }  /* brightness flash only, never resize */
+    @keyframes tok-hit { 0%,100%{ filter: none; } 30%{ filter: brightness(2.3) saturate(1.3); } }
     .utoken-hp { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); font-size: 7px; color: #aaa; white-space: nowrap; text-shadow: 0 1px 2px #000; }
     .badge { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid transparent; position: relative; flex-shrink: 0; z-index: 2; }
     .badge.participant { background: rgba(29,185,84,0.18); border-color: #1db954; color: #7ff0a8; }
@@ -782,10 +780,9 @@ class GameEngine {
       tok.classList.toggle('gone', dead);
       tok.querySelector('.utoken-hp').textContent=Math.max(0,u.hp)+'♥';
     }
-    // replay the just-taken action as a quick pulse / hit-flash
-    const pulse=(id,cls)=>{const tk=this.tokens[id];if(!tk)return;tk.classList.remove(cls);void tk.offsetWidth;tk.classList.add(cls);setTimeout(()=>tk.classList.remove(cls),430);};
-    if(this._actedId){pulse(this._actedId,'acted');this._actedId=null;}
-    if(this._hitId){pulse(this._hitId,'hit');this._hitId=null;}
+    // flash an attack's target (brightness only — tokens never resize)
+    this._actedId=null;
+    if(this._hitId){const tk=this.tokens[this._hitId];if(tk){tk.classList.remove('hit');void tk.offsetWidth;tk.classList.add('hit');setTimeout(()=>tk.classList.remove('hit'),460);}this._hitId=null;}
   }
 
   renderPanel() {
