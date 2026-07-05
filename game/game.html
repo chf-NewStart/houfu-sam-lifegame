@@ -32,7 +32,7 @@
     .leg { display: inline-block; width: 20px; height: 0; }
 
     #boardWrap { position: relative; }
-    .board { display: grid; grid-template-columns: repeat(4, 112px); grid-template-rows: repeat(4, 112px); background: #080808; }
+    .board { display: grid; grid-template-columns: repeat(4, 112px); grid-template-rows: repeat(4, 112px); background: #080808; position: relative; z-index: 1; }
     .cell { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; padding: 6px; background: #101010; transition: background 0.12s, box-shadow 0.12s; }
     .cell.exit { background: rgba(29,185,84,0.09); }
     .cell.placeable:hover { background: rgba(29,185,84,0.06); cursor: pointer; }
@@ -51,11 +51,24 @@
     .trap-icon { position: absolute; top: 2px; right: 3px; font-size: 15px; line-height: 1; }
     .cell-coord { position: absolute; bottom: 2px; right: 3px; font-size: 8px; color: #1c1c1c; }
 
-    .badge { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid transparent; position: relative; flex-shrink: 0; transition: box-shadow 0.2s; z-index: 2; }
+    /* animated unit tokens live in an overlay so they slide between cells */
+    #unitLayer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+    .utoken { position: absolute; top: 0; left: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;
+      border: 2px solid transparent; box-sizing: border-box;
+      transition: transform .34s cubic-bezier(.34,.7,.3,1), opacity .25s, box-shadow .2s; will-change: transform; }
+    .utoken.participant { background: rgba(29,185,84,0.2); border-color: #1db954; color: #7ff0a8; }
+    .utoken.hunter      { background: rgba(244,67,54,0.22); border-color: #f44336; color: #ff8a80; }
+    .utoken.current     { box-shadow: 0 0 0 2px currentColor, 0 0 14px currentColor; }
+    .utoken.gone        { opacity: 0; transform: scale(0.2) !important; }
+    .utoken.acted       { animation: tok-pop .34s ease; }
+    .utoken.hit         { animation: tok-hit .4s ease; }
+    @keyframes tok-pop { 0%{} 40%{ box-shadow: 0 0 0 4px currentColor, 0 0 18px currentColor; } 100%{} }
+    @keyframes tok-hit { 0%,100%{} 25%{ transform: scale(1.35); } 50%{ filter: brightness(2.2); } }
+    .utoken-hp { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); font-size: 7px; color: #aaa; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+    .badge { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid transparent; position: relative; flex-shrink: 0; z-index: 2; }
     .badge.participant { background: rgba(29,185,84,0.18); border-color: #1db954; color: #7ff0a8; }
     .badge.hunter      { background: rgba(244,67,54,0.2);  border-color: #f44336; color: #ff8a80; }
-    .badge.current     { box-shadow: 0 0 0 2px currentColor, 0 0 12px currentColor; }
-    .badge-hp { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); font-size: 7px; color: #888; white-space: nowrap; }
 
     .pcard { background: #111; border: 1px solid #1c1c1c; padding: 11px 13px; margin-bottom: 8px; }
     .pcard-title { color: #1db954; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #1a1a1a; }
@@ -154,7 +167,7 @@
       <span><span class="leg" style="border-top:3px solid #b71c1c"></span><span data-en="Locked" data-zh="锁定">Locked</span></span>
       <span><span class="leg" style="border-top:3px double #00bcd4"></span><span data-en="Frozen" data-zh="冰冻">Frozen</span></span>
     </div>
-    <div id="boardWrap"><div id="gameBoard" class="board"></div></div>
+    <div id="boardWrap"><div id="gameBoard" class="board"></div><div id="unitLayer"></div></div>
     <div style="font-size:0.64rem;color:#5a5a5a;margin-top:6px;" id="boardHint"></div>
   </div>
 
@@ -597,6 +610,7 @@ class GameEngine {
     this.pushUndo(unit);
     this.grid[unit.y][unit.x].units=this.grid[unit.y][unit.x].units.filter(u=>u!==unit);
     unit.x=nx;unit.y=ny;this.grid[ny][nx].units.push(unit);unit.moves--;
+    this._actedId=unit.id;
     this.log(`${unit.id} → (${nx},${ny})`,'action');
     this.applyEffects(unit);
     this.afterAction(unit);
@@ -636,6 +650,7 @@ class GameEngine {
     }
     if(!target){if(isHumanUnit(unit))undoStack.pop();this.log(t('No target on this cell.','这一格没有目标。'));return false;}
     unit.attacks--;
+    this._actedId=unit.id; this._hitId=target.id;
     this.afterAction(unit);
     return true;
   }
@@ -651,6 +666,7 @@ class GameEngine {
     if(this.frozenDoors.has(door.key)){this.log(t('That door is frozen!','那扇门被冻住了！'),'danger');return false;}
     this.pushUndo(unit);
     this.doors.set(door.key,to); unit.moves--;
+    this._actedId=unit.id;
     this.log(t(`${unit.id} ${verb}s the ${tDir(door.dir)} door.`,`${unit.id}${tVerb(verb)}了${tDir(door.dir)}方向的门。`),'action');
     this.afterAction(unit);
     return true;
@@ -731,18 +747,45 @@ class GameEngine {
 
       if(cd.isExit){const tag=document.createElement('div');tag.className='exit-tag';tag.textContent=t('EXIT','出口');cell.appendChild(tag);}
       if(cd.symbol){const ti=document.createElement('div');ti.className='trap-icon';ti.textContent=TRAP_EMOJI[cd.symbol]||cd.symbol;cell.appendChild(ti);}
-      cd.units.forEach(u=>{
-        if((u.hp<=0&&!u.escaped)||u.escaped)return;
-        const b=document.createElement('div');
-        b.className=`badge ${u.type}`+(cu&&u===cu?' current':'');
-        b.textContent=u.type==='hunter'?'H':u.id.replace('P','');
-        const hp=document.createElement('div');hp.className='badge-hp';hp.textContent=u.hp+'♥';b.appendChild(hp);
-        cell.appendChild(b);
-      });
       const coord=document.createElement('div');coord.className='cell-coord';coord.textContent=`${x},${y}`;cell.appendChild(coord);
       board.appendChild(cell);
     }
+    this.renderUnits(cu);
     this.renderPanel();
+  }
+
+  // Persistent tokens in an overlay layer — they slide (CSS transform transition)
+  // from cell to cell instead of snapping, so every move is easy to follow.
+  renderUnits(cu){
+    const board=document.getElementById('gameBoard'), layer=document.getElementById('unitLayer');
+    if(!board||!layer)return;
+    const cw=board.clientWidth/4, chH=board.clientHeight/4;
+    if(!this.tokens)this.tokens={};
+    // stacking offsets so units sharing a cell don't fully overlap
+    const OFF=[[0,0],[-9,-8],[9,-8],[-9,9],[9,9]];
+    const at={};
+    const all=[...this.participants,this.hunter];
+    for(const u of all){ const key=u.x+','+u.y; (at[key]=at[key]||[]).push(u); }
+    for(const u of all){
+      let tok=this.tokens[u.id];
+      if(!tok){
+        tok=document.createElement('div');
+        tok.className='utoken '+u.type;
+        tok.textContent=u.type==='hunter'?'H':u.id.replace('P','');
+        const hp=document.createElement('div');hp.className='utoken-hp';tok.appendChild(hp);
+        layer.appendChild(tok); this.tokens[u.id]=tok;
+      }
+      const dead=(u.hp<=0&&!u.escaped)||u.escaped;
+      const stack=at[u.x+','+u.y], idx=Math.min(stack.indexOf(u),OFF.length-1), off=OFF[idx];
+      tok.style.transform=`translate(${u.x*cw+cw/2+off[0]}px, ${u.y*chH+chH/2+off[1]}px)`;
+      tok.classList.toggle('current', cu===u && !dead);
+      tok.classList.toggle('gone', dead);
+      tok.querySelector('.utoken-hp').textContent=Math.max(0,u.hp)+'♥';
+    }
+    // replay the just-taken action as a quick pulse / hit-flash
+    const pulse=(id,cls)=>{const tk=this.tokens[id];if(!tk)return;tk.classList.remove(cls);void tk.offsetWidth;tk.classList.add(cls);setTimeout(()=>tk.classList.remove(cls),430);};
+    if(this._actedId){pulse(this._actedId,'acted');this._actedId=null;}
+    if(this._hitId){pulse(this._hitId,'hit');this._hitId=null;}
   }
 
   renderPanel() {
@@ -843,6 +886,7 @@ function chooseSide(side){
 function startGame(){
   stopScheduler();
   undoStack.length=0;
+  document.getElementById('unitLayer').innerHTML='';   // drop tokens from the previous game
   document.getElementById('gameLog').innerHTML='';
   const nb=document.getElementById('newGameBtn');if(nb)nb.className='btn';
   game=new GameEngine(); game.init();
@@ -870,7 +914,7 @@ function endTurn() {
 }
 
 /* ── AI scheduler: drives whichever side the human isn't playing ── */
-function startScheduler(){ stopScheduler(); aiTimer=setInterval(aiTick, humanSide==='watch'?190:470); }
+function startScheduler(){ stopScheduler(); aiTimer=setInterval(aiTick, humanSide==='watch'?340:600); }
 function stopScheduler(){ if(aiTimer){clearInterval(aiTimer);aiTimer=null;} }
 
 function aiTick(){
@@ -943,6 +987,7 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+window.addEventListener('resize',()=>{ if(game)game.render(); });
 document.addEventListener('DOMContentLoaded',()=>{applyLang();openModeSelect();});
 </script>
 </body>
