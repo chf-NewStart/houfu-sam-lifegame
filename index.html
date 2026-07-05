@@ -196,7 +196,7 @@
   </div>
 
   <div class="card glow-escape">
-    <img class="card-thumb" src="/game/thumbs/escape.jpg?v=4" alt="Escape Grid board" loading="lazy" width="440" height="240">
+    <canvas class="card-thumb esc-live" width="440" height="124" aria-hidden="true"></canvas>
     <div class="card-icon">[::]</div>
     <div class="card-title" data-en="escape_grid.exe" data-zh="逃脱方格.exe">escape_grid.exe</div>
     <div class="card-desc" data-en="4 runners race to the exit; 1 hunter tries to catch them all. Click to move, open and seal doors, dodge emoji hazards. Play the runners, play the hunter, or watch AI-vs-AI." data-zh="4 名逃跑者冲向出口，1 名猎手全力追捕。点击移动、开门封门、躲避陷阱。可扮演逃跑者、扮演猎手，或观看 AI 对战。">4 runners race to the exit; 1 hunter tries to catch them all. Click to move, open and seal doors, dodge emoji hazards. Play the runners, play the hunter, or watch AI-vs-AI.</div>
@@ -574,7 +574,83 @@ document.addEventListener('DOMContentLoaded', applyLang);
   window.__escState = () => state;
 })();
 
-/* Gomoku card — Canvas 2D water across the WHOLE card (thumbnail band + dark body) */
+/* Escape card — LIVE thumbnail: a perpetual wide-band chase that fills the card
+   header. Green runners flee left→right toward the glowing EXIT column; a faster
+   red hunter chases the nearest. Catches burst; escapes flash; motion trails give
+   it life. Paused off-screen via IntersectionObserver so it costs nothing hidden. */
+(function () {
+  const cv = document.querySelector('.card.glow-escape .esc-live');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W=cv.width, H=cv.height, COLS=6, ROWS=3;
+  const mx=10, my=10, cw=(W-2*mx)/COLS, ch=(H-2*my)/ROWS;
+  const cx=i=>mx+i*cw+cw/2, cy=j=>my+j*ch+ch/2;
+  const HAZ=[{i:2,j:0,e:'💀'},{i:3,j:2,e:'💥'},{i:4,j:1,e:'❄️'}];
+  let runners, hunter, tick, bursts, anim;
+
+  function mk(j){ return {i:0,j, pi:cx(0),pj:cy(j), dead:0, esc:0, trail:[]}; }
+  function reset(){ runners=[mk(0),mk(1),mk(2)]; hunter={i:0,j:1,pi:cx(0),pj:cy(1),trail:[]}; tick=0; bursts=[]; }
+  function burst(x,y,col){ for(let n=0;n<9;n++){const a=Math.random()*6.28,s=0.5+Math.random()*1.7;bursts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col});} }
+
+  function step(){
+    for(const r of runners){
+      if(r.dead){ if(--r.dead===0){r.i=0;r.j=(Math.random()*ROWS)|0;r.esc=0;} continue; }
+      if(r.i>=COLS-1){ r.esc=12; burst(cx(r.i),cy(r.j),'29,185,84'); r.dead=18; continue; }
+      // flee right, dodge the hunter's row if it's alongside
+      if(Math.abs(hunter.i-r.i)<=1 && hunter.j===r.j && r.j>0 && Math.random()<0.6) r.j+= (r.j<ROWS-1&&Math.random()<0.5)?1:-1;
+      else if(Math.random()<0.82) r.i++;
+      else r.j += (r.j===0?1:r.j===ROWS-1?-1:(Math.random()<0.5?1:-1));
+      r.j=Math.max(0,Math.min(ROWS-1,r.j));
+    }
+    // hunter: 1 step toward nearest live runner (a touch faster than they flee)
+    const live=runners.filter(r=>!r.dead);
+    if(live.length){
+      let best=live[0],bd=1e9;
+      for(const r of live){const d=Math.abs(r.i-hunter.i)+Math.abs(r.j-hunter.j);if(d<bd){bd=d;best=r;}}
+      if(Math.abs(best.i-hunter.i)>=Math.abs(best.j-hunter.j)) hunter.i+=Math.sign(best.i-hunter.i)||0;
+      else hunter.j+=Math.sign(best.j-hunter.j)||0;
+      for(const r of live) if(r.i===hunter.i&&r.j===hunter.j&&!r.dead){ burst(cx(r.i),cy(r.j),'244,67,54'); r.dead=26; }
+    }
+    if(++tick>60) reset();
+  }
+  let acc=0,last=0;
+  function frame(ts){
+    if(!last)last=ts; acc+=ts-last; last=ts;
+    if(acc>600){ step(); acc=0; }
+    const k=0.2, tgt=(u)=>{u.pi+=(cx(u.i)-u.pi)*k;u.pj+=(cy(u.j)-u.pj)*k;u.trail.push([u.pi,u.pj]);if(u.trail.length>8)u.trail.shift();};
+    for(const r of runners) if(!r.dead) tgt(r); tgt(hunter);
+    for(const b of bursts){ b.x+=b.vx;b.y+=b.vy;b.life-=0.045; } bursts=bursts.filter(b=>b.life>0);
+    draw(); anim=requestAnimationFrame(frame);
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H); ctx.fillStyle='#0b0f0b'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(29,185,84,0.13)'; ctx.lineWidth=1;
+    for(let i=0;i<=COLS;i++){ctx.beginPath();ctx.moveTo(mx+i*cw,my);ctx.lineTo(mx+i*cw,my+ch*ROWS);ctx.stroke();}
+    for(let j=0;j<=ROWS;j++){ctx.beginPath();ctx.moveTo(mx,my+j*ch);ctx.lineTo(mx+cw*COLS,my+j*ch);ctx.stroke();}
+    // exit column glow (right)
+    const gx=mx+(COLS-1)*cw, g=ctx.createLinearGradient(gx,0,gx+cw,0);
+    g.addColorStop(0,'rgba(29,185,84,0)');g.addColorStop(1,'rgba(29,185,84,0.28)');
+    ctx.fillStyle=g; ctx.fillRect(gx,my,cw,ch*ROWS);
+    ctx.fillStyle='rgba(29,185,84,0.85)';ctx.font='bold 8px Consolas,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.save();ctx.translate(gx+cw/2,my+ch*ROWS/2);ctx.rotate(-Math.PI/2);ctx.fillText('EXIT',0,0);ctx.restore();
+    // hazards
+    ctx.font='13px sans-serif'; for(const h of HAZ) ctx.fillText(h.e,cx(h.i),cy(h.j));
+    // trails + tokens
+    const trail=(u,col)=>{ for(let n=0;n<u.trail.length-1;n++){const a=n/u.trail.length*0.5;ctx.strokeStyle='rgba('+col+','+a.toFixed(2)+')';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(u.trail[n][0],u.trail[n][1]);ctx.lineTo(u.trail[n+1][0],u.trail[n+1][1]);ctx.stroke();} };
+    const dot=(x,y,hex,col,r)=>{ctx.save();ctx.shadowColor=hex;ctx.shadowBlur=8;ctx.fillStyle=hex;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.restore();};
+    for(const r of runners){ if(r.dead&&!r.esc)continue; trail(r,'29,185,84'); dot(r.pi,r.pj,'#1db954','29,185,84',6); }
+    trail(hunter,'244,67,54'); dot(hunter.pi,hunter.pj,'#f44336','244,67,54',7);
+    ctx.fillStyle='#0b0f0b';ctx.font='bold 8px Consolas,monospace';ctx.fillText('H',hunter.pi,hunter.pj);
+    for(const b of bursts){ ctx.fillStyle='rgba('+b.col+','+b.life.toFixed(2)+')'; ctx.beginPath();ctx.arc(b.x,b.y,1.8,0,7);ctx.fill(); }
+  }
+  reset();
+  const io=new IntersectionObserver(es=>es.forEach(e=>{
+    if(e.isIntersecting){ if(!anim){last=0;anim=requestAnimationFrame(frame);} }
+    else if(anim){cancelAnimationFrame(anim);anim=0;}
+  }),{threshold:0.05});
+  io.observe(cv);
+})();
+
 (function () {
   const card = document.querySelector('.card.glow-gomoku');
   if (!card) return;

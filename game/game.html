@@ -190,7 +190,8 @@
         <button class="btn seal" id="sealBtn" onclick="game && game.toggleSeal()"></button>
       </div>
       <div class="brow">
-        <button class="btn full" id="endTurnBtn" onclick="endTurn()" data-en="⏭ End Turn" data-zh="⏭ 结束回合">⏭ End Turn</button>
+        <button class="btn" id="undoBtn" onclick="undoMove()" data-en="↶ Undo" data-zh="↶ 撤销">↶ Undo</button>
+        <button class="btn" id="endTurnBtn" onclick="endTurn()" data-en="⏭ End Turn" data-zh="⏭ 结束回合">⏭ End Turn</button>
       </div>
     </div>
 
@@ -394,6 +395,37 @@ class GameEngine {
 
   hasActions(unit) { return unit.moves>0 || unit.attacks>0; }
 
+  /* ── Undo: full-state snapshots taken before each human action.
+     The stack is cleared as soon as an AI unit's turn starts, so you can
+     rewind freely within your own side's turns but never through the AI's. ── */
+  snapshot() {
+    const unitData=u=>({id:u.id,type:u.type,hp:u.hp,maxHp:u.maxHp,x:u.x,y:u.y,moves:u.moves,maxMoves:u.maxMoves,attacks:u.attacks,maxAttacks:u.maxAttacks,hasRevive:u.hasRevive,escaped:!!u.escaped});
+    return {
+      participants:this.participants.map(unitData),
+      hunter:unitData(this.hunter),
+      doors:[...this.doors.entries()],
+      frozen:[...this.frozenDoors],
+      symbols:this.grid.map(row=>row.map(c=>c.symbol)),
+      stunHunter:this.stunHunter, stunPart:this.stunPart,
+      currentTurn:this.currentTurn, currentUnitIndex:this.currentUnitIndex,
+      sealMode:this.sealMode,
+    };
+  }
+  restore(s) {
+    const load=(u,d)=>{u.hp=d.hp;u.x=d.x;u.y=d.y;u.moves=d.moves;u.attacks=d.attacks;u.hasRevive=d.hasRevive;u.escaped=d.escaped;};
+    this.participants.forEach((p,i)=>load(p,s.participants[i]));
+    load(this.hunter,s.hunter);
+    this.doors=new Map(s.doors);
+    this.frozenDoors=new Set(s.frozen);
+    for(let y=0;y<4;y++)for(let x=0;x<4;x++){this.grid[y][x].symbol=s.symbols[y][x];this.grid[y][x].units=[];}
+    for(const u of [...this.participants,this.hunter]) if(u.hp>0&&!u.escaped) this.grid[u.y][u.x].units.push(u);
+    this.stunHunter=s.stunHunter; this.stunPart=s.stunPart;
+    this.currentTurn=s.currentTurn; this.currentUnitIndex=s.currentUnitIndex;
+    this.sealMode=s.sealMode;
+    this.gameOver=false; this.winner=null;
+  }
+  pushUndo(unit){ if(unit&&isHumanUnit(unit)) undoStack.push(this.snapshot()); }
+
   participantCanAct(p) {
     if(this.grid[p.y][p.x].units.some(u=>u.type==='hunter'&&u.hp>0)) return true;
     for(const[dx,dy]of[[0,-1],[0,1],[-1,0],[1,0]]){
@@ -504,6 +536,7 @@ class GameEngine {
     }
     this.sealMode=false;
     const cu=this.curUnit();
+    if(cu&&!isHumanUnit(cu))undoStack.length=0;   // can't rewind through the AI's turn
     if(cu){
       cu.moves=cu.maxMoves; cu.attacks=cu.maxAttacks;
       const atkInfo = (cu.type==='hunter'&&this.currentTurn===0) ? t(' · no attack (Rd 1)',' · 不可攻击(第1轮)') : '';
@@ -561,6 +594,7 @@ class GameEngine {
     if(nx<0||nx>3||ny<0||ny>3){return false;}
     const ds=this.dstate(unit.x,unit.y,nx,ny);
     if(ds!=='open'){return false;}
+    this.pushUndo(unit);
     this.grid[unit.y][unit.x].units=this.grid[unit.y][unit.x].units.filter(u=>u!==unit);
     unit.x=nx;unit.y=ny;this.grid[ny][nx].units.push(unit);unit.moves--;
     this.log(`${unit.id} → (${nx},${ny})`,'action');
@@ -591,6 +625,7 @@ class GameEngine {
     if(this.phase!=='play')return false;
     const unit=this.curUnit(); if(!unit||unit.attacks<=0)return false;
     if(unit.type==='hunter'&&this.currentTurn===0){this.log(t('Hunter cannot attack in Round 1.','第1轮猎手不能攻击。'),'danger');return false;}
+    this.pushUndo(unit);
     const cell=this.grid[unit.y][unit.x]; let target=null;
     if(unit.type==='participant'){
       target=cell.units.find(u=>u.type==='hunter');
@@ -599,7 +634,7 @@ class GameEngine {
       const tgts=cell.units.filter(u=>u.type==='participant'&&u.hp>0);
       if(tgts.length){target=tgts[0];target.hp=Math.max(0,target.hp-3);if(target.hp<=0&&target.hasRevive){target.hasRevive=false;target.hp=1;}this.log(t(`Hunter hits ${target.id} for 3. ${target.id} HP: ${target.hp}`,`猎手攻击${target.id}造成3伤害。${target.id}血量：${target.hp}`),'danger');}
     }
-    if(!target){this.log(t('No target on this cell.','这一格没有目标。'));return false;}
+    if(!target){if(isHumanUnit(unit))undoStack.pop();this.log(t('No target on this cell.','这一格没有目标。'));return false;}
     unit.attacks--;
     this.afterAction(unit);
     return true;
@@ -614,6 +649,7 @@ class GameEngine {
     }
     if(!door||door.state!==from){return false;}
     if(this.frozenDoors.has(door.key)){this.log(t('That door is frozen!','那扇门被冻住了！'),'danger');return false;}
+    this.pushUndo(unit);
     this.doors.set(door.key,to); unit.moves--;
     this.log(t(`${unit.id} ${verb}s the ${tDir(door.dir)} door.`,`${unit.id}${tVerb(verb)}了${tDir(door.dir)}方向的门。`),'action');
     this.afterAction(unit);
@@ -754,6 +790,7 @@ class GameEngine {
     dis('attackBtn',!canAtk);
     dis('sealBtn',!human||u.moves<=0);
     dis('endTurnBtn',!human);
+    dis('undoBtn',!undoStack.length||!(u&&isHumanUnit(u)));
     const sb=document.getElementById('sealBtn');
     if(sb)sb.classList.toggle('on',this.sealMode);
     const ph=document.getElementById('playHint');
@@ -762,7 +799,7 @@ class GameEngine {
       else if(!human) ph.textContent=t('The AI is taking its turn…','AI 正在行动……');
       else ph.innerHTML=this.sealMode
         ? t('<b>Block mode:</b> click a glowing red door to shut / lock it (costs a move).','<b>封门模式：</b>点击发红的门以关闭/上锁（消耗一次移动）。')
-        : t('Click a <b style="color:#1db954">green</b> cell to move, a <b style="color:#ffce4d">yellow</b> door to open it, or ⚔️ if the enemy shares your cell.','点击<b style="color:#1db954">绿色</b>格子移动，点<b style="color:#ffce4d">黄色</b>门开门，同格有敌人时可⚔️。');
+        : t('Click a <b style="color:#1db954">green</b> cell to move, a <b style="color:#ffce4d">yellow</b> door to open it, or ⚔️ if the enemy shares your cell. ↶ Undo (Z) takes back your last action.','点击<b style="color:#1db954">绿色</b>格子移动，点<b style="color:#ffce4d">黄色</b>门开门，同格有敌人时可⚔️。↶ 撤销（Z）可收回上一步。');
     }
   }
 }
@@ -771,6 +808,19 @@ class GameEngine {
 let game=null;
 let humanSide='runners';   // 'runners' | 'hunter' | 'watch'
 let aiTimer=null;
+let undoStack=[];          // snapshots taken before each human action
+
+function undoMove(){
+  if(!game||game.phase!=='play'||!undoStack.length)return;
+  const cu=game.curUnit();
+  if(cu&&!isHumanUnit(cu))return;                 // AI already acting — too late
+  game.restore(undoStack.pop());
+  const nb=document.getElementById('newGameBtn');if(nb)nb.className='btn';
+  document.getElementById('winBanner').className='win-banner';
+  game.log(t('↶ undo','↶ 撤销'),'action');
+  startScheduler();          // game-over stops the AI; revive it in case we rewound one
+  game.render();
+}
 
 function isHumanUnit(u){
   if(!u)return false;
@@ -792,6 +842,7 @@ function chooseSide(side){
 
 function startGame(){
   stopScheduler();
+  undoStack.length=0;
   document.getElementById('gameLog').innerHTML='';
   const nb=document.getElementById('newGameBtn');if(nb)nb.className='btn';
   game=new GameEngine(); game.init();
@@ -815,7 +866,7 @@ function finishSetup(){ game?.finishSetup(); }
 function endTurn() {
   if(!game)return;
   const u=game.curUnit();
-  if(u&&isHumanUnit(u)){u.moves=0;u.attacks=0;game.nextTurn();}
+  if(u&&isHumanUnit(u)){game.pushUndo(u);u.moves=0;u.attacks=0;game.nextTurn();}
 }
 
 /* ── AI scheduler: drives whichever side the human isn't playing ── */
@@ -881,6 +932,7 @@ document.addEventListener('keydown',e=>{
   const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
   if(e.key===' '){e.preventDefault();document.getElementById('attackBtn').disabled||game.attack();return;}
   if(e.key==='f'||e.key==='F'){e.preventDefault();if(cu.moves>0)game.toggleSeal();return;}
+  if(e.key==='z'||e.key==='Z'){e.preventDefault();undoMove();return;}
   const dir=map[e.key]; if(!dir)return; e.preventDefault();
   if(cu.moves<=0)return;
   const aj=game.adjByDir(cu,dir); if(!aj||game.frozenDoors.has(aj.key))return;
