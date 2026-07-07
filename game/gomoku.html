@@ -752,25 +752,38 @@ function getCandidates(board, player) {
   //    This is the other half of the "hard felt easy" bug: blocks used to be
   //    merely ordered first, not forced, so a reckless search could skip them.
   if (blocks.length) return blocks;
-  // 3. Otherwise explore quiet moves, but cap to the most relevant ones (those
-  //    touching the most stones) so the deeper search stays responsive.
-  if (others.length > MAX_CANDS) {
-    others.sort((a, b) => neighborCount(board, b[0], b[1]) - neighborCount(board, a[0], a[1]));
-    others.length = MAX_CANDS;
+  // 3. Quiet moves: rank by what the stone would build for us plus what it would
+  //    deny the opponent. The old neighbour-count heuristic could prune the two
+  //    end cells of an opponent's open three (they touch few stones) while keeping
+  //    useless cluster cells — the AI literally couldn't see the only defence.
+  //    Cells at open-three level or above are never capped away.
+  const scored = others.map(([r, c]) => ({ r, c, s: localThreat(board, r, c, player) + localThreat(board, r, c, opp) * 1.1 }));
+  scored.sort((a, b) => b.s - a.s);
+  const keep = [];
+  for (let i = 0; i < scored.length; i++) {
+    if (i < MAX_CANDS || scored[i].s >= 5000) keep.push([scored[i].r, scored[i].c]);
   }
-  return others;
+  return keep;
 }
 
-// How many of the 8 surrounding cells hold a stone — a cheap relevance heuristic.
-function neighborCount(board, r, c) {
-  let n = 0;
-  for (let dr = -1; dr <= 1; dr++)
-    for (let dc = -1; dc <= 1; dc++) {
-      if (!dr && !dc) continue;
-      const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < N && nc >= 0 && nc < N && board[nr][nc] !== 0) n++;
-    }
-  return n;
+// Tactical value of placing `player`'s stone on the empty cell (r,c): the summed
+// runScore of every line it would form through that cell (gap-fills included).
+function localThreat(board, r, c, player) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  board[r][c] = player;
+  let s = 0;
+  for (const [dr, dc] of dirs) {
+    let len = 1;
+    let er = r + dr, ec = c + dc;
+    while (er >= 0 && er < N && ec >= 0 && ec < N && board[er][ec] === player) { len++; er += dr; ec += dc; }
+    const openAfter = er >= 0 && er < N && ec >= 0 && ec < N && board[er][ec] === 0;
+    let pr = r - dr, pc = c - dc;
+    while (pr >= 0 && pr < N && pc >= 0 && pc < N && board[pr][pc] === player) { len++; pr -= dr; pc -= dc; }
+    const openBefore = pr >= 0 && pr < N && pc >= 0 && pc < N && board[pr][pc] === 0;
+    s += runScore(len, (openBefore ? 1 : 0) + (openAfter ? 1 : 0));
+  }
+  board[r][c] = 0;
+  return s;
 }
 
 function minimax(board, depth, alpha, beta, isMax, lr, lc) {
@@ -912,7 +925,10 @@ function getBestMove() {
       bestScore = score;
       bestMove  = [r, c];
     }
-    if (Math.abs(bestScore) >= 500000) break; // found forced win/loss
+    // Stop early only on a forced WIN for us. Breaking on a forced loss too was a
+    // real bug: the search would give up after the first candidate and play an
+    // arbitrary neighbour cell instead of the most resistant defence.
+    if ((isMax ? bestScore : -bestScore) >= 500000) break;
   }
   return bestMove;
 }

@@ -53,6 +53,19 @@
   .tip{font-size:0.66rem;color:#5e5e5e;line-height:1.6;border-left:2px solid #1db95455;padding-left:9px;}
   .tip b{color:#1db954;}
 
+  /* remote co-op */
+  .btn.sm{font-size:0.72rem;padding:7px 14px;}
+  .code-box{display:none;margin:9px 0;text-align:center;}
+  .code-label{font-size:0.62rem;color:#666;margin-bottom:5px;}
+  .room-code-big{font-size:1.7rem;letter-spacing:5px;color:#46c8ff;font-weight:700;padding:8px;border:1px dashed #2a5a78;border-radius:6px;cursor:pointer;user-select:all;}
+  .room-code-big:hover{background:rgba(70,200,255,0.08);}
+  .or-sep{font-size:0.62rem;color:#555;text-align:center;margin:9px 0 7px;}
+  .join-input{width:100%;background:#0a0a0a;border:1px solid #2a2a2a;color:#eee;font-family:inherit;font-size:0.9rem;letter-spacing:3px;text-transform:uppercase;padding:8px;text-align:center;margin-bottom:7px;}
+  .join-input:focus{outline:none;border-color:#46c8ff;}
+  .conn{font-size:0.66rem;color:#666;min-height:1em;margin-top:6px;line-height:1.5;}
+  .conn.ok{color:#1db954;}.conn.err{color:#e2523e;}
+  .role-tag{font-size:0.66rem;color:#46c8ff;margin-top:3px;}
+
   /* touch pads */
   .pads{display:none;max-width:480px;margin:10px auto 0;justify-content:space-between;gap:10px;}
   .pad{display:flex;gap:8px;}
@@ -84,7 +97,7 @@
         <div class="ttl" id="ovTtl">GAME OVER</div>
         <div class="big" id="ovBig"></div>
         <div class="sm" id="ovBest"></div>
-        <button class="btn" id="ovBtn" onclick="reset()" data-en="↺ Climb again" data-zh="↺ 再爬一次">↺ Climb again</button>
+        <button class="btn" id="ovBtn" onclick="restartBtn()" data-en="↺ Climb again" data-zh="↺ 再爬一次">↺ Climb again</button>
       </div>
     </div>
     <div class="pads">
@@ -106,9 +119,23 @@
       <div class="score-row"><span class="k" data-en="best" data-zh="最佳">best</span><span class="v y" id="sBest">0 m</span></div>
     </div>
     <div class="pcard">
-      <div class="pcard-title"><span data-en="// controls · two players, one keyboard" data-zh="// 操作 · 双人同键盘">// controls · two players, one keyboard</span></div>
+      <div class="pcard-title"><span id="ctlTitle" data-en="// controls · two players, one keyboard" data-zh="// 操作 · 双人同键盘">// controls · two players, one keyboard</span></div>
       <div class="ctl"><span class="dot p1"></span><span class="who"><span data-en="Player 1" data-zh="玩家 1">Player 1</span>&nbsp; <kbd>A</kbd><kbd>D</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>W</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
       <div class="ctl"><span class="dot p2"></span><span class="who"><span data-en="Player 2" data-zh="玩家 2">Player 2</span>&nbsp; <kbd>←</kbd><kbd>→</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>↑</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
+    </div>
+    <div class="pcard">
+      <div class="pcard-title"><span data-en="// play together (remote)" data-zh="// 一起玩（联机）">// play together (remote)</span></div>
+      <button class="btn sm" onclick="createRoom()" data-en="Create Room" data-zh="创建房间">Create Room</button>
+      <div class="code-box" id="codeBox">
+        <div class="code-label" data-en="share this code →" data-zh="把房间码发给对方 →">share this code →</div>
+        <div class="room-code-big" id="roomCode" onclick="copyCode()" title="tap to copy">—</div>
+      </div>
+      <div class="or-sep" data-en="— or join a room —" data-zh="— 或加入房间 —">— or join a room —</div>
+      <input class="join-input" id="joinCode" placeholder="ROOM CODE" maxlength="8">
+      <button class="btn sm" onclick="joinRoom()" data-en="Join" data-zh="加入">Join</button>
+      <div class="conn" id="conn"></div>
+      <div class="role-tag" id="roleTag"></div>
+      <button class="btn sm" id="localBtn" style="margin-top:9px;display:none" onclick="playLocal()" data-en="↺ Back to local play" data-zh="↺ 回到本地双人">↺ Back to local play</button>
     </div>
     <div class="pcard">
       <div class="pcard-title"><span data-en="// how to climb" data-zh="// 怎么爬">// how to climb</span></div>
@@ -117,6 +144,8 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 /* ════════════════════════════════════════════════════════════
    Tether — a two-player co-op rope climber.
@@ -149,24 +178,33 @@ function setVel(p,wx,wy){p.px=p.x-wx;p.py=p.y-wy;}
 let P1,P2,ropeViz,allPts,platforms,topY,camY,startCam,minY,best,state,t,lastRec=false;
 try{best=+(localStorage.getItem('rope_best')||0)||0;}catch(e){best=0;}
 
-function rand(a,b){return a+Math.random()*(b-a);}
+/* Deterministic tower: in remote play both sides seed the same PRNG, so the host
+   only streams positions — the guest regenerates the identical platform layout. */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let rng=Math.random;
+function rand(a,b){return a+rng()*(b-a);}
 
 function genUpTo(targetY){
   while(topY>targetY){
-    topY-=rand(70,104);
-    const count=Math.random()<0.42?2:1;
+    topY-=rand(58,88);                       // denser courses — more bricks to climb
+    const roll=rng();                        // MUST be the seeded rng — remote guests replay this sequence
+    const count=roll<0.22?3:roll<0.68?2:1;   // usually 2, sometimes 3, rarely a lone brick
     let placed=[];
     for(let i=0;i<count;i++){
-      const w=rand(66,148);
+      const w=rand(60,140);
       let x, tries=0;
-      do{ x=rand(6,VW-w-6); tries++; }while(placed.some(p=>Math.abs(p-(x+w/2))<90)&&tries<6);
+      do{ x=rand(6,VW-w-6); tries++; }while(placed.some(p=>Math.abs(p-(x+w/2))<80)&&tries<8);
+      if(tries>=8&&placed.length)continue;   // no room this course — skip rather than overlap
       placed.push(x+w/2);
       platforms.push({x,y:topY,w,h:14});
     }
   }
 }
 
-function reset(){
+function reset(seed){
+  if(netMode==='host'){ curSeed=(seed!=null)?seed:((Math.random()*1e9)|0); rng=mulberry32(curSeed); }
+  else if(seed!=null){ curSeed=seed; rng=mulberry32(curSeed); }
+  else { curSeed=null; rng=Math.random; }
   platforms=[{x:0,y:0,w:VW,h:46}];          // ground slab (top surface y=0)
   topY=0; genUpTo(-VH*1.4);
   P1=pt(VW*0.40,-30,1); P2=pt(VW*0.60,-30,1);
@@ -188,13 +226,16 @@ addEventListener('keydown',e=>{
   if(k==='a'||k==='A')held.a=true; else if(k==='d'||k==='D')held.d=true;
   else if(k==='ArrowLeft')held.l=true; else if(k==='ArrowRight')held.r=true;
   if(KEYJUMP[k]===1)jq1=true; if(KEYJUMP[k]===2)jq2=true;
-  if((k==='r'||k==='R')&&state!=='play')reset();
+  if(netMode==='guest'){ if(KEYJUMP[k])sendJump(); sendInputs(); }
+  if((k==='r'||k==='R')&&state!=='play')restartBtn();
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k))e.preventDefault();
 },{passive:false});
 addEventListener('keyup',e=>{const k=e.key;
   if(k==='a'||k==='A')held.a=false; else if(k==='d'||k==='D')held.d=false;
   else if(k==='ArrowLeft')held.l=false; else if(k==='ArrowRight')held.r=false;
+  if(netMode==='guest')sendInputs();
 });
+addEventListener('blur',()=>{ held.a=held.d=held.l=held.r=false; if(netMode==='guest')sendInputs(); });
 // touch pads
 document.querySelectorAll('.pad button').forEach(b=>{
   const act=b.dataset.act;
@@ -202,10 +243,12 @@ document.querySelectorAll('.pad button').forEach(b=>{
     // capture so a held move sticks even if the finger drifts off the 48px button
     if(b.setPointerCapture){try{b.setPointerCapture(e.pointerId);}catch(_){}}
     if(act==='a1L')held.a=true; if(act==='a1R')held.d=true; if(act==='a1J')jq1=true;
-    if(act==='a2L')held.l=true; if(act==='a2R')held.r=true; if(act==='a2J')jq2=true;};
+    if(act==='a2L')held.l=true; if(act==='a2R')held.r=true; if(act==='a2J')jq2=true;
+    if(netMode==='guest'){ if(act==='a1J'||act==='a2J')sendJump(); sendInputs(); }};
   const off=e=>{e.preventDefault();
     if(act==='a1L')held.a=false; if(act==='a1R')held.d=false;
-    if(act==='a2L')held.l=false; if(act==='a2R')held.r=false;};
+    if(act==='a2L')held.l=false; if(act==='a2R')held.r=false;
+    if(netMode==='guest')sendInputs();};
   b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off);
   b.addEventListener('pointercancel',off);
 });
@@ -275,10 +318,18 @@ function clampSides(p){ if(p.x<R){p.x=R;p.px=R;} if(p.x>VW-R){p.x=VW-R;p.px=VW-R
 
 function step(){
   t++;
-  applyMove(P1,(held.d?1:0)-(held.a?1:0));
-  applyMove(P2,(held.r?1:0)-(held.l?1:0));
-  if(jq1&&P1.grounded){setVel(P1,vx(P1),-JUMP);P1.grounded=false;} jq1=false;
-  if(jq2&&P2.grounded){setVel(P2,vx(P2),-JUMP);P2.grounded=false;} jq2=false;
+  if(netMode==='host'){
+    // host: every local key/pad drives P1; the guest's streamed inputs drive P2
+    applyMove(P1,((held.d||held.r)?1:0)-((held.a||held.l)?1:0));
+    applyMove(P2,(gIn.r?1:0)-(gIn.l?1:0));
+    if((jq1||jq2)&&P1.grounded){setVel(P1,vx(P1),-JUMP);P1.grounded=false;} jq1=jq2=false;
+    if(gJump&&P2.grounded){setVel(P2,vx(P2),-JUMP);P2.grounded=false;} gJump=false;
+  } else {
+    applyMove(P1,(held.d?1:0)-(held.a?1:0));
+    applyMove(P2,(held.r?1:0)-(held.l?1:0));
+    if(jq1&&P1.grounded){setVel(P1,vx(P1),-JUMP);P1.grounded=false;} jq1=false;
+    if(jq2&&P2.grounded){setVel(P2,vx(P2),-JUMP);P2.grounded=false;} jq2=false;
+  }
   integrate(P1); integrate(P2);
   for(let it=0;it<ITER;it++){
     solveLink(P1,P2,ROPE_LEN,true,TETHER_STIFF);   // the tether: an ideal max-length rope
@@ -291,7 +342,7 @@ function step(){
   const want=hi-VH*0.44;
   if(want<camY)camY+=(want-camY)*0.09;
   genUpTo(camY-VH*0.5);
-  if(platforms.length>120)platforms=platforms.filter(pl=>pl.y-camY<VH+260);
+  if(platforms.length>160)platforms=platforms.filter(pl=>pl.y-camY<VH+320);   // keep margin past a dangling lower player (game-over line + rope length)
   minY=Math.min(minY,hi);
   updateScore();
   // both fallen below the view → game over
@@ -312,6 +363,7 @@ function gameover(){
   document.getElementById('ovBig').textContent=T(`you climbed ${m} m`,`你们爬了 ${m} 米`);
   document.getElementById('ovBest').textContent=rec?T('★ new best!',`★ 新纪录！`):T(`best ${best} m`,`最佳 ${best} 米`);
   ov.classList.add('show');
+  if(netMode==='host')writeState();   // push the final frame so the guest sees the overlay at once
 }
 
 /* ── render ── */
@@ -369,8 +421,109 @@ function arrowFor(p,col){
 let last=performance.now(), acc=0; const FT=1000/60;
 function frame(now){
   acc+=Math.min(now-last,100); last=now;
-  let n=0; while(acc>=FT&&n<5){ if(state==='play')step(); acc-=FT; n++; }
+  let n=0; while(acc>=FT&&n<5){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
+  if(netMode==='guest')netStep();   // guest renders the host's authoritative state
   render(); requestAnimationFrame(frame);
+}
+
+/* ── remote co-op — host-authoritative, same Firebase backend as Lander/Keep-Up.
+   Host simulates everything and streams positions at ~15 Hz; the guest streams
+   inputs back and regenerates the identical tower from the shared seed. ── */
+const firebaseConfig={ apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
+let _db=null,_code=null,netMode='',curSeed=null;
+let _stRef=null,_stCb=null,_giRef=null,_giCb=null,_jnRef=null,_jnCb=null;
+let gIn={l:0,r:0},gJump=false,_lastJ=0,_lastRs=0,_sent={l:0,r:0};
+let netState=null,netM=0,_wTimer=0,_prevO=0;
+function db(){ if(!_db){ firebase.initializeApp(firebaseConfig); _db=firebase.database(); } return _db; }
+function ropeRef(sub){ return db().ref(`games/${_code}/rp/${sub}`); }
+function shortId(){ const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<5;i++) s+=c[(Math.random()*c.length)|0]; return s; }
+function setConn(m,cls){ const el=document.getElementById('conn'); el.textContent=m; el.className='conn'+(cls?' '+cls:''); }
+function setRole(m){ document.getElementById('roleTag').textContent=m; }
+function setCtlTitle(en,zh){ const el=document.getElementById('ctlTitle'); el.dataset.en=en; el.dataset.zh=zh; el.textContent=T(en,zh); }
+function teardownNet(){ if(_stCb)_stRef.off('value',_stCb); if(_giCb)_giRef.off('value',_giCb); if(_jnCb)_jnRef.off('value',_jnCb); _stCb=_giCb=_jnCb=null; if(_wTimer){clearInterval(_wTimer);_wTimer=0;} netState=null; gIn={l:0,r:0}; gJump=false; _prevO=0; }
+function writeState(){
+  ropeRef('st').set({ sd:curSeed, p1:[+P1.x.toFixed(1),+P1.y.toFixed(1)], p2:[+P2.x.toFixed(1),+P2.y.toFixed(1)], cam:+camY.toFixed(1), m:climbM(), o:state==='over'?1:0 });
+}
+async function createRoom(){
+  _code=shortId(); teardownNet(); netMode='';
+  document.getElementById('roomCode').textContent=_code; document.getElementById('codeBox').style.display='block';
+  setConn(T('Waiting for a partner…','等待同伴加入…'));
+  await ropeRef('meta').set({created:Date.now()});
+  await ropeRef('gi').set({l:0,r:0});
+  await ropeRef('joined').set(false);
+  _jnRef=ropeRef('joined');
+  _jnCb=_jnRef.on('value',s=>{
+    if(s.val()&&netMode!=='host'){
+      netMode='host';
+      setConn(T('Connected! You are the green climber.','已连接！你是绿色攀爬者。'),'ok');
+      setRole(T('you: P1 (green) · partner: P2 (cyan)','你：P1（绿）· 同伴：P2（青）'));
+      setCtlTitle('// controls · all your keys move green','// 操作 · 你的所有按键控制绿色');
+      document.getElementById('localBtn').style.display='';
+      _giRef=ropeRef('gi');
+      _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
+        gIn.l=v.l||0; gIn.r=v.r||0;
+        if(v.j&&v.j!==_lastJ){_lastJ=v.j; gJump=true;}
+        if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
+      reset();                                    // fresh seeded tower for both sides
+      if(!_wTimer)_wTimer=setInterval(writeState,66);
+    }
+  });
+}
+async function joinRoom(){
+  const code=document.getElementById('joinCode').value.trim().toUpperCase(); if(!code)return;
+  setConn(T('Connecting…','连接中…'));
+  let snap;
+  try{ snap=await db().ref(`games/${code}/rp/meta`).once('value'); }
+  catch(e){ setConn(T('Connection failed — try again.','连接失败——请重试。'),'err'); return; }
+  if(!snap.exists()){ setConn(T('Room not found — check the code.','未找到房间，请检查代码。'),'err'); return; }
+  _code=code; teardownNet(); netMode='guest';
+  setConn(T('Connected! You are the cyan climber.','已连接！你是青色攀爬者。'),'ok');
+  setRole(T('you: P2 (cyan) · partner: P1 (green)','你：P2（青）· 同伴：P1（绿）'));
+  setCtlTitle('// controls · all your keys move cyan','// 操作 · 你的所有按键控制青色');
+  document.getElementById('localBtn').style.display='';
+  await ropeRef('joined').set(true);
+  _stRef=ropeRef('st'); _stCb=_stRef.on('value',s=>{ netState=s.val(); });
+}
+function playLocal(){
+  teardownNet(); netMode=''; _code=null;
+  document.getElementById('codeBox').style.display='none'; document.getElementById('localBtn').style.display='none';
+  setConn(''); setRole('');
+  setCtlTitle('// controls · two players, one keyboard','// 操作 · 双人同键盘');
+  reset();
+}
+function copyCode(){ if(_code)navigator.clipboard?.writeText(_code).catch(()=>{}); }
+function sendInputs(){
+  if(netMode!=='guest')return;
+  const l=(held.a||held.l)?1:0, r=(held.d||held.r)?1:0;
+  if(l!==_sent.l||r!==_sent.r){ _sent.l=l; _sent.r=r; ropeRef('gi').update({l,r}); }
+}
+function sendJump(){ if(netMode==='guest')ropeRef('gi').update({j:Date.now()}); }
+function restartBtn(){ if(netMode==='guest'){ ropeRef('gi').update({rs:Date.now()}); return; } reset(); }
+function netStep(){
+  const v=netState; if(!v)return;
+  if(v.sd!=null&&v.sd!==curSeed){                       // host started or restarted a run
+    reset(v.sd); _prevO=0;
+  }
+  const L=0.28;
+  const pairs=[[P1,v.p1],[P2,v.p2]];
+  for(const [p,q] of pairs){ if(!q)continue; p.px=p.x; p.py=p.y; p.x+=(q[0]-p.x)*L; p.y+=(q[1]-p.y)*L; }
+  camY+=(v.cam-camY)*L;
+  genUpTo(camY-VH*0.5);
+  stepRope();
+  netM=v.m||0;
+  document.getElementById('sNow').textContent=netM+' m';
+  document.getElementById('sBest').textContent=Math.max(best,netM)+' m';
+  if(v.o&&!_prevO){ _prevO=1; guestOver(netM); }
+  if(!v.o)_prevO=0;
+}
+function guestOver(m){
+  state='over';
+  const rec=m>best; lastRec=rec;
+  if(rec){best=m; try{localStorage.setItem('rope_best',best);}catch(e){}}
+  document.getElementById('ovTtl').textContent=T('GAME OVER','游戏结束');
+  document.getElementById('ovBig').textContent=T(`you climbed ${m} m`,`你们爬了 ${m} 米`);
+  document.getElementById('ovBest').textContent=rec?T('★ new best!','★ 新纪录！'):T(`best ${best} m`,`最佳 ${best} 米`);
+  document.getElementById('overlay').classList.add('show');
 }
 
 /* ── language ── */

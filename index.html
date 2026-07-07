@@ -60,12 +60,12 @@
     .glow-laby .laby-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; mix-blend-mode: screen; }
     .card.glow-laby:hover .laby-canvas { opacity: 1; }
 
-    /* Tomatoswipe — on hover, garden plots are "dug away" to reveal the board (diagonal sweep) */
+    /* Tomatoswipe — on hover, a tomato plops in, wobbles and explodes into dripping ketchup */
     .card.glow-tsweep:hover { border-color: #a33c30; box-shadow: 0 0 22px -8px rgba(226,82,62,0.5); }
     .glow-tsweep .tsw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
     .card.glow-tsweep:hover .tsw-canvas { opacity: 1; }
 
-    /* Sudoku — on hover, a faint cyan column-scan sweeps the grid (the solver checking) */
+    /* Sudoku — on hover, a pencil hand-writes notes and answers into the grid */
     .card.glow-sudoku:hover { border-color: #2a6e78; box-shadow: 0 0 22px -8px rgba(54,197,208,0.45); }
     .glow-sudoku .sudoku-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
     .card.glow-sudoku:hover .sudoku-canvas { opacity: 1; }
@@ -297,14 +297,15 @@
     <img class="card-thumb" src="/game/thumbs/rope.jpg?v=1" alt="Tether co-op rope climber" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#46c8ff">[o–o]</div>
     <div class="card-title" data-en="tether.exe" data-zh="默契绳.exe">tether.exe</div>
-    <div class="card-desc" data-en="Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Hand-coded Verlet rope physics; pull too hard and you both fall." data-zh="两个人，一根绳。你和好友被绳子拴在一起——跳跃、摆荡、互相做锚往上爬。手写 Verlet 绳索物理；拽得太猛就一起摔下去。">Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Hand-coded Verlet rope physics; pull too hard and you both fall.</div>
+    <div class="card-desc" data-en="Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall." data-zh="两个人，一根绳。你和好友被绳子拴在一起——跳跃、摆荡、互相做锚往上爬。可联机（创建/加入房间）或同键盘双人；拽得太猛就一起摔下去。">Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall.</div>
     <div class="card-tags">
       <span class="tag green" data-en="new" data-zh="新">new</span>
       <span class="tag" data-en="2-player co-op" data-zh="双人合作">2-player co-op</span>
+      <span class="tag" data-en="remote" data-zh="联机">remote</span>
       <span class="tag" data-en="physics" data-zh="物理">physics</span>
     </div>
     <div class="card-footer">
-      <span class="card-meta" data-en="JS · Verlet physics" data-zh="JS · Verlet 物理">JS · Verlet physics</span>
+      <span class="card-meta" data-en="JS · Verlet physics · realtime sync" data-zh="JS · Verlet 物理 · 实时同步">JS · Verlet physics · realtime sync</span>
       <a class="play-btn" href="/game/rope.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
     </div>
   </div>
@@ -433,147 +434,89 @@ document.addEventListener('DOMContentLoaded', applyLang);
 })();
 
 
-/* Escape card — "FAILED ESCAPE CYCLE": a 4-state machine.
-   1 ESCAPE  green bolts for the TOP edge, red pursues.
-   2 BUMP    green hits the top boundary -> fractured impact ripple, momentum halts.
-   3 BLOAT   green swells, goes chaotic ("not vigorous"), trail dissolves into a cloud.
-   4 SNAP    red amplifies into a taut spring and yanks the bloated green back to centre.
-   Canvas + vector physics on requestAnimationFrame; hover-gated. */
+/* Escape card — hover: THE CHASE. A red hunter pursues a green runner lap after
+   lap around the card's border. Red is faster on the straights but slips in the
+   corners; when it closes in, the runner panic-dashes. Now and then red lunges —
+   a real catch bursts, flashes the track, and the runner respawns across the card. */
 (function () {
   const card = document.querySelector('.glow-escape');
   if (!card) return;
   let canvas = card.querySelector('.esc-canvas');
   if (!canvas) { canvas = document.createElement('canvas'); canvas.className = 'esc-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas); }
   const ctx = canvas.getContext('2d');
-  const TRAIL = 24, R_NORM = 6.5, R_BLOAT = 18;
-  const green = { x:0,y:0,vx:0,vy:0,r:R_NORM,col:'29,185,84', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
-  const red   = { x:0,y:0,vx:0,vy:0,r:6.5,col:'244,67,54', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 };
-  // 3 more ambient green escapees — same colour/trail/escape tendency, spread out randomly
-  function mkGreen(){ return { x:0,y:0,vx:0,vy:0,r:5.5,col:'29,185,84', tx:new Float32Array(TRAIL), ty:new Float32Array(TRAIL), tc:0 }; }
-  const extras = [mkGreen(), mkGreen(), mkGreen()];
-  let W=0,H=0,cx=0,cy=0,topB=10, raf=0, inside=false;
-  let state='ESCAPE', stateT=0, impact=null, shards=[];
+  const INSET = 7, TRAIL = 26;
+  const green = { s: 0, col: '29,185,84' , trail: [] };
+  const red   = { s: 0, col: '244,67,54', trail: [] };
+  let W = 0, H = 0, P = 0, raf = 0, inside = false;
+  let sparks = [], flash = 0, lunge = 0, lungeCool = 0;
 
-  function resize(){ W=card.clientWidth; H=card.clientHeight; canvas.width=W; canvas.height=H; cx=W/2; cy=H/2; topB=10; }
-  function reset(){
-    resize();
-    green.x=cx; green.y=cy+6; green.vx=0.6; green.vy=-1; green.r=R_NORM; green.tc=0;
-    red.x=cx; red.y=cy+16; red.vx=0; red.vy=0; red.tc=0;
-    for(let i=0;i<TRAIL;i++){ green.tx[i]=green.x; green.ty[i]=green.y; red.tx[i]=red.x; red.ty[i]=red.y; }
-    for(const p of extras){ p.x=8+Math.random()*(W-16); p.y=8+Math.random()*(H-16); p.vx=(Math.random()-0.5)*2.4; p.vy=(Math.random()-0.5)*2.4; p.tc=0; for(let i=0;i<TRAIL;i++){ p.tx[i]=p.x; p.ty[i]=p.y; } }
-    state='ESCAPE'; stateT=0; impact=null; shards.length=0;
+  const mod = (a, m) => ((a % m) + m) % m;
+  function resize() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; P = 2 * ((W - 2 * INSET) + (H - 2 * INSET)); }
+  function reset() { resize(); green.s = 0; red.s = P * 0.55; green.trail.length = 0; red.trail.length = 0; sparks.length = 0; flash = 0; lunge = 0; lungeCool = 90; }
+  function posAt(s) {                                  // distance along the border, clockwise from top-left
+    s = mod(s, P); const w = W - 2 * INSET, h = H - 2 * INSET;
+    if (s < w) return [INSET + s, INSET];
+    s -= w; if (s < h) return [W - INSET, INSET + s];
+    s -= h; if (s < w) return [W - INSET - s, H - INSET];
+    s -= w; return [INSET, H - INSET - s];
   }
-  function clampV(p,m){ const s=Math.hypot(p.vx,p.vy); if(s>m){ p.vx*=m/s; p.vy*=m/s; } }
-  function rec(p){ p.tx[p.tc%TRAIL]=p.x; p.ty[p.tc%TRAIL]=p.y; p.tc++; }
-  function anchorRed(seek){ red.vx += (green.x-red.x)*seek + (cx-red.x)*0.03; red.vy += (green.y-red.y)*seek + (cy-red.y)*0.03; red.vx*=0.88; red.vy*=0.88; clampV(red,7); red.x+=red.vx; red.y+=red.vy; }
-  function roam(p){                                          // green escapee: strains outward + swirl, but red reels it back
-    let dx=p.x-cx, dy=p.y-cy, d=Math.hypot(dx,dy)||1;
-    p.vx += (dx/d)*0.055 + (-dy/d)*0.045; p.vy += (dy/d)*0.055 + (dx/d)*0.045;   // escape outward + swirl
-    let tx=red.x-p.x, ty=red.y-p.y, tl=Math.hypot(tx,ty)||1;                     // restraint: same tether pull as the focal green
-    const pull = 0.0007*tl + 0.0004*Math.max(0,tl-100)*Math.max(0,tl-100);       // linear + escalating snap-back
-    p.vx += (tx/tl)*pull; p.vy += (ty/tl)*pull;
-    p.vx += (Math.random()-0.5)*0.06; p.vy += (Math.random()-0.5)*0.06;
-    p.vx*=0.97; p.vy*=0.97; clampV(p,3.6); p.x+=p.vx; p.y+=p.vy;
-    if(p.x<8){p.x=8;p.vx*=-0.5;} else if(p.x>W-8){p.x=W-8;p.vx*=-0.5;}
-    if(p.y<8){p.y=8;p.vy*=-0.5;} else if(p.y>H-8){p.y=H-8;p.vy*=-0.5;}
-    rec(p);
+  function nearCorner(s, dist) {
+    const w = W - 2 * INSET, h = H - 2 * INSET;
+    for (const c of [0, w, w + h, w + h + w]) if (Math.min(mod(s - c, P), mod(c - s, P)) < dist) return true;
+    return false;
   }
+  function burst(x, y, col, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 0.6 + Math.random() * 2.2; sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, col }); } }
 
-  function physics(){
-    stateT++;
-    if (state==='ESCAPE'){
-      green.vy -= 0.17;                                   // constant escape, upward/outward
-      green.vx += 0.03*Math.sin(stateT*0.06);             // gentle arc/swirl
-      green.vx*=0.975; green.vy*=0.985; clampV(green,6.5);
-      green.x+=green.vx; green.y+=green.vy;
-      if(green.x<8){green.x=8;green.vx*=-0.4;} else if(green.x>W-8){green.x=W-8;green.vx*=-0.4;}
-      if(green.y>H-8){green.y=H-8;green.vy*=-0.4;}
-      anchorRed(0.018);                                   // red pursues but stays anchored-ish
-      if(green.y<=topB){                                  // BUMP at the top edge
-        green.y=topB; green.vy=0; green.vx*=0.2;
-        impact={x:green.x,y:topB,t:0};
-        shards.length=0;
-        for(let i=0;i<16;i++){ const a=Math.random()*Math.PI*2, sp=0.6+Math.random()*2.0;
-          shards.push({x:green.x,y:topB,vx:Math.cos(a)*sp,vy:Math.abs(Math.sin(a))*sp*0.7+0.25,life:1}); }
-        state='BLOAT'; stateT=0;
-      }
-    } else if (state==='BLOAT'){
-      green.r += (R_BLOAT-green.r)*0.22;                  // swell
-      green.vx += (Math.random()-0.5)*0.35; green.vy += (Math.random()-0.5)*0.22;  // jitter, sluggish
-      green.vx*=0.78; green.vy*=0.78; clampV(green,1.4); green.x+=green.vx; green.y+=green.vy;
-      if(green.y<topB)green.y=topB;
-      anchorRed(0.02);
-      for(const s of shards){ s.x+=s.vx; s.y+=s.vy; s.vy+=0.045; s.life-=0.022; }
-      shards=shards.filter(s=>s.life>0);
-      if(stateT>48){ state='SNAP'; stateT=0; }
-    } else { // SNAP — red restoring spring yanks green back onto the card
-      green.vx += (cx-green.x)*0.065; green.vy += (cy-green.y)*0.065;
-      green.vx*=0.86; green.vy*=0.86; clampV(green,9.5); green.x+=green.vx; green.y+=green.vy;
-      green.r += (R_NORM-green.r)*0.14;                   // deflate as it returns
-      red.vx += (cx-red.x)*0.06; red.vy += (cy-red.y)*0.06; red.vx*=0.8; red.vy*=0.8; red.x+=red.vx; red.y+=red.vy;
-      for(const s of shards){ s.x+=s.vx; s.y+=s.vy; s.life-=0.05; } shards=shards.filter(s=>s.life>0);
-      if(Math.hypot(green.x-cx,green.y-cy)<24 || stateT>64){ state='ESCAPE'; stateT=0; green.r=R_NORM; }
+  function step() {
+    const gap = mod(green.s - red.s, P);               // track distance red still has to close
+    const panic = gap < 52;
+    green.s += panic ? 4.6 : 3.0;
+    if (panic && Math.random() < 0.3) { const [x, y] = posAt(green.s); sparks.push({ x, y, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, life: 0.5, col: green.col }); }
+    if (lungeCool > 0) lungeCool--;
+    if (lunge > 0) lunge--;
+    else if (gap < 36 && !lungeCool && Math.random() < 0.02) { lunge = 14; lungeCool = 220; }
+    red.s += lunge ? 7.0 : nearCorner(red.s, 16) ? 2.1 : 4.1;   // lunge > panic-dash > cruise > corner slip
+    if (flash > 0) flash--;
+    if (mod(green.s - red.s, P) < 9) {                 // caught!
+      const [x, y] = posAt(green.s);
+      burst(x, y, green.col, 14); burst(x, y, red.col, 6); flash = 14; lunge = 0;
+      green.s = mod(red.s + P * 0.5, P); green.trail.length = 0;
     }
-    for(const p of extras) roam(p);
-    if(impact){ impact.t++; if(impact.t>22) impact=null; }
-    rec(green); rec(red);
+    green.trail.push(green.s); if (green.trail.length > TRAIL) green.trail.shift();
+    red.trail.push(red.s); if (red.trail.length > TRAIL) red.trail.shift();
+    for (const sp of sparks) { sp.x += sp.vx; sp.y += sp.vy; sp.life -= 0.04; }
+    sparks = sparks.filter(sp => sp.life > 0);
   }
-
-  function drawTrail(p){
-    ctx.lineCap='round';
-    for(let k=0;k<TRAIL-1;k++){
-      const i0=(p.tc-1-k+TRAIL*8)%TRAIL, i1=(p.tc-2-k+TRAIL*8)%TRAIL, a=1-k/TRAIL;
-      ctx.strokeStyle='rgba('+p.col+','+(a*a*0.6).toFixed(3)+')';
-      ctx.lineWidth=0.7+a*4.0; ctx.beginPath(); ctx.moveTo(p.tx[i0],p.ty[i0]); ctx.lineTo(p.tx[i1],p.ty[i1]); ctx.stroke();
+  function drawTrail(p) {
+    ctx.lineCap = 'round';
+    for (let i = 0; i < p.trail.length - 1; i++) {
+      const a = i / p.trail.length, [x0, y0] = posAt(p.trail[i]), [x1, y1] = posAt(p.trail[i + 1]);
+      if (Math.hypot(x1 - x0, y1 - y0) > 40) continue; // don't stroke across a respawn jump
+      ctx.strokeStyle = 'rgba(' + p.col + ',' + (a * a * 0.7).toFixed(3) + ')';
+      ctx.lineWidth = 0.8 + a * 4.4;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
     }
   }
-  function drawHead(p,r,colOverride,alpha){
-    const col=colOverride||p.col, ga=alpha==null?0.92:alpha;
-    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.2);
-    g.addColorStop(0,'rgba('+col+','+ga+')'); g.addColorStop(0.45,'rgba('+col+','+(ga*0.5)+')'); g.addColorStop(1,'rgba('+col+',0)');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r*2.2,0,7); ctx.fill();
-    ctx.fillStyle='rgba(240,255,245,'+(ga*0.95)+')'; ctx.beginPath(); ctx.arc(p.x,p.y,Math.min(4,r*0.55),0,7); ctx.fill();
+  function drawBall(p, r) {
+    const [x, y] = posAt(p.s);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.4);
+    g.addColorStop(0, 'rgba(' + p.col + ',0.95)'); g.addColorStop(0.5, 'rgba(' + p.col + ',0.4)'); g.addColorStop(1, 'rgba(' + p.col + ',0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.4, 0, 7); ctx.fill();
+    ctx.fillStyle = '#f2fff6'; ctx.beginPath(); ctx.arc(x, y, r * 0.5, 0, 7); ctx.fill();
   }
-  function drawImpact(){
-    if(!impact) return;
-    const prog=impact.t/22, R=4+prog*24, alpha=1-prog;
-    ctx.strokeStyle='rgba(150,255,190,'+(alpha*0.9).toFixed(3)+')'; ctx.lineWidth=1.4;
-    ctx.beginPath();
-    const segs=12;
-    for(let i=0;i<=segs;i++){ const a=i/segs*Math.PI*2, jag=R*(0.6+0.55*(((i*53)%7)/7)); const px=impact.x+Math.cos(a)*jag, py=impact.y+Math.sin(a)*jag*0.6; i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
-    ctx.stroke();
-    for(let i=0;i<7;i++){ const a=(i/7)*Math.PI*2+0.4, r1=R*0.35, r2=R*1.25;
-      ctx.strokeStyle='rgba(210,255,225,'+(alpha*0.8).toFixed(3)+')'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(impact.x+Math.cos(a)*r1,impact.y+Math.sin(a)*r1*0.6); ctx.lineTo(impact.x+Math.cos(a)*r2,impact.y+Math.sin(a)*r2*0.6); ctx.stroke(); }
-  }
-  function frame(){
-    physics();
-    ctx.clearRect(0,0,W,H);
-    for(const p of extras){                                   // red restrains every green — faint tether, brighter as it strains
-      const tl=Math.hypot(p.x-red.x,p.y-red.y), tn=Math.min(1,Math.max(0,(tl-80)/90));
-      ctx.strokeStyle='rgba(244,67,54,'+(0.08+0.32*tn).toFixed(3)+')'; ctx.lineWidth=0.9+1.8*tn;
-      ctx.beginPath(); ctx.moveTo(red.x,red.y); ctx.lineTo(p.x,p.y); ctx.stroke();
-    }
-    for(const p of extras){ drawTrail(p); }                  // ambient escapees (under the focal pair)
-    for(const p of extras){ drawHead(p, p.r); }
-    // tether: taut+bright during SNAP, slack otherwise
-    const taut = state==='SNAP';
-    ctx.strokeStyle='rgba(244,67,54,'+(taut?0.9:0.18).toFixed(3)+')'; ctx.lineWidth = taut?3.6:1.5;
-    ctx.beginPath(); ctx.moveTo(red.x,red.y); ctx.lineTo(green.x,green.y); ctx.stroke();
-    // chaotic cloud (bloat/snap)
-    for(const s of shards){ ctx.fillStyle='rgba(29,185,84,'+(s.life*0.6).toFixed(3)+')'; ctx.beginPath(); ctx.arc(s.x,s.y,1.4+(1-s.life)*2.4,0,7); ctx.fill(); }
-    drawImpact();
-    if(state!=='BLOAT') drawTrail(green);    // smooth arc except while bloated (then it's a cloud)
-    drawTrail(red);
-    drawHead(red,red.r);
-    if(state==='BLOAT'){ drawHead(green,green.r,'120,200,140',0.5+0.25*Math.sin(stateT*0.7)); }  // bloated, desaturated, flickering
-    else { drawHead(green,green.r); }
+  function frame() {
+    step();
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(120,150,130,0.14)'; ctx.lineWidth = 1;   // the track they run on
+    ctx.strokeRect(INSET + 0.5, INSET + 0.5, W - 2 * INSET - 1, H - 2 * INSET - 1);
+    if (flash > 0) { ctx.strokeStyle = 'rgba(244,67,54,' + (flash / 14 * 0.5).toFixed(3) + ')'; ctx.lineWidth = 2.5; ctx.strokeRect(INSET + 0.5, INSET + 0.5, W - 2 * INSET - 1, H - 2 * INSET - 1); }
+    drawTrail(green); drawTrail(red);
+    for (const sp of sparks) { ctx.fillStyle = 'rgba(' + sp.col + ',' + (sp.life * 0.8).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(sp.x, sp.y, 1.6, 0, 7); ctx.fill(); }
+    drawBall(green, 5.5); drawBall(red, lunge ? 7.2 : 6);
     raf = inside ? requestAnimationFrame(frame) : 0;
   }
-  card.addEventListener('mouseenter', () => { if (raf) return; reset(); inside=true; raf=requestAnimationFrame(frame); });
-  card.addEventListener('mouseleave', () => { inside=false; });
-  // expose state for verification
-  window.__escState = () => state;
+  card.addEventListener('mouseenter', () => { if (raf) return; reset(); inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
 })();
 
 /* Escape card — LIVE thumbnail: a perpetual wide-band chase that fills the card
@@ -917,67 +860,174 @@ document.addEventListener('DOMContentLoaded', applyLang);
   card.addEventListener('mouseleave', () => { inside = false; });
 })();
 
-/* Tomatoswipe card — on hover, soil "plots" cover the board then get dug away in a diagonal sweep */
+/* Tomatoswipe card — hover: a tomato plops onto the board, wobbles… and EXPLODES
+   into ketchup. Droplets fly ballistically, splat into stains that drip and slowly
+   fade (offscreen stain layer), and another tomato drops in while you stay. */
 (function () {
   const card = document.querySelector('.card.glow-tsweep');
   if (!card) return;
   const canvas = document.createElement('canvas');
   canvas.className = 'tsw-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
   const ctx = canvas.getContext('2d');
-  const C = 19;
-  let W, H, cols, rows, tom, topH, t = 0, raf = 0, inside = false;
+  const stain = document.createElement('canvas');                  // persistent ketchup layer
+  const sctx = stain.getContext('2d');
+  const KETCHUP = ['rgba(198,40,26,', 'rgba(226,58,38,', 'rgba(170,28,18,'];
+  let W, H, topH, raf = 0, inside = false;
+  let tomato = null, drops = [], drips = [], cool = 0;   // cool: frames until the next tomato
+
   function build() {
-    W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
-    cols = Math.ceil(W / C); rows = Math.ceil(H / C);
-    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight + 4 : Math.round(H * 0.4);   // keep it over the thumbnail, off the text/button
-    tom = new Uint8Array(cols * rows); for (let i = 0; i < tom.length; i++) tom[i] = Math.random() < 0.15 ? 1 : 0;
+    W = card.clientWidth; H = card.clientHeight;
+    canvas.width = W; canvas.height = H; stain.width = W; stain.height = H;
+    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight : Math.round(H * 0.4);
+  }
+  function newTomato() {
+    tomato = { x: 24 + Math.random() * (W - 48), y: 18 + Math.random() * (topH - 30), r: 11 + Math.random() * 4, age: 0 };
+    cool = 126 + ((Math.random() * 40) | 0);             // ~2.1–2.8 s at 60 fps
+  }
+  function explode() {
+    const { x, y, r } = tomato; tomato = null;
+    for (let i = 0; i < 34; i++) {
+      const a = Math.random() * 6.28, sp = 1.2 + Math.random() * 3.6;
+      drops.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.2, r: 1.6 + Math.random() * 3,
+                   floor: y + 8 + Math.random() * (H - y - 14), col: KETCHUP[(Math.random() * 3) | 0] });
+    }
+    // an immediate splat under the burst point
+    splat(x, y, r * 1.15, KETCHUP[0]);
+  }
+  function splat(x, y, r, col) {
+    sctx.fillStyle = col + '0.75)';
+    sctx.beginPath(); sctx.ellipse(x, y, r, r * 0.72, 0, 0, 7); sctx.fill();
+    for (let i = 0; i < 4; i++) {                                  // ragged blob edges
+      const a = Math.random() * 6.28, d = r * (0.7 + Math.random() * 0.5);
+      sctx.beginPath(); sctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7, r * 0.3, 0, 7); sctx.fill();
+    }
+    if (Math.random() < 0.6) drips.push({ x: x + (Math.random() - 0.5) * r, y, len: 0, max: 6 + Math.random() * 16, w: 1.2 + Math.random() * 1.6, col });
   }
   function frame() {
-    t += 0.0038; ctx.clearRect(0, 0, W, H);                                   // slow
-    const maxd = cols + rows, wave = (t % 1) * (maxd + 9), BAND = 4;
-    for (let y = 0; y < rows; y++) { const cy = y * C; if (cy >= topH) break;
-      for (let x = 0; x < cols; x++) {
-        const e = wave - (x + y); if (e < 0 || e > BAND) continue;            // just a thin, fading diagonal band of turned soil
-        const a = (1 - e / BAND) * 0.4, cx = x * C;
-        ctx.fillStyle = 'rgba(46,84,28,' + a.toFixed(3) + ')';
-        ctx.fillRect(cx + 1, cy + 1, C - 2, C - 2);
-        if (e < 1) { ctx.fillStyle = (tom[y * cols + x] ? 'rgba(226,82,62,' : 'rgba(124,206,90,') + (a * 1.4).toFixed(3) + ')'; ctx.fillRect(cx + 1, cy + 1, C - 2, 2); }
-      }
+    // stains evaporate slowly (~10 s to fade — the mess should linger)
+    sctx.globalCompositeOperation = 'destination-out';
+    sctx.fillStyle = 'rgba(0,0,0,0.0035)'; sctx.fillRect(0, 0, W, H);
+    sctx.globalCompositeOperation = 'source-over';
+    for (const d of drips) {
+      if (d.len < d.max) { d.len += 0.4; sctx.fillStyle = d.col + '0.55)'; sctx.fillRect(d.x - d.w / 2, d.y + d.len - 1, d.w, 1.6); }
     }
-    raf = inside ? requestAnimationFrame(frame) : 0;
+    drips = drips.filter(d => d.len < d.max);
+    for (const p of drops) {
+      p.vy += 0.14; p.x += p.vx; p.y += p.vy;
+      if (p.x < 3 || p.x > W - 3 || p.y > p.floor || p.y > H - 4) { splat(Math.max(3, Math.min(W - 3, p.x)), Math.min(p.y, H - 4), p.r * 1.6, p.col); p.dead = 1; }
+    }
+    drops = drops.filter(p => !p.dead);
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(stain, 0, 0);
+    for (const p of drops) { ctx.fillStyle = p.col + '0.9)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
+    if (tomato) {
+      const t = tomato, age = ++t.age;                             // frame-count clock (~60 fps)
+      const scale = Math.min(1, age / 16);                         // plop in
+      const shake = age > 29 ? Math.sin(age * 1.5) * Math.min(3, (age - 29) / 5.4) : 0;     // building up…
+      const x = t.x + shake, y = t.y, r = t.r * (scale + (age > 29 ? (age - 29) / 132 : 0));
+      const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.2, x, y, r);
+      g.addColorStop(0, '#ff7a5e'); g.addColorStop(0.55, '#e2523e'); g.addColorStop(1, '#b32517');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, r * (1 + Math.abs(shake) * 0.02), r * 0.92, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#3d8c2f'; ctx.lineWidth = 2; ctx.lineCap = 'round';                // the star stem
+      for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * 0.55; ctx.beginPath(); ctx.moveTo(x, y - r * 0.75); ctx.lineTo(x + Math.cos(a) * r * 0.42, y - r * 0.75 + Math.sin(a) * r * 0.3); ctx.stroke(); }
+      if (age > 54) explode();
+    } else if (inside && --cool <= 0) newTomato();
+    raf = (inside || drops.length || drips.length) ? requestAnimationFrame(frame) : 0;
   }
-  card.addEventListener('mouseenter', () => { if (raf) return; build(); t = 0; inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseenter', () => { if (!tomato) cool = 1;   // a tomato drops in right away
+    if (raf) { inside = true; return; } build(); inside = true; raf = requestAnimationFrame(frame); });
   card.addEventListener('mouseleave', () => { inside = false; });
 })();
 
-/* Sudoku card — on hover, a faint cyan column-scan sweeps across the grid thumbnail */
+/* Sudoku card — hover: a pencil hand-writes digits into the grid, stroke by
+   stroke — small corner notes most of the time, a big confident number when
+   it's sure. Older marks fade like graphite. */
 (function () {
   const card = document.querySelector('.card.glow-sudoku');
   if (!card) return;
   const canvas = document.createElement('canvas');
   canvas.className = 'sudoku-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
   const ctx = canvas.getContext('2d');
-  const C = 20;
-  let W, H, cols, rows, topH, t = 0, raf = 0, inside = false;
+  const C = 24, MAXMARKS = 20;
+  // each digit: one polyline in unit cell coords (y down), sketched progressively
+  const DIGITS = {
+    1: [[0.35,0.28],[0.52,0.14],[0.52,0.88]],
+    2: [[0.3,0.3],[0.38,0.16],[0.62,0.16],[0.7,0.32],[0.32,0.84],[0.72,0.84]],
+    3: [[0.3,0.2],[0.55,0.14],[0.68,0.3],[0.5,0.47],[0.68,0.64],[0.55,0.84],[0.3,0.78]],
+    4: [[0.62,0.88],[0.62,0.14],[0.28,0.62],[0.76,0.62]],
+    5: [[0.68,0.16],[0.34,0.16],[0.3,0.48],[0.58,0.42],[0.7,0.6],[0.58,0.84],[0.3,0.8]],
+    6: [[0.62,0.14],[0.38,0.3],[0.3,0.6],[0.42,0.84],[0.62,0.78],[0.66,0.56],[0.5,0.46],[0.34,0.56]],
+    7: [[0.28,0.16],[0.72,0.16],[0.44,0.88]],
+    8: [[0.66,0.3],[0.5,0.14],[0.34,0.3],[0.64,0.62],[0.5,0.88],[0.34,0.64],[0.66,0.3]],
+    9: [[0.66,0.42],[0.5,0.5],[0.34,0.36],[0.42,0.16],[0.62,0.14],[0.68,0.36],[0.6,0.88]],
+  };
+  let W, H, cols, rows, topH, raf = 0, inside = false, marks = [], nextIn = 0;   // nextIn: frames until the next digit
+
   function build() {
     W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
-    cols = Math.ceil(W / C); rows = Math.ceil(H / C);
-    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight + 4 : Math.round(H * 0.4);
+    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight : Math.round(H * 0.4);
+    cols = Math.max(3, Math.floor(W / C)); rows = Math.max(2, Math.floor(topH / C));
+    marks = [];
+  }
+  function newMark() {
+    const cx = (Math.random() * cols) | 0, cy = (Math.random() * rows) | 0;
+    const digit = 1 + ((Math.random() * 9) | 0), final = Math.random() < 0.35;
+    const jit = DIGITS[digit].map(() => [(Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.08]);
+    const corner = [[0.28, 0.3], [0.72, 0.3], [0.28, 0.74], [0.72, 0.74]][(Math.random() * 4) | 0];
+    marks.push({ cx, cy, digit, final, jit, corner, prog: 0, alpha: final ? 0.95 : 0.6 });
+    if (marks.length > MAXMARKS) marks[0].dying = true;
+    nextIn = 16 + ((Math.random() * 20) | 0);            // ~0.3–0.6 s at 60 fps
+  }
+  function pts(m) {
+    const base = DIGITS[m.digit], s = m.final ? C * 0.66 : C * 0.34;
+    const ox = m.cx * C + (m.final ? C * 0.5 : m.corner[0] * C) - s / 2;
+    const oy = m.cy * C + (m.final ? C * 0.5 : m.corner[1] * C) - s / 2;
+    return base.map((p, i) => [ox + (p[0] + m.jit[i][0]) * s, oy + (p[1] + m.jit[i][1]) * s]);
+  }
+  function drawMark(m) {
+    const P = pts(m); let total = 0; const seg = [0];
+    for (let i = 1; i < P.length; i++) { total += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); seg.push(total); }
+    const drawn = m.prog * total;
+    ctx.strokeStyle = 'rgba(205,213,224,' + m.alpha.toFixed(3) + ')';
+    ctx.lineWidth = m.final ? 1.8 : 1.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]);
+    let tip = P[0];
+    for (let i = 1; i < P.length; i++) {
+      if (seg[i] <= drawn) { ctx.lineTo(P[i][0], P[i][1]); tip = P[i]; }
+      else { const f = (drawn - seg[i - 1]) / (seg[i] - seg[i - 1]); tip = [P[i - 1][0] + (P[i][0] - P[i - 1][0]) * f, P[i - 1][1] + (P[i][1] - P[i - 1][1]) * f]; ctx.lineTo(tip[0], tip[1]); break; }
+    }
+    ctx.stroke();
+    return tip;
+  }
+  function drawPencil(x, y) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.7);
+    ctx.strokeStyle = '#e0b45a'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(3.5, -3.5); ctx.lineTo(13, -13); ctx.stroke();       // body
+    ctx.strokeStyle = '#f4dede'; ctx.lineWidth = 3.4;
+    ctx.beginPath(); ctx.moveTo(13, -13); ctx.lineTo(15.5, -15.5); ctx.stroke();     // eraser
+    ctx.fillStyle = '#8a9096'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4.6, -1.6); ctx.lineTo(1.6, -4.6); ctx.closePath(); ctx.fill();   // tip
+    ctx.restore();
   }
   function frame() {
-    t += 0.004; ctx.clearRect(0, 0, W, H);
-    const wave = (t % 1) * (cols + 6), BAND = 3.5;
-    for (let y = 0; y < rows; y++) { const cy = y * C; if (cy >= topH) break;
-      for (let x = 0; x < cols; x++) {
-        const e = wave - x; if (e < 0 || e > BAND) continue;                  // faint cyan column-scan
-        const a = (1 - e / BAND) * 0.3, cx = x * C;
-        ctx.fillStyle = 'rgba(54,197,208,' + a.toFixed(3) + ')';
-        ctx.fillRect(cx + 1, cy + 1, C - 2, C - 2);
-      }
+    ctx.clearRect(0, 0, W, H);
+    // faint graphite grid over the thumbnail, heavier every 3rd line (3×3 boxes)
+    for (let x = 0; x <= cols; x++) { ctx.strokeStyle = 'rgba(160,175,190,' + (x % 3 ? 0.08 : 0.17) + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x * C + 0.5, 0); ctx.lineTo(x * C + 0.5, rows * C); ctx.stroke(); }
+    for (let y = 0; y <= rows; y++) { ctx.strokeStyle = 'rgba(160,175,190,' + (y % 3 ? 0.08 : 0.17) + ')'; ctx.beginPath(); ctx.moveTo(0, y * C + 0.5); ctx.lineTo(cols * C, y * C + 0.5); ctx.stroke(); }
+    let tip = null, writing = false;
+    for (const m of marks) {
+      if (m.dying) { m.alpha -= 0.02; continue; }
+      if (m.prog < 1) { m.prog = Math.min(1, m.prog + 0.08); writing = true; }
+      const t = drawMark(m);
+      if (m.prog < 1) tip = t;
     }
+    marks = marks.filter(m => m.alpha > 0.02);
+    for (const m of marks) if (m.dying) drawMark(m);
+    if (tip) drawPencil(tip[0], tip[1]);
+    if (inside && !writing && --nextIn <= 0) newMark();
     raf = inside ? requestAnimationFrame(frame) : 0;
   }
-  card.addEventListener('mouseenter', () => { if (raf) return; build(); t = 0; inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseenter', () => { if (raf) return; build(); nextIn = 1; inside = true; raf = requestAnimationFrame(frame); });
   card.addEventListener('mouseleave', () => { inside = false; });
 })();
 
@@ -1096,14 +1146,20 @@ document.addEventListener('DOMContentLoaded', applyLang);
     if (top < H * 0.42) {
       const dy = (H * 0.42 - top) * 0.05;
       for (const p of pts) { p.y += dy; p.py += dy; }
-      scroll = (scroll + dy) % 26;
+      scroll = (scroll + dy) % 44;   // one full brick-course cycle (2 × 22px rows)
     }
   }
   function frame() {
     physics();
     ctx.clearRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(70,200,255,0.06)'; ctx.lineWidth = 1; ctx.beginPath();   // scrolling wall lines
-    for (let y = scroll - 26; y < H; y += 26) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    // scrolling brick wall: courses every 22px, joints staggered on alternate rows
+    ctx.strokeStyle = 'rgba(70,200,255,0.07)'; ctx.lineWidth = 1; ctx.beginPath();
+    const BH = 22, BW = 46, base = scroll % BH, par = Math.floor(scroll / BH);
+    for (let k = 0, y = base - BH; y < H; y += BH, k++) {
+      ctx.moveTo(0, y); ctx.lineTo(W, y);
+      const stag = ((k + par) % 2) ? BW / 2 : 0;
+      for (let x = stag; x < W; x += BW) { ctx.moveTo(x, y); ctx.lineTo(x, y + BH); }
+    }
     ctx.stroke();
     ctx.strokeStyle = 'rgba(220,235,240,0.55)'; ctx.lineWidth = 1.4; ctx.beginPath(); // the rope
     ctx.moveTo(pts[0].x, pts[0].y);
