@@ -26,7 +26,12 @@
   .face{font-size:1.4rem;background:transparent;border:1px solid #2a2a2a;border-radius:6px;width:46px;height:40px;cursor:pointer;line-height:1;transition:background .12s,border-color .12s;}
   .face:hover{border-color:#1db954;background:rgba(29,185,84,0.07);}
 
-  .board{display:grid;gap:2px;width:min(92vw,460px);margin:0 auto;background:#0a0a0a;border:1px solid #1a1a1a;padding:4px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;}
+  .boardwrap{position:relative;width:min(92vw,460px);margin:0 auto;}
+  .board{display:grid;gap:2px;width:100%;background:#0a0a0a;border:1px solid #1a1a1a;padding:4px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;}
+  .splat{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;}
+  .tomatoed{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-7deg) scale(0);opacity:0;color:#ffe9e5;background:rgba(150,18,12,0.92);border:2px solid #ff6a5e;padding:8px 14px;font-weight:700;font-size:clamp(0.9rem,4.2vw,1.35rem);letter-spacing:1px;white-space:nowrap;z-index:6;pointer-events:none;box-shadow:0 0 34px rgba(226,59,46,0.65);}
+  .tomatoed.show{animation:tomatoed .5s cubic-bezier(.2,1.5,.4,1) forwards;}
+  @keyframes tomatoed{from{transform:translate(-50%,-50%) rotate(-13deg) scale(1.9);opacity:0;}60%{opacity:1;}to{transform:translate(-50%,-50%) rotate(-7deg) scale(1);opacity:1;}}
   .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1;border-radius:2px;cursor:pointer;}
   .cell.hidden{background:linear-gradient(145deg,#1f3416,#13200d);box-shadow:inset 1px 1px 0 rgba(124,206,90,0.13),inset -1px -1px 0 rgba(0,0,0,0.4);}
   .cell.hidden:hover{background:linear-gradient(145deg,#274119,#192b10);}
@@ -78,7 +83,11 @@
       <button class="face" id="face" onclick="game.newGame()" title="new game">🍅</button>
       <span class="count time" id="vTime">⏱ 000</span>
     </div>
-    <div class="board" id="board"></div>
+    <div class="boardwrap" id="boardWrap">
+      <div class="board" id="board"></div>
+      <canvas class="splat" id="splat" aria-hidden="true"></canvas>
+      <div class="tomatoed" id="tomatoed" data-en="YOU ARE TOMATOED!!" data-zh="你被番茄了！！">YOU ARE TOMATOED!!</div>
+    </div>
     <div class="flagbar">
       <button class="flagbtn" id="flagBtn" onclick="game.toggleFlagMode()">
         <span id="flagIcon">⛏</span><span id="flagLabel" data-en="dig mode — tap to switch to flag" data-zh="挖掘模式 — 点击切换为标记">dig mode — tap to switch to flag</span>
@@ -137,6 +146,7 @@ const game = (function () {
     tomato = new Uint8Array(N); count = new Uint8Array(N); revealed = new Uint8Array(N); flagged = new Uint8Array(N);
     state = 'ready'; revealedCount = 0; flags = 0; exploded = -1; timer = 0;
     if (tickId) { clearInterval(tickId); tickId = 0; }
+    clearSplat();
     buildBoard(); renderAll(); updateBars(); setFace('🍅'); $('status').className = 'status'; $('status').textContent = '';
   }
 
@@ -201,7 +211,53 @@ const game = (function () {
     state = 'lost'; exploded = c; stop();
     for (let i = 0; i < N; i++) if (tomato[i]) revealed[i] = 1;
     renderAll(); setFace('💥');
-    $('status').className = 'status lose'; $('status').textContent = t('💥 squashed! tap the face to replant.', '💥 踩烂了！点击表情重新种植。');
+    splatterAt(c);
+    setTimeout(() => { $('tomatoed').classList.add('show'); }, 240);   // ketchup first, verdict second
+    $('status').className = 'status lose'; $('status').textContent = t('🥫 you are tomatoed! tap the face to replant.', '🥫 你被番茄了！点击表情重新种植。');
+  }
+
+  // ---- ketchup explosion (lose) ----
+  const KETCHUP = ['rgba(198,40,26,', 'rgba(226,58,38,', 'rgba(170,28,18,'];
+  let splatC, splatCtx, stainC, stainCtx, splatRaf = 0, splatDrops = [];
+  function blob(x, y, r, col) {
+    stainCtx.fillStyle = col + '0.8)';
+    stainCtx.beginPath(); stainCtx.ellipse(x, y, r, r * 0.72, 0, 0, 7); stainCtx.fill();
+    for (let k = 0; k < 4; k++) {                                      // ragged edges
+      const a = Math.random() * 6.28, d = r * (0.7 + Math.random() * 0.5);
+      stainCtx.beginPath(); stainCtx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7, r * 0.32, 0, 7); stainCtx.fill();
+    }
+  }
+  function splatterAt(i) {
+    const wrap = $('boardWrap');
+    splatC.width = stainC.width = wrap.clientWidth; splatC.height = stainC.height = wrap.clientHeight;
+    const br = wrap.getBoundingClientRect(), cr = cells[i].getBoundingClientRect();
+    const x = cr.left - br.left + cr.width / 2, y = cr.top - br.top + cr.height / 2;
+    splatDrops = [];
+    for (let k = 0; k < 60; k++) {
+      const a = Math.random() * 6.28, sp = 2 + Math.random() * 6;
+      splatDrops.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 2, r: 2 + Math.random() * 3.6,
+                        floor: Math.random() * splatC.height, col: KETCHUP[(Math.random() * 3) | 0] });
+    }
+    blob(x, y, 17, KETCHUP[0]);                                        // ground zero
+    if (!splatRaf) splatRaf = requestAnimationFrame(splatFrame);
+  }
+  function splatFrame() {
+    const W = splatC.width, H = splatC.height;
+    for (const p of splatDrops) {
+      p.vy += 0.3; p.x += p.vx; p.y += p.vy;
+      if (p.x < 3 || p.x > W - 3 || p.y > p.floor || p.y > H - 4) { blob(Math.max(3, Math.min(W - 3, p.x)), Math.min(p.y, H - 4), p.r * 1.9, p.col); p.dead = 1; }
+    }
+    splatDrops = splatDrops.filter(p => !p.dead);
+    splatCtx.clearRect(0, 0, W, H);
+    splatCtx.drawImage(stainC, 0, 0);
+    for (const p of splatDrops) { splatCtx.fillStyle = p.col + '0.92)'; splatCtx.beginPath(); splatCtx.arc(p.x, p.y, p.r, 0, 7); splatCtx.fill(); }
+    splatRaf = splatDrops.length ? requestAnimationFrame(splatFrame) : 0;   // stains stay until replant
+  }
+  function clearSplat() {
+    if (splatRaf) { cancelAnimationFrame(splatRaf); splatRaf = 0; }
+    splatDrops = [];
+    if (splatCtx) { splatCtx.clearRect(0, 0, splatC.width, splatC.height); stainCtx.clearRect(0, 0, stainC.width, stainC.height); }
+    $('tomatoed').classList.remove('show');
   }
   function checkWin() {
     if (state !== 'play') return;
@@ -272,7 +328,12 @@ const game = (function () {
 
   function t(en, zh) { return (document.documentElement.lang === 'zh') ? zh : en; }
 
-  function init() { board = $('board'); bind(); updateBestPanel(); newGame(); }
+  function init() {
+    board = $('board');
+    splatC = $('splat'); splatCtx = splatC.getContext('2d');
+    stainC = document.createElement('canvas'); stainCtx = stainC.getContext('2d');
+    bind(); updateBestPanel(); newGame();
+  }
   return { init: init, newGame: newGame, toggleFlagMode: toggleFlagMode };
 })();
 
