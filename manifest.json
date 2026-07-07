@@ -1,25 +1,29 @@
 {
-  "name": "Game of Life",
-  "short_name": "Game of Life",
+  "name": "Game Life Arcade",
+  "short_name": "Game Life",
   "id": "/",
   "lang": "en",
   "dir": "ltr",
-  "description": "Draw patterns and watch them evolve. Curated scenes, challenges, and interactive lessons for the Game of Life.",
-  "start_url": "/life.html",
+  "description": "A small arcade of hand-coded browser games — Conway's Game of Life (draw, evolve, make music), Gomoku, an endless Labyrinth, a tomato-growing metabolism sim, co-op physics games and more. Free, offline, no ads.",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0a0a0a",
+  "background_color": "#080808",
   "theme_color": "#0a0a0a",
-  "categories": ["games", "education", "entertainment"],
+  "categories": ["games", "entertainment", "education"],
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [
-    { "src": "/screenshots/screen-1.png", "sizes": "1280x1008", "type": "image/png", "form_factor": "wide", "label": "Aura mode — living cells coloured by age" },
-    { "src": "/screenshots/screen-2.png", "sizes": "1280x1008", "type": "image/png", "form_factor": "wide", "label": "Draw a pattern and watch it evolve" },
-    { "src": "/screenshots/screen-3.png", "sizes": "1280x1008", "type": "image/png", "form_factor": "wide", "label": "Built-in patterns, challenges and tools" }
+    { "src": "/screenshots/phone-1.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "The arcade — nine hand-coded browser games" },
+    { "src": "/screenshots/phone-2.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Game of Life — draw patterns and watch them evolve" },
+    { "src": "/screenshots/phone-3.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Gomoku — beat a minimax AI or a friend online" },
+    { "src": "/screenshots/phone-4.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Labyrinth — an endless torch-lit descent" },
+    { "src": "/screenshots/phone-5.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Grow a Tomato — a real plant-metabolism sim" },
+    { "src": "/screenshots/phone-6.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Sudoku — one unique solution, notes and hints" },
+    { "src": "/screenshots/screen-1.png", "sizes": "1280x1008", "type": "image/png", "form_factor": "wide", "label": "Game of Life — Aura mode, cells coloured by age" }
   ]
 }

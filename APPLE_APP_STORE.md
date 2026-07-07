@@ -1,25 +1,38 @@
-# Publishing Game of Life to the Apple App Store
+# Publishing the Game Life Arcade to the Apple App Store
 
 Wraps the live PWA (lifegameproject.com) in a native iOS shell via **PWABuilder**,
-so it installs from the App Store. Same site, native container (WKWebView).
+so it installs from the App Store. Same site, native container (WKWebView). The
+installed app opens to the **arcade hub** (`start_url` is `/`).
 
 ## ⚠️ Read this first — the real risk
 Apple's **Guideline 4.2 (Minimum Functionality)** often rejects apps that are
-"just a website in a web view." Your odds are *better than average* because the app
-**works offline**, is genuinely **interactive** (drawing, Web Audio music,
-challenges, lessons), and isn't a marketing page — but **rejection is a real
-possibility**, and you may need to iterate (e.g. add a native touch like push
-notifications, or reply explaining the offline/interactive value). Budget for a
-back-and-forth. This is the hardest, priciest store — and if it's rejected, the
-PWA install, itch.io, and Google Play / Amazon routes all still stand.
+"just a website in a web view." Your odds are *better than average* because most
+of the arcade **works offline** and is genuinely **interactive** (drawing, Web
+Audio music, physics, AI opponents, lessons) — it plays like an app, not a
+marketing page. But an arcade of web games can also read to a reviewer as a
+"portal," so **rejection is a real possibility** and you may need to iterate.
+
+Two things that lower the risk:
+1. **Bundle the assets in the app (offline-first)** rather than pointing the
+   web view at a remote URL. PWABuilder's iOS project can do this; the
+   **Capacitor** route (below) bundles by default. An app that fully works with
+   the network off is a much stronger 4.2 defense — lead with Game of Life,
+   Sudoku, Labyrinth, Tomatoswipe (all offline) in your screenshots/description,
+   and treat the online multiplayer (Keep-Up / Lander / Gomoku online) as a bonus.
+2. Be ready to **reply in the Resolution Center** stressing offline use and the
+   interactive drawing/simulation, and/or add one small native feature (push
+   notifications are the usual unlock). Budget for a back-and-forth.
+
+If it's rejected, the PWA install, Google Play, and itch.io routes all still stand.
 
 ## ✅ Already done in this repo
-- Installable PWA (manifest with `id`/icons, service worker)
+- Installable PWA (`manifest.json` with arcade name/`id`/icons, service worker)
 - Privacy policy live at **lifegameproject.com/privacy** (Apple requires the URL + a privacy label)
+- 6 phone-portrait screenshots at **1290×2796** in `screenshots/phone-1…6.png` (the 6.7" size Apple wants)
 - Store-listing copy (bottom of this file)
 
 ## What you need
-- A **Mac** with **Xcode** (free, Mac App Store) — ✓ you have the Mac
+- A **Mac** with **Xcode** (free) — the build/sign/submit steps are Mac-only
 - **Apple Developer Program** membership — **$99/year** (developer.apple.com/programs)
 - ~2–3 hours of setup + Apple's review time (~1–3 days; longer if rejected)
 
@@ -27,71 +40,66 @@ PWA install, itch.io, and Google Play / Amazon routes all still stand.
 
 ### 1. Enroll in the Apple Developer Program
 **developer.apple.com/programs → Enroll** ($99/yr; individual account is fine).
-Identity verification can take a day or two.
+Identity verification can take a day or two — start it early.
 
-### 2. Generate the iOS package — PWABuilder
-**pwabuilder.com** → enter `https://lifegameproject.com` → **Package For Stores → iOS**.
-Download the zip — it's an **Xcode project** wrapping the PWA.
-- **Bundle ID:** reverse-domain, unique, e.g. `com.lifegameproject.app`
+### 2. Generate the iOS package
+**Option A — PWABuilder (fastest):** pwabuilder.com → `https://lifegameproject.com`
+→ **Package For Stores → iOS**. Download the zip (an Xcode project wrapping the PWA).
+**Option B — Capacitor (stronger 4.2 story, bundles assets offline):** ask and I can
+scaffold a `capacitor.config` + copy the static site into a native iOS project for you.
+- **Bundle ID:** reverse-domain, unique, e.g. `com.lifegameproject.arcade`
 
 ### 3. Build & upload in Xcode
-- Open the `.xcodeproj` from the zip.
-- **Signing & Capabilities** → pick your **Team** (your Developer account) → let Xcode auto-manage signing.
-- Set **Display Name**, confirm icons (PWABuilder includes them) and bundle ID.
+- Open the `.xcodeproj`.
+- **Signing & Capabilities** → pick your **Team** → let Xcode auto-manage signing.
+- Set **Display Name** ("Game Life Arcade"), confirm icons and bundle ID.
 - Target **"Any iOS Device"** → **Product → Archive**.
-- In the **Organizer** → **Distribute App → App Store Connect → Upload**.
+- **Organizer** → **Distribute App → App Store Connect → Upload**.
 
 ### 4. App Store Connect listing
 **appstoreconnect.apple.com → My Apps → + New App**
-- **Name (unique!):** "Game of Life" is taken — use e.g. **"Cellsmith: Game of Life"**.
+- **Name (must be unique!):** e.g. **"Game Life Arcade"** — confirm availability at creation.
 - **Bundle ID:** the one from step 2.
-- Wait ~15–30 min for the uploaded build to finish processing, then select it.
-- **Screenshots (required):** at minimum **iPhone 6.7"** (1290×2796). Install the PWA on
-  your iPhone ("Add to Home Screen"), screenshot 2–10 views — or use the iOS Simulator.
-- **Description / keywords / category** (copy below). Category: **Games** (+ Puzzle / Simulation).
+- Wait ~15–30 min for the build to process, then select it.
+- **Screenshots (required):** upload `screenshots/phone-1…6.png` (already 6.7" / 1290×2796).
+- **Description / keywords / category** (copy below). Category: **Games** (+ Puzzle / Arcade).
 - **Privacy policy URL:** `https://lifegameproject.com/privacy`
-- **App Privacy label:** declare the leaderboard/gallery store a **display name + score
-  you submit** (optional, not linked to your identity); no tracking, no ads.
+- **App Privacy label:** the leaderboard/gallery store a **display name + score you
+  submit** (optional, not linked to your identity); no tracking, no ads.
 - **Age rating:** questionnaire → **4+**.
 - **Submit for review.**
-
-> If rejected under 4.2: reply in Resolution Center stressing offline use, the
-> interactive drawing/simulation, and the Web-Audio "Music Box" — or add a small
-> native feature (push notifications are the usual unlock) and resubmit.
 
 ---
 
 ## Listing copy
 
-**Name (30 char max):** `Cellsmith: Game of Life`
-**Subtitle (30 char max):** `Draw, evolve, make music`
-**Keywords (100 char):** `game of life,cellular automata,conway,sandbox,simulation,generative,music,puzzle,relax`
+**Name (30 char max):** `Game Life Arcade`
+**Subtitle (30 char max):** `Nine hand-coded games`
+**Keywords (100 char):** `game of life,gomoku,sudoku,minesweeper,maze,arcade,puzzle,cellular automata,offline,co-op`
 **Support URL:** `https://lifegameproject.com`
 **Privacy Policy:** `https://lifegameproject.com/privacy`
-**Category:** Games · Puzzle / Simulation
+**Category:** Games · Puzzle / Arcade
 
 **Description:**
 ```
-Conway's Game of Life, reimagined as a playground.
+A little arcade of hand-coded browser games — no engines, no ads, no tracking.
+Nine games in one app, most of them playable offline.
 
-Draw cells with your finger, press play, and watch them come alive — gliders,
-oscillators, and patterns you'd never expect from just three simple rules.
+THE GAMES
+• Game of Life — draw cells, watch them evolve, and turn the living grid into
+  music. Sandbox, leaderboard challenges, and a Music Box sequencer.
+• Gomoku — five-in-a-row against a minimax AI, AI-vs-AI, or a friend online.
+• Labyrinth — an endless torch-lit descent with fog-of-war and a bigger maze
+  every time you escape.
+• Grow a Tomato — raise the biggest, sweetest tomato with a real
+  plant-metabolism model.
+• Tomatoswipe — Minesweeper, but the mines are tomatoes.
+• Sudoku — one guaranteed unique solution, with pencil notes, hints and a solver.
+• Keep-Up & Co-op Lander — two-player games on one device or remotely.
+• Tether — two players, one rope, hand-coded physics.
 
-THREE MODES
-• Sandbox — draw, stamp built-in patterns, and watch them evolve
-• Challenges — goal-based puzzles with a global leaderboard
-• Music Box — turn the grid into music; a playhead sweeps across and your living
-  cells sing
-
-FEATURES
-• 20+ classic patterns — drag, rotate, mirror, stamp
-• Aura mode — cells glow by age
-• Lookahead — preview future generations as you build
-• Zoom, pan, and a focus-zone tool
-• Interactive lessons that teach the rules and the tools
 • Fully bilingual: English / 中文
 • Works offline · no ads · no tracking
 
-Relax and watch life unfold, compose generative music, or beat every challenge —
-a tiny universe in your pocket.
+Built by hand for the love of it — a pocket arcade for thirty seconds or an hour.
 ```
