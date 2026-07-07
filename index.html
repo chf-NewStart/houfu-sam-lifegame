@@ -121,7 +121,7 @@
     .tag.red   { border-color: rgba(244,67,54,0.45); color: #ff6a5e; background: rgba(244,67,54,0.06); }
     .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 12px; border-top: 1px solid #141414; }
     .card-meta { font-size: 0.62rem; color: #333; }
-    .play-btn { color: #1db954; font-size: 0.72rem; text-decoration: none; border: 1px solid #1db954; padding: 5px 12px; transition: all 0.1s; }
+    .play-btn { color: #1db954; font-size: 0.72rem; text-decoration: none; border: 1px solid #1db954; padding: 5px 12px; transition: all 0.1s; white-space: nowrap; flex-shrink: 0; margin-left: 8px; }
     .play-btn:hover { background: rgba(29,185,84,0.1); }
     .soon-badge { font-size: 0.62rem; color: #333; border: 1px solid #1e1e1e; padding: 4px 10px; }
 
@@ -868,9 +868,9 @@ document.addEventListener('DOMContentLoaded', applyLang);
   card.addEventListener('mouseleave', () => { inside = false; });
 })();
 
-/* Sudoku card — hover: a pencil hand-writes digits into the grid, stroke by
-   stroke — small corner notes most of the time, a big confident number when
-   it's sure. Older marks fade like graphite. */
+/* Sudoku card — hover: a pencil hand-writes digits in the cell under YOUR
+   cursor — a couple of small corner notes first, then the big answer (erasing
+   the notes, like a real solve). Older marks fade like graphite. */
 (function () {
   const card = document.querySelector('.card.glow-sudoku');
   if (!card) return;
@@ -890,7 +890,9 @@ document.addEventListener('DOMContentLoaded', applyLang);
     8: [[0.66,0.3],[0.5,0.14],[0.34,0.3],[0.64,0.62],[0.5,0.88],[0.34,0.64],[0.66,0.3]],
     9: [[0.66,0.42],[0.5,0.5],[0.34,0.36],[0.42,0.16],[0.62,0.14],[0.68,0.36],[0.6,0.88]],
   };
+  const CORNERS = [[0.28, 0.3], [0.72, 0.3], [0.28, 0.74], [0.72, 0.74]];
   let W, H, cols, rows, topH, raf = 0, inside = false, marks = [], nextIn = 0;   // nextIn: frames until the next digit
+  let mx = 0, my = 0;                                    // the pencil writes in the cell under the cursor
 
   function build() {
     W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
@@ -899,11 +901,18 @@ document.addEventListener('DOMContentLoaded', applyLang);
     marks = [];
   }
   function newMark() {
-    const cx = (Math.random() * cols) | 0, cy = (Math.random() * rows) | 0;
-    const digit = 1 + ((Math.random() * 9) | 0), final = Math.random() < 0.35;
+    const cx = Math.max(0, Math.min(cols - 1, (mx / C) | 0));
+    const cy = Math.max(0, Math.min(rows - 1, (my / C) | 0));
+    const inCell = marks.filter(m => !m.dying && m.cx === cx && m.cy === cy);
+    if (inCell.some(m => m.final)) { nextIn = 10; return; }        // cell answered — wait for the cursor to move on
+    const freeCorners = [0, 1, 2, 3].filter(i => !inCell.some(m => m.cornerIdx === i));
+    // a couple of pencil notes first, then commit to the big answer (erasing the notes)
+    const final = !freeCorners.length || (inCell.length >= 2 && Math.random() < 0.6);
+    if (final) inCell.forEach(m => { m.dying = true; });
+    const digit = 1 + ((Math.random() * 9) | 0);
     const jit = DIGITS[digit].map(() => [(Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.08]);
-    const corner = [[0.28, 0.3], [0.72, 0.3], [0.28, 0.74], [0.72, 0.74]][(Math.random() * 4) | 0];
-    marks.push({ cx, cy, digit, final, jit, corner, prog: 0, alpha: final ? 0.95 : 0.6 });
+    const cornerIdx = final ? -1 : freeCorners[(Math.random() * freeCorners.length) | 0];
+    marks.push({ cx, cy, digit, final, jit, corner: CORNERS[cornerIdx] || CORNERS[0], cornerIdx, prog: 0, alpha: final ? 0.95 : 0.6 });
     if (marks.length > MAXMARKS) marks[0].dying = true;
     nextIn = 16 + ((Math.random() * 20) | 0);            // ~0.3–0.6 s at 60 fps
   }
@@ -955,7 +964,9 @@ document.addEventListener('DOMContentLoaded', applyLang);
     if (inside && !writing && --nextIn <= 0) newMark();
     raf = inside ? requestAnimationFrame(frame) : 0;
   }
-  card.addEventListener('mouseenter', () => { if (raf) return; build(); nextIn = 1; inside = true; raf = requestAnimationFrame(frame); });
+  function setPos(e) { const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
+  card.addEventListener('mousemove', setPos);
+  card.addEventListener('mouseenter', (e) => { setPos(e); if (raf) { inside = true; return; } build(); nextIn = 1; inside = true; raf = requestAnimationFrame(frame); });
   card.addEventListener('mouseleave', () => { inside = false; });
 })();
 
@@ -1020,8 +1031,11 @@ document.addEventListener('DOMContentLoaded', applyLang);
   card.addEventListener('mouseleave', () => { inside = false; });
 })();
 
-/* Tether card — one climber sits perched over the card's top edge, feet kicking,
-   shuffling along the rim; their partner hangs from the rope below, swinging. (hover) */
+/* Tether card — one climber sits perched on the card's top rim, shuffling along
+   it; their partner hangs from the rope below, swinging. Every so often the
+   dangler leaps for a brick: catch it and they hang there smugly — miss it and
+   the falling jolt rips the sitter off the rim, and both tumble off the card
+   before climbing back up. (hover) */
 (function () {
   const card = document.querySelector('.card.glow-rope');
   if (!card) return;
@@ -1031,40 +1045,64 @@ document.addEventListener('DOMContentLoaded', applyLang);
   const N = 12, ITER = 5, G = 0.22;
   const SIT = '43,212,106', HANG = '70,200,255';         // sitter green (P1) · dangler cyan (P2)
   let W, H, pts, seg, raf = 0, inside = false, t = 0, sx = 0, sdir = 1;
+  let mode = 'sit', modeT = 0, grab = false, hx = 0, hy = 0;   // sit → leap → (hang | fall) → sit
   function build() {
     W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
     seg = Math.min(9, H * 0.3 / (N - 1));
-    sx = W * 0.6; sdir = -1; t = 0;
+    sx = W * 0.6; sdir = -1; t = 0; mode = 'sit'; modeT = 0;
     pts = []; for (let i = 0; i < N; i++) pts.push({ x: sx + i * 2, y: 5 + i * seg, px: sx + i * 2, py: 5 + i * seg });
   }
   function physics() {
-    t++;
-    // the sitter shuffles along the rim, turning back near the corners
-    sx += sdir * (0.45 + 0.25 * Math.sin(t * 0.017));
-    if (sx > W - 34) sdir = -1; else if (sx < 34) sdir = 1;
-    for (let i = 1; i < N; i++) {
+    t++; modeT++;
+    const A = pts[0], F = pts[N - 1];
+    if (mode !== 'fall') {                                 // the sitter shuffles along the rim…
+      sx += sdir * (0.45 + 0.25 * Math.sin(t * 0.017));
+      if (sx > W - 34) sdir = -1; else if (sx < 34) sdir = 1;
+    }
+    for (let i = (mode === 'fall' ? 0 : 1); i < N; i++) {  // …and is pinned unless ripped off
       const p = pts[i], vx = (p.x - p.px) * 0.99, vy = (p.y - p.py) * 0.99;
       p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + G;
     }
-    pts[N - 1].x += Math.sin(t * 0.033) * 0.18;          // gentle push keeps the dangler swinging
+    if (mode === 'sit') {
+      F.x += Math.sin(t * 0.033) * 0.18;                   // gentle push keeps the swing alive
+      if (modeT > 150 && Math.random() < 0.012) {          // every few seconds: leap for a brick
+        const dir = F.x < W / 2 ? 1 : -1;
+        F.px = F.x - dir * 2.6; F.py = F.y + 4.8;          // verlet impulse: up and sideways
+        grab = Math.random() < 0.4;                        // will this one stick?
+        mode = 'leap'; modeT = 0;
+      }
+    } else if (mode === 'leap') {
+      const vy = F.y - F.py;
+      if (grab && vy >= 0) { hx = F.x; hy = F.y; mode = 'hang'; modeT = 0; }   // caught a brick!
+      else if (!grab && vy > 2.2 &&
+               Math.hypot(F.x - A.x, F.y - A.y) > (N - 1) * seg * 0.97) {
+        mode = 'fall'; modeT = 0;                          // missed — the taut-rope jolt rips the sitter off
+      }
+      if (modeT > 160) { mode = 'sit'; modeT = 0; }        // soft swing-out, no harm done
+    } else if (mode === 'hang') {
+      if (modeT > 110) { mode = 'sit'; modeT = 0; }        // grip gives out, back to dangling
+    } else if (mode === 'fall') {
+      if (Math.min(A.y, F.y) > H + 40) build();            // both gone — they climb back up
+    }
     for (let k = 0; k < ITER; k++) {
       for (let i = 0; i < N - 1; i++) {
         const a = pts[i], b = pts[i + 1];
         const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, off = (d - seg) / d * 0.5;
         a.x += dx * off; a.y += dy * off; b.x -= dx * off; b.y -= dy * off;
       }
-      pts[0].x = sx; pts[0].y = 5;                       // re-pin the sitter on the rim
+      if (mode !== 'fall') { A.x = sx; A.y = 5; }          // re-pin the sitter
+      if (mode === 'hang') { F.x = hx; F.y = hy; F.px = hx; F.py = hy; }
     }
     for (const p of pts) {
       if (p.x < 6) p.x = 6; else if (p.x > W - 6) p.x = W - 6;
-      if (p.y > H - 6) p.y = H - 6;
+      if (mode !== 'fall' && p.y > H - 6) p.y = H - 6;     // while falling they're allowed out the bottom
     }
   }
   function drawClimber(x, y, col, r) {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, 'rgba(' + col + ',0.9)'); g.addColorStop(1, 'rgba(' + col + ',0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
-    ctx.fillStyle = '#eafdff'; ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 7); ctx.fill();
+    ctx.fillStyle = '#eafdff'; ctx.beginPath(); ctx.arc(x, y, r * 0.24, 0, 7); ctx.fill();
   }
   function frame() {
     physics();
@@ -1083,17 +1121,13 @@ document.addEventListener('DOMContentLoaded', applyLang);
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < N; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.stroke();
-    // sitter: perched on the rim, little legs kicking down the inside of the wall
-    const A = pts[0], kick = Math.sin(t * 0.09) * 2.2;
-    ctx.strokeStyle = 'rgba(' + SIT + ',0.9)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(A.x - 3.5, A.y + 3); ctx.lineTo(A.x - 5 - kick * 0.4, A.y + 12 + kick);
-    ctx.moveTo(A.x + 3.5, A.y + 3); ctx.lineTo(A.x + 5 + kick * 0.4, A.y + 12 - kick);
-    ctx.stroke();
-    drawClimber(A.x, A.y, SIT, 10);
-    // the dangler at the rope's end
-    const F = pts[N - 1];
-    drawClimber(F.x, F.y, HANG, 11);
+    const A = pts[0], F = pts[N - 1];
+    if (mode === 'hang') {                                 // grip ring on the brick it caught
+      ctx.strokeStyle = 'rgba(' + HANG + ',0.5)'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(F.x, F.y, 20, 0, 7); ctx.stroke();
+    }
+    drawClimber(A.x, A.y, SIT, 15);
+    drawClimber(F.x, F.y, HANG, 16);
     raf = inside ? requestAnimationFrame(frame) : 0;
   }
   card.addEventListener('mouseenter', () => { if (raf) return; build(); inside = true; raf = requestAnimationFrame(frame); });
