@@ -1,0 +1,10 @@
+{
+  "appId": "com.lifegameproject.arcade",
+  "appName": "Game Life Arcade",
+  "webDir": "www",
+  "backgroundColor": "#080808",
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#080808"
+  }
+}

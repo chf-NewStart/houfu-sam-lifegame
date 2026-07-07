@@ -42,18 +42,22 @@ If it's rejected, the PWA install, Google Play, and itch.io routes all still sta
 **developer.apple.com/programs → Enroll** ($99/yr; individual account is fine).
 Identity verification can take a day or two — start it early.
 
-### 2. Generate the iOS package
-**Option A — PWABuilder (fastest):** pwabuilder.com → `https://lifegameproject.com`
-→ **Package For Stores → iOS**. Download the zip (an Xcode project wrapping the PWA).
-**Option B — Capacitor (stronger 4.2 story, bundles assets offline):** ask and I can
-scaffold a `capacitor.config` + copy the static site into a native iOS project for you.
-- **Bundle ID:** reverse-domain, unique, e.g. `com.lifegameproject.arcade`
+### 2. The iOS project — already scaffolded in `app/`
+This repo now contains a **Capacitor** iOS project at **`app/`** that bundles the
+whole arcade *inside* the app (offline-first — the strongest Guideline 4.2 story).
+Bundle ID: `com.lifegameproject.arcade` · Name: "Game Life Arcade" · icon + dark
+splash already set. See **`app/README.md`** for the exact Mac commands.
 
-### 3. Build & upload in Xcode
-- Open the `.xcodeproj`.
+### 3. Build & upload — on the Mac
+```bash
+# one-time: Xcode (App Store) · Node.js (nodejs.org LTS) · brew install cocoapods
+cd app
+npm install
+npm run ios        # builds www, syncs, opens Xcode
+```
 - **Signing & Capabilities** → pick your **Team** → let Xcode auto-manage signing.
-- Set **Display Name** ("Game Life Arcade"), confirm icons and bundle ID.
-- Target **"Any iOS Device"** → **Product → Archive**.
+- Test on your iPhone first (plug in, press ▶) — make sure games feel right in the shell.
+- Target **"Any iOS Device (arm64)"** → **Product → Archive**.
 - **Organizer** → **Distribute App → App Store Connect → Upload**.
 
 ### 4. App Store Connect listing
