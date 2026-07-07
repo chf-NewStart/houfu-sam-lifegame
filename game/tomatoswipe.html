@@ -210,10 +210,10 @@ const game = (function () {
   function lose(c) {
     state = 'lost'; exploded = c; stop();
     for (let i = 0; i < N; i++) if (tomato[i]) revealed[i] = 1;
-    renderAll(); setFace('💥');
+    renderAll(); setFace('🥫');
     splatterAt(c);
     setTimeout(() => { $('tomatoed').classList.add('show'); }, 240);   // ketchup first, verdict second
-    $('status').className = 'status lose'; $('status').textContent = t('🥫 you are tomatoed! tap the face to replant.', '🥫 你被番茄了！点击表情重新种植。');
+    $('status').className = 'status lose'; $('status').textContent = t('💥 you are tomatoed! tap the 🥫 to replant.', '💥 你被番茄了！点击 🥫 重新种植。');
   }
 
   // ---- ketchup explosion (lose) ----
