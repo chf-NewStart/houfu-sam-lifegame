@@ -850,6 +850,10 @@ document.addEventListener('DOMContentLoaded', applyLang);
     for (const p of drops) { ctx.fillStyle = p.col + '0.9)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
     if (tomato) {
       const t = tomato, age = ++t.age;                             // frame-count clock (~60 fps)
+      // trail the cursor while growing, so it bursts where you actually are —
+      // not where the pointer happened to enter the card
+      t.x += (Math.max(26, Math.min(W - 26, mx)) - t.x) * 0.16;
+      t.y += (Math.max(22, Math.min(H - 26, my)) - t.y) * 0.16;
       const scale = Math.min(1, age / 16);                         // plop in…
       const shake = age > 26 ? Math.sin(age * 1.5) * Math.min(3.5, (age - 26) / 6) : 0;     // …tremble…
       const r = t.r * (scale + (age > 22 ? (age - 22) / 62 : 0));  // …and swell to ~1.7× before bursting
