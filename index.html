@@ -246,7 +246,7 @@
   </div>
 
   <div class="card glow-sudoku">
-    <img class="card-thumb" src="/game/thumbs/sudoku.png?v=1" alt="Sudoku grid" loading="lazy" width="440" height="240">
+    <img class="card-thumb" src="/game/thumbs/sudoku.png?v=2" alt="Sudoku grid" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#36c5d0">[9]</div>
     <div class="card-title" data-en="sudoku.exe" data-zh="数独.exe">sudoku.exe</div>
     <div class="card-desc" data-en="Fill every row, column and 3×3 box with 1–9. A backtracking generator guarantees one unique solution — with pencil-mark notes, hints, and a one-click solver." data-zh="让每行、每列、每个 3×3 宫格都填入 1–9。回溯生成器保证唯一解——含铅笔笔记、提示与一键求解。">Fill every row, column and 3×3 box with 1–9. A backtracking generator guarantees one unique solution — with pencil-mark notes, hints, and a one-click solver.</div>
@@ -278,7 +278,7 @@
   </div>
 
   <div class="card glow-lander">
-    <img class="card-thumb" src="/game/thumbs/lander.png?v=1" alt="Co-op lunar lander" loading="lazy" width="440" height="240">
+    <img class="card-thumb" src="/game/thumbs/lander.png?v=2" alt="Co-op lunar lander descending to the pad" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#e8b04a">[◂▴▸]</div>
     <div class="card-title" data-en="lander.exe" data-zh="登月舱.exe">lander.exe</div>
     <div class="card-desc" data-en="Co-op lunar lander — one of you fires the thrust, the other steers the tilt, both flying one ship — tilt to aim, thrust to push. Land softly and upright on the pad. Play remotely (Create/Join a room) or on one device." data-zh="合作登月——一人控推力，一人控倾斜，共同驾驶一艘飞船——倾斜对准，推力推进。平稳且端正地降落在着陆台。可联机（创建/加入房间）或同设备双人。">Co-op lunar lander — one of you fires the thrust, the other steers the tilt, both flying one ship — tilt to aim, thrust to push. Land softly and upright on the pad. Play remotely (Create/Join a room) or on one device.</div>
@@ -950,9 +950,7 @@ document.addEventListener('DOMContentLoaded', applyLang);
   }
   function frame() {
     ctx.clearRect(0, 0, W, H);
-    // faint graphite grid over the thumbnail, heavier every 3rd line (3×3 boxes)
-    for (let x = 0; x <= cols; x++) { ctx.strokeStyle = 'rgba(160,175,190,' + (x % 3 ? 0.08 : 0.17) + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x * C + 0.5, 0); ctx.lineTo(x * C + 0.5, rows * C); ctx.stroke(); }
-    for (let y = 0; y <= rows; y++) { ctx.strokeStyle = 'rgba(160,175,190,' + (y % 3 ? 0.08 : 0.17) + ')'; ctx.beginPath(); ctx.moveTo(0, y * C + 0.5); ctx.lineTo(cols * C, y * C + 0.5); ctx.stroke(); }
+    // the thumbnail is a real grid now — no overlay grid, just the pencil work
     let tip = null, writing = false;
     for (const m of marks) {
       if (m.dying) { m.alpha -= 0.02; continue; }
