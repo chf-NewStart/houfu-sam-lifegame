@@ -795,16 +795,16 @@ document.addEventListener('DOMContentLoaded', applyLang);
   const stain = document.createElement('canvas');                  // persistent ketchup layer
   const sctx = stain.getContext('2d');
   const KETCHUP = ['rgba(198,40,26,', 'rgba(226,58,38,', 'rgba(170,28,18,'];
-  let W, H, topH, raf = 0, inside = false;
+  let W, H, raf = 0, inside = false, mx = 0, my = 0;
   let tomato = null, drops = [], drips = [], cool = 0, hold = 0;   // cool: frames to next tomato · hold: frames stains stay before fading
 
   function build() {
     W = card.clientWidth; H = card.clientHeight;
     canvas.width = W; canvas.height = H; stain.width = W; stain.height = H;
-    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight : Math.round(H * 0.4);
   }
   function newTomato() {
-    tomato = { x: 30 + Math.random() * (W - 60), y: 22 + Math.random() * (topH - 34), r: 15 + Math.random() * 5, age: 0 };
+    // the tomato grows right under the cursor
+    tomato = { x: Math.max(26, Math.min(W - 26, mx)), y: Math.max(22, Math.min(H - 26, my)), r: 15 + Math.random() * 5, age: 0 };
     cool = 150 + ((Math.random() * 50) | 0);             // ~2.5–3.3 s at 60 fps
   }
   function explode() {
@@ -863,7 +863,9 @@ document.addEventListener('DOMContentLoaded', applyLang);
     } else if (inside && --cool <= 0) newTomato();
     raf = (inside || drops.length || drips.length) ? requestAnimationFrame(frame) : 0;
   }
-  card.addEventListener('mouseenter', () => { if (!tomato) cool = 1;   // a tomato drops in right away
+  function setPos(e) { const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
+  card.addEventListener('mousemove', setPos);
+  card.addEventListener('mouseenter', (e) => { setPos(e); if (!tomato) cool = 1;   // a tomato grows under the cursor right away
     if (raf) { inside = true; return; } build(); inside = true; raf = requestAnimationFrame(frame); });
   card.addEventListener('mouseleave', () => { inside = false; });
 })();

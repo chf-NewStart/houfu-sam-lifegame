@@ -278,17 +278,13 @@ const game = (function () {
   function updateBestPanel() { ['patch', 'plot', 'field'].forEach(d => { const b = loadBest(d); $('b' + d.charAt(0).toUpperCase() + d.slice(1)).textContent = (b === null ? '—' : pad(b) + 's'); }); }
 
   // ---- render ----
-  // undug soil is terminal noise — mostly faint dots, the odd `:` `+` `-`.
-  // Hash on the index so each cell's glyph is stable across re-renders.
-  const SOIL = ['·', '·', '.', '·', ':', '·', '.', '+', '·', '-', '.', '·'];
-  function soil(i) { return SOIL[((i * 2654435761) >>> 0) % SOIL.length]; }
   function renderCell(i) {
     const el = cells[i];
     if (revealed[i]) {
       if (tomato[i]) { el.className = 'cell tom open' + (i === exploded ? ' boom' : ''); el.textContent = i === exploded ? '🥫' : '🍅'; }
       else { el.className = 'cell open' + (count[i] ? ' n' + count[i] : ''); el.textContent = count[i] ? count[i] : ''; }
     } else if (state === 'lost' && flagged[i] && !tomato[i]) { el.className = 'cell hidden wrong'; el.textContent = '✗'; }
-    else { el.className = 'cell hidden' + (flagged[i] ? ' flag' : ''); el.textContent = flagged[i] ? '🚩' : soil(i); }
+    else { el.className = 'cell hidden' + (flagged[i] ? ' flag' : ''); el.textContent = flagged[i] ? '🚩' : ''; }
   }
   function renderAll() { for (let i = 0; i < N; i++) renderCell(i); }
   function updateBars() { $('vTom').textContent = '🍅 ' + pad(Math.max(0, mines - flags)); $('vTime').textContent = '⏱ ' + pad(timer); }
