@@ -120,7 +120,7 @@
       <div class="card-title"><span data-en="// controls" data-zh="// 控制">// controls</span></div>
       <div class="help">
         <div data-en="<b>Thrust</b>: <b class='keycap'>W</b> / <b class='keycap'>↑</b> / Space (or hold ▲)." data-zh="<b>推力</b>：<b class='keycap'>W</b> / <b class='keycap'>↑</b> / 空格（或按住 ▲）。">Thrust: <b class="keycap">W</b> / <b class="keycap">↑</b> / Space (or hold ▲).</div>
-        <div data-en="<b>Tilt</b>: <b class='keycap'>←</b> / <b class='keycap'>→</b> (or the ◀ ▶ buttons)." data-zh="<b>倾斜</b>：<b class='keycap'>←</b> / <b class='keycap'>→</b>（或 ◀ ▶ 按钮）。">Tilt: <b class="keycap">←</b> / <b class="keycap">→</b> (or the ◀ ▶ buttons).</div>
+        <div data-en="<b>Tilt</b>: <b class='keycap'>←</b> / <b class='keycap'>→</b> or <b class='keycap'>A</b> / <b class='keycap'>D</b> (or the ◀ ▶ buttons)." data-zh="<b>倾斜</b>：<b class='keycap'>←</b> / <b class='keycap'>→</b> 或 <b class='keycap'>A</b> / <b class='keycap'>D</b>（或 ◀ ▶ 按钮）。">Tilt: <b class="keycap">←</b> / <b class="keycap">→</b> or <b class="keycap">A</b> / <b class="keycap">D</b> (or the ◀ ▶ buttons).</div>
         <div style="color:#8a9499" data-en="Tip: tilt aims the ship; thrust pushes wherever the nose points. Release tilt and it stops turning." data-zh="提示：倾斜负责对准机头，推力朝机头方向推进。松开倾斜键，飞船就停止转动。">Tip: tilt aims the ship; thrust pushes wherever the nose points. Release tilt and it stops turning.</div>
         <div id="localHint" data-en="Local: one of you on thrust, one on tilt — same keyboard." data-zh="本地：一人控推力，一人控倾斜——同一键盘。">Local: one of you on thrust, one on tilt — same keyboard.</div>
       </div>
@@ -385,9 +385,13 @@ function toggleLang() {
   document.documentElement.lang = zh ? 'zh' : 'en';
   document.querySelectorAll('[data-en]').forEach((el) => { el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
   document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
+  try { localStorage.setItem('arcade_lang', zh ? 'zh' : 'en'); } catch (e) {}
 }
 
 game.init();
+
+/* remember the language across the whole arcade */
+try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 </body>
 </html>

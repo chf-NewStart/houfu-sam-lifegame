@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Lesson 7: Challenges — Life Game</title>
+  <title data-en="Lesson 7: Challenges — Life Game" data-zh="第 7 课：挑战 — 生命游戏">Lesson 7: Challenges — Life Game</title>
   <style id="langStyle">
     .lang-btn {
       margin-left: auto; background: transparent; border: 1px solid #1db954;
@@ -230,7 +230,7 @@
 <header class="lesson-header">
   <div class="header-left">
     <a class="back-link" href="/training" data-en="← Training" data-zh="← 教程">← Training</a>
-    <span class="lesson-id">LESSON 07</span>
+    <span class="lesson-id" data-en="LESSON 07" data-zh="第 07 课">LESSON 07</span>
     <span class="lesson-title-h" data-en="Challenges" data-zh="挑战">Challenges</span>
   </div>
   <div class="progress-dots" id="progressDots"></div>
@@ -270,13 +270,13 @@
 <!-- Footer -->
 <footer class="lesson-footer">
   <a class="foot-btn" href="/training/lesson6" data-en="← Lesson 6" data-zh="← 第 6 课">← Lesson 6</a>
-  <a class="foot-btn hi" href="/life.html" data-en="Go Play →" data-zh="去玩 →">Go Play →</a>
+  <a class="foot-btn hi" href="/training/lesson8" data-en="Lesson 8: Dev Mode →" data-zh="第 8 课：开发模式 →">Lesson 8: Dev Mode →</a>
 </footer>
 
 <script>
 /* ── i18n (shared with the main app via localStorage) ── */
 const LANG_KEY = 'lifegame_lang';
-let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+let lang = (function () { try { return localStorage.getItem('arcade_lang') || localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
 
 /* ── Decorative canvas — Glider gun region ───────── */
 const canvas = document.getElementById('canvas');
@@ -418,7 +418,7 @@ const STAGES = [
     textZh: `激活一个挑战后：<br><br>1. 目标会出现在挑战栏里（例如"B 区里有 25 个细胞"）。<br>2. 在画布上绘制你的初始图案。<br>3. 点击<b>播放</b>。挑战栏会实时显示朝目标前进的进度。<br><br>你可以随时暂停、调整图案并重新开始。`,
   },
   {
-    title: 'Win &amp; Fail',
+    title: 'Win & Fail',
     titleZh: '胜利与失败',
     text: `If the win condition is met — for example 25 cells inside zone B, or a Glider reaching zone B — the bar turns <span class="hi-green">green</span> and the challenge is marked complete.<br><br>If all cells die, or the generation limit runs out, the bar turns red. Hit <b>Reset</b> to retry with a new starting pattern. Unlimited attempts.`,
     textZh: `如果满足胜利条件 — 例如 B 区里有 25 个细胞，或者一架滑翔机抵达 B 区 — 挑战栏会变成<span class="hi-green">绿色</span>，该挑战即标记为完成。<br><br>如果所有细胞都死亡，或者代数上限用尽，挑战栏会变红。点击<b>重置</b>，用新的初始图案再试一次。可无限次尝试。`,
@@ -515,7 +515,7 @@ function applyLang() {
 }
 function toggleLang() {
   lang = lang === 'zh' ? 'en' : 'zh';
-  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  try { localStorage.setItem(LANG_KEY, lang); localStorage.setItem('arcade_lang', lang); } catch {}
   applyLang();
   // Keep the play button label in sync with current language
   const btn = document.getElementById('playBtn');

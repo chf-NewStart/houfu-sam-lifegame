@@ -843,7 +843,7 @@
 
 <script>
 /* ── i18n ─────────────────────────────────────────── */
-let lang = (function () { try { return localStorage.getItem('lifegame_lang') || 'en'; } catch { return 'en'; } })();
+let lang = (function () { try { return localStorage.getItem('lifegame_lang') || localStorage.getItem('arcade_lang') || 'en'; } catch { return 'en'; } })();
 function t(en, zh) { return lang === 'zh' ? zh : en; }
 function applyLang() {
   document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
@@ -858,7 +858,7 @@ function applyLang() {
 }
 function setLang(v) {
   lang = v === 'zh' ? 'zh' : 'en';
-  try { localStorage.setItem('lifegame_lang', lang); } catch {}
+  try { localStorage.setItem('lifegame_lang', lang); localStorage.setItem('arcade_lang', lang); } catch {}
   applyLang();
 }
 function toggleLang() { setLang(lang === 'en' ? 'zh' : 'en'); }   // kept for any other callers
@@ -1176,8 +1176,8 @@ function undoStep() {
 function redoStep() {
   if (redoHistory.length === 0) return;
   if (running) togglePlay();
-  stepHistory.push({ grid: grid.slice(), generation });
   const state = redoHistory.pop();
+  stepHistory.push({ grid: grid.slice(), generation, type: state.type });
   grid = state.grid;
   generation = state.generation;
   document.getElementById('genCount').textContent = generation;
@@ -1852,8 +1852,9 @@ const PRESETS = {
 };
 
 function loadPreset(name) {
+  if (drawLocked()) return;          // challenge in progress — same lock as other draw paths
   if (running) togglePlay();
-  clearHistory();
+  pushHistory('draw');               // an accidental tap must be undoable via ↩ Undo
   grid.fill(0); generation = 0;
   document.getElementById('genCount').textContent = 0;
   const cells = PRESETS[name];
@@ -2217,7 +2218,9 @@ function loadSeedParam() {
   if (!hash.startsWith('#s=')) return false;
   try {
     urlSeed = JSON.parse(b64dec(hash.slice(3)));
-    applySeed(urlSeed); draw(); return true;
+    applySeed(urlSeed); draw();
+    urlSeed = null;   // applied once at load — resizes must never re-apply it (doResize re-centers the live cells instead)
+    return true;
   } catch(e) { return false; }
 }
 

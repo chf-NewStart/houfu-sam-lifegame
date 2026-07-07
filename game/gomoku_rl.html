@@ -384,10 +384,13 @@ function applyLang(){
   document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=t(el.dataset.en,el.dataset.zh);});
   buildControls();
 }
-function toggleLang(){lang=lang==='en'?'zh':'en';document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();}
+function toggleLang(){lang=lang==='en'?'zh':'en';document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();try{localStorage.setItem('arcade_lang',lang);}catch(e){}}
 
 document.getElementById('speed').addEventListener('input',()=>{document.getElementById('vSpeed').textContent=document.getElementById('speed').value;});
 buildControls();refresh();
+
+/* remember the language across the whole arcade */
+try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 </body>
 </html>

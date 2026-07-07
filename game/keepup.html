@@ -142,7 +142,7 @@ const game = (function () {
   let canvas, ctx, DPR = 1;
   let mode = 'local';                 // 'local' | 'host' | 'guest'
   let pads, balls, powers, keys = {};
-  let running = false, paused = false, pausedAt = 0, t0 = 0, elapsed = 0, nextPower = 0;
+  let running = false, paused = false, pausedAt = 0, t0 = 0, elapsed = 0, nextPower = 0, lastSide = -1;
   let shrinkUntil = 0, rushUntil = 0, lastTs = 0, raf = 0;
   let myY = H / 2;                     // remote: my paddle CENTRE y (local prediction)
   let netState = null, lastWrite = 0, guestBalls = null;
@@ -156,7 +156,7 @@ const game = (function () {
       { x: W - PAD_INSET - PAD_W, y: H / 2 - PAD_H / 2, w: PAD_W, h: PAD_H },     // P2 right (cyan)
     ];
     balls = [mkBall()]; powers = [];
-    shrinkUntil = 0; rushUntil = 0; elapsed = 0; nextPower = POWER_EVERY; paused = false; pausedAt = 0;
+    shrinkUntil = 0; rushUntil = 0; elapsed = 0; nextPower = POWER_EVERY; paused = false; pausedAt = 0; lastSide = -1;
   }
   function mkBall(x, y) {
     const dir = Math.random() < 0.5 ? -1 : 1;
@@ -236,7 +236,8 @@ const game = (function () {
           const q = powers[k];
           if (b.x + b.r > q.x - q.s / 2 && b.x - b.r < q.x + q.s / 2 && b.y + b.r > q.y - q.s / 2 && b.y - b.r < q.y + q.s / 2) { trigger(q.type, q.x, q.y); powers.splice(k, 1); }
         }
-        if (b.x - b.r < 0 || b.x + b.r > W) dead = true;                   // slipped past a side
+        if (b.x - b.r < 0) { dead = true; lastSide = 0; }                  // slipped past the left (green) side
+        else if (b.x + b.r > W) { dead = true; lastSide = 1; }             // slipped past the right (cyan) side
       }
       (b.trail || (b.trail = [])).push([b.x, b.y]); if (b.trail.length > 6) b.trail.shift();
       if (dead) { if (balls.length === 1) { gameOver(); return; } balls.splice(i, 1); }
@@ -244,10 +245,15 @@ const game = (function () {
     if (elapsed >= nextPower) { spawnPower(); nextPower += POWER_EVERY; }
   }
 
+  function blameText(side) {
+    if (side === 0) return t(' · it got past the green (left) paddle', ' · 球从绿方（左）溜走了');
+    if (side === 1) return t(' · it got past the cyan (right) paddle', ' · 球从青方（右）溜走了');
+    return '';
+  }
   function gameOver() {
     running = false;
     const best = saveBest(elapsed);
-    $('overRes').textContent = t('survived ', '坚持了 ') + elapsed.toFixed(1) + 's';
+    $('overRes').textContent = t('survived ', '坚持了 ') + elapsed.toFixed(1) + 's' + blameText(lastSide);
     $('overNb').textContent = best.isNew ? t('★ new best!', '★ 新纪录！') : (t('best ', '最佳 ') + best.val.toFixed(1) + 's');
     $('over').classList.add('show');
     if (mode === 'host') writeState();
@@ -332,7 +338,7 @@ const game = (function () {
   function showGuestOver() {
     if (_guestOverShown) return; _guestOverShown = true;
     const v = netState.t || 0, best = saveBest(v);
-    $('overRes').textContent = t('survived ', '坚持了 ') + v.toFixed(1) + 's';
+    $('overRes').textContent = t('survived ', '坚持了 ') + v.toFixed(1) + 's' + blameText(netState.ls != null ? netState.ls : -1);
     $('overNb').textContent = best.isNew ? t('★ new best!', '★ 新纪录！') : (t('best ', '最佳 ') + best.val.toFixed(1) + 's');
   }
 
@@ -393,7 +399,7 @@ const game = (function () {
       b: balls.map(b => [Math.round(b.x), Math.round(b.y)]),
       p1: Math.round(pads[0].y), p2: Math.round(pads[1].y), ph: Math.round(pads[0].h),
       pu: powers.map(p => [Math.round(p.x), Math.round(p.y), p.type]),
-      t: +elapsed.toFixed(1), o: !running, r: performance.now() < rushUntil ? 1 : 0, pz: paused ? 1 : 0,
+      t: +elapsed.toFixed(1), o: !running, r: performance.now() < rushUntil ? 1 : 0, pz: paused ? 1 : 0, ls: lastSide,
     });
   }
   function togglePause() { if (mode === 'guest') { gameRef('gi').update({ pz: Date.now() }); return; } doPause(!paused); }
@@ -434,9 +440,13 @@ function toggleLang() {
   document.documentElement.lang = zh ? 'zh' : 'en';
   document.querySelectorAll('[data-en]').forEach((el) => { el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
   document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
+  try { localStorage.setItem('arcade_lang', zh ? 'zh' : 'en'); } catch (e) {}
 }
 
 game.init();
+
+/* remember the language across the whole arcade */
+try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 </body>
 </html>

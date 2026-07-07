@@ -110,12 +110,12 @@
 <script>
 /* ── i18n (shared with the main app via localStorage) ── */
 const LANG_KEY = 'lifegame_lang';
-let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+let lang = (function () { try { return localStorage.getItem('arcade_lang') || localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
 
 const LESSONS = [
   { id: 1, title: 'The Rules',         titleZh: '规则',        desc: 'B3/S23 — birth, survival, death. Watch the logic play out cell by cell with a live overlay.',                  descZh: 'B3/S23 — 诞生、存活、死亡。通过实时叠加层逐个细胞地观察逻辑演化。' },
   { id: 2, title: 'Drawing & Playing', titleZh: '绘制与播放',  desc: 'Click to paint cells. Play, step, pause, undo. Get comfortable with the core controls.',                       descZh: '点击绘制细胞。播放、单步、暂停、撤销。熟悉核心控制。' },
-  { id: 3, title: 'Patterns',          titleZh: '图案',        desc: 'Drag built-in patterns onto the canvas. Rotate with R or scroll, flip with F, then stamp.',                   descZh: '将内置图案拖到画布上。用 R 或滚轮旋转，用 F 翻转，然后放置。' },
+  { id: 3, title: 'Patterns',          titleZh: '图案',        desc: 'Drag built-in patterns onto the canvas. Rotate with R or scroll, flip with M, then stamp.',                   descZh: '将内置图案拖到画布上。用 R 或滚轮旋转，用 M 翻转，然后放置。' },
   { id: 4, title: 'Zoom & Pan',        titleZh: '缩放与平移',  desc: 'Navigate a larger world. Pinch, scroll, or drag to explore — reset view with ⊙.',                              descZh: '探索更大的世界。捏合、滚动或拖拽来浏览 — 用 ⊙ 重置视图。' },
   { id: 5, title: 'Zone Tool',         titleZh: '区域工具',    desc: 'Draw a focus area with ⬚ Zone. Track live cell counts inside your boundary in real time.',                    descZh: '用 ⬚ 区域绘制一个聚焦区域。实时跟踪边界内的活细胞数量。' },
   { id: 6, title: 'Bridge',            titleZh: '信使',        desc: 'Draw in zone A. Get 5 cells into zone B. Needs a moving pattern — hint: try a Glider.',                       descZh: '在 A 区绘制。将 5 个细胞送入 B 区。需要会移动的图案 — 提示：试试滑翔机。' },
@@ -163,7 +163,7 @@ function applyLang() {
 }
 function toggleLang() {
   lang = lang === 'zh' ? 'en' : 'zh';
-  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  try { localStorage.setItem(LANG_KEY, lang); localStorage.setItem('arcade_lang', lang); } catch {}
   applyLang();
 }
 

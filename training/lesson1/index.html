@@ -290,7 +290,7 @@
 <script>
 /* ── i18n (shared with the main app via localStorage) ── */
 const LANG_KEY = 'lifegame_lang';
-let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+let lang = (function () { try { return localStorage.getItem('arcade_lang') || localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
 function t(en, zh) { return lang === 'zh' ? zh : en; }
 
 /* ── Stage definitions ──────────────────────────── */
@@ -819,7 +819,7 @@ function applyLang() {
 }
 function toggleLang() {
   lang = lang === 'zh' ? 'en' : 'zh';
-  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  try { localStorage.setItem(LANG_KEY, lang); localStorage.setItem('arcade_lang', lang); } catch {}
   applyLang();
 }
 

@@ -330,6 +330,7 @@ function toggleLang() {
   lang = lang === 'en' ? 'zh' : 'en';
   document.getElementById('langBtn').textContent = lang === 'zh' ? 'English' : '中文';
   applyLang();
+  try { localStorage.setItem('arcade_lang', lang); } catch (e) {}
 }
 
 document.addEventListener('DOMContentLoaded', applyLang);
@@ -1141,6 +1142,9 @@ document.addEventListener('DOMContentLoaded', applyLang);
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
+
+/* remember the language across the whole arcade */
+try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 </body>
 </html>

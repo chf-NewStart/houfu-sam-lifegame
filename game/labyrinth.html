@@ -376,10 +376,14 @@ function toggleLang() {
   document.documentElement.lang = zh ? 'zh' : 'en';
   document.querySelectorAll('[data-en]').forEach(el => { el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
   document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
+  try { localStorage.setItem('arcade_lang', zh ? 'zh' : 'en'); } catch (e) {}
   const fb = document.getElementById('fogBtn'); if (fb && !game.getFog()) fb.textContent = zh ? '关' : 'off';
 }
 
 game.init();
+
+/* remember the language across the whole arcade */
+try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 </body>
 </html>

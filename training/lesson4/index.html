@@ -276,7 +276,7 @@
 <script>
 /* ── i18n (shared with the main app via localStorage) ── */
 const LANG_KEY = 'lifegame_lang';
-let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+let lang = (function () { try { return localStorage.getItem('arcade_lang') || localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
 
 /* ── Grid ────────────────────────────────────────── */
 const COLS = 28, ROWS = 18;
@@ -367,17 +367,25 @@ canvasWrap.addEventListener('wheel', e => {
 
 /* ── Pan (drag on empty cells) ───────────────────── */
 let panning = false, panStart = null;
+let panPending = null;      // pressed on an empty cell, not yet panning
+const PAN_THRESHOLD = 5;    // px of movement before a press becomes a pan
 
 canvasWrap.addEventListener('mousedown', e => {
-  // check if clicking on an empty cell
+  // check if pressing on an empty cell — don't pan yet; wait for movement
+  // past the threshold so a plain click still paints (see mouseup below)
   const { c, r } = cellAtWrap(e);
   if (c >= 0 && c < COLS && r >= 0 && r < ROWS && grid[idx(c, r)] === 0) {
-    panning   = true;
-    panStart  = { x: e.clientX - panX, y: e.clientY - panY };
-    canvasWrap.style.cursor = 'grab';
+    panPending = { x: e.clientX, y: e.clientY, c, r };
   }
 });
 window.addEventListener('mousemove', e => {
+  if (panPending && !panning &&
+      Math.hypot(e.clientX - panPending.x, e.clientY - panPending.y) > PAN_THRESHOLD) {
+    panning  = true;
+    painting = false;
+    panStart = { x: panPending.x - panX, y: panPending.y - panY };
+    canvasWrap.style.cursor = 'grab';
+  }
   if (!panning) return;
   panX = e.clientX - panStart.x;
   panY = e.clientY - panStart.y;
@@ -385,6 +393,13 @@ window.addEventListener('mousemove', e => {
   applyTransform();
 });
 window.addEventListener('mouseup', () => {
+  if (panPending && !panning) {
+    // click without drag on an empty cell — paint it
+    const { c, r } = panPending;
+    grid[idx(c, r)] = grid[idx(c, r)] ? 0 : 1;
+    draw();
+  }
+  panPending = null;
   panning = false;
   canvasWrap.style.cursor = 'crosshair';
 });
@@ -425,7 +440,7 @@ function cellAtWrap(e) {
 
 let painting = false, paintVal = 1;
 canvasWrap.addEventListener('mousedown', e => {
-  if (panning) return;
+  if (panning || panPending) return;
   const { c, r } = cellAtWrap(e);
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
   paintVal = grid[idx(c, r)] ? 0 : 1;
@@ -613,7 +628,7 @@ function loadGlider(offC, offR) {
 }
 
 function loadLwss(offC, offR) {
-  [[-2,0],[-1,-1],[2,-1],[-2,1],[2,1],[-1,2],[0,2],[1,2]].forEach(([dc, dr]) => {
+  [[-2,0],[-1,-1],[2,-1],[-2,1],[2,1],[-2,2],[-1,2],[0,2],[1,2]].forEach(([dc, dr]) => {
     const c = offC + dc, r = offR + dr;
     if (c >= 0 && c < COLS && r >= 0 && r < ROWS) grid[idx(c, r)] = 1;
   });
@@ -753,7 +768,7 @@ function applyLang() {
 }
 function toggleLang() {
   lang = lang === 'zh' ? 'en' : 'zh';
-  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  try { localStorage.setItem(LANG_KEY, lang); localStorage.setItem('arcade_lang', lang); } catch {}
   applyLang();
 }
 

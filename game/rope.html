@@ -545,9 +545,12 @@ function applyLang(){
     document.getElementById('ovBest').textContent=lastRec?T('★ new best!','★ 新纪录！'):T(`best ${best} m`,`最佳 ${best} 米`);
   }
 }
-function toggleLang(){lang=lang==='en'?'zh':'en';document.documentElement.lang=lang;document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();}
+function toggleLang(){lang=lang==='en'?'zh':'en';document.documentElement.lang=lang;document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();try{localStorage.setItem('arcade_lang',lang);}catch(e){}}
 
 reset(); applyLang(); requestAnimationFrame(frame);
+
+/* remember the language across the whole arcade */
+try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 </body>
 </html>

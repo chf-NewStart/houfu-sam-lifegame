@@ -297,6 +297,7 @@ function toggleLang() {
   lang = lang === 'en' ? 'zh' : 'en';
   document.getElementById('langBtn').textContent = lang === 'zh' ? 'English' : '中文';
   applyLang();
+  try { localStorage.setItem('arcade_lang', lang); } catch (e) {}
 }
 
 function renderHazards(){
@@ -541,9 +542,12 @@ class GameEngine {
     this.checkWin(); if(this.gameOver)return;
     const u=this.curUnit();
     if(u){
-      if(u.type==='hunter'&&this.stunHunter>0){this.stunHunter--;this.log(t('Hunter stunned — turn skipped.','猎手被眩晕——跳过回合。'),'danger');this.currentUnitIndex++;return this.startTurn();}
-      if(u.type==='participant'&&this.stunPart>0){this.stunPart--;this.log(t(`${u.id} stunned — turn skipped.`,`${u.id}被眩晕——跳过回合。`),'danger');this.currentUnitIndex++;return this.startTurn();}
-      if(u.type==='participant'&&!this.participantCanAct(u)){this.log(t(`${u.id} is boxed in — turn skipped.`,`${u.id}被困——跳过回合。`),'danger');this.currentUnitIndex++;return this.startTurn();}
+      // Skips must go through nextTurn() — it hops dead/escaped units and wraps the
+      // round. A raw index++ could land on a null unit and freeze the game forever
+      // (e.g. hunter stunned at the end of the order).
+      if(u.type==='hunter'&&this.stunHunter>0){this.stunHunter--;this.log(t('Hunter stunned — turn skipped.','猎手被眩晕——跳过回合。'),'danger');return this.nextTurn();}
+      if(u.type==='participant'&&this.stunPart>0){this.stunPart--;this.log(t(`${u.id} stunned — turn skipped.`,`${u.id}被眩晕——跳过回合。`),'danger');return this.nextTurn();}
+      if(u.type==='participant'&&!this.participantCanAct(u)){this.log(t(`${u.id} is boxed in — turn skipped.`,`${u.id}被困——跳过回合。`),'danger');return this.nextTurn();}
     }
     this.sealMode=false;
     const cu=this.curUnit();
@@ -986,6 +990,9 @@ document.addEventListener('keydown',e=>{
 
 window.addEventListener('resize',()=>{ if(game)game.render(); });
 document.addEventListener('DOMContentLoaded',()=>{applyLang();openModeSelect();});
+
+/* remember the language across the whole arcade */
+try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 </body>
 </html>

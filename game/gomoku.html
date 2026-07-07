@@ -283,6 +283,7 @@ function toggleLang() {
   lang = lang === 'en' ? 'zh' : 'en';
   document.getElementById('langBtn').textContent = lang === 'zh' ? 'English' : '中文';
   applyLang();
+  try { localStorage.setItem('arcade_lang', lang); } catch (e) {}
 }
 
 /* ── Constants ────────────────────────────────── */
@@ -893,8 +894,23 @@ function loadRLCode(){
 
 function getAIMove() {
   if (playerTypes[curP] === 'random') {
-    const cands = getCandidates(board, curP);
-    return cands.length ? cands[Math.floor(Math.random() * cands.length)] : null;
+    // genuinely random: any empty cell touching a stone — no forced wins/blocks
+    // (getCandidates would sneak tactics in, which made "Rand" weirdly sharp)
+    const opts = [], seen = new Set();
+    let hasStone = false;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (board[r][c] === 0) continue;
+      hasStone = true;
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= N || nc < 0 || nc >= N || board[nr][nc] !== 0) continue;
+        const k = nr * N + nc;
+        if (!seen.has(k)) { seen.add(k); opts.push([nr, nc]); }
+      }
+    }
+    if (!hasStone) return [7, 7];
+    return opts.length ? opts[(Math.random() * opts.length) | 0] : null;
   }
   if (diff === 'rl' && rlWeights) return rlMove(board, curP);
   return getBestMove();
@@ -1022,7 +1038,16 @@ function onReq(snap) {
 }
 function approveReq(req) {
   hidePrompt();
-  if (req.type === 'undo') gameRef('play').set({ s: _fbSession, moves: _remoteMoves.slice(0, -1) });
+  if (req.type === 'undo') {
+    // rewind to before the requester's own last move: 1 ply if they moved last,
+    // 2 plies if the opponent has already replied (the usual case)
+    const L = _remoteMoves.length;
+    if (L) {
+      const lastMover = (L - 1) % 2 === 0 ? 1 : 2;
+      const cut = (lastMover === req.by || L < 2) ? 1 : 2;
+      gameRef('play').set({ s: _fbSession, moves: _remoteMoves.slice(0, L - cut) });
+    }
+  }
   else if (req.type === 'swap') { gameRef('over').remove(); gameRef('host').set(3 - _curHost); gameRef('play').set({ s: _fbSession + 1 }); }
   gameRef('req').remove();
 }
@@ -1111,6 +1136,9 @@ function init() {
 
 window.addEventListener('resize', () => { computeLayout(); draw(); });
 document.addEventListener('DOMContentLoaded', init);
+
+/* remember the language across the whole arcade */
+try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 </body>
 </html>

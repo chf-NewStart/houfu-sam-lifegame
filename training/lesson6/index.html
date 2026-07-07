@@ -134,7 +134,7 @@
 <script>
 /* ── i18n (shared with the main app via localStorage) ── */
 const LANG_KEY = 'lifegame_lang';
-let lang = (function () { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
+let lang = (function () { try { return localStorage.getItem('arcade_lang') || localStorage.getItem(LANG_KEY) || 'en'; } catch { return 'en'; } })();
 
 const STAGES = [
   {
@@ -157,8 +157,8 @@ const STAGES = [
   {
     title: 'The Challenge',
     titleZh: '挑战',
-    hint: `Hint: place a Glider in zone A aimed toward zone B. You need <b>1 cell</b> to reach zone B to complete this lesson version. The main game challenge requires 5.`,
-    hintZh: `提示：在 A 区放置一个朝 B 区瞄准的滑翔机。在本课中，只需 <b>1 个细胞</b>抵达 B 区即可完成。正式游戏的挑战需要 5 个。`,
+    hint: `Hint: place a Glider near the <b>top of zone A</b>, aimed down-right toward zone B. You need <b>1 cell</b> to reach zone B to complete this lesson version. The main game challenge requires 5.`,
+    hintZh: `提示：在 <b>A 区顶部</b>附近放置一个朝右下方（B 区）飞行的滑翔机。在本课中，只需 <b>1 个细胞</b>抵达 B 区即可完成。正式游戏的挑战需要 5 个。`,
     text: `Draw inside zone A. Hit <b>Play</b> and watch what happens.<br><br>The challenge resets automatically if all cells die. You have unlimited attempts here.`,
     textZh: `在 A 区内绘制。点击<b>播放</b>，看看会发生什么。<br><br>如果所有细胞都死亡，挑战会自动重置。在这里你有无限次尝试机会。`,
   },
@@ -194,7 +194,10 @@ const ZW   = Math.max(5, Math.floor(COLS * 0.2));
 const ZH   = Math.max(5, Math.floor(ROWS * 0.65));
 const VOFF = Math.floor((ROWS - ZH) / 2);
 const ZONE_A = { c0: 1,          r0: VOFF, c1: ZW,              r1: VOFF + ZH - 1 };
-const ZONE_B = { c0: COLS-ZW-1,  r0: VOFF, c1: COLS - 2,        r1: VOFF + ZH - 1 };
+// Zone B must sit within diagonal reach of a glider launched from the top of
+// zone A — a glider travels 1 row per column, so B starts at mid-grid and
+// extends down to the second-to-last row to catch it before the bottom wall.
+const ZONE_B = { c0: Math.floor(COLS / 2), r0: VOFF, c1: COLS - 2, r1: ROWS - 2 };
 
 function idx(c, r)  { return r * COLS + c; }
 function inA(c, r)  { return c >= ZONE_A.c0 && c <= ZONE_A.c1 && r >= ZONE_A.r0 && r <= ZONE_A.r1; }
@@ -393,7 +396,9 @@ const PATTERNS = {
   // Glider aimed right: placed in zone A center
   glider_aimed: () => {
     grid.fill(0); generation = 0; won = false;
-    const c = ZONE_A.c0 + 1, r = Math.floor((ZONE_A.r0 + ZONE_A.r1) / 2);
+    // launch from the top of zone A so the down-right diagonal crosses
+    // zone B before the glider reaches the bottom wall
+    const c = ZONE_A.c0 + 1, r = ZONE_A.r0 + 1;
     // standard glider oriented to travel right-down
     [[0,-1],[1,0],[-1,1],[0,1],[1,1]].forEach(([dc,dr]) => {
       const gc=c+dc, gr=r+dr;
@@ -520,7 +525,7 @@ function applyLang() {
 }
 function toggleLang() {
   lang = lang === 'zh' ? 'en' : 'zh';
-  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  try { localStorage.setItem(LANG_KEY, lang); localStorage.setItem('arcade_lang', lang); } catch {}
   applyLang();
 }
 
