@@ -169,7 +169,7 @@ const game = (function () {
     st = 0; resultAt = 0;
   }
   function gravNow() { return GRAV * (1 + Math.min(streak, 6) * 0.04); }   // gentle speed ramp (up to +24%)
-  function startGame() { newRound(false); $('over').classList.remove('show'); paused = false; pausedAt = 0; running = true; lastTs = performance.now(); loadBest(); if (!raf) raf = requestAnimationFrame(loop); }
+  function startGame() { newRound(false); $('over').classList.remove('show'); paused = false; pausedAt = 0; running = true; lastTs = performance.now(); const b = $('pauseBtn'); if (b) b.textContent = t('⏸ Pause', '⏸ 暂停'); loadBest(); if (!raf) raf = requestAnimationFrame(loop); }
   function playLocal() { mode = 'local'; setRole(''); setConn(''); $('roomCode').textContent = '—'; $('codeBox').style.display = 'none'; roleButtons(); teardownNet(); startGame(); }
   function restart() { if (mode === 'guest') { gameRef('gi').update({ rs: Date.now() }); return; } startGame(); }
 
@@ -352,7 +352,7 @@ const game = (function () {
     });
   }
   function togglePause() { if (mode === 'guest') { gameRef('gi').update({ pz: Date.now() }); return; } doPause(!paused); }
-  function doPause(p) { paused = p; if (p) pausedAt = performance.now(); else lastTs = performance.now(); const b = $('pauseBtn'); if (b) b.textContent = paused ? t('▶ Resume', '▶ 继续') : t('⏸ Pause', '⏸ 暂停'); if (mode === 'host') writeState(); }
+  function doPause(p) { if (p && !running) return; paused = p; if (p) pausedAt = performance.now(); else lastTs = performance.now(); const b = $('pauseBtn'); if (b) b.textContent = paused ? t('▶ Resume', '▶ 继续') : t('⏸ Pause', '⏸ 暂停'); if (mode === 'host') writeState(); }
 
   async function createRoom() {
     _code = shortId(); mode = 'host'; teardownNet(); roleButtons();
@@ -368,6 +368,7 @@ const game = (function () {
     if (!snap.exists()) { setConn(t('Room not found — check the code.', '未找到房间，请检查代码。'), 'err'); return; }
     mode = 'guest'; teardownNet(); roleButtons();
     setRole(t('you: tilt', '你：倾斜')); setConn(t('Connected! You steer the TILT.', '已连接！你负责转向。'), 'ok');
+    loadBest();                                          // show the guest's own best streak immediately
     _resShown = false;
     await gameRef('joined').set(true);
     _stateRef = gameRef('state'); _stateCb = _stateRef.on('value', s => { netState = s.val(); });

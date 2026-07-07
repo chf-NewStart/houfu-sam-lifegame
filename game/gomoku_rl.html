@@ -150,7 +150,8 @@
    slot-shaped return of self-play games (no bootstrapping → stable).
    ════════════════════════════════════════════════════════════ */
 const N=15, DIRS=[[0,1],[1,0],[1,1],[1,-1]], MAXC=12, SCALE=0.25, NF=12;
-const GAMMA=0.95, ALPHA=0.015, GAMES_PER_EP=25, MAX_EP=60;
+const GAMMA=0.95, ALPHA=0.015, GAMES_PER_EP=25, EP_BLOCK=60;
+let MAX_EP=EP_BLOCK;   // extended by another block each time the user asks to "train more"
 const inB=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
 const emptyBoard=()=>Array.from({length:N},()=>new Array(N).fill(0));
 
@@ -267,14 +268,16 @@ function markCustom(){curPreset=null;document.querySelectorAll('.preset').forEac
 /* training loop */
 function toggleTrain(){
   training=!training;
+  if(training&&episode>=MAX_EP){ MAX_EP+=EP_BLOCK; log(t('── training more ──','── 继续训练 ──'),'ep'); }   // "train more": raise the cap so the loop runs again
   document.getElementById('btnTrain').textContent=training?t('⏸ Pause','⏸ 暂停'):(episode>=MAX_EP?t('▶ Train more','▶ 继续训练'):t('▶ Start training','▶ 开始训练'));
   if(training){ if(!wStart){wStart=w.slice();log(t('── training started ──','── 开始训练 ──'),'ep');} loop(); }
 }
 function resetAgent(){
-  training=false;w=new Array(NF).fill(0);wStart=null;episode=0;eps=0.30;games=0;history=[];
+  training=false;w=new Array(NF).fill(0);wStart=null;episode=0;eps=0.30;games=0;history=[];MAX_EP=EP_BLOCK;
   rng=mulberry32(12345);
   document.getElementById('btnTrain').textContent=t('▶ Start training','▶ 开始训练');
   document.getElementById('log').innerHTML='';
+  document.getElementById('codebox').value='';   // drop any stale share-code from the previous agent
   log(t('agent reset to zero','智能体已归零'));
   refresh();
 }

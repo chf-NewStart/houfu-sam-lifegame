@@ -172,6 +172,7 @@ const game = (function () {
   function startSim() {
     fresh(); $('over').classList.remove('show');
     running = true; t0 = performance.now(); lastTs = t0; loadBest();
+    const b = $('pauseBtn'); if (b) b.textContent = t('⏸ Pause', '⏸ 暂停');   // reset a stale "▶ Resume" label
     if (!raf) raf = requestAnimationFrame(loop);
   }
   function playLocal() { mode = 'local'; setRole(''); setConn(''); $('roomCode').textContent = '—'; $('codeBox').style.display = 'none'; teardownNet(); startSim(); }
@@ -357,6 +358,7 @@ const game = (function () {
     canvas.addEventListener('touchstart', pt, { passive: false });
     canvas.addEventListener('touchmove', pt, { passive: false });
     canvas.addEventListener('touchend', () => { drag.active = false; }, { passive: false });
+    canvas.addEventListener('touchcancel', () => { drag.active = false; }, { passive: false });   // OS-interrupted touch shouldn't pin the paddle
     let md = false;
     canvas.addEventListener('mousedown', (e) => { md = true; mv(e); });
     window.addEventListener('mouseup', () => { md = false; drag.active = false; });

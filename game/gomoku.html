@@ -111,7 +111,6 @@
     .conn-status.err { color: #f44336; }
 
     /* Board overlay (waiting for remote opponent) */
-    #boardWrap { position: relative; display: inline-block; }
     .board-overlay { position: absolute; inset: 0; background: rgba(8,8,8,0.82); display: none; align-items: center; justify-content: center; text-align: center; font-size: 0.75rem; color: #1db954; line-height: 1.8; padding: 20px; }
 
     /* remote tools: swap + emoji reactions */
@@ -167,7 +166,7 @@
       </div>
     </div>
 
-    <div class="pcard">
+    <div class="pcard" id="playersCard">
       <div class="pcard-title" data-en="// players" data-zh="// 玩家设置">// players</div>
       <div class="player-row">
         <div class="player-slot">
@@ -319,6 +318,7 @@ function computeLayout() {
 
 /* ── Game state ───────────────────────────────── */
 let board, curP, gameOver, winResult, lastMove, moveCount, aiThinking;
+let aiTick = 0;   // bumped whenever the game state changes, to cancel a stale pending AI move
 let history = [];
 let scores = {1: 0, 2: 0};
 let diff = 'normal';
@@ -330,6 +330,7 @@ function newGame() {
   paused = false;
   board = Array.from({length: N}, () => new Array(N).fill(0));
   curP = 1; gameOver = false; winResult = null; lastMove = null; moveCount = 0; aiThinking = false;
+  aiTick++;   // cancel any AI move still "thinking" from the previous game
   history = [];
   document.getElementById('undoBtn').disabled = true;
   document.getElementById('newBtn').className = 'btn';
@@ -343,14 +344,15 @@ function newGame() {
 
 /* ── Player type ──────────────────────────────── */
 function setPlayerType(p, t) {
+  if (remoteMode) return;   // opponent is fixed while connected — no local player swaps
   playerTypes[p] = t;
   document.querySelectorAll(`.ptype-${p}`).forEach(b => b.classList.toggle('sel', b.dataset.val === t));
-  const bothAuto = playerTypes[1] !== 'human' && playerTypes[2] !== 'human';
   document.getElementById('diffCard').style.display = (playerTypes[1] === 'ai' || playerTypes[2] === 'ai') ? '' : 'none';
   updatePauseBtn();
   newGame();
 }
 function setDiff(d) {
+  if (remoteMode) return;   // no local AI difficulty while playing a person
   diff = d;
   document.querySelectorAll('[data-diff]').forEach(b => { if (b.dataset.diff) b.classList.toggle('sel', b.dataset.diff === d); });
   newGame();
@@ -382,11 +384,14 @@ function scheduleAI() {
   canvas.classList.add('thinking');
   renderPanel();
   const bothAuto = playerTypes[1] !== 'human' && playerTypes[2] !== 'human';
+  const tick = ++aiTick;   // invalidate this pending move if the board/turn changes first
   setTimeout(() => {
-    if (gameOver) { aiThinking = false; canvas.classList.remove('thinking'); return; }
-    const move = getAIMove();
     aiThinking = false;
     canvas.classList.remove('thinking');
+    // Bail if anything changed while we were "thinking": new game, pause,
+    // player-type/difficulty switch, remote takeover, or it's no longer an AI's turn.
+    if (tick !== aiTick || gameOver || paused || remoteMode || !isAI(curP)) { renderPanel(); return; }
+    const move = getAIMove();
     if (move) placeStone(move[0], move[1]);  // AI always local, never remote
   }, bothAuto ? 300 : 80);
 }
@@ -400,11 +405,15 @@ function undoMove() {
     return;
   }
   if (history.length === 0 || aiThinking) return;
-  const state = history.pop();
-  board     = state.board;
-  curP      = state.curP;
-  lastMove  = state.lastMove;
-  moveCount = state.moveCount;
+  aiTick++;   // cancel any pending AI move so undo can't be immediately overwritten
+  const apply = () => {
+    const state = history.pop();
+    board = state.board; curP = state.curP; lastMove = state.lastMove; moveCount = state.moveCount;
+  };
+  apply();
+  // Playing against an AI, one undo lands on the AI's turn (which it would just
+  // replay). Step back once more so control returns to the human.
+  if (!gameOver && isAI(curP) && !(isAI(1) && isAI(2)) && history.length > 0) apply();
   gameOver  = false;
   winResult = null;
   document.getElementById('winBanner').className = 'win-banner';
@@ -413,6 +422,7 @@ function undoMove() {
   log(t('↩ undo', '↩ 悔棋'), 'lround');
   draw();
   renderPanel();
+  scheduleAI();   // resume AI-vs-AI if that's the mode
 }
 
 /* ── Place stone ──────────────────────────────── */
@@ -553,16 +563,6 @@ function drawStone(r, c, player, isWin, isLast) {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fill();
   }
-
-  // Stone number (move number) — subtle
-  if (moveCount <= 30 && !isWin) {
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.font = `${Math.max(6, CELL*0.22)}px Consolas, monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    // find move number from board order — too expensive; skip for now
-    ctx.textBaseline = 'alphabetic';
-  }
 }
 
 /* ── Panel ────────────────────────────────────── */
@@ -597,20 +597,28 @@ function renderPanel() {
 }
 
 /* ── Resign ───────────────────────────────────── */
-function resign() {
-  if (gameOver) return;
-  const loser = curP;
+function resignName(p) { return p === 1 ? t('Lime', '青柠') : t('Tomato', '番茄'); }
+function showResign(loser) {
   const winner = loser === 1 ? 2 : 1;
   scores[winner]++;
   gameOver = true;
-  const msg = t(`${loser===1?'Black':'White'} resigned — ${winner===1?'Black':'White'} wins!`,
-                `${loser===1?'黑方':'白方'}认输——${winner===1?'黑方':'白方'}获胜！`);
+  const msg = t(`${resignName(loser)} resigned — ${resignName(winner)} wins!`,
+                `${resignName(loser)}认输——${resignName(winner)}获胜！`);
   log(msg, winner === 1 ? 'lwin' : 'lwin-r');
   const wb = document.getElementById('winBanner');
   wb.className = 'win-banner ' + (winner === 1 ? 'win-g' : 'win-r');
   wb.textContent = msg;
   document.getElementById('newBtn').className = 'btn ' + (winner === 1 ? 'glow-g' : 'glow-r');
-  renderPanel(); draw();
+  updateUndoBtn(); renderPanel(); draw();
+}
+function resign() {
+  if (gameOver) return;
+  if (remoteMode) {
+    // Broadcast so the opponent's board also ends; both sides render it from the 'over' node.
+    gameRef('over').set({ loser: myColor, s: _fbSession });
+    return;
+  }
+  showResign(curP);
 }
 
 /* ── Log ──────────────────────────────────────── */
@@ -922,7 +930,7 @@ const firebaseConfig = {
 
 let _fbDb = null, _fbCode = null, _fbSession = 0;
 let _isHost = false, _curHost = 1, _remoteMoves = [], _remoteOver = false, _prevLen = 0, _reactSeen = 0;
-let _fbJoinRef=null,_fbJoinCb=null, _fbPlayRef=null,_fbPlayCb=null, _fbHostRef=null,_fbHostCb=null, _fbReqRef=null,_fbReqCb=null, _fbReactRef=null,_fbReactCb=null;
+let _fbJoinRef=null,_fbJoinCb=null, _fbPlayRef=null,_fbPlayCb=null, _fbHostRef=null,_fbHostCb=null, _fbReqRef=null,_fbReqCb=null, _fbReactRef=null,_fbReactCb=null, _fbOverRef=null,_fbOverCb=null;
 
 function fbDb() {
   if (!_fbDb) { firebase.initializeApp(firebaseConfig); _fbDb = firebase.database(); }
@@ -999,7 +1007,7 @@ function onReq(snap) {
 function approveReq(req) {
   hidePrompt();
   if (req.type === 'undo') gameRef('play').set({ s: _fbSession, moves: _remoteMoves.slice(0, -1) });
-  else if (req.type === 'swap') { gameRef('host').set(3 - _curHost); gameRef('play').set({ s: _fbSession + 1 }); }
+  else if (req.type === 'swap') { gameRef('over').remove(); gameRef('host').set(3 - _curHost); gameRef('play').set({ s: _fbSession + 1 }); }
   gameRef('req').remove();
 }
 function onReact(snap) {
@@ -1008,11 +1016,18 @@ function onReact(snap) {
   log((r.by === myColor ? t('You', '你') : t('Opponent', '对方')) + ' ' + r.e, 'lround');
 }
 
+function onOver(snap) {
+  const v = snap.val();
+  if (!v || v.s !== _fbSession || v.loser == null) return;   // stale / cleared
+  if (gameOver) return;
+  showResign(v.loser);
+}
 function startRemoteListeners() {
   if (_fbPlayCb) _fbPlayRef.off('value', _fbPlayCb);     _fbPlayRef = gameRef('play');   _fbPlayCb = _fbPlayRef.on('value', onPlay);
   if (_fbHostCb) _fbHostRef.off('value', _fbHostCb);     _fbHostRef = gameRef('host');   _fbHostCb = _fbHostRef.on('value', onHost);
   if (_fbReqCb) _fbReqRef.off('value', _fbReqCb);        _fbReqRef = gameRef('req');     _fbReqCb = _fbReqRef.on('value', onReq);
   if (_fbReactCb) _fbReactRef.off('value', _fbReactCb);  _fbReactRef = gameRef('react'); _fbReactCb = _fbReactRef.on('value', onReact);
+  if (_fbOverCb) _fbOverRef.off('value', _fbOverCb);     _fbOverRef = gameRef('over');   _fbOverCb = _fbOverRef.on('value', onOver);
 }
 function fbSendMove(r, c) { gameRef('play').set({ s: _fbSession, moves: _remoteMoves.concat([[r, c]]) }); }
 
@@ -1025,7 +1040,7 @@ async function createRoom() {
   await gameRef('meta').set({ created: Date.now() });
   await gameRef('host').set(1);
   await gameRef('play').set({ s: 0 });
-  await gameRef('react').remove(); await gameRef('req').remove(); await gameRef('joined').set(false);
+  await gameRef('react').remove(); await gameRef('req').remove(); await gameRef('over').remove(); await gameRef('joined').set(false);
   if (_fbJoinCb) _fbJoinRef.off('value', _fbJoinCb);
   _fbJoinRef = gameRef('joined');
   _fbJoinCb = _fbJoinRef.on('value', snap => {
@@ -1049,6 +1064,7 @@ async function joinRoom() {
 function requestNewGame() {
   if (!remoteMode) { newGame(); return; }
   gameRef('req').remove();
+  gameRef('over').remove();
   gameRef('play').set({ s: (_fbSession || 0) + 1 });
 }
 function requestSwap() {
@@ -1058,7 +1074,12 @@ function requestSwap() {
 }
 function sendReact(e) { if (!remoteMode) return; gameRef('react').set({ e: e, by: myColor, id: Date.now() }); }
 
-function showRemoteUI(on) { const c = document.getElementById('remoteToolsCard'); if (c) c.style.display = on ? '' : 'none'; }
+function showRemoteUI(on) {
+  const c = document.getElementById('remoteToolsCard'); if (c) c.style.display = on ? '' : 'none';
+  // Local setup (player types, AI difficulty) can't apply mid-remote-game — hide it.
+  const pc = document.getElementById('playersCard'); if (pc) pc.style.display = on ? 'none' : '';
+  const dc = document.getElementById('diffCard'); if (dc && on) dc.style.display = 'none';
+}
 function showPrompt(msg, onYes, onNo) { document.getElementById('promptMsg').textContent = msg; document.getElementById('promptYes').onclick = onYes; document.getElementById('promptNo').onclick = onNo; document.getElementById('prompt').style.display = 'flex'; }
 function hidePrompt() { document.getElementById('prompt').style.display = 'none'; }
 let _reactTimer = 0;

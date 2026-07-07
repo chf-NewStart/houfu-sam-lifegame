@@ -8,6 +8,8 @@
 <link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  /* prevent double-tap-to-zoom on the UI while keeping the canvas's own touch-action */
+  html,body,button,a{touch-action:manipulation;}
   body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:20px 16px;}
   a{color:#1db954;}
   .pg-header{max-width:880px;margin:0 auto 16px;}
@@ -104,7 +106,7 @@
       <div class="score-row"><span class="k" data-en="best" data-zh="最佳">best</span><span class="v y" id="sBest">0 m</span></div>
     </div>
     <div class="pcard">
-      <div class="pcard-title"><span data-en="// controls" data-zh="// 操作">// controls</span></div>
+      <div class="pcard-title"><span data-en="// controls · two players, one keyboard" data-zh="// 操作 · 双人同键盘">// controls · two players, one keyboard</span></div>
       <div class="ctl"><span class="dot p1"></span><span class="who"><span data-en="Player 1" data-zh="玩家 1">Player 1</span>&nbsp; <kbd>A</kbd><kbd>D</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>W</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
       <div class="ctl"><span class="dot p2"></span><span class="who"><span data-en="Player 2" data-zh="玩家 2">Player 2</span>&nbsp; <kbd>←</kbd><kbd>→</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>↑</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
     </div>
@@ -144,7 +146,7 @@ function pt(x,y,inv){return {x,y,px:x,py:y,inv,grounded:false};}
 function vx(p){return p.x-p.px;} function vy(p){return p.y-p.py;}
 function setVel(p,wx,wy){p.px=p.x-wx;p.py=p.y-wy;}
 
-let P1,P2,ropeViz,allPts,platforms,topY,camY,startCam,minY,best,state,t;
+let P1,P2,ropeViz,allPts,platforms,topY,camY,startCam,minY,best,state,t,lastRec=false;
 try{best=+(localStorage.getItem('rope_best')||0)||0;}catch(e){best=0;}
 
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -197,13 +199,15 @@ addEventListener('keyup',e=>{const k=e.key;
 document.querySelectorAll('.pad button').forEach(b=>{
   const act=b.dataset.act;
   const on=e=>{e.preventDefault();
+    // capture so a held move sticks even if the finger drifts off the 48px button
+    if(b.setPointerCapture){try{b.setPointerCapture(e.pointerId);}catch(_){}}
     if(act==='a1L')held.a=true; if(act==='a1R')held.d=true; if(act==='a1J')jq1=true;
     if(act==='a2L')held.l=true; if(act==='a2R')held.r=true; if(act==='a2J')jq2=true;};
   const off=e=>{e.preventDefault();
     if(act==='a1L')held.a=false; if(act==='a1R')held.d=false;
     if(act==='a2L')held.l=false; if(act==='a2R')held.r=false;};
   b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off);
-  b.addEventListener('pointerleave',off); b.addEventListener('pointercancel',off);
+  b.addEventListener('pointercancel',off);
 });
 // tap left/right half of canvas = jump (jump-only quick play on touch)
 cv.addEventListener('pointerdown',e=>{
@@ -214,8 +218,13 @@ cv.addEventListener('pointerdown',e=>{
 
 /* ── physics ── */
 function applyMove(p,dir){
+  if(!dir)return;
   const accel=p.grounded?1.5:0.55, maxv=p.grounded?5.2:6.4;
-  let v=vx(p)+dir*accel; v=Math.max(-maxv,Math.min(maxv,v)); p.px=p.x-v;
+  // Don't clamp below an existing swing speed — holding "into" a big pendulum
+  // swing should never brake it (that's the core mechanic). Deliberate walking
+  // is still limited to maxv.
+  const cap=Math.max(maxv,Math.abs(vx(p)));
+  let v=vx(p)+dir*accel; v=Math.max(-cap,Math.min(cap,v)); p.px=p.x-v;
 }
 function integrate(p){
   if(p.inv===0)return;
@@ -296,6 +305,7 @@ function updateScore(){
 function gameover(){
   state='over';
   const m=climbM(), rec=m>best;
+  lastRec=rec;
   if(rec){best=m; try{localStorage.setItem('rope_best',best);}catch(e){}}
   const ov=document.getElementById('overlay');
   document.getElementById('ovTtl').textContent=T('GAME OVER','游戏结束');
@@ -376,12 +386,13 @@ function applyLang(){
     '双人合作物理攀爬。你和好友被绳子拴在一起——跳跃、摆荡、互相做锚往上爬。拽得太猛就一起摔下去。');
   document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=T(el.dataset.en,el.dataset.zh);});
   document.getElementById('howto').innerHTML=howtoHTML();
-  if(state==='over'){ // refresh overlay text in new lang
+  if(state==='over'){ // refresh the whole overlay in the new language
     document.getElementById('ovTtl').textContent=T('GAME OVER','游戏结束');
     document.getElementById('ovBig').textContent=T(`you climbed ${climbM()} m`,`你们爬了 ${climbM()} 米`);
+    document.getElementById('ovBest').textContent=lastRec?T('★ new best!','★ 新纪录！'):T(`best ${best} m`,`最佳 ${best} 米`);
   }
 }
-function toggleLang(){lang=lang==='en'?'zh':'en';document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();}
+function toggleLang(){lang=lang==='en'?'zh':'en';document.documentElement.lang=lang;document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();}
 
 reset(); applyLang(); requestAnimationFrame(frame);
 </script>
