@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b31</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b32</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -214,6 +214,13 @@ function setVel(p,wx,wy){p.px=p.x-wx;p.py=p.y-wy;}
 
 let P1,P2,ropeViz,allPts,platforms,topY,camY,startCam,minY,best,state,t,lastRec=false;
 let surgeY=210, lastReason=0;          // the rising red tide + why the run ended (1 fell, 2 surge)
+let swarm=[];                          // the surge's visual swarm (colors/sizes flowing) — pure eye-candy
+const SWARM_COLORS=['#ff7a52','#e24028','#ff4d6d','#ffb347','#b3202e','#ff9e3d'];
+function makeSwarm(){ swarm=[]; for(let i=0;i<84;i++) swarm.push({
+  x0:Math.random()*(VW+40), d:6+Math.random()*210, r:0.8+Math.random()*3.4,
+  c:SWARM_COLORS[(Math.random()*SWARM_COLORS.length)|0],
+  vx:(0.25+Math.random()*1.1)*(Math.random()<0.5?1:-1),
+  w:0.5+Math.random()*1.6, ph:Math.random()*6.28, amp:2+Math.random()*7 }); }
 try{best=+(localStorage.getItem('rope_best')||0)||0;}catch(e){best=0;}
 
 /* Deterministic tower: in remote play both sides seed the same PRNG, so the host
@@ -257,7 +264,7 @@ function reset(seed){
   ropeViz=[];                          // decorative rope chain pinned to both players
   for(let i=0;i<=ROPE_SEG+1;i++){const f=i/(ROPE_SEG+1);ropeViz.push(pt(P1.x+(P2.x-P1.x)*f, P1.y+(P2.y-P1.y)*f, 1));}
   startCam=-(VH-150); camY=startCam; minY=0;
-  surgeY=210; lastReason=0;
+  surgeY=210; lastReason=0; makeSwarm();
   jb1=jb2=0; mp1=mp2=0; jqk1=jqk2=0; coy1=coy2=0; gjb=0; gKick=0; swipe=null;   // stale inputs never leak into a fresh round
   state='play'; t=0;
   document.getElementById('overlay').classList.remove('show');
@@ -636,11 +643,28 @@ function render(a){
   const sYY=sy(_rSurge);
   if(sYY<VH+24){
     const sg=ctx.createLinearGradient(0,Math.min(sYY,VH-1),0,VH);
-    sg.addColorStop(0,'rgba(226,64,40,0.88)'); sg.addColorStop(1,'rgba(84,12,6,0.96)');
+    sg.addColorStop(0,'rgba(120,18,10,0.50)'); sg.addColorStop(1,'rgba(55,8,4,0.88)');
     ctx.fillStyle=sg; ctx.fillRect(0,sYY,VW,VH-sYY+2);
-    ctx.strokeStyle='#ff7a52'; ctx.lineWidth=2; ctx.beginPath();
+    // the SWARM: particles of different colors and sizes flowing under the surface,
+    // brighter near the top, each bobbing on its own rhythm
+    for(const q of swarm){
+      const py=sYY+q.d+Math.sin(_rT*0.04*q.w+q.ph)*q.amp;
+      if(py<sYY-2||py>VH+8)continue;
+      let px=(q.x0+_rT*q.vx)%(VW+40); if(px<0)px+=VW+40; px-=20;
+      ctx.globalAlpha=Math.max(0.15,1-q.d/240);
+      ctx.fillStyle=q.c; ctx.beginPath(); ctx.arc(px,py,q.r,0,7); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    // shimmering surface + sparks leaping above it
+    ctx.strokeStyle='#ff7a52'; ctx.lineWidth=1.6; ctx.beginPath();
     for(let x=0;x<=VW;x+=8){ const yy=sYY+Math.sin(x*0.06+_rT*0.12)*3; x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy); }
     ctx.stroke();
+    for(let i=0;i<swarm.length;i+=11){ const q=swarm[i];
+      let px=(q.x0*1.7+_rT*(Math.abs(q.vx)+0.4))%VW; if(px<0)px+=VW;
+      const py=sYY-4-(Math.sin(_rT*0.08+q.ph)+1)*7;
+      ctx.globalAlpha=0.55; ctx.fillStyle=q.c; ctx.fillRect(px,py,1.7,1.7);
+    }
+    ctx.globalAlpha=1;
   } else {
     const warn=1-(_rSurge-(_rCam+VH))/300;            // close below the view → bottom edge glows
     if(warn>0){ ctx.fillStyle='rgba(226,64,40,'+(warn*0.55).toFixed(2)+')'; ctx.fillRect(0,VH-5,VW,5); }
@@ -660,7 +684,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b31 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b32 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
