@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b25</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b26</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -148,7 +148,7 @@
       <div class="pcard-title"><span id="ctlTitle" data-en="// controls · two players, one keyboard" data-zh="// 操作 · 双人同键盘">// controls · two players, one keyboard</span></div>
       <div class="ctl"><span class="dot p1"></span><span class="who"><span data-en="Player 1" data-zh="玩家 1">Player 1</span>&nbsp; <kbd>A</kbd><kbd>D</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>W</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
       <div class="ctl"><span class="dot p2"></span><span class="who"><span data-en="Player 2" data-zh="玩家 2">Player 2</span>&nbsp; <kbd>←</kbd><kbd>→</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>↑</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
-      <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Every key press = ONE clean step, no matter how long you hold — tap in rhythm to run smoothly. (The touch stick still runs continuously.)" data-zh="每次按键＝一步固定移动，按多久都一样——按节奏连点即可顺畅奔跑。（触屏摇杆仍是持续移动。）">Every key press = ONE clean step, no matter how long you hold — tap in rhythm to run smoothly. (The touch stick still runs continuously.)</span></div>
+      <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Move exactly while a key is held — release stops instantly; a quick tap still gives one small nudge." data-zh="按住即走、松开立停——完全跟手；快速轻点也保证有一小步。">Move exactly while a key is held — release stops instantly; a quick tap still gives one small nudge.</span></div>
       <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Touch: slide the stick to run, tap JUMP — or flick up on the tower itself (flick diagonally for a slanted leap)." data-zh="触屏：滑动摇杆移动，点 JUMP 跳——或直接在塔上向上滑动起跳（斜着滑就是斜跳）。">Touch: slide the stick to run, tap JUMP — or flick up on the tower itself (flick diagonally for a slanted leap).</span></div>
     </div>
     <div class="pcard">
@@ -250,7 +250,7 @@ function reset(seed){
   for(let i=0;i<=ROPE_SEG+1;i++){const f=i/(ROPE_SEG+1);ropeViz.push(pt(P1.x+(P2.x-P1.x)*f, P1.y+(P2.y-P1.y)*f, 1));}
   startCam=-(VH-150); camY=startCam; minY=0;
   surgeY=210; lastReason=0;
-  jb1=jb2=0; mp1=mp2=0; pq1=pq2=0; jqk1=jqk2=0; coy1=coy2=0; gjb=0; gKick=0; gq=0; swipe=null;   // stale inputs never leak into a fresh round
+  jb1=jb2=0; mp1=mp2=0; jqk1=jqk2=0; coy1=coy2=0; gjb=0; gKick=0; swipe=null;   // stale inputs never leak into a fresh round
   state='play'; t=0;
   document.getElementById('overlay').classList.remove('show');
   updateScore();
@@ -272,24 +272,15 @@ let prefAD=0, prefLR=0, prefAny=0;
 // arm a min-move pulse: taps stack (drumming = more), but a tap AGAINST the current
 // slide arms a short pulse — turn assist already does the stopping, a full pulse
 // would overshoot into a reverse walk
-let _lastTap1=-99, _lastTap2=-99, mpS1=1, mpS2=1, pq1=0, pq2=0;
-// bridged steps end ONE frame before your next expected tap — a step lasting exactly
-// the tap gap collided with every next tap (timing jitter), queueing each reversal
-// behind its remainder; the phase error compounded into lag after ~3 rounds
-function stepDur(gap){ return (gap>0&&gap<=11)? Math.max(MOVE_PULSE,Math.min(10,gap-1)) : MOVE_PULSE; }
+// INDUSTRY-STANDARD INPUT (researched): direction is POLLED HELD STATE, applied
+// directly every sim frame — input buffers/queues belong to one-shot actions (jumps)
+// only, never to movement, because queued movement commands serialize and read as
+// lag. Opposite keys resolve LAST-INPUT-PRIORITY (fighting-game SOCD). The min-pulse
+// survives solely as a floor so a micro-tap still yields one visible nudge.
 function armPulse(which,d){
-  // tap-to-step: EVERY tap moves the same fixed step distance. CADENCE BRIDGING
-  // stretches a step's TIME (not distance) to span your tap gap, so rhythm taps glide
-  // seamlessly and stay symmetric. Same-direction taps restart the step; an OPPOSITE
-  // tap while a step is still running queues exactly ONE follow-up step — a quick
-  // "right, left" shows BOTH movements (cancelling the young step made the first tap
-  // invisible), yet the wait is bounded by the ≤5 frames left in the current step.
   if(netMode==='guest'){ ropeRef('gi').update({tp:Date.now(),td:d}); return; }   // guest taps stream as edges
-  const dur=stepDur(t-((which===1)?_lastTap1:_lastTap2)), sc=MOVE_PULSE/dur;
-  // opposite mid-step: keep the running step visible but trim it to ≤2 more frames,
-  // so the queued reversal lands within ~33ms instead of a full step later
-  if(which===1){ if(mp1>0&&mp1d!==d){ mp1=Math.min(mp1,2); pq1=d; } else { mp1=dur; mp1d=d; mpS1=sc; } _lastTap1=t; }
-  else { if(mp2>0&&mp2d!==d){ mp2=Math.min(mp2,2); pq2=d; } else { mp2=dur; mp2d=d; mpS2=sc; } _lastTap2=t; }
+  if(which===1){ mp1=MOVE_PULSE; mp1d=d; }
+  else { mp2=MOVE_PULSE; mp2d=d; }
 }
 addEventListener('keydown',e=>{
   const k=e.key, ae=document.activeElement;
@@ -298,10 +289,10 @@ addEventListener('keydown',e=>{
   // arm on EVERY non-repeat keydown — gating on !held.x used to eat taps whenever a
   // keyup was missed or fingers rolled ("responds for a while, stops, responds again");
   // e.repeat alone reliably blocks OS auto-repeat
-  if(k==='a'||k==='A'){ if(!e.repeat)armPulse(1,-1); held.a=true; }
-  else if(k==='d'||k==='D'){ if(!e.repeat)armPulse(1,1); held.d=true; }
-  else if(k==='ArrowLeft'){ if(!e.repeat)armPulse(2,-1); held.l=true; }
-  else if(k==='ArrowRight'){ if(!e.repeat)armPulse(2,1); held.r=true; }
+  if(k==='a'||k==='A'){ if(!e.repeat)armPulse(1,-1); held.a=true; prefAD=-1; prefAny=-1; }
+  else if(k==='d'||k==='D'){ if(!e.repeat)armPulse(1,1); held.d=true; prefAD=1; prefAny=1; }
+  else if(k==='ArrowLeft'){ if(!e.repeat)armPulse(2,-1); held.l=true; prefLR=-1; prefAny=-1; }
+  else if(k==='ArrowRight'){ if(!e.repeat)armPulse(2,1); held.r=true; prefLR=1; prefAny=1; }
   if(!e.repeat){ if(KEYJUMP[k]===1)jb1=9; if(KEYJUMP[k]===2)jb2=9; }   // OS auto-repeat must not pin the jump buffer
   if(netMode==='guest'){ if(KEYJUMP[k]&&!e.repeat)sendJump(); sendInputs(); }
   if((k==='r'||k==='R')&&state!=='play')restartBtn();
@@ -309,13 +300,11 @@ addEventListener('keydown',e=>{
 },{passive:false});
 addEventListener('keyup',e=>{const k=e.key;
   if(k==='Meta'){ held.a=held.d=held.l=held.r=false; }               // releasing Cmd — clear anything it swallowed
-  // the armed step always COMPLETES after release — that's what makes every tap move
-  // the exact same distance (the queue is capped at 2 steps, so it stays bounded)
   if(k==='a'||k==='A')held.a=false; else if(k==='d'||k==='D')held.d=false;
   else if(k==='ArrowLeft')held.l=false; else if(k==='ArrowRight')held.r=false;
   if(netMode==='guest')sendInputs();
 });
-function clearInputs(){ held.a=held.d=held.l=held.r=false; joyV1=joyV2=0; mp1=mp2=0; pq1=pq2=0; jb1=jb2=0; if(netMode==='guest')sendInputs(); }
+function clearInputs(){ held.a=held.d=held.l=held.r=false; joyV1=joyV2=0; mp1=mp2=0; jb1=jb2=0; if(netMode==='guest')sendInputs(); }
 addEventListener('blur',clearInputs);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden)clearInputs(); });
 // touch: arcade joysticks (slide to run) + plunger jump buttons.
@@ -488,11 +477,13 @@ function step(){
   coy2=P2.grounded?7:Math.max(0,coy2-1);
   if(netMode==='host'){
     // host: every local key/pad/joystick drives P1; the guest's streamed inputs drive P2
-    // keyboard is pure tap-to-step (pulses only); the joystick alone moves continuously
-    let d1=jdz(joyV1)||jdz(joyV2);
-    if(!d1&&mp1>0)d1=mp1d*mpS1; if(!d1&&mp2>0)d1=mp2d*mpS2;
+    // direction = polled held keys (last-input-priority on opposites), joystick analog,
+    // then the min-pulse floor so micro-taps still nudge
+    const Lh=(held.a||held.l), Rh=(held.d||held.r);
+    let d1=((Lh&&Rh)?prefAny:((Rh?1:0)-(Lh?1:0)))||jdz(joyV1)||jdz(joyV2);
+    if(!d1&&mp1>0)d1=mp1d; if(!d1&&mp2>0)d1=mp2d;
     let d2=(gIn.m!=null?gIn.m:((gIn.r?1:0)-(gIn.l?1:0)));
-    if(!d2&&gp>0)d2=gpd*gpS;
+    if(!d2&&gp>0)d2=gpd;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0||jb2>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=jb2=0; jqk1=jqk2=0; }
@@ -503,10 +494,10 @@ function step(){
       else { gjb--; if(!gjb)gKick=0; }
     }
   } else {
-    let d1=jdz(joyV1);
-    if(!d1&&mp1>0)d1=mp1d*mpS1;
-    let d2=jdz(joyV2);
-    if(!d2&&mp2>0)d2=mp2d*mpS2;
+    let d1=((held.a&&held.d)?prefAD:((held.d?1:0)-(held.a?1:0)))||jdz(joyV1);
+    if(!d1&&mp1>0)d1=mp1d;
+    let d2=((held.l&&held.r)?prefLR:((held.r?1:0)-(held.l?1:0)))||jdz(joyV2);
+    if(!d2&&mp2>0)d2=mp2d;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+jqk1,-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=0; jqk1=0; }
@@ -518,9 +509,6 @@ function step(){
     }
   }
   if(mp1>0)mp1--; if(mp2>0)mp2--; if(gp>0)gp--;   // step pulses burn down AFTER use — an armed step delivers its full frames
-  if(!mp1&&pq1){ mp1=MOVE_PULSE; mp1d=pq1; mpS1=1; pq1=0; }   // a queued opposite step starts the moment the current one ends
-  if(!mp2&&pq2){ mp2=MOVE_PULSE; mp2d=pq2; mpS2=1; pq2=0; }
-  if(!gp&&gq){ gp=MOVE_PULSE; gpd=gq; gpS=1; gq=0; }
   integrate(P1); integrate(P2);
   for(let it=0;it<ITER;it++){
     solveLink(P1,P2,ROPE_LEN,true,TETHER_STIFF);   // the tether: an ideal max-length rope
@@ -656,7 +644,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b25 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b26 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -670,7 +658,7 @@ function frame(now){
 const firebaseConfig={ apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
 let _db=null,_code=null,netMode='',curSeed=null;
 let _stRef=null,_stCb=null,_giRef=null,_giCb=null,_jnRef=null,_jnCb=null;
-let gIn={l:0,r:0,m:null},gjb=0,gKick=0,gp=0,gpd=0,gpS=1,gq=0,_lastJ=0,_lastRs=0,_lastTp=0,_lastGTap=-99,_sent={m:0};
+let gIn={l:0,r:0,m:null},gjb=0,gKick=0,gp=0,gpd=0,_lastJ=0,_lastRs=0,_lastTp=0,_sent={m:0};
 let netState=null,netM=0,_wTimer=0,_prevO=0;
 function db(){ if(!_db){ firebase.initializeApp(firebaseConfig); _db=firebase.database(); } return _db; }
 function ropeRef(sub){ return db().ref(`games/${_code}/rp/${sub}`); }
@@ -708,10 +696,7 @@ async function createRoom(){
       _giRef=ropeRef('gi');
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
         gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=(v.m!=null)?v.m:null;
-        if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; const nd=v.td>0?1:-1;   // guest taps: fixed distance, time-bridged, opposite-queued — same as local
-          if(gp>0&&gpd!==nd){ gp=Math.min(gp,2); gq=nd; }
-          else { const gd=stepDur(t-_lastGTap); gp=gd; gpS=MOVE_PULSE/gd; gpd=nd; }
-          _lastGTap=t; }
+        if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; gpd=v.td>0?1:-1; gp=MOVE_PULSE; }   // guest micro-tap floor, same as local
         if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
         if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
       reset();                                    // fresh seeded tower for both sides
@@ -746,8 +731,11 @@ function playLocal(){
 function copyCode(){ if(_code)navigator.clipboard?.writeText(_code).catch(()=>{}); }
 function sendInputs(){
   if(netMode!=='guest')return;
-  // only the JOYSTICK streams continuous movement; keyboard taps travel as tp edges (armPulse)
-  const mv=Math.round((jdz(joyV1)||jdz(joyV2))*100)/100;
+  // held keys stream as the analog move value (last-input-priority), joystick likewise;
+  // tap edges additionally travel as tp for the min-nudge floor
+  const L=(held.a||held.l), R=(held.d||held.r);
+  const kb=(L&&R)?prefAny:((R?1:0)-(L?1:0));
+  const mv=Math.round((kb||jdz(joyV1)||jdz(joyV2))*100)/100;
   if(mv!==_sent.m){ _sent.m=mv; ropeRef('gi').update({m:mv}); }
 }
 function sendJump(k){ if(netMode==='guest')ropeRef('gi').update({j:Date.now(),jk:Math.round((k||0)*10)/10}); }
