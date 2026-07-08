@@ -255,14 +255,15 @@ function reset(seed){
 
 /* ── input ── */
 const held={a:false,d:false,l:false,r:false};
-let jq1=false, jq2=false;              // edge-triggered jump requests
+let jb1=0, jb2=0;                      // jump BUFFERS (frames): press a hair early and it still fires on landing
+let coy1=0, coy2=0;                    // coyote frames: jump still works just after stepping off a ledge
 let jqk1=0, jqk2=0;                    // horizontal kick for slanted (flick) jumps
 const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
 addEventListener('keydown',e=>{
   const k=e.key;
   if(k==='a'||k==='A')held.a=true; else if(k==='d'||k==='D')held.d=true;
   else if(k==='ArrowLeft')held.l=true; else if(k==='ArrowRight')held.r=true;
-  if(KEYJUMP[k]===1)jq1=true; if(KEYJUMP[k]===2)jq2=true;
+  if(KEYJUMP[k]===1)jb1=9; if(KEYJUMP[k]===2)jb2=9;
   if(netMode==='guest'){ if(KEYJUMP[k])sendJump(); sendInputs(); }
   if((k==='r'||k==='R')&&state!=='play')restartBtn();
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k))e.preventDefault();
@@ -299,7 +300,7 @@ function bindJump(btn,which){
   const dn=e=>{e.preventDefault(); try{btn.setPointerCapture(e.pointerId);}catch(_){}
     btn.classList.add('on');
     if(netMode==='guest'){ sendJump(0); return; }
-    if(which===1)jq1=true; else jq2=true;};
+    if(which===1)jb1=9; else jb2=9;};
   const up=e=>{e.preventDefault(); btn.classList.remove('on');};
   btn.addEventListener('pointerdown',dn); btn.addEventListener('pointerup',up);
   btn.addEventListener('pointercancel',up); btn.addEventListener('lostpointercapture',up);
@@ -320,7 +321,7 @@ cv.addEventListener('pointerup',e=>{
   if(!tap&&dy>-24)return;                          // neither a tap nor an upward flick
   const kick=tap?0:Math.max(-6,Math.min(6,dx/16)); // sideways flick distance → slant strength
   if(netMode==='guest'){ sendJump(kick); return; }
-  if(netMode==='host'||s.left){ jq1=true; jqk1=kick; } else { jq2=true; jqk2=kick; }
+  if(netMode==='host'||s.left){ jb1=9; jqk1=kick; } else { jb2=9; jqk2=kick; }
 });
 cv.addEventListener('pointercancel',()=>{ swipe=null; });
 
@@ -336,19 +337,23 @@ function applyMove(p,dir){
     else if(!ropeTaut()){ const v=vx(p)*0.93; p.px=p.x-v; }
     return;
   }
-  // force builds with hold time: a quick tap is a small precise nudge, ~a third of a
-  // second of holding reaches full power. dir may be analog (joystick) — magnitude
-  // scales both the force and the walking speed cap.
+  // Response is INSTANT — full force from the first frame. Hold time ramps the top
+  // SPEED instead (tap = short precise step, keep holding ≈0.4s = full run), and an
+  // analog stick scales it. Pressing AGAINST your slide chops the old velocity fast
+  // (turn assist) so reversals bite immediately instead of skating.
   const mag=Math.min(1,Math.abs(dir)), sgn=dir>0?1:-1;
   if(p.holdDir!==sgn){ p.holdT=0; p.holdDir=sgn; }
   p.holdT=(p.holdT||0)+1;
-  const ramp=0.35+0.65*Math.min(1,p.holdT/22);
-  const accel=(p.grounded?1.9:0.95)*ramp*mag, maxv=(p.grounded?5.2:6.4)*Math.max(0.4,mag);
+  const v0=vx(p);
+  let v=(sgn*v0<0) ? v0*(p.grounded?0.55:0.90) : v0;
+  const accel=(p.grounded?2.2:1.05)*mag;
+  const spdRamp=0.55+0.45*Math.min(1,p.holdT/26);
+  const maxv=(p.grounded?5.4:6.4)*spdRamp*Math.max(0.4,mag);
   // Don't clamp below an existing swing speed — holding "into" a big pendulum
   // swing should never brake it (that's the core mechanic). Deliberate walking
   // is still limited to maxv.
-  const cap=Math.max(maxv,Math.abs(vx(p)));
-  let v=vx(p)+sgn*accel; v=Math.max(-cap,Math.min(cap,v)); p.px=p.x-v;
+  const cap=Math.max(maxv,Math.abs(v));
+  v+=sgn*accel; v=Math.max(-cap,Math.min(cap,v)); p.px=p.x-v;
 }
 function integrate(p){
   if(p.inv===0)return;
@@ -394,8 +399,11 @@ function collide(p){
     }
   }
 }
-// the platform whose top sits right under the player's feet (null if airborne)
+// the platform whose top sits right under the player's feet (null if airborne).
+// Rising THROUGH a platform's band is not standing on it — without this guard a
+// jumper got phantom footing mid-flight (stray jumps, brakes and glider drag).
 function platformUnder(p){
+  if(vy(p)<-0.6) return null;
   for(const pl of platforms){
     const X=plx(pl);
     if(p.x>X-R*0.6 && p.x<X+pl.w+R*0.6 && p.y>pl.y-R-3 && p.y<pl.y-R+7) return pl;
@@ -407,17 +415,32 @@ function clampSides(p){ if(p.x<R){p.x=R;p.px=R;} if(p.x>VW-R){p.x=VW-R;p.px=VW-R
 
 function step(){
   t++;
+  // coyote windows tick from last frame's footing
+  coy1=P1.grounded?7:Math.max(0,coy1-1);
+  coy2=P2.grounded?7:Math.max(0,coy2-1);
   if(netMode==='host'){
     // host: every local key/pad/joystick drives P1; the guest's streamed inputs drive P2
     applyMove(P1,(((held.d||held.r)?1:0)-((held.a||held.l)?1:0))||jdz(joyV1)||jdz(joyV2));
     applyMove(P2,(gIn.m!=null?gIn.m:((gIn.r?1:0)-(gIn.l?1:0))));
-    if((jq1||jq2)&&P1.grounded){setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP);P1.grounded=false;} jq1=jq2=false; jqk1=jqk2=0;
-    if(gJump&&P2.grounded){setVel(P2,vx(P2)+gKick,-JUMP);P2.grounded=false;} gJump=false; gKick=0;
+    if(jb1>0||jb2>0){
+      if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP); P1.grounded=false; coy1=0; jb1=jb2=0; jqk1=jqk2=0; }
+      else { jb1=Math.max(0,jb1-1); jb2=Math.max(0,jb2-1); if(!jb1)jqk1=0; if(!jb2)jqk2=0; }
+    }
+    if(gjb>0){
+      if(P2.grounded||coy2>0){ setVel(P2,vx(P2)+gKick,-JUMP); P2.grounded=false; coy2=0; gjb=0; gKick=0; }
+      else { gjb--; if(!gjb)gKick=0; }
+    }
   } else {
     applyMove(P1,((held.d?1:0)-(held.a?1:0))||jdz(joyV1));
     applyMove(P2,((held.r?1:0)-(held.l?1:0))||jdz(joyV2));
-    if(jq1&&P1.grounded){setVel(P1,vx(P1)+jqk1,-JUMP);P1.grounded=false;} jq1=false; jqk1=0;
-    if(jq2&&P2.grounded){setVel(P2,vx(P2)+jqk2,-JUMP);P2.grounded=false;} jq2=false; jqk2=0;
+    if(jb1>0){
+      if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+jqk1,-JUMP); P1.grounded=false; coy1=0; jb1=0; jqk1=0; }
+      else { jb1--; if(!jb1)jqk1=0; }
+    }
+    if(jb2>0){
+      if(P2.grounded||coy2>0){ setVel(P2,vx(P2)+jqk2,-JUMP); P2.grounded=false; coy2=0; jb2=0; jqk2=0; }
+      else { jb2--; if(!jb2)jqk2=0; }
+    }
   }
   integrate(P1); integrate(P2);
   for(let it=0;it<ITER;it++){
@@ -542,7 +565,7 @@ function frame(now){
 const firebaseConfig={ apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
 let _db=null,_code=null,netMode='',curSeed=null;
 let _stRef=null,_stCb=null,_giRef=null,_giCb=null,_jnRef=null,_jnCb=null;
-let gIn={l:0,r:0,m:null},gJump=false,gKick=0,_lastJ=0,_lastRs=0,_sent={m:0};
+let gIn={l:0,r:0,m:null},gjb=0,gKick=0,_lastJ=0,_lastRs=0,_sent={m:0};
 let netState=null,netM=0,_wTimer=0,_prevO=0;
 function db(){ if(!_db){ firebase.initializeApp(firebaseConfig); _db=firebase.database(); } return _db; }
 function ropeRef(sub){ return db().ref(`games/${_code}/rp/${sub}`); }
@@ -557,7 +580,7 @@ function updatePads(){
   document.getElementById('pads').classList.toggle('solo', netMode==='host'||netMode==='guest');
   joyV1=joyV2=0;                         // a hidden stick must never keep steering
 }
-function teardownNet(){ if(_stCb)_stRef.off('value',_stCb); if(_giCb)_giRef.off('value',_giCb); if(_jnCb)_jnRef.off('value',_jnCb); _stCb=_giCb=_jnCb=null; if(_wTimer){clearInterval(_wTimer);_wTimer=0;} netState=null; gIn={l:0,r:0}; gJump=false; _prevO=0; }
+function teardownNet(){ if(_stCb)_stRef.off('value',_stCb); if(_giCb)_giRef.off('value',_giCb); if(_jnCb)_jnRef.off('value',_jnCb); _stCb=_giCb=_jnCb=null; if(_wTimer){clearInterval(_wTimer);_wTimer=0;} netState=null; gIn={l:0,r:0,m:null}; gjb=0; gKick=0; _prevO=0; }
 function writeState(){
   ropeRef('st').set({ sd:curSeed, p1:[+P1.x.toFixed(1),+P1.y.toFixed(1)], p2:[+P2.x.toFixed(1),+P2.y.toFixed(1)], cam:+camY.toFixed(1), m:climbM(), o:state==='over'?1:0, or:lastReason, sg:+surgeY.toFixed(1), t:t });
 }
@@ -580,7 +603,7 @@ async function createRoom(){
       _giRef=ropeRef('gi');
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
         gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=(v.m!=null)?v.m:null;
-        if(v.j&&v.j!==_lastJ){_lastJ=v.j; gJump=true; gKick=+(v.jk||0);}
+        if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
         if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
       reset();                                    // fresh seeded tower for both sides
       if(!_wTimer)_wTimer=setInterval(writeState,66);
