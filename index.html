@@ -1102,9 +1102,14 @@ document.addEventListener('DOMContentLoaded', applyLang);
     if (!p.act) {
       if (!p.plan.length) { p.done = true; return; }
       p.act = p.plan.shift(); p.tick = 0;
-      if (p.act.hop) {                                      // ballistic launch that lands exactly on target
-        const T = p.act.T, dx = p.act.hop[0] - p.x, dy = p.act.hop[1] - p.y;
+      if (p.act.hop) {                                      // game-style jump: a fixed VERTICAL impulse
+        const J = p.act.j || -7.2;                          // (tall arc), horizontal drift rides on top —
+        const dx = p.act.hop[0] - p.x, dy = p.act.hop[1] - p.y, b = J + G / 2;
+        let T = Math.ceil((-b + Math.sqrt(Math.max(0.2, b * b + 2 * G * dy))) / G);
+        if (!(T > 4)) T = 5;
+        p.act.T = T;                                        // flight time follows from the impulse
         p.vx = dx / T; p.vy = (dy - G * T * (T + 1) / 2) / T;
+        p.q = -0.18;                                        // launch stretch, like in-game
         if (p.act.drag) dragOff(p.act.drag[0], p.act.drag[1]);
       }
     }
@@ -1186,26 +1191,26 @@ document.addEventListener('DOMContentLoaded', applyLang);
     initRope();
     const headSpot = [gSpot[0], floorY - (2 * R - 2)];       // standing on the partner's head
     A.plan = [                                               // green: solo leap misses, boost sticks
-      { w: 8 }, { hop: [W * 0.46, floorY], T: 28 }, { w: 16 },
-      { hop: [W * 0.62, floorY], T: 22 }, { w: 70 },
-      { hop: [gSpot[0] - 34, floorY], T: 40 },               // the attempt — just misses the chip
-      { w: 26 }, { hop: headSpot, T: 24, boing: B },         // heads up! bounce off cyan's head...
-      { w: 6 }, { hop: gSpot, T: 18, press: gTag },          // ...and spring up onto the chip
-      { w: 30 }, { hop: btnSpot, T: 30 },
+      { w: 8 }, { hop: [W * 0.46, floorY], j: -2.5 }, { w: 16 },   // soft drop-in: hop down out of the screen
+      { hop: [W * 0.62, floorY] }, { w: 70 },
+      { hop: [gSpot[0] - 34, floorY] },                      // the attempt — just misses the chip
+      { w: 26 }, { hop: headSpot, boing: B },                // heads up! bounce off cyan's head...
+      { w: 6 }, { hop: gSpot, j: -8.4, press: gTag },        // ...spring extra high onto the chip
+      { w: 30 }, { hop: btnSpot },
     ];
-    B.plan = [{ w: 26 }, { hop: [W * 0.15, floorY], T: 28 }, { w: 20 }];
+    B.plan = [{ w: 26 }, { hop: [W * 0.15, floorY], j: -2.5 }, { w: 20 }];
     let prev = null;                                         // cyan: early chips, boost duty, last chip
     const early = bTags.slice(0, -1), lastTag = bTags[bTags.length - 1];
     early.forEach(tg => {
       const to = spotOf(tg);
-      B.plan.push({ hop: to, T: 26, press: tg, drag: prev ? [prev.el, to[0] > prev.x ? 1 : -1] : null });
+      B.plan.push({ hop: to, press: tg, drag: prev ? [prev.el, to[0] > prev.x ? 1 : -1] : null });
       B.plan.push({ w: 30 });
       prev = { el: tg, x: to[0] };
     });
-    B.plan.push({ hop: [gSpot[0], floorY], T: 24,           // station under the chip for the boost
+    B.plan.push({ hop: [gSpot[0], floorY],                  // station under the chip for the boost
                   drag: prev ? [prev.el, gSpot[0] > prev.x ? 1 : -1] : null });
     B.plan.push({ w: 58 });
-    B.plan.push({ hop: spotOf(lastTag), T: 26, press: lastTag });
+    B.plan.push({ hop: spotOf(lastTag), press: lastTag });
     let coolOff = 46;                                        // let squash + rope calm down, then freeze
     (function loop() {
       stepBall(A); stepBall(B); stepRope(); drawFrame();
