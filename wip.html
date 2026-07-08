@@ -58,6 +58,17 @@
   .ribbon.p2{color:#36c5d0;border-color:#36c5d0;box-shadow:0 0 10px rgba(54,197,208,0.35), inset 0 0 6px rgba(54,197,208,0.12);}
   .ribbon.p0{color:#b48cff;border-color:#b48cff;box-shadow:0 0 10px rgba(180,140,255,0.35), inset 0 0 6px rgba(180,140,255,0.12);}
   .ribbon.p12{color:#e8b04a;border-color:#e8b04a;box-shadow:0 0 10px rgba(232,176,74,0.35), inset 0 0 6px rgba(232,176,74,0.12);}
+
+  /* compact cabinets: cards rest collapsed (hero band + title + play); hovering or
+     tapping a card expands it like an arcade machine waking from attract mode */
+  .card-thumb{max-height:92px;transition:max-height .35s ease;}
+  .card-desc,.card-tags{max-height:0;opacity:0;overflow:hidden;margin-bottom:0;
+    transition:max-height .35s ease,opacity .28s ease,margin-bottom .35s ease;}
+  .card:hover .card-thumb,.card.open .card-thumb,.card:focus-within .card-thumb{max-height:300px;}
+  .card:hover .card-desc,.card.open .card-desc,.card:focus-within .card-desc{max-height:240px;opacity:1;margin-bottom:12px;}
+  .card:hover .card-tags,.card.open .card-tags,.card:focus-within .card-tags{max-height:90px;opacity:1;margin-bottom:12px;}
+  .noimg{max-height:92px;transition:max-height .35s ease;}
+  .card:hover .noimg,.card.open .noimg,.card:focus-within .noimg{max-height:300px;}
 </style>
 </head>
 <body>
@@ -174,6 +185,19 @@ function toggleLang() {
   document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
   try { localStorage.setItem('arcade_lang', zh ? 'zh' : 'en'); } catch (e) {}
 }
+
+/* touch has no hover: tap a card to wake/expand it (links still work directly) */
+if (window.matchMedia('(hover: none)').matches) {
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('a,button')) return;
+      const was = card.classList.contains('open');
+      document.querySelectorAll('.card.open').forEach(c => c.classList.remove('open'));
+      if (!was) card.classList.add('open');
+    });
+  });
+}
+
 /* remember the language across the whole arcade */
 try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
