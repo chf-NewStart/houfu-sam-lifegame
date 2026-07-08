@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b27</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b28</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -150,6 +150,10 @@
       <div class="ctl"><span class="dot p2"></span><span class="who"><span data-en="Player 2" data-zh="玩家 2">Player 2</span>&nbsp; <kbd>←</kbd><kbd>→</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>↑</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
       <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Move exactly while a key is held — release stops instantly; a quick tap still gives one small nudge." data-zh="按住即走、松开立停——完全跟手；快速轻点也保证有一小步。">Move exactly while a key is held — release stops instantly; a quick tap still gives one small nudge.</span></div>
       <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Touch: slide the stick to run, tap JUMP — or flick up on the tower itself (flick diagonally for a slanted leap)." data-zh="触屏：滑动摇杆移动，点 JUMP 跳——或直接在塔上向上滑动起跳（斜着滑就是斜跳）。">Touch: slide the stick to run, tap JUMP — or flick up on the tower itself (flick diagonally for a slanted leap).</span></div>
+      <label style="display:flex;align-items:center;gap:7px;font-size:0.7rem;color:#9a9a9a;cursor:pointer;margin-top:2px">
+        <input type="checkbox" id="noRopeChk" style="accent-color:#1db954">
+        <span data-en="Practice: no tether (pure movement feel)" data-zh="练习：无绳模式（纯移动手感）">Practice: no tether (pure movement feel)</span>
+      </label>
     </div>
     <div class="pcard">
       <div class="pcard-title"><span data-en="// play together (remote)" data-zh="// 一起玩（联机）">// play together (remote)</span></div>
@@ -363,7 +367,8 @@ cv.addEventListener('pointerup',e=>{
 cv.addEventListener('pointercancel',()=>{ swipe=null; });
 
 /* ── physics ── */
-function ropeTaut(){ const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ROPE_LEN*0.98)*(ROPE_LEN*0.98); }   // 0.98: the rope only pulls past 1.0 — a wide margin left a brakeless dead band
+let noRope=false;   // practice toggle: local-only, disables the tether entirely
+function ropeTaut(){ if(noRope)return false; const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ROPE_LEN*0.98)*(ROPE_LEN*0.98); }   // 0.98: the rope only pulls past 1.0 — a wide margin left a brakeless dead band
 function applyMove(p,dir){
   if(!dir){
     // no input → ease to a stop where you let go (the old glide felt slippery):
@@ -510,10 +515,17 @@ function step(){
   }
   if(mp1>0)mp1--; if(mp2>0)mp2--; if(gp>0)gp--;   // step pulses burn down AFTER use — an armed step delivers its full frames
   integrate(P1); integrate(P2);
+  const _sx1=P1.x, _sx2=P2.x;                      // where the constraint pass found them
   for(let it=0;it<ITER;it++){
-    solveLink(P1,P2,ROPE_LEN,true,TETHER_STIFF);   // the tether: an ideal max-length rope
+    if(!noRope)solveLink(P1,P2,ROPE_LEN,true,TETHER_STIFF);   // the tether: an ideal max-length rope
     collide(P1); collide(P2); clampSides(P1); clampSides(P2);
   }
+  // GROUNDED balls: rope displacement moves the BODY but never injects VELOCITY.
+  // (In Verlet every position correction becomes next-frame speed — so each yank made
+  // a standing player slide and creep afterwards like ice. That injection, not the
+  // input, was the un-killable "slippery". Airborne is untouched: it IS the pendulum.)
+  if(P1.grounded)P1.px+=(P1.x-_sx1);
+  if(P2.grounded)P2.px+=(P2.x-_sx2);
   for(const p of [P1,P2]){
     const was=p.grounded;
     const pl=platformUnder(p); p.grounded=!!pl;
@@ -607,12 +619,14 @@ function render(a){
   }
   // rope — strains visibly (redder, thicker) when taut, so a tether-slowdown reads
   // as "the rope caught me", not as the game glitching
+  if(!noRope){
   const _rd=Math.hypot(P2.x-P1.x,P2.y-P1.y)-ROPE_LEN, _strain=Math.max(0,Math.min(1,_rd/14));
   ctx.strokeStyle='rgb('+Math.round(154+_strain*80)+','+Math.round(123-_strain*40)+','+Math.round(79-_strain*25)+')';
   ctx.lineWidth=3+_strain*1.3; ctx.lineJoin='round';
   ctx.beginPath(); ctx.moveTo(ix(ropeViz[0]),sy(iy(ropeViz[0])));
   for(let i=1;i<ropeViz.length;i++)ctx.lineTo(ix(ropeViz[i]),sy(iy(ropeViz[i])));
   ctx.stroke();
+  }
   // players
   drawPlayer(P1,'#1db954'); drawPlayer(P2,'#46c8ff');
   // off-screen danger arrows
@@ -644,7 +658,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b27 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b28 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -791,6 +805,10 @@ function applyLang(){
 }
 function toggleLang(){lang=lang==='en'?'zh':'en';document.documentElement.lang=lang;document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();try{localStorage.setItem('arcade_lang',lang);}catch(e){}}
 
+document.getElementById('noRopeChk').addEventListener('change',e=>{
+  if(netMode!==''){ e.target.checked=false; return; }   // local practice only
+  noRope=e.target.checked;
+});
 reset(); applyLang(); requestAnimationFrame(frame);
 
 /* remember the language across the whole arcade */
