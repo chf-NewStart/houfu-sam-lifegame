@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b16</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b17</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -474,11 +474,11 @@ function step(){
     if(!d2&&gp>0)d2=gpd;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0||jb2>0){
-      if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP); P1.grounded=false; coy1=0; jb1=jb2=0; jqk1=jqk2=0; }
+      if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=jb2=0; jqk1=jqk2=0; }
       else { jb1=Math.max(0,jb1-1); jb2=Math.max(0,jb2-1); if(!jb1)jqk1=0; if(!jb2)jqk2=0; }
     }
     if(gjb>0){
-      if(P2.grounded||coy2>0){ setVel(P2,vx(P2)+gKick,-JUMP); P2.grounded=false; coy2=0; gjb=0; gKick=0; }
+      if(P2.grounded||coy2>0){ setVel(P2,vx(P2)+gKick,-JUMP); P2.grounded=false; P2.stretch=5; coy2=0; gjb=0; gKick=0; }
       else { gjb--; if(!gjb)gKick=0; }
     }
   } else {
@@ -488,11 +488,11 @@ function step(){
     if(!d2&&mp2>0)d2=mp2d;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
-      if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+jqk1,-JUMP); P1.grounded=false; coy1=0; jb1=0; jqk1=0; }
+      if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+jqk1,-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=0; jqk1=0; }
       else { jb1--; if(!jb1)jqk1=0; }
     }
     if(jb2>0){
-      if(P2.grounded||coy2>0){ setVel(P2,vx(P2)+jqk2,-JUMP); P2.grounded=false; coy2=0; jb2=0; jqk2=0; }
+      if(P2.grounded||coy2>0){ setVel(P2,vx(P2)+jqk2,-JUMP); P2.grounded=false; P2.stretch=5; coy2=0; jb2=0; jqk2=0; }
       else { jb2--; if(!jb2)jqk2=0; }
     }
   }
@@ -502,7 +502,10 @@ function step(){
     collide(P1); collide(P2); clampSides(P1); clampSides(P2);
   }
   for(const p of [P1,P2]){
+    const was=p.grounded;
     const pl=platformUnder(p); p.grounded=!!pl;
+    if(!was&&p.grounded)p.squash=5;                    // touchdown → squash (landing reads as landing, not a glitch)
+    if(p.squash>0)p.squash--; if(p.stretch>0)p.stretch--;
     if(pl&&pl.mv){ const dx=plxAt(pl,t)-plxAt(pl,t-1); p.x+=dx; p.px+=dx; }   // ride the glider
   }
   stepRope();
@@ -547,14 +550,18 @@ function ix(p){ return p.ox==null?p.x:p.ox+(p.x-p.ox)*_rA; }
 function iy(p){ return p.oy==null?p.y:p.oy+(p.y-p.oy)*_rA; }
 function drawPlayer(p,col,face){
   const x=ix(p), y=sy(iy(p));
-  ctx.save();
+  // squash on landing / stretch on jump — the snap reads as animation, not a glitch
+  const sq=(p.squash||0)/5, st=(p.stretch||0)/5;
+  const scX=1+0.22*sq-0.16*st, scY=1-0.26*sq+0.22*st;
+  ctx.save(); ctx.translate(x,y); ctx.scale(scX,scY);
   ctx.shadowColor=col; ctx.shadowBlur=12;
-  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,R,0,7); ctx.fill();
-  ctx.restore();
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill();
+  ctx.shadowBlur=0;
   ctx.fillStyle='#08110b';
   const lean=Math.max(-3,Math.min(3,vx(p)));
-  ctx.beginPath(); ctx.arc(x-4+lean,y-2,2.1,0,7); ctx.arc(x+4+lean,y-2,2.1,0,7); ctx.fill();
-  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(x-4,y+3,8,1.6);
+  ctx.beginPath(); ctx.arc(-4+lean,-2,2.1,0,7); ctx.arc(4+lean,-2,2.1,0,7); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-4,3,8,1.6);
+  ctx.restore();
 }
 function render(a){
   _rA=(a==null)?1:a;
@@ -584,8 +591,11 @@ function render(a){
     ctx.fillStyle=pl.mv?'#5fe694':'#1db954'; ctx.fillRect(X,Y,pl.w,2);
     if(pl.mv){ ctx.fillStyle='rgba(95,230,148,0.7)'; ctx.fillText('◂',X+4,Y+8); ctx.fillText('▸',X+pl.w-10,Y+8); }
   }
-  // rope
-  ctx.strokeStyle='#9a7b4f'; ctx.lineWidth=3; ctx.lineJoin='round';
+  // rope — strains visibly (redder, thicker) when taut, so a tether-slowdown reads
+  // as "the rope caught me", not as the game glitching
+  const _rd=Math.hypot(P2.x-P1.x,P2.y-P1.y)-ROPE_LEN, _strain=Math.max(0,Math.min(1,_rd/14));
+  ctx.strokeStyle='rgb('+Math.round(154+_strain*80)+','+Math.round(123-_strain*40)+','+Math.round(79-_strain*25)+')';
+  ctx.lineWidth=3+_strain*1.3; ctx.lineJoin='round';
   ctx.beginPath(); ctx.moveTo(ix(ropeViz[0]),sy(iy(ropeViz[0])));
   for(let i=1;i<ropeViz.length;i++)ctx.lineTo(ix(ropeViz[i]),sy(iy(ropeViz[i])));
   ctx.stroke();
@@ -620,7 +630,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b16 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b17 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
