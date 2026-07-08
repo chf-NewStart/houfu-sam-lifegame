@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b13</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b14</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -249,6 +249,7 @@ function reset(seed){
   for(let i=0;i<=ROPE_SEG+1;i++){const f=i/(ROPE_SEG+1);ropeViz.push(pt(P1.x+(P2.x-P1.x)*f, P1.y+(P2.y-P1.y)*f, 1));}
   startCam=-(VH-150); camY=startCam; minY=0;
   surgeY=210; lastReason=0;
+  jb1=jb2=0; mp1=mp2=0; jqk1=jqk2=0; coy1=coy2=0; gjb=0; gKick=0; swipe=null;   // stale inputs never leak into a fresh round
   state='play'; t=0;
   document.getElementById('overlay').classList.remove('show');
   updateScore();
@@ -265,45 +266,64 @@ let jqk1=0, jqk2=0;                    // horizontal kick for slanted (flick) ju
 const MOVE_PULSE=6;
 let mp1=0,mp1d=0, mp2=0,mp2d=0;
 const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
+// opposite keys held together resolve to the LAST one pressed (not a dead neutral)
+let prefAD=0, prefLR=0, prefAny=0;
+// arm a min-move pulse: taps stack (drumming = more), but a tap AGAINST the current
+// slide arms a short pulse — turn assist already does the stopping, a full pulse
+// would overshoot into a reverse walk
+function armPulse(which,d){
+  const tgt=(which===1)?P1:((netMode==='host')?P1:P2);
+  const opposing=d*vx(tgt)<-0.5;
+  if(which===1){ mp1=opposing?3:Math.min(12,mp1+MOVE_PULSE); mp1d=d; }
+  else { mp2=opposing?3:Math.min(12,mp2+MOVE_PULSE); mp2d=d; }
+}
 addEventListener('keydown',e=>{
-  const k=e.key;
-  if(k==='a'||k==='A'){ if(!held.a){mp1=MOVE_PULSE;mp1d=-1;} held.a=true; }
-  else if(k==='d'||k==='D'){ if(!held.d){mp1=MOVE_PULSE;mp1d=1;} held.d=true; }
-  else if(k==='ArrowLeft'){ if(!held.l){mp2=MOVE_PULSE;mp2d=-1;} held.l=true; }
-  else if(k==='ArrowRight'){ if(!held.r){mp2=MOVE_PULSE;mp2d=1;} held.r=true; }
-  if(KEYJUMP[k]===1)jb1=9; if(KEYJUMP[k]===2)jb2=9;
-  if(netMode==='guest'){ if(KEYJUMP[k])sendJump(); sendInputs(); }
+  const k=e.key, ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;   // typing a room code, not steering
+  if(e.metaKey||e.ctrlKey)return;   // browser shortcuts never steer (macOS swallows their keyups → stuck keys)
+  if(k==='a'||k==='A'){ if(!held.a)armPulse(1,-1); held.a=true; prefAD=-1; prefAny=-1; }
+  else if(k==='d'||k==='D'){ if(!held.d)armPulse(1,1); held.d=true; prefAD=1; prefAny=1; }
+  else if(k==='ArrowLeft'){ if(!held.l)armPulse(2,-1); held.l=true; prefLR=-1; prefAny=-1; }
+  else if(k==='ArrowRight'){ if(!held.r)armPulse(2,1); held.r=true; prefLR=1; prefAny=1; }
+  if(!e.repeat){ if(KEYJUMP[k]===1)jb1=9; if(KEYJUMP[k]===2)jb2=9; }   // OS auto-repeat must not pin the jump buffer
+  if(netMode==='guest'){ if(KEYJUMP[k]&&!e.repeat)sendJump(); sendInputs(); }
   if((k==='r'||k==='R')&&state!=='play')restartBtn();
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k))e.preventDefault();
 },{passive:false});
 addEventListener('keyup',e=>{const k=e.key;
+  if(k==='Meta'){ held.a=held.d=held.l=held.r=false; }               // releasing Cmd — clear anything it swallowed
   if(k==='a'||k==='A')held.a=false; else if(k==='d'||k==='D')held.d=false;
   else if(k==='ArrowLeft')held.l=false; else if(k==='ArrowRight')held.r=false;
   if(netMode==='guest')sendInputs();
 });
-addEventListener('blur',()=>{ held.a=held.d=held.l=held.r=false; if(netMode==='guest')sendInputs(); });
+function clearInputs(){ held.a=held.d=held.l=held.r=false; joyV1=joyV2=0; mp1=mp2=0; jb1=jb2=0; if(netMode==='guest')sendInputs(); }
+addEventListener('blur',clearInputs);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden)clearInputs(); });
 // touch: arcade joysticks (slide to run) + plunger jump buttons.
 // Pointer capture + touch-action:none keep a press-and-hold alive even if the finger
 // drifts or iOS tries to cancel it — the old pads sometimes went dead mid-hold.
 let joyV1=0, joyV2=0;
 const jdz=v=>Math.abs(v)>0.16?v:0;     // joystick deadzone — beyond it the stick is fully ANALOG
 function bindJoy(base,knob,set){
-  function place(e){
+  let pid=null;                                  // only the FIRST finger owns the stick —
+  function place(e){                             // a second touch/palm can't yank or kill the hold
     const r=base.getBoundingClientRect(), max=r.width/2-30;
     const dx=Math.max(-max,Math.min(max,e.clientX-(r.left+r.width/2)));
     knob.style.left='calc(50% + '+dx.toFixed(1)+'px)';
     set(+(dx/max).toFixed(2));
   }
-  const end=()=>{ base.classList.remove('drag'); knob.style.left='50%'; set(0); };
-  base.addEventListener('pointerdown',e=>{e.preventDefault(); try{base.setPointerCapture(e.pointerId);}catch(_){}
+  const end=e=>{ if(pid!==null&&e&&e.pointerId!==undefined&&e.pointerId!==pid)return;
+    pid=null; base.classList.remove('drag'); knob.style.left='50%'; set(0); };
+  base.addEventListener('pointerdown',e=>{ if(pid!==null)return;
+    e.preventDefault(); pid=e.pointerId; try{base.setPointerCapture(e.pointerId);}catch(_){}
     base.classList.add('drag'); place(e);});
-  base.addEventListener('pointermove',e=>{ if(base.classList.contains('drag'))place(e); });
+  base.addEventListener('pointermove',e=>{ if(pid!==null&&e.pointerId===pid)place(e); });
   base.addEventListener('pointerup',end);
   base.addEventListener('pointercancel',end);
   base.addEventListener('lostpointercapture',end);
 }
-bindJoy(document.getElementById('joy1'),document.getElementById('knob1'),v=>{ if(v&&!joyV1){mp1=MOVE_PULSE;mp1d=v>0?1:-1;} joyV1=v; if(netMode==='guest')sendInputs(); });
-bindJoy(document.getElementById('joy2'),document.getElementById('knob2'),v=>{ if(v&&!joyV2){mp2=MOVE_PULSE;mp2d=v>0?1:-1;} joyV2=v; if(netMode==='guest')sendInputs(); });
+bindJoy(document.getElementById('joy1'),document.getElementById('knob1'),v=>{ if(jdz(v)&&!jdz(joyV1)){mp1=MOVE_PULSE;mp1d=v>0?1:-1;} joyV1=v; if(netMode==='guest')sendInputs(); });
+bindJoy(document.getElementById('joy2'),document.getElementById('knob2'),v=>{ if(jdz(v)&&!jdz(joyV2)){mp2=MOVE_PULSE;mp2d=v>0?1:-1;} joyV2=v; if(netMode==='guest')sendInputs(); });
 function bindJump(btn,which){
   const dn=e=>{e.preventDefault(); try{btn.setPointerCapture(e.pointerId);}catch(_){}
     btn.classList.add('on');
@@ -319,6 +339,7 @@ bindJump(document.getElementById('jump2'),2);
 // that direction (a quick tap still jumps). Local play: left half = P1, right = P2.
 let swipe=null;
 cv.addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse')return;
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}   // fast flicks that exit the canvas still deliver their pointerup
   const r=cv.getBoundingClientRect();
   swipe={x:e.clientX,y:e.clientY,t:performance.now(),left:(e.clientX-r.left)<r.width/2}; },{passive:true});
 cv.addEventListener('pointerup',e=>{
@@ -334,7 +355,7 @@ cv.addEventListener('pointerup',e=>{
 cv.addEventListener('pointercancel',()=>{ swipe=null; });
 
 /* ── physics ── */
-function ropeTaut(){ const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ROPE_LEN*0.92)*(ROPE_LEN*0.92); }
+function ropeTaut(){ const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ROPE_LEN*0.98)*(ROPE_LEN*0.98); }   // 0.98: the rope only pulls past 1.0 — a wide margin left a brakeless dead band
 function applyMove(p,dir){
   if(!dir){
     // no input → ease to a stop where you let go (the old glide felt slippery):
@@ -360,12 +381,11 @@ function applyMove(p,dir){
   const accel=(p.grounded?2.2:1.05)*mag;
   const spdRamp=0.55+0.45*Math.min(1,p.holdT/26);
   const maxv=(p.grounded?5.4:6.4)*spdRamp*Math.max(0.4,mag);
-  // AIRBORNE only: don't clamp below an existing swing speed — holding "into" a big
-  // pendulum swing should never brake it (that's the core mechanic). On the GROUND
-  // the cap is hard: without it, a rope-slingshot (taut tether releasing its stretch)
-  // launched a runaway 3× sprint that holding a key would sustain — the "flies a
-  // long way" glitch. Deliberate walking is always limited to maxv.
-  const cap=p.grounded? maxv : Math.max(maxv,Math.abs(v));
+  // AIRBORNE: never clamp below an existing swing speed — holding "into" a pendulum
+  // swing must not brake it. GROUNDED: excess speed (rope slingshot, hot landing)
+  // BLEEDS at 15%/frame toward maxv instead of a hard clamp — so landing from a
+  // swing doesn't stop dead like glue, but a slingshot can't sustain a runaway.
+  const cap=p.grounded? Math.max(maxv,Math.abs(v)*0.85) : Math.max(maxv,Math.abs(v));
   v+=sgn*accel; v=Math.max(-cap,Math.min(cap,v)); p.px=p.x-v;
 }
 function integrate(p){
@@ -416,10 +436,10 @@ function collide(p){
 // Rising THROUGH a platform's band is not standing on it — without this guard a
 // jumper got phantom footing mid-flight (stray jumps, brakes and glider drag).
 function platformUnder(p){
-  if(vy(p)<-0.6) return null;
+  if(vy(p)<-2) return null;   // rising fast (a jump) is airborne; small rope-lift jitter still counts as standing
   for(const pl of platforms){
     const X=plx(pl);
-    if(p.x>X-R*0.6 && p.x<X+pl.w+R*0.6 && p.y>pl.y-R-3 && p.y<pl.y-R+7) return pl;
+    if(p.x>X-R*0.5 && p.x<X+pl.w+R*0.5 && p.y>pl.y-R-3 && p.y<pl.y-R+7) return pl;   // margin matches collide()
   }
   return null;
 }
@@ -434,7 +454,8 @@ function step(){
   if(mp1>0)mp1--; if(mp2>0)mp2--; if(gp>0)gp--;   // min-move pulses burn down
   if(netMode==='host'){
     // host: every local key/pad/joystick drives P1; the guest's streamed inputs drive P2
-    let d1=(((held.d||held.r)?1:0)-((held.a||held.l)?1:0))||jdz(joyV1)||jdz(joyV2);
+    const Lh=(held.a||held.l), Rh=(held.d||held.r);
+    let d1=((Lh&&Rh)?prefAny:((Rh?1:0)-(Lh?1:0)))||jdz(joyV1)||jdz(joyV2);
     if(!d1&&mp1>0)d1=mp1d; if(!d1&&mp2>0)d1=mp2d;
     let d2=(gIn.m!=null?gIn.m:((gIn.r?1:0)-(gIn.l?1:0)));
     if(!d2&&gp>0)d2=gpd;
@@ -448,9 +469,9 @@ function step(){
       else { gjb--; if(!gjb)gKick=0; }
     }
   } else {
-    let d1=((held.d?1:0)-(held.a?1:0))||jdz(joyV1);
+    let d1=((held.a&&held.d)?prefAD:((held.d?1:0)-(held.a?1:0)))||jdz(joyV1);
     if(!d1&&mp1>0)d1=mp1d;
-    let d2=((held.r?1:0)-(held.l?1:0))||jdz(joyV2);
+    let d2=((held.l&&held.r)?prefLR:((held.r?1:0)-(held.l?1:0)))||jdz(joyV2);
     if(!d2&&mp2>0)d2=mp2d;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
@@ -574,7 +595,8 @@ function arrowFor(p,col){
 let last=performance.now(), acc=0; const FT=1000/60;
 function frame(now){
   acc+=Math.min(now-last,100); last=now;
-  let n=0; while(acc>=FT&&n<5){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
+  let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
+  if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
   render(); requestAnimationFrame(frame);
 }
@@ -659,8 +681,9 @@ function playLocal(){
 function copyCode(){ if(_code)navigator.clipboard?.writeText(_code).catch(()=>{}); }
 function sendInputs(){
   if(netMode!=='guest')return;
-  // one analog move value: keys give ±1, the joystick gives its slide amount
-  const kb=((held.d||held.r)?1:0)-((held.a||held.l)?1:0);
+  // one analog move value: keys give ±1 (last press wins on overlap), the joystick its slide
+  const L=(held.a||held.l), R=(held.d||held.r);
+  const kb=(L&&R)?prefAny:((R?1:0)-(L?1:0));
   const mv=Math.round((kb||jdz(joyV1)||jdz(joyV2))*100)/100;
   if(mv!==_sent.m){ _sent.m=mv; ropeRef('gi').update({m:mv}); }
 }
