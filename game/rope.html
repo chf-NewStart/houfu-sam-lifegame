@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b18</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b19</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -148,6 +148,7 @@
       <div class="pcard-title"><span id="ctlTitle" data-en="// controls · two players, one keyboard" data-zh="// 操作 · 双人同键盘">// controls · two players, one keyboard</span></div>
       <div class="ctl"><span class="dot p1"></span><span class="who"><span data-en="Player 1" data-zh="玩家 1">Player 1</span>&nbsp; <kbd>A</kbd><kbd>D</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>W</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
       <div class="ctl"><span class="dot p2"></span><span class="who"><span data-en="Player 2" data-zh="玩家 2">Player 2</span>&nbsp; <kbd>←</kbd><kbd>→</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>↑</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
+      <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Every tap = one clean step — tap in rhythm to run smoothly, or just hold." data-zh="每次点按＝一步固定移动——按节奏连点就能顺畅奔跑，也可以直接按住。">Every tap = one clean step — tap in rhythm to run smoothly, or just hold.</span></div>
       <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Touch: slide the stick to run, tap JUMP — or flick up on the tower itself (flick diagonally for a slanted leap)." data-zh="触屏：滑动摇杆移动，点 JUMP 跳——或直接在塔上向上滑动起跳（斜着滑就是斜跳）。">Touch: slide the stick to run, tap JUMP — or flick up on the tower itself (flick diagonally for a slanted leap).</span></div>
     </div>
     <div class="pcard">
@@ -263,7 +264,7 @@ let jqk1=0, jqk2=0;                    // horizontal kick for slanted (flick) ju
 // minimum move pulse: a fresh tap guarantees this many frames of force, so identical
 // clicks always deliver the same baseline impulse (raw frame-sampling made a ~60ms
 // click land as anywhere from 1 to 4 sim frames — "a little or a lot" at random)
-const MOVE_PULSE=4;   // at direct full-speed movement, 4 sim frames ≈ a one-ball-radius step per tap
+const MOVE_PULSE=5;   // one tap = 5 full-speed frames + brake tail ≈ one ball-diameter step, identical every time
 let mp1=0,mp1d=0, mp2=0,mp2d=0;
 const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
 // opposite keys held together resolve to the LAST one pressed (not a dead neutral)
@@ -272,12 +273,11 @@ let prefAD=0, prefLR=0, prefAny=0;
 // slide arms a short pulse — turn assist already does the stopping, a full pulse
 // would overshoot into a reverse walk
 function armPulse(which,d){
-  const tgt=(which===1)?P1:((netMode==='host')?P1:P2);
-  const opposing=d*vx(tgt)<-0.5;
-  // never stack (drummed taps used to force up to 200ms of movement AFTER the last
-  // release); an opposing "stop" tap arms just 1 frame — direct control does the rest
-  if(which===1){ mp1=opposing?1:MOVE_PULSE; mp1d=d; }
-  else { mp2=opposing?1:MOVE_PULSE; mp2d=d; }
+  // tap-to-step: every tap is one clean, identical step. Same-direction taps CHAIN
+  // (the queue caps at two steps, so drumming is smooth but bounded); a tap the other
+  // way steps the other way instantly. Holding a key still runs continuously.
+  if(which===1){ mp1=(mp1d===d)?Math.min(mp1+MOVE_PULSE,MOVE_PULSE*2):MOVE_PULSE; mp1d=d; }
+  else { mp2=(mp2d===d)?Math.min(mp2+MOVE_PULSE,MOVE_PULSE*2):MOVE_PULSE; mp2d=d; }
 }
 addEventListener('keydown',e=>{
   const k=e.key, ae=document.activeElement;
@@ -294,12 +294,10 @@ addEventListener('keydown',e=>{
 },{passive:false});
 addEventListener('keyup',e=>{const k=e.key;
   if(k==='Meta'){ held.a=held.d=held.l=held.r=false; }               // releasing Cmd — clear anything it swallowed
-  // truncate the min-pulse on release: a quick tap still gets its guaranteed step,
-  // but nothing keeps pushing more than ~2 frames after your finger is off the key
-  if(k==='a'||k==='A'){ held.a=false; if(mp1d===-1)mp1=Math.min(mp1,2); }
-  else if(k==='d'||k==='D'){ held.d=false; if(mp1d===1)mp1=Math.min(mp1,2); }
-  else if(k==='ArrowLeft'){ held.l=false; if(mp2d===-1)mp2=Math.min(mp2,2); }
-  else if(k==='ArrowRight'){ held.r=false; if(mp2d===1)mp2=Math.min(mp2,2); }
+  // the armed step always COMPLETES after release — that's what makes every tap move
+  // the exact same distance (the queue is capped at 2 steps, so it stays bounded)
+  if(k==='a'||k==='A')held.a=false; else if(k==='d'||k==='D')held.d=false;
+  else if(k==='ArrowLeft')held.l=false; else if(k==='ArrowRight')held.r=false;
   if(netMode==='guest')sendInputs();
 });
 function clearInputs(){ held.a=held.d=held.l=held.r=false; joyV1=joyV2=0; mp1=mp2=0; jb1=jb2=0; if(netMode==='guest')sendInputs(); }
@@ -328,8 +326,8 @@ function bindJoy(base,knob,set){
   base.addEventListener('pointercancel',end);
   base.addEventListener('lostpointercapture',end);
 }
-bindJoy(document.getElementById('joy1'),document.getElementById('knob1'),v=>{ if(jdz(v)&&!jdz(joyV1)){mp1=MOVE_PULSE;mp1d=v>0?1:-1;} else if(!jdz(v)&&jdz(joyV1)){mp1=Math.min(mp1,2);} joyV1=v; if(netMode==='guest')sendInputs(); });
-bindJoy(document.getElementById('joy2'),document.getElementById('knob2'),v=>{ if(jdz(v)&&!jdz(joyV2)){mp2=MOVE_PULSE;mp2d=v>0?1:-1;} else if(!jdz(v)&&jdz(joyV2)){mp2=Math.min(mp2,2);} joyV2=v; if(netMode==='guest')sendInputs(); });
+bindJoy(document.getElementById('joy1'),document.getElementById('knob1'),v=>{ if(jdz(v)&&!jdz(joyV1))armPulse(1,v>0?1:-1); joyV1=v; if(netMode==='guest')sendInputs(); });
+bindJoy(document.getElementById('joy2'),document.getElementById('knob2'),v=>{ if(jdz(v)&&!jdz(joyV2))armPulse(2,v>0?1:-1); joyV2=v; if(netMode==='guest')sendInputs(); });
 function bindJump(btn,which){
   const dn=e=>{e.preventDefault(); try{btn.setPointerCapture(e.pointerId);}catch(_){}
     btn.classList.add('on');
@@ -473,7 +471,6 @@ function step(){
   // coyote windows tick from last frame's footing
   coy1=P1.grounded?7:Math.max(0,coy1-1);
   coy2=P2.grounded?7:Math.max(0,coy2-1);
-  if(mp1>0)mp1--; if(mp2>0)mp2--; if(gp>0)gp--;   // min-move pulses burn down
   if(netMode==='host'){
     // host: every local key/pad/joystick drives P1; the guest's streamed inputs drive P2
     const Lh=(held.a||held.l), Rh=(held.d||held.r);
@@ -505,6 +502,7 @@ function step(){
       else { jb2--; if(!jb2)jqk2=0; }
     }
   }
+  if(mp1>0)mp1--; if(mp2>0)mp2--; if(gp>0)gp--;   // step pulses burn down AFTER use — an armed step delivers its full frames
   integrate(P1); integrate(P2);
   for(let it=0;it<ITER;it++){
     solveLink(P1,P2,ROPE_LEN,true,TETHER_STIFF);   // the tether: an ideal max-length rope
@@ -639,7 +637,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b18 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b19 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -691,7 +689,7 @@ async function createRoom(){
       _giRef=ropeRef('gi');
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
         const nm=(v.m!=null)?v.m:null;
-        if(nm&&!gIn.m){ gp=MOVE_PULSE; gpd=nm>0?1:-1; }   // guest tap → same min-pulse as local
+        if(nm&&!gIn.m){ const nd=nm>0?1:-1; gp=(gpd===nd)?Math.min(gp+MOVE_PULSE,MOVE_PULSE*2):MOVE_PULSE; gpd=nd; }   // guest taps chain like local ones
         gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=nm;
         if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
         if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
