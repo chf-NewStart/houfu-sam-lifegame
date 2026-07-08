@@ -315,11 +315,14 @@ cv.addEventListener('pointerup',e=>{
 cv.addEventListener('pointercancel',()=>{ swipe=null; });
 
 /* ── physics ── */
+function ropeTaut(){ const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ROPE_LEN*0.92)*(ROPE_LEN*0.92); }
 function applyMove(p,dir){
   if(!dir){
-    // no input + standing on ground → brake hard so you stop where you let go
-    // (the old glide felt slippery). Airborne stays untouched — that's the pendulum.
+    // no input → brake so you stop where you let go (the old glide felt slippery):
+    // hard on the ground, gentle in FREE air (slack rope). A taut rope means a real
+    // pendulum swing — that momentum is the core mechanic and is never braked.
     if(p.grounded){ const v=vx(p)*0.6; p.px=p.x-v; }
+    else if(!ropeTaut()){ const v=vx(p)*0.93; p.px=p.x-v; }
     return;
   }
   const accel=p.grounded?1.9:0.95, maxv=p.grounded?5.2:6.4;   // real air control, snappier ground starts
