@@ -168,38 +168,15 @@
   .pchip:hover{border-color:#1db954;color:#1db954;}
   .pchip.on{background:#1db954;border-color:#1db954;color:#04150a;font-weight:700;}
 
-  /* CD RACK: every game is a glittering disc half-tucked in its sleeve. Hovering or
-     tapping pulls THAT disc out and floats its liner notes as an overlay — the rest
-     of the rack never moves. */
-  .card{overflow:visible;}
-  .cdwrap{position:relative;width:72%;margin:10px auto 16px;aspect-ratio:2/1;z-index:2;}
-  .cdwrap::after{content:'';position:absolute;left:-9%;right:-9%;top:calc(100% - 4px);height:12px;
-    background:linear-gradient(#191c21,#0e1013);border:1px solid #23262c;border-radius:3px;z-index:3;}
-  .cd{position:absolute;left:0;top:0;width:100%;aspect-ratio:1/1;border-radius:50%;overflow:hidden;
-    clip-path:inset(0 0 50% 0);transition:clip-path .38s ease, transform .38s ease;
-    box-shadow:0 0 18px rgba(0,0,0,0.6);}
-  .cd img,.cd .noimg{position:absolute;inset:0;width:100% !important;height:100% !important;margin:0 !important;
-    max-height:none !important;object-fit:cover;border:0 !important;aspect-ratio:auto !important;}
-  .cd-hole{position:absolute;left:50%;top:50%;width:17%;aspect-ratio:1/1;transform:translate(-50%,-50%);
-    border-radius:50%;background:#0a0c0f;border:2px solid rgba(255,255,255,0.28);
-    box-shadow:0 0 0 7px rgba(255,255,255,0.07), inset 0 0 5px rgba(0,0,0,0.8);z-index:2;}
-  .cd-sheen{position:absolute;inset:-1%;border-radius:50%;mix-blend-mode:screen;pointer-events:none;z-index:1;
-    background:conic-gradient(from 20deg, rgba(255,60,160,0.15), rgba(60,255,240,0.18), rgba(255,240,80,0.13),
-      rgba(150,60,255,0.17), rgba(60,255,140,0.14), rgba(255,60,160,0.15));
-    animation:cdspin 9s linear infinite;}
-  @keyframes cdspin{to{transform:rotate(360deg)}}
-  .card:hover .cd,.card.open .cd,.card:focus-within .cd{clip-path:inset(0 0 8% 0);transform:translateY(-14%);}
-  .card:hover .cd-sheen,.card.open .cd-sheen{animation-duration:2.4s;}
-  .card:hover,.card.open,.card:focus-within{z-index:12;}
-  /* liner notes: absolute overlay, zero reflow */
-  .card-desc{position:absolute;left:10px;right:10px;bottom:92px;opacity:0;pointer-events:none;margin:0;
-    transform:translateY(6px);transition:opacity .28s ease, transform .28s ease;z-index:11;
-    background:rgba(8,10,9,0.97);border:1px solid #24312a;border-radius:6px;padding:10px 12px;}
-  .card-tags{position:absolute;left:12px;right:12px;bottom:50px;opacity:0;pointer-events:none;margin:0;
-    transform:translateY(6px);transition:opacity .28s ease, transform .28s ease;z-index:11;}
-  .card:hover .card-desc,.card.open .card-desc,.card:focus-within .card-desc,
-  .card:hover .card-tags,.card.open .card-tags,.card:focus-within .card-tags{opacity:1;transform:none;}
-  .cd .gband{position:absolute;inset:0;width:100% !important;height:100% !important;margin:0 !important;}
+  /* compact cabinets: cards rest collapsed (hero band + title + play); hovering or
+     tapping a card expands it like an arcade machine waking from attract mode */
+  .card-thumb{max-height:92px;transition:max-height .35s ease;}
+  .card-desc,.card-tags{max-height:0;opacity:0;overflow:hidden;margin-bottom:0;
+    transition:max-height .35s ease,opacity .28s ease,margin-bottom .35s ease;}
+  .card:hover .card-thumb,.card.open .card-thumb,.card:focus-within .card-thumb{max-height:300px;}
+  .card:hover .card-desc,.card.open .card-desc,.card:focus-within .card-desc{max-height:240px;opacity:1;margin-bottom:12px;}
+  .card:hover .card-tags,.card.open .card-tags,.card:focus-within .card-tags{max-height:90px;opacity:1;margin-bottom:12px;}
+  .card.flagship .card-thumb{max-height:300px;}
 </style>
 </head>
 <body>
@@ -221,7 +198,7 @@
 
   <div class="card flagship glow-life" data-players="0">
     <div class="ribbon p0" data-en="CPU · AUTO" data-zh="CPU · 自动">CPU · AUTO</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/life.png?v=4" alt="Game of Life grid" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/life.png?v=4" alt="Game of Life grid" loading="lazy" width="440" height="240">
     <canvas class="lgrid" aria-hidden="true"></canvas>
     <div class="card-icon">[##]</div>
     <div class="card-title" data-en="game_of_life.exe" data-zh="生命游戏.exe">game_of_life.exe</div>
@@ -241,7 +218,7 @@
   <div class="card glow-gomoku" data-players="12">
     <div class="ribbon p12" data-en="1–2UP" data-zh="1–2UP">1–2UP</div>
     <canvas class="gwater" aria-hidden="true"></canvas>
-    <div class="cdwrap"><div class="cd"><div class="card-thumb gband" aria-hidden="true"></div><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <div class="card-thumb gband" aria-hidden="true"></div>
     <img class="gsrc" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board" width="440" height="240">
     <div class="card-icon">[⬡]</div>
     <div class="card-title" data-en="gomoku.exe" data-zh="五子棋.exe">gomoku.exe</div>
@@ -260,7 +237,7 @@
 
   <div class="card glow-laby" data-players="1">
     <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/labyrinth.png?v=1" alt="Labyrinth maze" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/labyrinth.png?v=1" alt="Labyrinth maze" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#36c5d0">[▦]</div>
     <div class="card-title" data-en="labyrinth.exe" data-zh="迷宫.exe">labyrinth.exe</div>
     <div class="card-desc" data-en="An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, and a bigger maze every time you escape. Go deep, move fast, score high." data-zh="无尽的火把下潜——战争迷雾视野、A* 寻路，每次逃脱都通向更大的迷宫。下得深、走得快、分数高。">An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, and a bigger maze every time you escape. Go deep, move fast, score high.</div>
@@ -278,7 +255,7 @@
 
   <div class="card glow-tomato" data-players="1">
     <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/tomato.jpg?v=3" alt="Tomato-growing game" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/tomato.jpg?v=3" alt="Tomato-growing game" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#f0533a">[◍]</div>
     <div class="card-title" data-en="grow_a_tomato.exe" data-zh="种番茄.exe">grow_a_tomato.exe</div>
     <div class="card-desc" data-en="Grow the biggest, sweetest tomato. Balance light and feed across the season — powered by a real plant-metabolism model." data-zh="种出又大又甜的番茄。整季权衡光照与施肥——由真实植物代谢模型驱动。">Grow the biggest, sweetest tomato. Balance light and feed across the season — powered by a real plant-metabolism model.</div>
@@ -295,7 +272,7 @@
 
   <div class="card glow-tsweep" data-players="1">
     <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/tomatoswipe.png?v=3" alt="Tomatoswipe board — you are tomatoed!" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/tomatoswipe.png?v=3" alt="Tomatoswipe board — you are tomatoed!" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#e2523e">[#]</div>
     <div class="card-title" data-en="tomatoswipe.exe" data-zh="扫番茄.exe">tomatoswipe.exe</div>
     <div class="card-desc" data-en="Minesweeper, but the mines are tomatoes. Read the numbers, flag the 🍅, and clear the whole garden without squashing a single one." data-zh="扫雷，但地雷是番茄。读数字、标记 🍅，清完整座菜园而不踩烂任何一颗。">Minesweeper, but the mines are tomatoes. Read the numbers, flag the 🍅, and clear the whole garden without squashing a single one.</div>
@@ -312,7 +289,7 @@
 
   <div class="card glow-sudoku" data-players="1">
     <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/sudoku.png?v=2" alt="Sudoku grid" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/sudoku.png?v=2" alt="Sudoku grid" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#36c5d0">[9]</div>
     <div class="card-title" data-en="sudoku.exe" data-zh="数独.exe">sudoku.exe</div>
     <div class="card-desc" data-en="Fill every row, column and 3×3 box with 1–9. A backtracking generator guarantees one unique solution — with pencil-mark notes, hints, and a one-click solver." data-zh="让每行、每列、每个 3×3 宫格都填入 1–9。回溯生成器保证唯一解——含铅笔笔记、提示与一键求解。">Fill every row, column and 3×3 box with 1–9. A backtracking generator guarantees one unique solution — with pencil-mark notes, hints, and a one-click solver.</div>
@@ -331,7 +308,7 @@
 
   <div class="card glow-rope" data-players="2">
     <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/rope.jpg?v=2" alt="Tether co-op rope climber" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/rope.jpg?v=2" alt="Tether co-op rope climber" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#46c8ff">[o–o]</div>
     <div class="card-title" data-en="tether.exe" data-zh="默契绳.exe">tether.exe</div>
     <div class="card-desc" data-en="Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall." data-zh="两个人，一根绳。你和好友被绳子拴在一起——跳跃、摆荡、互相做锚往上爬。可联机（创建/加入房间）或同键盘双人；拽得太猛就一起摔下去。">Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall.</div>

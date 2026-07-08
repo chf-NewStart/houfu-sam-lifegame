@@ -59,37 +59,16 @@
   .ribbon.p0{color:#b48cff;border-color:#b48cff;box-shadow:0 0 10px rgba(180,140,255,0.35), inset 0 0 6px rgba(180,140,255,0.12);}
   .ribbon.p12{color:#e8b04a;border-color:#e8b04a;box-shadow:0 0 10px rgba(232,176,74,0.35), inset 0 0 6px rgba(232,176,74,0.12);}
 
-  /* CD RACK: every game is a glittering disc half-tucked in its sleeve. Hovering or
-     tapping pulls THAT disc out and floats its liner notes as an overlay — the rest
-     of the rack never moves. */
-  .card{overflow:visible;}
-  .cdwrap{position:relative;width:72%;margin:10px auto 16px;aspect-ratio:2/1;z-index:2;}
-  .cdwrap::after{content:'';position:absolute;left:-9%;right:-9%;top:calc(100% - 4px);height:12px;
-    background:linear-gradient(#191c21,#0e1013);border:1px solid #23262c;border-radius:3px;z-index:3;}
-  .cd{position:absolute;left:0;top:0;width:100%;aspect-ratio:1/1;border-radius:50%;overflow:hidden;
-    clip-path:inset(0 0 50% 0);transition:clip-path .38s ease, transform .38s ease;
-    box-shadow:0 0 18px rgba(0,0,0,0.6);}
-  .cd img,.cd .noimg{position:absolute;inset:0;width:100% !important;height:100% !important;margin:0 !important;
-    max-height:none !important;object-fit:cover;border:0 !important;aspect-ratio:auto !important;}
-  .cd-hole{position:absolute;left:50%;top:50%;width:17%;aspect-ratio:1/1;transform:translate(-50%,-50%);
-    border-radius:50%;background:#0a0c0f;border:2px solid rgba(255,255,255,0.28);
-    box-shadow:0 0 0 7px rgba(255,255,255,0.07), inset 0 0 5px rgba(0,0,0,0.8);z-index:2;}
-  .cd-sheen{position:absolute;inset:-1%;border-radius:50%;mix-blend-mode:screen;pointer-events:none;z-index:1;
-    background:conic-gradient(from 20deg, rgba(255,60,160,0.15), rgba(60,255,240,0.18), rgba(255,240,80,0.13),
-      rgba(150,60,255,0.17), rgba(60,255,140,0.14), rgba(255,60,160,0.15));
-    animation:cdspin 9s linear infinite;}
-  @keyframes cdspin{to{transform:rotate(360deg)}}
-  .card:hover .cd,.card.open .cd,.card:focus-within .cd{clip-path:inset(0 0 8% 0);transform:translateY(-14%);}
-  .card:hover .cd-sheen,.card.open .cd-sheen{animation-duration:2.4s;}
-  .card:hover,.card.open,.card:focus-within{z-index:12;}
-  /* liner notes: absolute overlay, zero reflow */
-  .card-desc{position:absolute;left:10px;right:10px;bottom:92px;opacity:0;pointer-events:none;margin:0;
-    transform:translateY(6px);transition:opacity .28s ease, transform .28s ease;z-index:11;
-    background:rgba(8,10,9,0.97);border:1px solid #24312a;border-radius:6px;padding:10px 12px;}
-  .card-tags{position:absolute;left:12px;right:12px;bottom:50px;opacity:0;pointer-events:none;margin:0;
-    transform:translateY(6px);transition:opacity .28s ease, transform .28s ease;z-index:11;}
-  .card:hover .card-desc,.card.open .card-desc,.card:focus-within .card-desc,
-  .card:hover .card-tags,.card.open .card-tags,.card:focus-within .card-tags{opacity:1;transform:none;}
+  /* compact cabinets: cards rest collapsed (hero band + title + play); hovering or
+     tapping a card expands it like an arcade machine waking from attract mode */
+  .card-thumb{max-height:92px;transition:max-height .35s ease;}
+  .card-desc,.card-tags{max-height:0;opacity:0;overflow:hidden;margin-bottom:0;
+    transition:max-height .35s ease,opacity .28s ease,margin-bottom .35s ease;}
+  .card:hover .card-thumb,.card.open .card-thumb,.card:focus-within .card-thumb{max-height:300px;}
+  .card:hover .card-desc,.card.open .card-desc,.card:focus-within .card-desc{max-height:240px;opacity:1;margin-bottom:12px;}
+  .card:hover .card-tags,.card.open .card-tags,.card:focus-within .card-tags{max-height:90px;opacity:1;margin-bottom:12px;}
+  .noimg{max-height:92px;transition:max-height .35s ease;}
+  .card:hover .noimg,.card.open .noimg,.card:focus-within .noimg{max-height:300px;}
 </style>
 </head>
 <body>
@@ -106,7 +85,7 @@
 
   <div class="card">
     <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/escape.jpg?v=4" alt="Escape Grid board" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/escape.jpg?v=4" alt="Escape Grid board" loading="lazy" width="440" height="240">
     <div class="card-icon">[::]</div>
     <div class="card-title" data-en="escape_grid.exe" data-zh="逃脱方格.exe">escape_grid.exe</div>
     <div class="card-desc" data-en="4 runners race to the exit; 1 hunter tries to catch them all. Click to move, open and seal doors, dodge emoji hazards. Play the runners, play the hunter, or watch AI-vs-AI." data-zh="4 名逃跑者冲向出口，1 名猎手全力追捕。点击移动、开门封门、躲避陷阱。可扮演逃跑者、扮演猎手，或观看 AI 对战。">4 runners race to the exit; 1 hunter tries to catch them all. Click to move, open and seal doors, dodge emoji hazards. Play the runners, play the hunter, or watch AI-vs-AI.</div>
@@ -124,7 +103,7 @@
 
   <div class="card">
     <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/keepup.png?v=1" alt="Keep-Up co-op pong" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/keepup.png?v=1" alt="Keep-Up co-op pong" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#36c5d0">[◖●◗]</div>
     <div class="card-title" data-en="keep_up.exe" data-zh="接力球.exe">keep_up.exe</div>
     <div class="card-desc" data-en="Co-op Pong — you each guard one side and keep the bouncing ball from slipping past either paddle. Play remotely (Create/Join a room) or on one device. It only gets faster." data-zh="合作版 Pong——你们各守一边，别让弹跳的球从任一侧的挡板溜过去。可联机（创建/加入房间）或同设备双人。球只会越来越快。">Co-op Pong — you each guard one side and keep the bouncing ball from slipping past either paddle. Play remotely (Create/Join a room) or on one device. It only gets faster.</div>
@@ -142,7 +121,7 @@
 
   <div class="card">
     <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
-    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/lander.png?v=4" alt="Co-op lunar lander descending to the pad under the moon" loading="lazy" width="440" height="240"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <img class="card-thumb" src="/game/thumbs/lander.png?v=4" alt="Co-op lunar lander descending to the pad under the moon" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#e8b04a">[◂▴▸]</div>
     <div class="card-title" data-en="lander.exe" data-zh="登月舱.exe">lander.exe</div>
     <div class="card-desc" data-en="Co-op lunar lander — one of you fires the thrust, the other steers the tilt, both flying one ship — tilt to aim, thrust to push. Land softly and upright on the pad. Play remotely (Create/Join a room) or on one device." data-zh="合作登月——一人控推力，一人控倾斜，共同驾驶一艘飞船——倾斜对准，推力推进。平稳且端正地降落在着陆台。可联机（创建/加入房间）或同设备双人。">Co-op lunar lander — one of you fires the thrust, the other steers the tilt, both flying one ship — tilt to aim, thrust to push. Land softly and upright on the pad. Play remotely (Create/Join a room) or on one device.</div>
@@ -160,7 +139,7 @@
 
   <div class="card">
     <div class="ribbon p0" data-en="CPU · AUTO" data-zh="CPU · 自动">CPU · AUTO</div>
-    <div class="cdwrap"><div class="cd"><div class="noimg">[▸▸▸]</div><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <div class="noimg">[▸▸▸]</div>
     <div class="card-icon" style="color:#46c8ff">[▸▸▸]</div>
     <div class="card-title" data-en="train_rl_hunter.exe" data-zh="训练猎手.exe">train_rl_hunter.exe</div>
     <div class="card-desc" data-en="Reinforcement-learning lab: watch a hunter policy learn Escape Grid by playing against itself, right in your browser. Slow, rough, and mesmerizing." data-zh="强化学习实验室：在浏览器里看猎手策略通过自我对弈学习逃脱方格。缓慢、粗糙、令人着迷。">Reinforcement-learning lab: watch a hunter policy learn Escape Grid by playing against itself, right in your browser. Slow, rough, and mesmerizing.</div>
@@ -177,7 +156,7 @@
 
   <div class="card">
     <div class="ribbon " data-en="1UP · SIM" data-zh="1UP · 模拟">1UP · SIM</div>
-    <div class="cdwrap"><div class="cd"><div class="noimg">[🌱]</div><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <div class="noimg">[🌱]</div>
     <div class="card-icon" style="color:#1db954">[❀]</div>
     <div class="card-title" data-en="greenhouse.exe" data-zh="温室.exe">greenhouse.exe</div>
     <div class="card-desc" data-en="The plant-metabolism digital twin that powers grow_a_tomato — poke the raw model directly: light, feed, stress, growth curves." data-zh="驱动“种番茄”的植物代谢数字孪生——直接摆弄模型本体：光照、施肥、胁迫与生长曲线。">The plant-metabolism digital twin that powers grow_a_tomato — poke the raw model directly: light, feed, stress, growth curves.</div>
