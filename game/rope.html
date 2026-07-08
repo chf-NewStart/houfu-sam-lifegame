@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b30</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b31</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -153,6 +153,10 @@
       <label style="display:flex;align-items:center;gap:7px;font-size:0.7rem;color:#9a9a9a;cursor:pointer;margin-top:2px">
         <input type="checkbox" id="noRopeChk" style="accent-color:#1db954">
         <span data-en="Practice: no tether (pure movement feel)" data-zh="练习：无绳模式（纯移动手感）">Practice: no tether (pure movement feel)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:0.7rem;color:#9a9a9a;cursor:pointer;margin-top:2px">
+        <input type="checkbox" id="noSurgeChk" style="accent-color:#1db954">
+        <span data-en="Practice: no surge (test in peace)" data-zh="练习：关闭红潮（安心测试）">Practice: no surge (test in peace)</span>
       </label>
     </div>
     <div class="pcard">
@@ -265,9 +269,9 @@ const held={a:false,d:false,l:false,r:false};
 let jb1=0, jb2=0;                      // jump BUFFERS (frames): press a hair early and it still fires on landing
 let coy1=0, coy2=0;                    // coyote frames: jump still works just after stepping off a ledge
 let jqk1=0, jqk2=0;                    // horizontal kick for slanted (flick) jumps
-// minimum move pulse: with the acceleration curve, a sub-frame tap needs a few force
-// frames to be visible at all — 3 frames ≈ a 4px precision nudge
-const MOVE_PULSE=3;
+// nudge + one real force frame (the stop consumes the pulse's final frame):
+// total hop ≈ 8.6px fully delivered within ~33ms
+const MOVE_PULSE=2;
 let mp1=0,mp1d=0, mp2=0,mp2d=0;
 const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
 // opposite keys held together resolve to the LAST one pressed (not a dead neutral)
@@ -280,8 +284,12 @@ let prefAD=0, prefLR=0, prefAny=0;
 // then a HARD stop — zero slide); ANY new tap kills the running step THIS frame and
 // starts its own. Holding a key does nothing beyond its initial tap. Responsiveness
 // over smoothness, by request.
+function tapNudge(p,d){ const n=d*4.3; p.x+=n; p.px+=n; }   // instant first-frame displacement (no velocity) —
+                                                            // visible at the very next screen refresh, ~8ms at 120Hz
 function armPulse(which,d){
   if(netMode==='guest'){ ropeRef('gi').update({tp:Date.now(),td:d}); return; }   // guest taps stream as edges
+  const tgt=(which===1)?P1:((netMode==='host')?P1:P2);
+  if(tgt)tapNudge(tgt,d);
   if(which===1){ mp1=MOVE_PULSE; mp1d=d; }
   else { mp2=MOVE_PULSE; mp2d=d; }
 }
@@ -367,6 +375,7 @@ cv.addEventListener('pointercancel',()=>{ swipe=null; });
 
 /* ── physics ── */
 let noRope=false;   // practice toggle: local-only, disables the tether entirely
+let noSurge=false;  // practice toggle: local-only, the surge never rises
 function ropeTaut(){ if(noRope)return false; const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ROPE_LEN*0.98)*(ROPE_LEN*0.98); }   // 0.98: the rope only pulls past 1.0 — a wide margin left a brakeless dead band
 function applyMove(p,dir){
   if(!dir){
@@ -532,8 +541,10 @@ function step(){
   minY=Math.min(minY,hi);
   updateScore();
   // the surge: after a grace period a red tide rises from below — keep moving
-  if(t>SURGE_DELAY) surgeY-=Math.min(SURGE_MAX, SURGE_BASE+climbM()*0.004);
-  if(P1.y+R>surgeY||P2.y+R>surgeY){gameover(2);return;}
+  if(!noSurge){
+    if(t>SURGE_DELAY) surgeY-=Math.min(SURGE_MAX, SURGE_BASE+climbM()*0.004);
+    if(P1.y+R>surgeY||P2.y+R>surgeY){gameover(2);return;}
+  }
   // both fallen below the view → game over
   if(hi-camY>VH+70)gameover(1);
 }
@@ -621,6 +632,7 @@ function render(a){
   // off-screen danger arrows
   arrowFor(P1,'#1db954'); arrowFor(P2,'#46c8ff');
   // the surge — a red tide swallowing the tower from below
+  if(!noSurge){
   const sYY=sy(_rSurge);
   if(sYY<VH+24){
     const sg=ctx.createLinearGradient(0,Math.min(sYY,VH-1),0,VH);
@@ -632,6 +644,7 @@ function render(a){
   } else {
     const warn=1-(_rSurge-(_rCam+VH))/300;            // close below the view → bottom edge glows
     if(warn>0){ ctx.fillStyle='rgba(226,64,40,'+(warn*0.55).toFixed(2)+')'; ctx.fillRect(0,VH-5,VW,5); }
+  }
   }
 }
 function arrowFor(p,col){
@@ -647,7 +660,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b30 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b31 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -699,7 +712,7 @@ async function createRoom(){
       _giRef=ropeRef('gi');
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
         gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=(v.m!=null)?v.m:null;
-        if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; gpd=v.td>0?1:-1; gp=MOVE_PULSE; }   // guest micro-tap floor, same as local
+        if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; gpd=v.td>0?1:-1; gp=MOVE_PULSE; tapNudge(P2,gpd); }   // guest taps nudge instantly too
         if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
         if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
       reset();                                    // fresh seeded tower for both sides
@@ -797,6 +810,10 @@ function toggleLang(){lang=lang==='en'?'zh':'en';document.documentElement.lang=l
 document.getElementById('noRopeChk').addEventListener('change',e=>{
   if(netMode!==''){ e.target.checked=false; return; }   // local practice only
   noRope=e.target.checked;
+});
+document.getElementById('noSurgeChk').addEventListener('change',e=>{
+  if(netMode!==''){ e.target.checked=false; return; }   // local practice only
+  noSurge=e.target.checked;
 });
 reset(); applyLang(); requestAnimationFrame(frame);
 
