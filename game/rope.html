@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b29</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b30</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -148,7 +148,7 @@
       <div class="pcard-title"><span id="ctlTitle" data-en="// controls · two players, one keyboard" data-zh="// 操作 · 双人同键盘">// controls · two players, one keyboard</span></div>
       <div class="ctl"><span class="dot p1"></span><span class="who"><span data-en="Player 1" data-zh="玩家 1">Player 1</span>&nbsp; <kbd>A</kbd><kbd>D</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>W</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
       <div class="ctl"><span class="dot p2"></span><span class="who"><span data-en="Player 2" data-zh="玩家 2">Player 2</span>&nbsp; <kbd>←</kbd><kbd>→</kbd> <span data-en="move" data-zh="移动">move</span> · <kbd>↑</kbd> <span data-en="jump" data-zh="跳">jump</span></span></div>
-      <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Move exactly while a key is held — release stops instantly; a quick tap still gives one small nudge." data-zh="按住即走、松开立停——完全跟手；快速轻点也保证有一小步。">Move exactly while a key is held — release stops instantly; a quick tap still gives one small nudge.</span></div>
+      <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Tap = one quick small step, then a dead stop. Drum taps to travel — every NEW tap instantly overrides the current step. Holding does nothing extra." data-zh="轻点＝一小步，随即完全停住。连点即可前进——每次新点按都会立刻覆盖当前动作。长按不会额外移动。">Tap = one quick small step, then a dead stop. Drum taps to travel — every NEW tap instantly overrides the current step. Holding does nothing extra.</span></div>
       <div class="ctl"><span class="dot" style="background:#666"></span><span class="who" data-en="Touch: slide the stick to run, tap JUMP — or flick up on the tower itself (flick diagonally for a slanted leap)." data-zh="触屏：滑动摇杆移动，点 JUMP 跳——或直接在塔上向上滑动起跳（斜着滑就是斜跳）。">Touch: slide the stick to run, tap JUMP — or flick up on the tower itself (flick diagonally for a slanted leap).</span></div>
       <label style="display:flex;align-items:center;gap:7px;font-size:0.7rem;color:#9a9a9a;cursor:pointer;margin-top:2px">
         <input type="checkbox" id="noRopeChk" style="accent-color:#1db954">
@@ -275,11 +275,11 @@ let prefAD=0, prefLR=0, prefAny=0;
 // arm a min-move pulse: taps stack (drumming = more), but a tap AGAINST the current
 // slide arms a short pulse — turn assist already does the stopping, a full pulse
 // would overshoot into a reverse walk
-// INDUSTRY-STANDARD INPUT (researched): direction is POLLED HELD STATE, applied
-// directly every sim frame — input buffers/queues belong to one-shot actions (jumps)
-// only, never to movement, because queued movement commands serialize and read as
-// lag. Opposite keys resolve LAST-INPUT-PRIORITY (fighting-game SOCD). The min-pulse
-// survives solely as a floor so a micro-tap still yields one visible nudge.
+// TAP-STEP with INSTANT OVERRIDE (user spec, deliberately unlike the usual
+// block-or-queue grid movers): every tap executes one fast fixed step (3 frames,
+// then a HARD stop — zero slide); ANY new tap kills the running step THIS frame and
+// starts its own. Holding a key does nothing beyond its initial tap. Responsiveness
+// over smoothness, by request.
 function armPulse(which,d){
   if(netMode==='guest'){ ropeRef('gi').update({tp:Date.now(),td:d}); return; }   // guest taps stream as edges
   if(which===1){ mp1=MOVE_PULSE; mp1d=d; }
@@ -381,32 +381,22 @@ function applyMove(p,dir){
     else if(!ropeTaut()){ const v=vx(p)*0.55; p.px=p.x-v; }   // free-air stop nearly as crisp; taut air = swing, never braked
     return;
   }
-  // CELESTE-STYLE curve (researched): motion STARTS on frame 1 but reaches max over
-  // ~6 frames (100ms) — "instant full speed = precision" is a documented myth; the
-  // short ramp is what turns a casual tap into a small controlled step instead of a
-  // whole ball-width leap. Stops are ~2× faster than starts (0.45 brake) and
-  // reversals get a TURN-AROUND BOOST so direction changes still bite immediately.
+  // DIRECT SNAP (user spec: responsiveness over smoothness): a driven frame moves at
+  // full step speed immediately — the step is 3 frames then a hard stop, so a tap is
+  // a small fixed hop (~13px) with zero slide, and a new tap overrides instantly.
   const mag=Math.min(1,Math.abs(dir)), sgn=dir>0?1:-1;
-  if(p.holdDir!==sgn){ p.holdT=0; p.holdDir=sgn; }
-  p.holdT=(p.holdT||0)+1;
   const v0=vx(p);
   if(p.grounded){
-    const run=4.8*Math.max(0.4,mag);
-    let v=(sgn*v0<0)? v0*0.55 : v0;                                   // turn chop
-    const A=(sgn*v0<-0.3)? 2.2 : 0.8;                                 // turn boost vs normal accel
-    const cap=(sgn*v0>run)? Math.max(run,Math.abs(v0)*0.85) : run;    // overspeed bleeds, never grows
-    v+=sgn*A*Math.max(0.4,mag);
-    v=Math.max(-cap,Math.min(cap,v));
+    const run=5.0*Math.max(0.4,mag);
+    let v=sgn*run;
+    if(sgn*v0>run) v=sgn*Math.max(run,Math.abs(v0)*0.85);   // overspeed (slingshot/landing) bleeds, never grows
     p.px=p.x-v; return;
   }
-  // AIRBORNE: same curve, gentler — only a TAUT rope keeps its momentum against the
+  // AIRBORNE: same snap, gentler — only a TAUT rope keeps its momentum against the
   // cap, so pumping into a pendulum swing is untouched.
-  let v=(sgn*v0<0)? v0*0.55 : v0;
-  const A=(sgn*v0<-0.3)? 1.8 : 1.0;
-  const maxv=5.4*Math.max(0.4,mag);
-  const cap=Math.max(maxv,Math.abs(v));     // cap from PRE-accel speed: swings keep momentum, accel can't compound past maxv
-  v+=sgn*A*Math.max(0.4,mag);
-  v=Math.max(-cap,Math.min(cap,v)); p.px=p.x-v;
+  let v=sgn*4.5*Math.max(0.4,mag);
+  if(sgn*v0>4.5) v=sgn*Math.max(4.5,Math.abs(v0)*0.9);
+  p.px=p.x-v;
 }
 function integrate(p){
   if(p.inv===0)return;
@@ -478,10 +468,8 @@ function step(){
   coy2=P2.grounded?7:Math.max(0,coy2-1);
   if(netMode==='host'){
     // host: every local key/pad/joystick drives P1; the guest's streamed inputs drive P2
-    // direction = polled held keys (last-input-priority on opposites), joystick analog,
-    // then the min-pulse floor so micro-taps still nudge
-    const Lh=(held.a||held.l), Rh=(held.d||held.r);
-    let d1=((Lh&&Rh)?prefAny:((Rh?1:0)-(Lh?1:0)))||jdz(joyV1)||jdz(joyV2);
+    // tap-steps drive movement (any new tap overrides); joystick stays continuous
+    let d1=jdz(joyV1)||jdz(joyV2);
     if(!d1&&mp1>0)d1=mp1d; if(!d1&&mp2>0)d1=mp2d;
     let d2=(gIn.m!=null?gIn.m:((gIn.r?1:0)-(gIn.l?1:0)));
     if(!d2&&gp>0)d2=gpd;
@@ -495,9 +483,9 @@ function step(){
       else { gjb--; if(!gjb)gKick=0; }
     }
   } else {
-    let d1=((held.a&&held.d)?prefAD:((held.d?1:0)-(held.a?1:0)))||jdz(joyV1);
+    let d1=jdz(joyV1);
     if(!d1&&mp1>0)d1=mp1d;
-    let d2=((held.l&&held.r)?prefLR:((held.r?1:0)-(held.l?1:0)))||jdz(joyV2);
+    let d2=jdz(joyV2);
     if(!d2&&mp2>0)d2=mp2d;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
@@ -509,7 +497,12 @@ function step(){
       else { jb2--; if(!jb2)jqk2=0; }
     }
   }
+  const _w1=mp1,_w2=mp2,_w3=gp;
   if(mp1>0)mp1--; if(mp2>0)mp2--; if(gp>0)gp--;   // step pulses burn down AFTER use — an armed step delivers its full frames
+  // step END = HARD STOP on the ground: velocity zeroed, zero slide ("tap, done")
+  if(_w1===1&&P1.grounded)P1.px=P1.x;
+  if(_w2===1){ const _p=(netMode==='host')?P1:P2; if(_p.grounded)_p.px=_p.x; }
+  if(_w3===1&&P2.grounded)P2.px=P2.x;
   integrate(P1); integrate(P2);
   const _sx1=P1.x, _sx2=P2.x;                      // where the constraint pass found them
   for(let it=0;it<ITER;it++){
@@ -654,7 +647,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b29 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b30 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
