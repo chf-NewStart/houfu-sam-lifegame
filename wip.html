@@ -48,14 +48,16 @@
   .footer{max-width:1060px;margin:30px auto 0;text-align:center;color:#555;font-size:0.7rem;line-height:1.7;}
   @media (pointer:coarse){ body{-webkit-user-select:none;user-select:none;} input,textarea{-webkit-user-select:text;user-select:text;} }
 
-  /* arcade player-mode ribbons on the card corners */
+  /* arcade player plates: neon coin-op badges on the thumb corner */
   .card{overflow:hidden;}
-  .ribbon{position:absolute;top:16px;right:-38px;transform:rotate(45deg);z-index:4;width:150px;text-align:center;
-    font-size:0.56rem;font-weight:700;letter-spacing:1.5px;padding:4px 0;color:#04150a;background:#1db954;
-    box-shadow:0 2px 8px rgba(0,0,0,0.55);pointer-events:none;text-transform:uppercase;font-family:inherit;}
-  .ribbon.p2{background:#36c5d0;color:#04252a;}
-  .ribbon.p0{background:#b48cff;color:#1b1030;}
-  .ribbon.p12{background:#e8b04a;color:#241804;}
+  .ribbon{position:absolute;top:10px;right:10px;z-index:4;
+    font-size:0.6rem;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border-radius:3px;
+    font-family:inherit;text-transform:uppercase;pointer-events:none;
+    background:rgba(6,10,8,0.85);color:#1db954;border:1px solid #1db954;
+    box-shadow:0 0 10px rgba(29,185,84,0.35), inset 0 0 6px rgba(29,185,84,0.12);}
+  .ribbon.p2{color:#36c5d0;border-color:#36c5d0;box-shadow:0 0 10px rgba(54,197,208,0.35), inset 0 0 6px rgba(54,197,208,0.12);}
+  .ribbon.p0{color:#b48cff;border-color:#b48cff;box-shadow:0 0 10px rgba(180,140,255,0.35), inset 0 0 6px rgba(180,140,255,0.12);}
+  .ribbon.p12{color:#e8b04a;border-color:#e8b04a;box-shadow:0 0 10px rgba(232,176,74,0.35), inset 0 0 6px rgba(232,176,74,0.12);}
 </style>
 </head>
 <body>
@@ -71,7 +73,7 @@
 <div class="grid">
 
   <div class="card">
-    <div class="ribbon " data-en="1P" data-zh="单人">1P</div>
+    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
     <img class="card-thumb" src="/game/thumbs/escape.jpg?v=4" alt="Escape Grid board" loading="lazy" width="440" height="240">
     <div class="card-icon">[::]</div>
     <div class="card-title" data-en="escape_grid.exe" data-zh="逃脱方格.exe">escape_grid.exe</div>
@@ -89,7 +91,7 @@
   </div>
 
   <div class="card">
-    <div class="ribbon p2" data-en="2P · CO-OP" data-zh="双人合作">2P · CO-OP</div>
+    <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
     <img class="card-thumb" src="/game/thumbs/keepup.png?v=1" alt="Keep-Up co-op pong" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#36c5d0">[◖●◗]</div>
     <div class="card-title" data-en="keep_up.exe" data-zh="接力球.exe">keep_up.exe</div>
@@ -107,7 +109,7 @@
   </div>
 
   <div class="card">
-    <div class="ribbon p2" data-en="2P · CO-OP" data-zh="双人合作">2P · CO-OP</div>
+    <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
     <img class="card-thumb" src="/game/thumbs/lander.png?v=4" alt="Co-op lunar lander descending to the pad under the moon" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#e8b04a">[◂▴▸]</div>
     <div class="card-title" data-en="lander.exe" data-zh="登月舱.exe">lander.exe</div>
@@ -125,7 +127,7 @@
   </div>
 
   <div class="card">
-    <div class="ribbon p0" data-en="0P · AUTO" data-zh="零玩家 · 自动">0P · AUTO</div>
+    <div class="ribbon p0" data-en="CPU · AUTO" data-zh="CPU · 自动">CPU · AUTO</div>
     <div class="noimg">[▸▸▸]</div>
     <div class="card-icon" style="color:#46c8ff">[▸▸▸]</div>
     <div class="card-title" data-en="train_rl_hunter.exe" data-zh="训练猎手.exe">train_rl_hunter.exe</div>
@@ -142,7 +144,7 @@
   </div>
 
   <div class="card">
-    <div class="ribbon " data-en="1P · SIM" data-zh="单人 · 模拟">1P · SIM</div>
+    <div class="ribbon " data-en="1UP · SIM" data-zh="1UP · 模拟">1UP · SIM</div>
     <div class="noimg">[🌱]</div>
     <div class="card-icon" style="color:#1db954">[❀]</div>
     <div class="card-title" data-en="greenhouse.exe" data-zh="温室.exe">greenhouse.exe</div>

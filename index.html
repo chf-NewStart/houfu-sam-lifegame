@@ -109,7 +109,7 @@
 .esc-canvas{ position:absolute; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; opacity:0; transition:opacity .3s ease; }
 .card.glow-escape:hover .esc-canvas{ opacity:1; }
 
-    .card-thumb { display: block; width: calc(100% + 40px); height: 124px; margin: -20px -20px 14px; object-fit: cover; border-bottom: 1px solid #1c1c1c; filter: saturate(0.9) brightness(0.82); transition: filter 0.15s; }
+    .card-thumb { display: block; width: calc(100% + 40px); height: auto; aspect-ratio: 440/240; margin: -20px -20px 14px; object-fit: cover; border-bottom: 1px solid #1c1c1c; filter: saturate(0.9) brightness(0.82); transition: filter 0.15s; }
     .card:hover .card-thumb { filter: saturate(1.05) brightness(1); }
 
     .card-icon { color: #1db954; font-size: 1.25rem; margin-bottom: 10px; }
@@ -149,14 +149,16 @@
   .card:hover .play-btn{animation:coinblink 0.9s steps(1) infinite;}
   @keyframes coinblink{0%,55%{background:#1db954;color:#04150a;}56%,100%{background:transparent;color:#1db954;}}
 
-  /* arcade player-mode ribbons on the card corners */
+  /* arcade player plates: neon coin-op badges on the thumb corner */
   .card{overflow:hidden;}
-  .ribbon{position:absolute;top:16px;right:-38px;transform:rotate(45deg);z-index:4;width:150px;text-align:center;
-    font-size:0.56rem;font-weight:700;letter-spacing:1.5px;padding:4px 0;color:#04150a;background:#1db954;
-    box-shadow:0 2px 8px rgba(0,0,0,0.55);pointer-events:none;text-transform:uppercase;font-family:inherit;}
-  .ribbon.p2{background:#36c5d0;color:#04252a;}
-  .ribbon.p0{background:#b48cff;color:#1b1030;}
-  .ribbon.p12{background:#e8b04a;color:#241804;}
+  .ribbon{position:absolute;top:10px;right:10px;z-index:4;
+    font-size:0.6rem;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border-radius:3px;
+    font-family:inherit;text-transform:uppercase;pointer-events:none;
+    background:rgba(6,10,8,0.85);color:#1db954;border:1px solid #1db954;
+    box-shadow:0 0 10px rgba(29,185,84,0.35), inset 0 0 6px rgba(29,185,84,0.12);}
+  .ribbon.p2{color:#36c5d0;border-color:#36c5d0;box-shadow:0 0 10px rgba(54,197,208,0.35), inset 0 0 6px rgba(54,197,208,0.12);}
+  .ribbon.p0{color:#b48cff;border-color:#b48cff;box-shadow:0 0 10px rgba(180,140,255,0.35), inset 0 0 6px rgba(180,140,255,0.12);}
+  .ribbon.p12{color:#e8b04a;border-color:#e8b04a;box-shadow:0 0 10px rgba(232,176,74,0.35), inset 0 0 6px rgba(232,176,74,0.12);}
 
   /* sort/filter by player count */
   .pfilter{max-width:860px;margin:0 auto 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
@@ -178,14 +180,14 @@
 <div class="pfilter">
   <span class="plabel" data-en="// sort by players:" data-zh="// 按玩家数：">// sort by players:</span>
   <button class="pchip on" data-p="all" data-en="ALL" data-zh="全部">ALL</button>
-  <button class="pchip" data-p="0" data-en="0P · auto" data-zh="0P · 自动">0P · auto</button>
-  <button class="pchip" data-p="1" data-en="1P" data-zh="1P 单人">1P</button>
-  <button class="pchip" data-p="2" data-en="2P · co-op" data-zh="2P · 合作">2P · co-op</button>
+  <button class="pchip" data-p="0" data-en="CPU · auto" data-zh="CPU · 自动">CPU · auto</button>
+  <button class="pchip" data-p="1" data-en="1UP" data-zh="1UP 单人">1UP</button>
+  <button class="pchip" data-p="2" data-en="2UP · co-op" data-zh="2UP · 合作">2UP · co-op</button>
 </div>
 <div class="grid">
 
   <div class="card flagship glow-life" data-players="0">
-    <div class="ribbon p0" data-en="0P · AUTO" data-zh="零玩家 · 自动">0P · AUTO</div>
+    <div class="ribbon p0" data-en="CPU · AUTO" data-zh="CPU · 自动">CPU · AUTO</div>
     <img class="card-thumb" src="/game/thumbs/life.png?v=4" alt="Game of Life grid" loading="lazy" width="440" height="240">
     <canvas class="lgrid" aria-hidden="true"></canvas>
     <div class="card-icon">[##]</div>
@@ -204,7 +206,7 @@
   </div>
 
   <div class="card glow-gomoku" data-players="12">
-    <div class="ribbon p12" data-en="1–2P" data-zh="1–2人">1–2P</div>
+    <div class="ribbon p12" data-en="1–2UP" data-zh="1–2UP">1–2UP</div>
     <canvas class="gwater" aria-hidden="true"></canvas>
     <div class="card-thumb gband" aria-hidden="true"></div>
     <img class="gsrc" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board" width="440" height="240">
@@ -224,7 +226,7 @@
   </div>
 
   <div class="card glow-laby" data-players="1">
-    <div class="ribbon " data-en="1P" data-zh="单人">1P</div>
+    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
     <img class="card-thumb" src="/game/thumbs/labyrinth.png?v=1" alt="Labyrinth maze" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#36c5d0">[▦]</div>
     <div class="card-title" data-en="labyrinth.exe" data-zh="迷宫.exe">labyrinth.exe</div>
@@ -242,7 +244,7 @@
 
 
   <div class="card glow-tomato" data-players="1">
-    <div class="ribbon " data-en="1P" data-zh="单人">1P</div>
+    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
     <img class="card-thumb" src="/game/thumbs/tomato.jpg?v=3" alt="Tomato-growing game" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#f0533a">[◍]</div>
     <div class="card-title" data-en="grow_a_tomato.exe" data-zh="种番茄.exe">grow_a_tomato.exe</div>
@@ -259,7 +261,7 @@
   </div>
 
   <div class="card glow-tsweep" data-players="1">
-    <div class="ribbon " data-en="1P" data-zh="单人">1P</div>
+    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
     <img class="card-thumb" src="/game/thumbs/tomatoswipe.png?v=3" alt="Tomatoswipe board — you are tomatoed!" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#e2523e">[#]</div>
     <div class="card-title" data-en="tomatoswipe.exe" data-zh="扫番茄.exe">tomatoswipe.exe</div>
@@ -276,7 +278,7 @@
   </div>
 
   <div class="card glow-sudoku" data-players="1">
-    <div class="ribbon " data-en="1P" data-zh="单人">1P</div>
+    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
     <img class="card-thumb" src="/game/thumbs/sudoku.png?v=2" alt="Sudoku grid" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#36c5d0">[9]</div>
     <div class="card-title" data-en="sudoku.exe" data-zh="数独.exe">sudoku.exe</div>
@@ -295,7 +297,7 @@
 
 
   <div class="card glow-rope" data-players="2">
-    <div class="ribbon p2" data-en="2P · CO-OP" data-zh="双人合作">2P · CO-OP</div>
+    <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
     <img class="card-thumb" src="/game/thumbs/rope.jpg?v=2" alt="Tether co-op rope climber" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#46c8ff">[o–o]</div>
     <div class="card-title" data-en="tether.exe" data-zh="默契绳.exe">tether.exe</div>
