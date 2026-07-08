@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b22</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b23</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -272,16 +272,19 @@ let prefAD=0, prefLR=0, prefAny=0;
 // arm a min-move pulse: taps stack (drumming = more), but a tap AGAINST the current
 // slide arms a short pulse — turn assist already does the stopping, a full pulse
 // would overshoot into a reverse walk
-let _lastTap1=-99, _lastTap2=-99;
+let _lastTap1=-99, _lastTap2=-99, mpS1=1, mpS2=1;
 function stepDur(gap){ return (gap>0&&gap<=10)? Math.max(MOVE_PULSE,gap) : MOVE_PULSE; }
 function armPulse(which,d){
-  // tap-to-step: an isolated press is ONE clean, identical step; a new tap RESTARTS
-  // the step NOW (never queues). CADENCE BRIDGING: taps within ~10 frames of each
-  // other stretch the force phase to span your actual tap gap — while you're actively
-  // tapping (either direction) the ball never sits still "finishing its animation".
+  // tap-to-step: EVERY tap moves the same fixed step distance; a new tap restarts NOW
+  // (never queues). CADENCE BRIDGING stretches the step's TIME — not its distance —
+  // to span your actual tap gap: quick taps glide seamlessly into each other, each
+  // leg still exactly one step, so alternating L-R-L stays symmetric (a stretched-
+  // DISTANCE bridge made the middle leg run 2× far and the next tap spent half its
+  // step undoing it — that was the "lag before the second left").
   if(netMode==='guest'){ ropeRef('gi').update({tp:Date.now(),td:d}); return; }   // guest taps stream as edges
-  if(which===1){ mp1=stepDur(t-_lastTap1); mp1d=d; _lastTap1=t; }
-  else { mp2=stepDur(t-_lastTap2); mp2d=d; _lastTap2=t; }
+  const dur=stepDur(t-((which===1)?_lastTap1:_lastTap2)), sc=MOVE_PULSE/dur;
+  if(which===1){ mp1=dur; mp1d=d; mpS1=sc; _lastTap1=t; }
+  else { mp2=dur; mp2d=d; mpS2=sc; _lastTap2=t; }
 }
 addEventListener('keydown',e=>{
   const k=e.key, ae=document.activeElement;
@@ -482,9 +485,9 @@ function step(){
     // host: every local key/pad/joystick drives P1; the guest's streamed inputs drive P2
     // keyboard is pure tap-to-step (pulses only); the joystick alone moves continuously
     let d1=jdz(joyV1)||jdz(joyV2);
-    if(!d1&&mp1>0)d1=mp1d; if(!d1&&mp2>0)d1=mp2d;
+    if(!d1&&mp1>0)d1=mp1d*mpS1; if(!d1&&mp2>0)d1=mp2d*mpS2;
     let d2=(gIn.m!=null?gIn.m:((gIn.r?1:0)-(gIn.l?1:0)));
-    if(!d2&&gp>0)d2=gpd;
+    if(!d2&&gp>0)d2=gpd*gpS;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0||jb2>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=jb2=0; jqk1=jqk2=0; }
@@ -496,9 +499,9 @@ function step(){
     }
   } else {
     let d1=jdz(joyV1);
-    if(!d1&&mp1>0)d1=mp1d;
+    if(!d1&&mp1>0)d1=mp1d*mpS1;
     let d2=jdz(joyV2);
-    if(!d2&&mp2>0)d2=mp2d;
+    if(!d2&&mp2>0)d2=mp2d*mpS2;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+jqk1,-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=0; jqk1=0; }
@@ -645,7 +648,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b22 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b23 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -659,7 +662,7 @@ function frame(now){
 const firebaseConfig={ apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
 let _db=null,_code=null,netMode='',curSeed=null;
 let _stRef=null,_stCb=null,_giRef=null,_giCb=null,_jnRef=null,_jnCb=null;
-let gIn={l:0,r:0,m:null},gjb=0,gKick=0,gp=0,gpd=0,_lastJ=0,_lastRs=0,_lastTp=0,_lastGTap=-99,_sent={m:0};
+let gIn={l:0,r:0,m:null},gjb=0,gKick=0,gp=0,gpd=0,gpS=1,_lastJ=0,_lastRs=0,_lastTp=0,_lastGTap=-99,_sent={m:0};
 let netState=null,netM=0,_wTimer=0,_prevO=0;
 function db(){ if(!_db){ firebase.initializeApp(firebaseConfig); _db=firebase.database(); } return _db; }
 function ropeRef(sub){ return db().ref(`games/${_code}/rp/${sub}`); }
@@ -697,7 +700,7 @@ async function createRoom(){
       _giRef=ropeRef('gi');
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
         gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=(v.m!=null)?v.m:null;
-        if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; gpd=v.td>0?1:-1; gp=stepDur(t-_lastGTap); _lastGTap=t; }   // guest taps restart + cadence-bridge, same as local
+        if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; gpd=v.td>0?1:-1; const gd=stepDur(t-_lastGTap); gp=gd; gpS=MOVE_PULSE/gd; _lastGTap=t; }   // guest taps: fixed distance, time-bridged, same as local
         if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
         if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
       reset();                                    // fresh seeded tower for both sides
