@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b24</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b25</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -273,7 +273,10 @@ let prefAD=0, prefLR=0, prefAny=0;
 // slide arms a short pulse — turn assist already does the stopping, a full pulse
 // would overshoot into a reverse walk
 let _lastTap1=-99, _lastTap2=-99, mpS1=1, mpS2=1, pq1=0, pq2=0;
-function stepDur(gap){ return (gap>0&&gap<=10)? Math.max(MOVE_PULSE,gap) : MOVE_PULSE; }
+// bridged steps end ONE frame before your next expected tap — a step lasting exactly
+// the tap gap collided with every next tap (timing jitter), queueing each reversal
+// behind its remainder; the phase error compounded into lag after ~3 rounds
+function stepDur(gap){ return (gap>0&&gap<=11)? Math.max(MOVE_PULSE,Math.min(10,gap-1)) : MOVE_PULSE; }
 function armPulse(which,d){
   // tap-to-step: EVERY tap moves the same fixed step distance. CADENCE BRIDGING
   // stretches a step's TIME (not distance) to span your tap gap, so rhythm taps glide
@@ -283,8 +286,10 @@ function armPulse(which,d){
   // invisible), yet the wait is bounded by the ≤5 frames left in the current step.
   if(netMode==='guest'){ ropeRef('gi').update({tp:Date.now(),td:d}); return; }   // guest taps stream as edges
   const dur=stepDur(t-((which===1)?_lastTap1:_lastTap2)), sc=MOVE_PULSE/dur;
-  if(which===1){ if(mp1>0&&mp1d!==d)pq1=d; else { mp1=dur; mp1d=d; mpS1=sc; } _lastTap1=t; }
-  else { if(mp2>0&&mp2d!==d)pq2=d; else { mp2=dur; mp2d=d; mpS2=sc; } _lastTap2=t; }
+  // opposite mid-step: keep the running step visible but trim it to ≤2 more frames,
+  // so the queued reversal lands within ~33ms instead of a full step later
+  if(which===1){ if(mp1>0&&mp1d!==d){ mp1=Math.min(mp1,2); pq1=d; } else { mp1=dur; mp1d=d; mpS1=sc; } _lastTap1=t; }
+  else { if(mp2>0&&mp2d!==d){ mp2=Math.min(mp2,2); pq2=d; } else { mp2=dur; mp2d=d; mpS2=sc; } _lastTap2=t; }
 }
 addEventListener('keydown',e=>{
   const k=e.key, ae=document.activeElement;
@@ -651,7 +656,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b24 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b25 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -704,7 +709,7 @@ async function createRoom(){
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
         gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=(v.m!=null)?v.m:null;
         if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; const nd=v.td>0?1:-1;   // guest taps: fixed distance, time-bridged, opposite-queued — same as local
-          if(gp>0&&gpd!==nd){ gq=nd; }
+          if(gp>0&&gpd!==nd){ gp=Math.min(gp,2); gq=nd; }
           else { const gd=stepDur(t-_lastGTap); gp=gd; gpS=MOVE_PULSE/gd; gpd=nd; }
           _lastGTap=t; }
         if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
