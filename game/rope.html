@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b28</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b29</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -265,10 +265,9 @@ const held={a:false,d:false,l:false,r:false};
 let jb1=0, jb2=0;                      // jump BUFFERS (frames): press a hair early and it still fires on landing
 let coy1=0, coy2=0;                    // coyote frames: jump still works just after stepping off a ledge
 let jqk1=0, jqk2=0;                    // horizontal kick for slanted (flick) jumps
-// minimum move pulse: the smallest floor that makes a micro-tap visible (~11px nudge).
-// Movement is otherwise strictly 1:1 with how long the key is held — a bigger floor
-// made any sudden press glide a whole ball-width, partly after release ("it slides")
-const MOVE_PULSE=2;
+// minimum move pulse: with the acceleration curve, a sub-frame tap needs a few force
+// frames to be visible at all — 3 frames ≈ a 4px precision nudge
+const MOVE_PULSE=3;
 let mp1=0,mp1d=0, mp2=0,mp2d=0;
 const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
 // opposite keys held together resolve to the LAST one pressed (not a dead neutral)
@@ -382,34 +381,31 @@ function applyMove(p,dir){
     else if(!ropeTaut()){ const v=vx(p)*0.55; p.px=p.x-v; }   // free-air stop nearly as crisp; taut air = swing, never braked
     return;
   }
-  // Response is INSTANT — full force from the first frame. Hold time ramps the top
-  // SPEED instead (tap = short precise step, keep holding ≈0.4s = full run), and an
-  // analog stick scales it. Pressing AGAINST your slide chops the old velocity fast
-  // (turn assist) so reversals bite immediately instead of skating.
+  // CELESTE-STYLE curve (researched): motion STARTS on frame 1 but reaches max over
+  // ~6 frames (100ms) — "instant full speed = precision" is a documented myth; the
+  // short ramp is what turns a casual tap into a small controlled step instead of a
+  // whole ball-width leap. Stops are ~2× faster than starts (0.45 brake) and
+  // reversals get a TURN-AROUND BOOST so direction changes still bite immediately.
   const mag=Math.min(1,Math.abs(dir)), sgn=dir>0?1:-1;
   if(p.holdDir!==sgn){ p.holdT=0; p.holdDir=sgn; }
   p.holdT=(p.holdT||0)+1;
   const v0=vx(p);
   if(p.grounded){
-    // DIRECT ground control: full run speed the moment you press, instant reversals,
-    // dead stop on release — zero inertia, zero ramp-up. The one exception: overspeed
-    // in the SAME direction (rope slingshot, hot landing) bleeds 15%/frame instead of
-    // snapping, so carried momentum still feels physical but can never run away.
-    const run=5.2*Math.max(0.4,mag);
-    let v=sgn*run;
-    if(sgn*v0>run) v=sgn*Math.max(run, Math.abs(v0)*0.85);
+    const run=4.8*Math.max(0.4,mag);
+    let v=(sgn*v0<0)? v0*0.55 : v0;                                   // turn chop
+    const A=(sgn*v0<-0.3)? 2.2 : 0.8;                                 // turn boost vs normal accel
+    const cap=(sgn*v0>run)? Math.max(run,Math.abs(v0)*0.85) : run;    // overspeed bleeds, never grows
+    v+=sgn*A*Math.max(0.4,mag);
+    v=Math.max(-cap,Math.min(cap,v));
     p.px=p.x-v; return;
   }
-  // AIRBORNE: responsive steering with a first-frame kick. Measured before this fix:
-  // air steering started at 1.04px/f (vs ground 4.44) and a correction tap NEVER
-  // reversed the ball. Free air now steers almost like ground; only a TAUT rope keeps
-  // its momentum against the cap, so pumping into a pendulum swing is untouched.
-  const taut=ropeTaut();
-  let v=(sgn*v0<0)? v0*0.45 : v0;          // opposing input bites immediately
-  const maxv=5.8*Math.max(0.4,mag);
+  // AIRBORNE: same curve, gentler — only a TAUT rope keeps its momentum against the
+  // cap, so pumping into a pendulum swing is untouched.
+  let v=(sgn*v0<0)? v0*0.55 : v0;
+  const A=(sgn*v0<-0.3)? 1.8 : 1.0;
+  const maxv=5.4*Math.max(0.4,mag);
   const cap=Math.max(maxv,Math.abs(v));     // cap from PRE-accel speed: swings keep momentum, accel can't compound past maxv
-  v+=sgn*2.0*mag;
-  if(!taut && sgn*v<3.2*mag) v=sgn*3.2*mag; // free-air floor: steering starts NOW, not 4 frames later
+  v+=sgn*A*Math.max(0.4,mag);
   v=Math.max(-cap,Math.min(cap,v)); p.px=p.x-v;
 }
 function integrate(p){
@@ -658,7 +654,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b28 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b29 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
