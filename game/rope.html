@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b34</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b35</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -157,6 +157,10 @@
       <label style="display:flex;align-items:center;gap:7px;font-size:0.7rem;color:#9a9a9a;cursor:pointer;margin-top:2px">
         <input type="checkbox" id="noSurgeChk" style="accent-color:#1db954">
         <span data-en="Practice: no surge (test in peace)" data-zh="练习：关闭红潮（安心测试）">Practice: no surge (test in peace)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:0.7rem;color:#9a9a9a;cursor:pointer;margin-top:2px">
+        <input type="checkbox" id="smoothChk" style="accent-color:#e8b04a">
+        <span data-en="Experimental: smooth directions (hold to glide; taps still hop)" data-zh="实验：平滑方向（按住滑行；轻点仍是跳步）">Experimental: smooth directions (hold to glide; taps still hop)</span>
       </label>
     </div>
     <div class="pcard">
@@ -418,6 +422,7 @@ cv.addEventListener('pointercancel',()=>{ swipe=null; });
 /* ── physics ── */
 let noRope=false;   // practice toggle: local-only, disables the tether entirely
 let noSurge=false;  // practice toggle: local-only, the surge never rises
+let smoothMove=false; // EXPERIMENTAL, local-only, default off: held keys glide continuously
 function ropeTaut(){ if(noRope)return false; const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ropeLen*0.98)*(ropeLen*0.98); }   // 0.98: the rope only pulls past 1.0 — a wide margin left a brakeless dead band
 function applyMove(p,dir){
   if(!dir){
@@ -537,9 +542,11 @@ function step(){
       else { gjb--; if(!gjb)gKick=0; }
     }
   } else {
-    let d1=jdz(joyV1);
+    let kb1=(held.a&&held.d)?prefAD:((held.d?1:0)-(held.a?1:0));
+    let kb2=(held.l&&held.r)?prefLR:((held.r?1:0)-(held.l?1:0));
+    let d1=(smoothMove?kb1:0)||jdz(joyV1);
     if(!d1&&mp1>0)d1=mp1d;
-    let d2=jdz(joyV2);
+    let d2=(smoothMove?kb2:0)||jdz(joyV2);
     if(!d2&&mp2>0)d2=mp2d;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
@@ -597,13 +604,24 @@ function step(){
     const other=(p===P1)?P2:P1;
     const was=p.grounded;
     const pl=platformUnder(p);
-    // standing on your partner's HEAD counts as footing (and you ride them around)
+    // your partner's head is FOOTING and a SPRING: land gently to stand (and ride),
+    // land fast to BOUNCE — hold jump as you land for a super-launch off the spring
     let onHead=false;
-    if(!pl && other.grounded && vy(p)>=-2 && other.y>p.y){
+    if(!pl && other.grounded && other.y>p.y){
       const feet=p.y+R, top=other.y-R;
       if(Math.abs(p.x-other.x)<R*1.35 && feet>=top-3 && feet<=top+10){
-        onHead=true;
-        p.y=other.y-(2*R-2); p.py=p.y;                 // settle on the head, no bounce
+        const impact=vy(p);
+        if(impact>4){                                  // springboard! (decaying bounce, settles after 2-3 boings)
+          const myJb=(p===P1)? (jb1>0||(netMode==='host'&&jb2>0)) : (netMode==='host'? gjb>0 : jb2>0);
+          let up=Math.min(12.6, impact*0.62);
+          if(myJb){ up=Math.max(up, JUMP*1.12);
+            if(p===P1){ jb1=0; if(netMode==='host')jb2=0; } else { if(netMode==='host')gjb=0; else jb2=0; } }
+          p.y=top-R+2; setVel(p, vx(p), -up);
+          p.stretch=5; other.squash=5; p.djOK=true;
+        } else if(impact>=-2){                         // gentle → stand on the head
+          onHead=true;
+          p.y=other.y-(2*R-2); p.py=p.y;
+        }
       }
     }
     p.grounded=!!pl||onHead;
@@ -780,7 +798,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b34 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b35 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -938,6 +956,12 @@ document.getElementById('noSurgeChk').addEventListener('change',e=>{
   if(netMode!==''){ e.target.checked=false; return; }   // local practice only
   noSurge=e.target.checked;
 });
+document.getElementById('smoothChk').addEventListener('change',e=>{
+  if(netMode!==''){ e.target.checked=false; return; }   // local experiment only
+  smoothMove=e.target.checked;
+  try{ localStorage.setItem('tether_smooth', smoothMove?'1':'0'); }catch(_){}
+});
+try{ if(localStorage.getItem('tether_smooth')==='1'){ smoothMove=true; document.getElementById('smoothChk').checked=true; } }catch(_){}
 reset(); applyLang(); requestAnimationFrame(frame);
 
 /* remember the language across the whole arcade */
