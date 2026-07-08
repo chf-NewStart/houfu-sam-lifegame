@@ -100,6 +100,12 @@
     body{-webkit-user-select:none;user-select:none;}
     input,textarea{-webkit-user-select:text;user-select:text;}
   }
+
+  .emo{background:#101216;border:1px solid #262a33;border-radius:6px;font-size:1.15rem;padding:6px 10px;
+    cursor:pointer;transition:transform .1s,border-color .1s;line-height:1;}
+  .emo:hover{transform:translateY(-2px) scale(1.12);border-color:#1db954;}
+  .emofly{position:absolute;z-index:30;font-size:1.6rem;pointer-events:none;animation:emofly 1.4s ease-out forwards;}
+  @keyframes emofly{0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-70px) scale(1.35)}}
 </style>
 </head>
 <body>
@@ -109,7 +115,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b36</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b37</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -176,6 +182,13 @@
       <div class="conn" id="conn"></div>
       <div class="role-tag" id="roleTag"></div>
       <button class="btn sm" id="localBtn" style="margin-top:9px;display:none" onclick="playLocal()" data-en="↺ Back to local play" data-zh="↺ 回到本地双人">↺ Back to local play</button>
+    </div>
+    <div class="pcard">
+      <div class="pcard-title"><span data-en="// emotes · become the emoji" data-zh="// 表情 · 变成表情球">// emotes · become the emoji</span></div>
+      <div id="emoteBar" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="emo" data-e="💣">💣</button><button class="emo" data-e="🐶">🐶</button><button class="emo" data-e="😆">😆</button><button class="emo" data-e="🙄">🙄</button><button class="emo" data-e="😅">😅</button><button class="emo" data-e="" style="color:#7a7a7a;font-size:0.72rem" data-en="✕ normal" data-zh="✕ 还原">✕ normal</button>
+      </div>
+      <div style="font-size:0.62rem;color:#5e5e5e;margin-top:7px" data-en="Your ball WEARS the emoji until you pick a new one (or ✕) — your partner sees it too." data-zh="你的球会一直戴着该表情，直到换新表情或点 ✕——对方也能看到。">Your ball WEARS the emoji until you pick a new one (or ✕) — your partner sees it too.</div>
     </div>
     <div class="pcard">
       <div class="pcard-title"><span data-en="// how to climb" data-zh="// 怎么爬">// how to climb</span></div>
@@ -695,10 +708,16 @@ function drawPlayer(p,col,face){
     ctx.strokeStyle='hsl('+Math.round((t*6)%360)+',90%,68%)'; ctx.lineWidth=2.2; ctx.globalAlpha=0.85;
     ctx.beginPath(); ctx.arc(0,0,R+4+Math.sin(t*0.18)*1.6,0,7); ctx.stroke(); ctx.globalAlpha=1;
   }
-  ctx.fillStyle='#08110b';
-  const lean=Math.max(-3,Math.min(3,vx(p)));
-  ctx.beginPath(); ctx.arc(-4+lean,-2,2.1,0,7); ctx.arc(4+lean,-2,2.1,0,7); ctx.fill();
-  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-4,3,8,1.6);
+  if(p.face){                                          // wearing an emote — the emoji IS the face
+    ctx.font='19px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p.face,0,1.5);
+  } else {
+    ctx.fillStyle='#08110b';
+    const lean=Math.max(-3,Math.min(3,vx(p)));
+    ctx.beginPath(); ctx.arc(-4+lean,-2,2.1,0,7); ctx.arc(4+lean,-2,2.1,0,7); ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-4,3,8,1.6);
+  }
   ctx.restore();
 }
 function render(a){
@@ -804,7 +823,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b36 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b37 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -818,7 +837,7 @@ function frame(now){
 const firebaseConfig={ apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
 let _db=null,_code=null,netMode='',curSeed=null;
 let _stRef=null,_stCb=null,_giRef=null,_giCb=null,_jnRef=null,_jnCb=null;
-let gIn={l:0,r:0,m:null},gjb=0,gKick=0,gp=0,gpd=0,_lastJ=0,_lastRs=0,_lastTp=0,_sent={m:0};
+let gIn={l:0,r:0,m:null},gjb=0,gKick=0,gp=0,gpd=0,_lastJ=0,_lastRs=0,_lastTp=0,_lastEm=0,_sent={m:0};
 let netState=null,netM=0,_wTimer=0,_prevO=0;
 function db(){ if(!_db){ firebase.initializeApp(firebaseConfig); _db=firebase.database(); } return _db; }
 function ropeRef(sub){ return db().ref(`games/${_code}/rp/${sub}`); }
@@ -835,7 +854,7 @@ function updatePads(){
 }
 function teardownNet(){ if(_stCb)_stRef.off('value',_stCb); if(_giCb)_giRef.off('value',_giCb); if(_jnCb)_jnRef.off('value',_jnCb); _stCb=_giCb=_jnCb=null; if(_wTimer){clearInterval(_wTimer);_wTimer=0;} netState=null; gIn={l:0,r:0,m:null}; gjb=0; gKick=0; _prevO=0; }
 function writeState(){
-  ropeRef('st').set({ sd:curSeed, p1:[+P1.x.toFixed(1),+P1.y.toFixed(1)], p2:[+P2.x.toFixed(1),+P2.y.toFixed(1)], cam:+camY.toFixed(1), m:climbM(), o:state==='over'?1:0, or:lastReason, sg:+surgeY.toFixed(1), t:t, rl:Math.round(ropeLen), oc:collectedIds, e1:(P1.radiantUntil>t)?1:0, e2:(P2.radiantUntil>t)?1:0 });
+  ropeRef('st').set({ sd:curSeed, p1:[+P1.x.toFixed(1),+P1.y.toFixed(1)], p2:[+P2.x.toFixed(1),+P2.y.toFixed(1)], cam:+camY.toFixed(1), m:climbM(), o:state==='over'?1:0, or:lastReason, sg:+surgeY.toFixed(1), t:t, rl:Math.round(ropeLen), oc:collectedIds, e1:(P1.radiantUntil>t)?1:0, e2:(P2.radiantUntil>t)?1:0, f1:P1.face||0, f2:P2.face||0 });
 }
 async function createRoom(){
   _code=shortId(); teardownNet(); netMode='';
@@ -857,6 +876,7 @@ async function createRoom(){
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
         gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=(v.m!=null)?v.m:null;
         if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; gpd=v.td>0?1:-1; gp=MOVE_PULSE; tapNudge(P2,gpd); }   // guest taps nudge instantly too
+        if(v.emt&&v.emt!==_lastEm){ _lastEm=v.emt; setFace(P2,v.em); if(v.em)floatEmote(P2,v.em); }
         if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
         if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
       reset();                                    // fresh seeded tower for both sides
@@ -899,6 +919,19 @@ function sendInputs(){
   if(mv!==_sent.m){ _sent.m=mv; ropeRef('gi').update({m:mv}); }
 }
 function sendJump(k){ if(netMode==='guest')ropeRef('gi').update({j:Date.now(),jk:Math.round((k||0)*10)/10}); }
+/* ── emotes: your ball WEARS the emoji for a few seconds (synced in remote play) ── */
+function setFace(pl,e){ pl.face=e||null; }   // persistent: stays until a new face or reset is sent
+function floatEmote(pl,e){
+  const stage=document.getElementById('stage'); if(!stage)return;
+  const el=document.createElement('div'); el.className='emofly'; el.textContent=e;
+  el.style.left=(pl.x/VW*100)+'%'; el.style.top=(Math.max(0,sy(pl.y))/VH*100)+'%';
+  stage.appendChild(el); setTimeout(()=>el.remove(),1450);
+}
+function sendEmote(e){
+  if(netMode==='guest'){ ropeRef('gi').update({em:e||'',emt:Date.now()}); setFace(P2,e); if(e)floatEmote(P2,e); return; }
+  setFace(P1,e); if(e)floatEmote(P1,e);       // local & host: you are the green ball
+}
+document.querySelectorAll('.emo').forEach(b=>b.addEventListener('click',()=>sendEmote(b.dataset.e)));
 function restartBtn(){ if(netMode==='guest'){ ropeRef('gi').update({rs:Date.now()}); return; } reset(); }
 function netStep(){
   const v=netState; if(!v)return;
@@ -915,6 +948,7 @@ function netStep(){
   if(v.rl)ropeLen+=(v.rl-ropeLen)*L;
   if(v.oc)for(const id of v.oc){ for(const o of orbs){ if(o.id===id){o.done=true;break;} } }
   P1.radiantUntil=v.e1?t+3:0; P2.radiantUntil=v.e2?t+3:0;
+  P1.face=v.f1||null; P2.face=v.f2||null;
   genUpTo(camY-VH*0.5);
   stepRope();
   netM=v.m||0;
