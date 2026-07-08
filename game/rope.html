@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b32</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b33</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -215,6 +215,10 @@ function setVel(p,wx,wy){p.px=p.x-wx;p.py=p.y-wy;}
 let P1,P2,ropeViz,allPts,platforms,topY,camY,startCam,minY,best,state,t,lastRec=false;
 let surgeY=210, lastReason=0;          // the rising red tide + why the run ended (1 fell, 2 surge)
 let swarm=[];                          // the surge's visual swarm (colors/sizes flowing) — pure eye-candy
+// power-up orbs: rope-length modifiers + radiance. Spawned from the SEEDED rng during
+// genUpTo (remote guests replay the identical sequence); collection is host-authoritative.
+let orbs=[], orbId=0, collectedIds=[];
+let ropeLen=ROPE_LEN, ropeTarget=ROPE_LEN, ropeFxUntil=0;
 const SWARM_COLORS=['#ff7a52','#e24028','#ff4d6d','#ffb347','#b3202e','#ff9e3d'];
 function makeSwarm(){ swarm=[]; for(let i=0;i<84;i++) swarm.push({
   x0:Math.random()*(VW+40), d:6+Math.random()*210, r:0.8+Math.random()*3.4,
@@ -250,6 +254,12 @@ function genUpTo(targetY){
       else
         platforms.push({x,y:topY,w,h:14});
     }
+    // a floating orb above some courses (same seeded stream on host and guest)
+    const orbRoll=rng();
+    if(topY<-6*PX_PER_M && orbRoll<0.16){
+      const ox=rand(26,VW-26), tr=rng();
+      orbs.push({id:orbId++, x:ox, y:topY-34, k: tr<0.40?'long':(tr<0.65?'tight':'rad')});
+    }
   }
 }
 
@@ -258,6 +268,7 @@ function reset(seed){
   else if(seed!=null){ curSeed=seed; rng=mulberry32(curSeed); }
   else { curSeed=null; rng=Math.random; }
   platforms=[{x:0,y:0,w:VW,h:46}];          // ground slab (top surface y=0)
+  orbs=[]; orbId=0; collectedIds=[]; ropeLen=ROPE_LEN; ropeTarget=ROPE_LEN; ropeFxUntil=0;
   topY=0; genUpTo(-VH*1.4);
   P1=pt(VW*0.40,-30,1); P2=pt(VW*0.60,-30,1);
   allPts=[P1,P2];
@@ -383,7 +394,7 @@ cv.addEventListener('pointercancel',()=>{ swipe=null; });
 /* ── physics ── */
 let noRope=false;   // practice toggle: local-only, disables the tether entirely
 let noSurge=false;  // practice toggle: local-only, the surge never rises
-function ropeTaut(){ if(noRope)return false; const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ROPE_LEN*0.98)*(ROPE_LEN*0.98); }   // 0.98: the rope only pulls past 1.0 — a wide margin left a brakeless dead band
+function ropeTaut(){ if(noRope)return false; const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ropeLen*0.98)*(ropeLen*0.98); }   // 0.98: the rope only pulls past 1.0 — a wide margin left a brakeless dead band
 function applyMove(p,dir){
   if(!dir){
     // no input → ease to a stop where you let go (the old glide felt slippery):
@@ -432,12 +443,13 @@ function solveLink(a,b,len,ropeMode,stiff){
 // never pushes the players (the tether itself is the single ideal constraint above).
 function stepRope(){
   for(const r of ropeViz){ r.ox=r.x; r.oy=r.y; }
+  const LK=ropeLen/(ROPE_SEG+1);           // decorative chain matches the current rope length
   const L=ropeViz.length-1;
   ropeViz[0].x=P1.x; ropeViz[0].y=P1.y; ropeViz[L].x=P2.x; ropeViz[L].y=P2.y;
   for(let i=1;i<L;i++){const r=ropeViz[i];let wx=(r.x-r.px)*0.97,wy=(r.y-r.py)*0.97;r.px=r.x;r.py=r.y;r.x+=wx;r.y+=wy+GRAV;}
   for(let it=0;it<6;it++)for(let i=0;i<L;i++){
     const a=ropeViz[i],b=ropeViz[i+1];
-    let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1e-6,diff=(d-LINK)/d;
+    let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1e-6,diff=(d-LK)/d;
     const am=(i===0)?0:1, bm=(i+1===L)?0:1, tot=am+bm; if(!tot)continue;
     a.x+=dx*diff*(am/tot); a.y+=dy*diff*(am/tot);
     b.x-=dx*diff*(bm/tot); b.y-=dy*diff*(bm/tot);
@@ -492,10 +504,12 @@ function step(){
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0||jb2>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=jb2=0; jqk1=jqk2=0; }
+      else if(P1.radiantUntil>t&&P1.djOK){ setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP*0.92); P1.djOK=false; P1.stretch=5; jb1=jb2=0; jqk1=jqk2=0; }
       else { jb1=Math.max(0,jb1-1); jb2=Math.max(0,jb2-1); if(!jb1)jqk1=0; if(!jb2)jqk2=0; }
     }
     if(gjb>0){
       if(P2.grounded||coy2>0){ setVel(P2,vx(P2)+gKick,-JUMP); P2.grounded=false; P2.stretch=5; coy2=0; gjb=0; gKick=0; }
+      else if(P2.radiantUntil>t&&P2.djOK){ setVel(P2,vx(P2)+gKick,-JUMP*0.92); P2.djOK=false; P2.stretch=5; gjb=0; gKick=0; }
       else { gjb--; if(!gjb)gKick=0; }
     }
   } else {
@@ -506,11 +520,29 @@ function step(){
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+jqk1,-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=0; jqk1=0; }
+      else if(P1.radiantUntil>t&&P1.djOK){ setVel(P1,vx(P1)+jqk1,-JUMP*0.92); P1.djOK=false; P1.stretch=5; jb1=0; jqk1=0; }
       else { jb1--; if(!jb1)jqk1=0; }
     }
     if(jb2>0){
       if(P2.grounded||coy2>0){ setVel(P2,vx(P2)+jqk2,-JUMP); P2.grounded=false; P2.stretch=5; coy2=0; jb2=0; jqk2=0; }
+      else if(P2.radiantUntil>t&&P2.djOK){ setVel(P2,vx(P2)+jqk2,-JUMP*0.92); P2.djOK=false; P2.stretch=5; jb2=0; jqk2=0; }
       else { jb2--; if(!jb2)jqk2=0; }
+    }
+  }
+  // orbs: expiry, smooth rope-length transitions, collection
+  if(ropeFxUntil&&t>ropeFxUntil){ ropeTarget=ROPE_LEN; ropeFxUntil=0; }
+  ropeLen+=(ropeTarget-ropeLen)*0.08;
+  for(const o of orbs){
+    if(o.done)continue;
+    for(const p of [P1,P2]){
+      const odx=p.x-o.x, ody=p.y-o.y;
+      if(odx*odx+ody*ody<(R+11)*(R+11)){
+        o.done=true; collectedIds.push(o.id); if(collectedIds.length>12)collectedIds.shift();
+        if(o.k==='long'){ ropeTarget=240; ropeFxUntil=t+720; }
+        else if(o.k==='tight'){ ropeTarget=130; ropeFxUntil=t+720; }
+        else { p.radiantUntil=t+600; p.djOK=true; }   // radiant: one extra MID-AIR jump per airtime
+        break;
+      }
     }
   }
   const _w1=mp1,_w2=mp2,_w3=gp;
@@ -522,7 +554,7 @@ function step(){
   integrate(P1); integrate(P2);
   const _sx1=P1.x, _sx2=P2.x;                      // where the constraint pass found them
   for(let it=0;it<ITER;it++){
-    if(!noRope)solveLink(P1,P2,ROPE_LEN,true,TETHER_STIFF);   // the tether: an ideal max-length rope
+    if(!noRope)solveLink(P1,P2,ropeLen,true,TETHER_STIFF);   // the tether: an ideal max-length rope
     collide(P1); collide(P2); clampSides(P1); clampSides(P2);
   }
   // GROUNDED balls: rope displacement moves the BODY but never injects VELOCITY.
@@ -535,6 +567,7 @@ function step(){
     const was=p.grounded;
     const pl=platformUnder(p); p.grounded=!!pl;
     if(!was&&p.grounded)p.squash=5;                    // touchdown → squash (landing reads as landing, not a glitch)
+    if(p.grounded)p.djOK=true;                         // radiance: the mid-air jump re-arms on landing
     if(p.squash>0)p.squash--; if(p.stretch>0)p.stretch--;
     if(pl&&pl.mv){ const dx=plxAt(pl,t)-plxAt(pl,t-1); p.x+=dx; p.px+=dx; }   // ride the glider
   }
@@ -544,7 +577,8 @@ function step(){
   const want=hi-VH*0.44;
   if(want<camY)camY+=(want-camY)*0.09;
   genUpTo(camY-VH*0.5);
-  if(platforms.length>160)platforms=platforms.filter(pl=>pl.y-camY<VH+320);   // keep margin past a dangling lower player (game-over line + rope length)
+  if(platforms.length>160)platforms=platforms.filter(pl=>pl.y-camY<VH+320);
+  if(orbs.length>40)orbs=orbs.filter(o=>o.y-camY<VH+320);   // keep margin past a dangling lower player (game-over line + rope length)
   minY=Math.min(minY,hi);
   updateScore();
   // the surge: after a grace period a red tide rises from below — keep moving
@@ -590,6 +624,10 @@ function drawPlayer(p,col,face){
   ctx.shadowColor=col; ctx.shadowBlur=12;
   ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill();
   ctx.shadowBlur=0;
+  if(p.radiantUntil>t){                                // radiant aura — hue-cycling halo
+    ctx.strokeStyle='hsl('+Math.round((t*6)%360)+',90%,68%)'; ctx.lineWidth=2.2; ctx.globalAlpha=0.85;
+    ctx.beginPath(); ctx.arc(0,0,R+4+Math.sin(t*0.18)*1.6,0,7); ctx.stroke(); ctx.globalAlpha=1;
+  }
   ctx.fillStyle='#08110b';
   const lean=Math.max(-3,Math.min(3,vx(p)));
   ctx.beginPath(); ctx.arc(-4+lean,-2,2.1,0,7); ctx.arc(4+lean,-2,2.1,0,7); ctx.fill();
@@ -624,11 +662,26 @@ function render(a){
     ctx.fillStyle=pl.mv?'#5fe694':'#1db954'; ctx.fillRect(X,Y,pl.w,2);
     if(pl.mv){ ctx.fillStyle='rgba(95,230,148,0.7)'; ctx.fillText('◂',X+4,Y+8); ctx.fillText('▸',X+pl.w-10,Y+8); }
   }
-  // rope — strains visibly (redder, thicker) when taut, so a tether-slowdown reads
-  // as "the rope caught me", not as the game glitching
+  // orbs — glowing pickups
+  ctx.save(); ctx.font='10px Consolas,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const o of orbs){
+    if(o.done)continue;
+    const Y=sy(o.y); if(Y<-20||Y>VH+20)continue;
+    const pulse=1+Math.sin(_rT*0.1+o.id)*0.15;
+    const col=o.k==='long'?'#46c8ff':o.k==='tight'?'#ffce4d':'hsl('+Math.round((_rT*6)%360)+',90%,70%)';
+    ctx.shadowColor=col; ctx.shadowBlur=10; ctx.strokeStyle=col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(o.x,Y,9*pulse,0,7); ctx.stroke();
+    ctx.shadowBlur=0; ctx.fillStyle=col;
+    ctx.fillText(o.k==='long'?'⟷':o.k==='tight'?'><':'✦', o.x, Y+0.5);
+  }
+  ctx.restore();
+  // rope — strains visibly (redder, thicker) when taut; tints cyan when lengthened,
+  // gold when tightened, so the active effect is always readable
   if(!noRope){
-  const _rd=Math.hypot(P2.x-P1.x,P2.y-P1.y)-ROPE_LEN, _strain=Math.max(0,Math.min(1,_rd/14));
-  ctx.strokeStyle='rgb('+Math.round(154+_strain*80)+','+Math.round(123-_strain*40)+','+Math.round(79-_strain*25)+')';
+  let _br=154,_bg=123,_bb=79;
+  if(ropeTarget>ROPE_LEN+10){_br=88;_bg=150;_bb=158;} else if(ropeTarget<ROPE_LEN-10){_br=196;_bg=152;_bb=52;}
+  const _rd=Math.hypot(P2.x-P1.x,P2.y-P1.y)-ropeLen, _strain=Math.max(0,Math.min(1,_rd/14));
+  ctx.strokeStyle='rgb('+Math.round(_br+_strain*80)+','+Math.round(_bg-_strain*40)+','+Math.round(_bb-_strain*25)+')';
   ctx.lineWidth=3+_strain*1.3; ctx.lineJoin='round';
   ctx.beginPath(); ctx.moveTo(ix(ropeViz[0]),sy(iy(ropeViz[0])));
   for(let i=1;i<ropeViz.length;i++)ctx.lineTo(ix(ropeViz[i]),sy(iy(ropeViz[i])));
@@ -684,7 +737,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b32 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b33 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -715,7 +768,7 @@ function updatePads(){
 }
 function teardownNet(){ if(_stCb)_stRef.off('value',_stCb); if(_giCb)_giRef.off('value',_giCb); if(_jnCb)_jnRef.off('value',_jnCb); _stCb=_giCb=_jnCb=null; if(_wTimer){clearInterval(_wTimer);_wTimer=0;} netState=null; gIn={l:0,r:0,m:null}; gjb=0; gKick=0; _prevO=0; }
 function writeState(){
-  ropeRef('st').set({ sd:curSeed, p1:[+P1.x.toFixed(1),+P1.y.toFixed(1)], p2:[+P2.x.toFixed(1),+P2.y.toFixed(1)], cam:+camY.toFixed(1), m:climbM(), o:state==='over'?1:0, or:lastReason, sg:+surgeY.toFixed(1), t:t });
+  ropeRef('st').set({ sd:curSeed, p1:[+P1.x.toFixed(1),+P1.y.toFixed(1)], p2:[+P2.x.toFixed(1),+P2.y.toFixed(1)], cam:+camY.toFixed(1), m:climbM(), o:state==='over'?1:0, or:lastReason, sg:+surgeY.toFixed(1), t:t, rl:Math.round(ropeLen), oc:collectedIds, e1:(P1.radiantUntil>t)?1:0, e2:(P2.radiantUntil>t)?1:0 });
 }
 async function createRoom(){
   _code=shortId(); teardownNet(); netMode='';
@@ -792,6 +845,9 @@ function netStep(){
   camY+=(v.cam-camY)*L;
   t++; if(v.t!=null&&Math.abs(t-v.t)>10)t=v.t;   // gliding platforms run on this clock — tick locally, resync on drift
   if(v.sg!=null)surgeY+=(v.sg-surgeY)*L;
+  if(v.rl)ropeLen+=(v.rl-ropeLen)*L;
+  if(v.oc)for(const id of v.oc){ for(const o of orbs){ if(o.id===id){o.done=true;break;} } }
+  P1.radiantUntil=v.e1?t+3:0; P2.radiantUntil=v.e2?t+3:0;
   genUpTo(camY-VH*0.5);
   stepRope();
   netM=v.m||0;
@@ -814,8 +870,8 @@ function guestOver(m,reason){
 let lang='en';
 function T(en,zh){return lang==='zh'?zh:en;}
 function howtoHTML(){return T(
-  'Only one of you needs to be standing — the other can <b>swing on the rope</b> like a pendulum. Anchor on a platform, let your partner swing out and jump to the next ledge, then follow. Jump <b>together</b> across big gaps. But the rope pulls back: yank too hard and you drag each other off. Higher up, some platforms <b>glide</b> — ride them and time your jumps. And don\'t linger: <b>the surge</b> rises from below.',
-  '只要一人站稳，另一人就能像钟摆一样<b>荡绳子</b>。一人在平台上做锚，让同伴荡出去跳上下一个台子，再跟上。大缺口要<b>一起跳</b>。但绳子会回拉：拽太猛会把对方拖下去。高处有些平台会<b>左右滑动</b>——站上去借力，掐准时机起跳。别逗留：<b>红潮</b>会从下方涨上来。');}
+  'Only one of you needs to be standing — the other can <b>swing on the rope</b> like a pendulum. Anchor on a platform, let your partner swing out and jump to the next ledge, then follow. Jump <b>together</b> across big gaps. But the rope pulls back: yank too hard and you drag each other off. Higher up, some platforms <b>glide</b> — ride them and time your jumps. Grab glowing orbs: <b>⟷</b> lengthens the rope, <b>&gt;&lt;</b> tightens it, <b>✦</b> makes you radiant (one extra jump in MID-AIR). And don\'t linger: <b>the surge</b> rises from below.',
+  '只要一人站稳，另一人就能像钟摆一样<b>荡绳子</b>。一人在平台上做锚，让同伴荡出去跳上下一个台子，再跟上。大缺口要<b>一起跳</b>。但绳子会回拉：拽太猛会把对方拖下去。高处有些平台会<b>左右滑动</b>——站上去借力，掐准时机起跳。收集发光球：<b>⟷</b> 绳子变长，<b>&gt;&lt;</b> 绳子变短，<b>✦</b> 获得光辉（可在空中多跳一次）。别逗留：<b>红潮</b>会从下方涨上来。');}
 function applyLang(){
   document.getElementById('pgTitle').textContent=T('>_ Tether','>_ 默契绳');
   document.getElementById('pgSub').textContent=T(
