@@ -258,11 +258,18 @@ const held={a:false,d:false,l:false,r:false};
 let jb1=0, jb2=0;                      // jump BUFFERS (frames): press a hair early and it still fires on landing
 let coy1=0, coy2=0;                    // coyote frames: jump still works just after stepping off a ledge
 let jqk1=0, jqk2=0;                    // horizontal kick for slanted (flick) jumps
+// minimum move pulse: a fresh tap guarantees this many frames of force, so identical
+// clicks always deliver the same baseline impulse (raw frame-sampling made a ~60ms
+// click land as anywhere from 1 to 4 sim frames — "a little or a lot" at random)
+const MOVE_PULSE=6;
+let mp1=0,mp1d=0, mp2=0,mp2d=0;
 const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
 addEventListener('keydown',e=>{
   const k=e.key;
-  if(k==='a'||k==='A')held.a=true; else if(k==='d'||k==='D')held.d=true;
-  else if(k==='ArrowLeft')held.l=true; else if(k==='ArrowRight')held.r=true;
+  if(k==='a'||k==='A'){ if(!held.a){mp1=MOVE_PULSE;mp1d=-1;} held.a=true; }
+  else if(k==='d'||k==='D'){ if(!held.d){mp1=MOVE_PULSE;mp1d=1;} held.d=true; }
+  else if(k==='ArrowLeft'){ if(!held.l){mp2=MOVE_PULSE;mp2d=-1;} held.l=true; }
+  else if(k==='ArrowRight'){ if(!held.r){mp2=MOVE_PULSE;mp2d=1;} held.r=true; }
   if(KEYJUMP[k]===1)jb1=9; if(KEYJUMP[k]===2)jb2=9;
   if(netMode==='guest'){ if(KEYJUMP[k])sendJump(); sendInputs(); }
   if((k==='r'||k==='R')&&state!=='play')restartBtn();
@@ -294,8 +301,8 @@ function bindJoy(base,knob,set){
   base.addEventListener('pointercancel',end);
   base.addEventListener('lostpointercapture',end);
 }
-bindJoy(document.getElementById('joy1'),document.getElementById('knob1'),v=>{ joyV1=v; if(netMode==='guest')sendInputs(); });
-bindJoy(document.getElementById('joy2'),document.getElementById('knob2'),v=>{ joyV2=v; if(netMode==='guest')sendInputs(); });
+bindJoy(document.getElementById('joy1'),document.getElementById('knob1'),v=>{ if(v&&!joyV1){mp1=MOVE_PULSE;mp1d=v>0?1:-1;} joyV1=v; if(netMode==='guest')sendInputs(); });
+bindJoy(document.getElementById('joy2'),document.getElementById('knob2'),v=>{ if(v&&!joyV2){mp2=MOVE_PULSE;mp2d=v>0?1:-1;} joyV2=v; if(netMode==='guest')sendInputs(); });
 function bindJump(btn,which){
   const dn=e=>{e.preventDefault(); try{btn.setPointerCapture(e.pointerId);}catch(_){}
     btn.classList.add('on');
@@ -334,7 +341,7 @@ function applyMove(p,dir){
     // pendulum swing — that momentum is the core mechanic and is never braked.
     p.holdT=0;
     if(p.grounded){ const v=vx(p)*0.7; p.px=p.x-v; }
-    else if(!ropeTaut()){ const v=vx(p)*0.93; p.px=p.x-v; }
+    else if(!ropeTaut()){ const v=vx(p)*0.84; p.px=p.x-v; }   // free-air stop close to the ground stop, so taps feel similar everywhere
     return;
   }
   // Response is INSTANT — full force from the first frame. Hold time ramps the top
@@ -418,10 +425,14 @@ function step(){
   // coyote windows tick from last frame's footing
   coy1=P1.grounded?7:Math.max(0,coy1-1);
   coy2=P2.grounded?7:Math.max(0,coy2-1);
+  if(mp1>0)mp1--; if(mp2>0)mp2--; if(gp>0)gp--;   // min-move pulses burn down
   if(netMode==='host'){
     // host: every local key/pad/joystick drives P1; the guest's streamed inputs drive P2
-    applyMove(P1,(((held.d||held.r)?1:0)-((held.a||held.l)?1:0))||jdz(joyV1)||jdz(joyV2));
-    applyMove(P2,(gIn.m!=null?gIn.m:((gIn.r?1:0)-(gIn.l?1:0))));
+    let d1=(((held.d||held.r)?1:0)-((held.a||held.l)?1:0))||jdz(joyV1)||jdz(joyV2);
+    if(!d1&&mp1>0)d1=mp1d; if(!d1&&mp2>0)d1=mp2d;
+    let d2=(gIn.m!=null?gIn.m:((gIn.r?1:0)-(gIn.l?1:0)));
+    if(!d2&&gp>0)d2=gpd;
+    applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0||jb2>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+(jqk1||jqk2),-JUMP); P1.grounded=false; coy1=0; jb1=jb2=0; jqk1=jqk2=0; }
       else { jb1=Math.max(0,jb1-1); jb2=Math.max(0,jb2-1); if(!jb1)jqk1=0; if(!jb2)jqk2=0; }
@@ -431,8 +442,11 @@ function step(){
       else { gjb--; if(!gjb)gKick=0; }
     }
   } else {
-    applyMove(P1,((held.d?1:0)-(held.a?1:0))||jdz(joyV1));
-    applyMove(P2,((held.r?1:0)-(held.l?1:0))||jdz(joyV2));
+    let d1=((held.d?1:0)-(held.a?1:0))||jdz(joyV1);
+    if(!d1&&mp1>0)d1=mp1d;
+    let d2=((held.r?1:0)-(held.l?1:0))||jdz(joyV2);
+    if(!d2&&mp2>0)d2=mp2d;
+    applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+jqk1,-JUMP); P1.grounded=false; coy1=0; jb1=0; jqk1=0; }
       else { jb1--; if(!jb1)jqk1=0; }
@@ -565,7 +579,7 @@ function frame(now){
 const firebaseConfig={ apiKey:'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo', authDomain:'remoteplay-b5486.firebaseapp.com', databaseURL:'https://remoteplay-b5486-default-rtdb.firebaseio.com', projectId:'remoteplay-b5486', storageBucket:'remoteplay-b5486.firebasestorage.app', messagingSenderId:'142560337765', appId:'1:142560337765:web:a0fad172347d04dc638b8c' };
 let _db=null,_code=null,netMode='',curSeed=null;
 let _stRef=null,_stCb=null,_giRef=null,_giCb=null,_jnRef=null,_jnCb=null;
-let gIn={l:0,r:0,m:null},gjb=0,gKick=0,_lastJ=0,_lastRs=0,_sent={m:0};
+let gIn={l:0,r:0,m:null},gjb=0,gKick=0,gp=0,gpd=0,_lastJ=0,_lastRs=0,_sent={m:0};
 let netState=null,netM=0,_wTimer=0,_prevO=0;
 function db(){ if(!_db){ firebase.initializeApp(firebaseConfig); _db=firebase.database(); } return _db; }
 function ropeRef(sub){ return db().ref(`games/${_code}/rp/${sub}`); }
@@ -602,7 +616,9 @@ async function createRoom(){
       document.getElementById('localBtn').style.display='';
       _giRef=ropeRef('gi');
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
-        gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=(v.m!=null)?v.m:null;
+        const nm=(v.m!=null)?v.m:null;
+        if(nm&&!gIn.m){ gp=MOVE_PULSE; gpd=nm>0?1:-1; }   // guest tap → same min-pulse as local
+        gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=nm;
         if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
         if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
       reset();                                    // fresh seeded tower for both sides
