@@ -200,6 +200,23 @@
   .card:hover .card-desc,.card.open .card-desc,.card:focus-within .card-desc,
   .card:hover .card-tags,.card.open .card-tags,.card:focus-within .card-tags{opacity:1;transform:none;}
   .cd .gband{position:absolute;inset:0;width:100% !important;height:100% !important;margin:0 !important;}
+
+  /* arcade liner notes + sleeve texture */
+  .card{background-image:linear-gradient(rgba(255,255,255,0.013) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.013) 1px, transparent 1px);background-size:12px 12px;}
+  .card-desc{border:1px solid rgba(29,185,84,0.55) !important;
+    box-shadow:0 0 16px rgba(29,185,84,0.20), inset 0 0 26px rgba(29,185,84,0.05);
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0 1px, transparent 1px 3px),
+      rgba(7,11,8,0.97) !important;}
+  .card-desc::before{content:'// LINER NOTES';display:block;color:#1db954;font-size:0.56rem;
+    letter-spacing:2px;margin-bottom:6px;opacity:0.85;}
+  html[lang="zh"] .card-desc::before{content:'// 曲目说明';}
+
+  /* gomoku: static disc face (the rectangular water sim fought the round CD) */
+  .glow-gomoku .gwater{display:none !important;}
+  /* tomato: the rain stays on the lower sleeve — never over the disc — and piles small */
+  .card.glow-tomato .tomato-rain{clip-path:inset(40% 0 0 0);}
 </style>
 </head>
 <body>
@@ -241,7 +258,7 @@
   <div class="card glow-gomoku" data-players="12">
     <div class="ribbon p12" data-en="1–2UP" data-zh="1–2UP">1–2UP</div>
     <canvas class="gwater" aria-hidden="true"></canvas>
-    <div class="cdwrap"><div class="cd"><div class="card-thumb gband" aria-hidden="true"></div><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
+    <div class="cdwrap"><div class="cd"><img class="card-thumb" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board"><div class="cd-hole"></div><div class="cd-sheen"></div></div></div>
     <img class="gsrc" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board" width="440" height="240">
     <div class="card-icon">[⬡]</div>
     <div class="card-title" data-en="gomoku.exe" data-zh="五子棋.exe">gomoku.exe</div>
@@ -694,7 +711,7 @@ document.addEventListener('DOMContentLoaded', applyLang);
 ⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`;
   const COLORS = ['#6cc24a','#86d15a','#4fb33a','#f0973a','#e8a13a','#e23b2e','#cf3027'];  // green · orange · red(ripe)
-  const G = 0.40, REST = 0.10, WALL = 0.45, FRIC = 0.82, MAXV = 17, MAX_BODIES = 48, WAKEV = 1.2, VDX = 0.92, VDY = 0.99;
+  const G = 0.40, REST = 0.10, WALL = 0.45, FRIC = 0.82, MAXV = 17, MAX_BODIES = 12, WAKEV = 1.2, VDX = 0.92, VDY = 0.99;
   let layer = null, bodies = [], raf = 0, mx = 0, my = 0, spawning = false, timer = 0, W = 0, H = 0;
   function ensureLayer(){ if(!layer){ layer = document.createElement('div'); layer.className = 'tomato-rain'; layer.setAttribute('aria-hidden','true'); card.appendChild(layer); } W = card.clientWidth; H = card.clientHeight; }
   function place(b){ b.el.style.transform = 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px) translate(-50%,-50%) rotate(' + b.rot.toFixed(1) + 'deg)'; }
@@ -754,7 +771,7 @@ document.addEventListener('DOMContentLoaded', applyLang);
   function frame(){ raf = (step() || spawning) ? requestAnimationFrame(frame) : 0; }
   function ensureRAF(){ if(!raf) raf = requestAnimationFrame(frame); }
   function setPos(e){ const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
-  card.addEventListener('mouseenter', (e) => { ensureLayer(); setPos(e); spawnAt(mx,my); spawning = true; if(!timer) timer = setInterval(() => spawnAt(mx,my), 120); });
+  card.addEventListener('mouseenter', (e) => { ensureLayer(); setPos(e); spawnAt(mx,my); spawning = true; if(!timer) timer = setInterval(() => spawnAt(mx,my), 240); });
   card.addEventListener('mousemove', setPos);
   card.addEventListener('mouseleave', () => { spawning = false; if(timer){ clearInterval(timer); timer = 0; } });
   window.addEventListener('resize', () => { if(layer){ W = card.clientWidth; H = card.clientHeight; wakeAll(); } });

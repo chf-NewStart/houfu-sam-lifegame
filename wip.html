@@ -90,6 +90,18 @@
     transform:translateY(6px);transition:opacity .28s ease, transform .28s ease;z-index:11;}
   .card:hover .card-desc,.card.open .card-desc,.card:focus-within .card-desc,
   .card:hover .card-tags,.card.open .card-tags,.card:focus-within .card-tags{opacity:1;transform:none;}
+
+  /* arcade liner notes + sleeve texture */
+  .card{background-image:linear-gradient(rgba(255,255,255,0.013) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.013) 1px, transparent 1px);background-size:12px 12px;}
+  .card-desc{border:1px solid rgba(29,185,84,0.55) !important;
+    box-shadow:0 0 16px rgba(29,185,84,0.20), inset 0 0 26px rgba(29,185,84,0.05);
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0 1px, transparent 1px 3px),
+      rgba(7,11,8,0.97) !important;}
+  .card-desc::before{content:'// LINER NOTES';display:block;color:#1db954;font-size:0.56rem;
+    letter-spacing:2px;margin-bottom:6px;opacity:0.85;}
+  html[lang="zh"] .card-desc::before{content:'// 曲目说明';}
 </style>
 </head>
 <body>
