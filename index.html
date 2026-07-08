@@ -160,6 +160,25 @@
   .ribbon.p0{color:#b48cff;border-color:#b48cff;box-shadow:0 0 10px rgba(180,140,255,0.35), inset 0 0 6px rgba(180,140,255,0.12);}
   .ribbon.p12{color:#e8b04a;border-color:#e8b04a;box-shadow:0 0 10px rgba(232,176,74,0.35), inset 0 0 6px rgba(232,176,74,0.12);}
 
+  /* ── star cabinets: backlit marquee topper — the house's three headline machines ──
+     A lit marquee tube along the top edge + a soft light wash on the screen, each in
+     the cabinet's own plate neon (life = green, gomoku = gold, tether = co-op cyan).
+     Dim at rest, full on hover — like walking up to the machine. Star screens also
+     rest brighter than the idle floor. Static (no ambient blink); ribbons stay on top. */
+  .card.star{--mq:29,185,84;--mqwash:.14;
+    border-color:rgba(var(--mq),.40);
+    box-shadow:0 0 18px -12px rgba(var(--mq),.35);}
+  .card.star.glow-gomoku{--mq:232,176,74;--mqwash:.09;}
+  .card.star.glow-rope{--mq:54,197,208;}
+  .card.star::before{content:'';position:absolute;top:0;left:0;right:0;height:42px;z-index:4;pointer-events:none;
+    opacity:.62;transition:opacity .25s ease;
+    background:
+      linear-gradient(90deg, rgba(var(--mq),0) 2%, rgba(var(--mq),.85) 20%, rgba(var(--mq),.85) 80%, rgba(var(--mq),0) 98%) top/100% 2px no-repeat,
+      linear-gradient(180deg, rgba(var(--mq),var(--mqwash)), rgba(var(--mq),0));}
+  .card.star:hover::before{opacity:1;}
+  .card.star:not(:hover) .card-thumb,
+  .card.star:not(:hover) .gwater{filter:saturate(1) brightness(.94);}
+
   /* sort/filter by player count */
   .pfilter{max-width:860px;margin:0 auto 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .pfilter .plabel{color:#5a5a5a;font-size:0.68rem;letter-spacing:1px;}
@@ -186,7 +205,7 @@
 </div>
 <div class="grid">
 
-  <div class="card flagship glow-life" data-players="0">
+  <div class="card flagship glow-life star" data-players="0">
     <div class="ribbon p0" data-en="CPU · AUTO" data-zh="CPU · 自动">CPU · AUTO</div>
     <img class="card-thumb" src="/game/thumbs/life.png?v=4" alt="Game of Life grid" loading="lazy" width="440" height="240">
     <canvas class="lgrid" aria-hidden="true"></canvas>
@@ -205,7 +224,7 @@
     </div>
   </div>
 
-  <div class="card glow-gomoku" data-players="12">
+  <div class="card glow-gomoku star" data-players="12">
     <div class="ribbon p12" data-en="1–2UP" data-zh="1–2UP">1–2UP</div>
     <canvas class="gwater" aria-hidden="true"></canvas>
     <div class="card-thumb gband" aria-hidden="true"></div>
@@ -222,6 +241,24 @@
     <div class="card-footer">
       <span class="card-meta" data-en="JS · alpha-beta pruning" data-zh="JS · α-β剪枝">JS · alpha-beta pruning</span>
       <a class="play-btn" href="/game/gomoku.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
+    </div>
+  </div>
+
+  <div class="card glow-rope star" data-players="2">
+    <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
+    <img class="card-thumb" src="/game/thumbs/rope.jpg?v=2" alt="Tether co-op rope climber" loading="lazy" width="440" height="240">
+    <div class="card-icon" style="color:#46c8ff">[o–o]</div>
+    <div class="card-title" data-en="tether.exe" data-zh="默契绳.exe">tether.exe</div>
+    <div class="card-desc" data-en="Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall." data-zh="两个人，一根绳。你和好友被绳子拴在一起——跳跃、摆荡、互相做锚往上爬。可联机（创建/加入房间）或同键盘双人；拽得太猛就一起摔下去。">Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall.</div>
+    <div class="card-tags">
+      <span class="tag green" data-en="new" data-zh="新">new</span>
+      <span class="tag" data-en="2-player co-op" data-zh="双人合作">2-player co-op</span>
+      <span class="tag" data-en="remote" data-zh="联机">remote</span>
+      <span class="tag" data-en="physics" data-zh="物理">physics</span>
+    </div>
+    <div class="card-footer">
+      <span class="card-meta" data-en="JS · Verlet physics · realtime sync" data-zh="JS · Verlet 物理 · 实时同步">JS · Verlet physics · realtime sync</span>
+      <a class="play-btn" href="/game/rope.html?v=b39" data-en="→ play" data-zh="→ 游玩">→ play</a>
     </div>
   </div>
 
@@ -296,23 +333,6 @@
 
 
 
-  <div class="card glow-rope" data-players="2">
-    <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
-    <img class="card-thumb" src="/game/thumbs/rope.jpg?v=2" alt="Tether co-op rope climber" loading="lazy" width="440" height="240">
-    <div class="card-icon" style="color:#46c8ff">[o–o]</div>
-    <div class="card-title" data-en="tether.exe" data-zh="默契绳.exe">tether.exe</div>
-    <div class="card-desc" data-en="Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall." data-zh="两个人，一根绳。你和好友被绳子拴在一起——跳跃、摆荡、互相做锚往上爬。可联机（创建/加入房间）或同键盘双人；拽得太猛就一起摔下去。">Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="new" data-zh="新">new</span>
-      <span class="tag" data-en="2-player co-op" data-zh="双人合作">2-player co-op</span>
-      <span class="tag" data-en="remote" data-zh="联机">remote</span>
-      <span class="tag" data-en="physics" data-zh="物理">physics</span>
-    </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · Verlet physics · realtime sync" data-zh="JS · Verlet 物理 · 实时同步">JS · Verlet physics · realtime sync</span>
-      <a class="play-btn" href="/game/rope.html?v=b39" data-en="→ play" data-zh="→ 游玩">→ play</a>
-    </div>
-  </div>
 
 </div>
 
