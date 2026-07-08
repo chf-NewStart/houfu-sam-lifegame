@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b33</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b34</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -233,8 +233,10 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 let rng=Math.random;
 function rand(a,b){return a+rng()*(b-a);}
 
+let _prevCourse=null;
 function genUpTo(targetY){
   while(topY>targetY){
+    const _course=[];
     topY-=rand(58,88);                       // denser courses — more bricks to climb
     const roll=rng();                        // MUST be the seeded rng — remote guests replay this sequence
     const count=roll<0.22?3:roll<0.68?2:1;   // usually 2, sometimes 3, rarely a lone brick
@@ -249,11 +251,32 @@ function genUpTo(targetY){
       // guests replaying this rng sequence stay perfectly in step.
       const mvRoll=rng(), ampR=rand(26,64), spd=rand(0.010,0.022), ph=rand(0,6.283);
       const amp=Math.min(ampR, x-6, (VW-w-6)-x);
+      let _pl;
       if(topY<-12*PX_PER_M && mvRoll<0.22 && amp>12 && count>1)
-        platforms.push({x,x0:x,y:topY,w,h:14,mv:1,amp,spd,ph});
+        _pl={x,x0:x,y:topY,w,h:14,mv:1,amp,spd,ph};
       else
-        platforms.push({x,y:topY,w,h:14});
+        _pl={x,y:topY,w,h:14};
+      platforms.push(_pl); _course.push(_pl);
     }
+    // REACHABILITY GUARANTEE: measured drum-tap jump reach is ~190px at course
+    // height — a course whose nearest platform sits >110px (edge to edge) from the
+    // previous course could be unwinnable, especially while roped. Slide the
+    // closest platform in until the gap is ~90px. Deterministic → remote-safe.
+    if(_prevCourse&&_prevCourse.length&&_course.length){
+      const REACH=110, WANT=90;
+      let best=1e9, bb=null, ba=null;
+      for(const b of _course) for(const a of _prevCourse){
+        const gap=Math.max(0, Math.max(b.x-(a.x+a.w), a.x-(b.x+b.w)));
+        if(gap<best){ best=gap; bb=b; ba=a; }
+      }
+      if(best>REACH&&bb&&ba){
+        if(bb.x>ba.x+ba.w) bb.x=ba.x+ba.w+WANT-0;
+        else bb.x=ba.x-bb.w-WANT;
+        bb.x=Math.max(6,Math.min(VW-bb.w-6,bb.x));
+        if(bb.mv){ bb.x0=bb.x; bb.amp=Math.min(bb.amp, bb.x-6, (VW-bb.w-6)-bb.x); if(bb.amp<12){ delete bb.mv; } }
+      }
+    }
+    if(_course.length)_prevCourse=_course;
     // a floating orb above some courses (same seeded stream on host and guest)
     const orbRoll=rng();
     if(topY<-6*PX_PER_M && orbRoll<0.16){
@@ -268,6 +291,7 @@ function reset(seed){
   else if(seed!=null){ curSeed=seed; rng=mulberry32(curSeed); }
   else { curSeed=null; rng=Math.random; }
   platforms=[{x:0,y:0,w:VW,h:46}];          // ground slab (top surface y=0)
+  _prevCourse=[{x:0,y:0,w:VW,h:46}];
   orbs=[]; orbId=0; collectedIds=[]; ropeLen=ROPE_LEN; ropeTarget=ROPE_LEN; ropeFxUntil=0;
   topY=0; genUpTo(-VH*1.4);
   P1=pt(VW*0.40,-30,1); P2=pt(VW*0.60,-30,1);
@@ -555,6 +579,12 @@ function step(){
   const _sx1=P1.x, _sx2=P2.x;                      // where the constraint pass found them
   for(let it=0;it<ITER;it++){
     if(!noRope)solveLink(P1,P2,ropeLen,true,TETHER_STIFF);   // the tether: an ideal max-length rope
+    // body volume: the climbers can't overlap — bump shoulders, stand on heads
+    {
+      let bdx=P2.x-P1.x, bdy=P2.y-P1.y, bd=Math.hypot(bdx,bdy)||1e-6;
+      const MIN=2*R-2;
+      if(bd<MIN){ const push=(MIN-bd)/bd*0.5; P1.x-=bdx*push; P1.y-=bdy*push; P2.x+=bdx*push; P2.y+=bdy*push; }
+    }
     collide(P1); collide(P2); clampSides(P1); clampSides(P2);
   }
   // GROUNDED balls: rope displacement moves the BODY but never injects VELOCITY.
@@ -564,12 +594,25 @@ function step(){
   if(P1.grounded)P1.px+=(P1.x-_sx1);
   if(P2.grounded)P2.px+=(P2.x-_sx2);
   for(const p of [P1,P2]){
+    const other=(p===P1)?P2:P1;
     const was=p.grounded;
-    const pl=platformUnder(p); p.grounded=!!pl;
+    const pl=platformUnder(p);
+    // standing on your partner's HEAD counts as footing (and you ride them around)
+    let onHead=false;
+    if(!pl && other.grounded && vy(p)>=-2 && other.y>p.y){
+      const feet=p.y+R, top=other.y-R;
+      if(Math.abs(p.x-other.x)<R*1.35 && feet>=top-3 && feet<=top+10){
+        onHead=true;
+        p.y=other.y-(2*R-2); p.py=p.y;                 // settle on the head, no bounce
+      }
+    }
+    p.grounded=!!pl||onHead;
     if(!was&&p.grounded)p.squash=5;                    // touchdown → squash (landing reads as landing, not a glitch)
     if(p.grounded)p.djOK=true;                         // radiance: the mid-air jump re-arms on landing
     if(p.squash>0)p.squash--; if(p.stretch>0)p.stretch--;
     if(pl&&pl.mv){ const dx=plxAt(pl,t)-plxAt(pl,t-1); p.x+=dx; p.px+=dx; }   // ride the glider
+    if(onHead){ const hdx=(other.x-other.ox)+(other.x-p.x)*0.25;             // ride your partner —
+      p.x+=hdx; p.px+=hdx; }                                                  // with a little balance assist toward the apex
   }
   stepRope();
   // camera only rises, following the higher player
@@ -737,7 +780,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b33 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b34 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
