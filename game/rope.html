@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b20</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b21</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -273,22 +273,25 @@ let prefAD=0, prefLR=0, prefAny=0;
 // slide arms a short pulse — turn assist already does the stopping, a full pulse
 // would overshoot into a reverse walk
 function armPulse(which,d){
-  // tap-to-step: every key press is ONE clean, identical step — holding a key adds
-  // nothing (no more "one arrow went a long way"). Same-direction taps CHAIN (queue
-  // caps at two steps, so drumming is smooth but bounded); a tap the other way steps
-  // the other way instantly. Only the touch joystick moves continuously (positional).
+  // tap-to-step: every key press is ONE clean, identical step — holding adds nothing.
+  // A new tap RESTARTS the step NOW (never queues behind the running one — queuing
+  // felt like "waiting for the previous command to finish"). Rapid same-direction
+  // taps therefore merge into continuous motion; an opposite tap flips instantly.
   if(netMode==='guest'){ ropeRef('gi').update({tp:Date.now(),td:d}); return; }   // guest taps stream as edges
-  if(which===1){ mp1=(mp1d===d)?Math.min(mp1+MOVE_PULSE,MOVE_PULSE*2):MOVE_PULSE; mp1d=d; }
-  else { mp2=(mp2d===d)?Math.min(mp2+MOVE_PULSE,MOVE_PULSE*2):MOVE_PULSE; mp2d=d; }
+  if(which===1){ mp1=MOVE_PULSE; mp1d=d; }
+  else { mp2=MOVE_PULSE; mp2d=d; }
 }
 addEventListener('keydown',e=>{
   const k=e.key, ae=document.activeElement;
   if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;   // typing a room code, not steering
   if(e.metaKey||e.ctrlKey)return;   // browser shortcuts never steer (macOS swallows their keyups → stuck keys)
-  if(k==='a'||k==='A'){ if(!held.a)armPulse(1,-1); held.a=true; prefAD=-1; prefAny=-1; }
-  else if(k==='d'||k==='D'){ if(!held.d)armPulse(1,1); held.d=true; prefAD=1; prefAny=1; }
-  else if(k==='ArrowLeft'){ if(!held.l)armPulse(2,-1); held.l=true; prefLR=-1; prefAny=-1; }
-  else if(k==='ArrowRight'){ if(!held.r)armPulse(2,1); held.r=true; prefLR=1; prefAny=1; }
+  // arm on EVERY non-repeat keydown — gating on !held.x used to eat taps whenever a
+  // keyup was missed or fingers rolled ("responds for a while, stops, responds again");
+  // e.repeat alone reliably blocks OS auto-repeat
+  if(k==='a'||k==='A'){ if(!e.repeat)armPulse(1,-1); held.a=true; }
+  else if(k==='d'||k==='D'){ if(!e.repeat)armPulse(1,1); held.d=true; }
+  else if(k==='ArrowLeft'){ if(!e.repeat)armPulse(2,-1); held.l=true; }
+  else if(k==='ArrowRight'){ if(!e.repeat)armPulse(2,1); held.r=true; }
   if(!e.repeat){ if(KEYJUMP[k]===1)jb1=9; if(KEYJUMP[k]===2)jb2=9; }   // OS auto-repeat must not pin the jump buffer
   if(netMode==='guest'){ if(KEYJUMP[k]&&!e.repeat)sendJump(); sendInputs(); }
   if((k==='r'||k==='R')&&state!=='play')restartBtn();
@@ -640,7 +643,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b20 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b21 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -692,8 +695,7 @@ async function createRoom(){
       _giRef=ropeRef('gi');
       _giCb=_giRef.on('value',s2=>{ const v=s2.val(); if(!v)return;
         gIn.l=v.l||0; gIn.r=v.r||0; gIn.m=(v.m!=null)?v.m:null;
-        if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; const nd=v.td>0?1:-1;   // guest keyboard taps chain like local ones
-          gp=(gpd===nd)?Math.min(gp+MOVE_PULSE,MOVE_PULSE*2):MOVE_PULSE; gpd=nd; }
+        if(v.tp&&v.tp!==_lastTp){ _lastTp=v.tp; gpd=v.td>0?1:-1; gp=MOVE_PULSE; }   // guest taps restart the step, same as local
         if(v.j&&v.j!==_lastJ){_lastJ=v.j; gjb=9; gKick=+(v.jk||0);}
         if(v.rs&&v.rs!==_lastRs){_lastRs=v.rs; reset();} });
       reset();                                    // fresh seeded tower for both sides
