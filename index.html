@@ -171,21 +171,16 @@
   .card.star.glow-gomoku{--mq:232,176,74;--mqwash:.09;}
   .card.star.glow-rope{--mq:54,197,208;}
   /* lamp: the marquee throws a soft spotlight cone down the screen (sized to the thumb,
-     masked out before the text), and hovering fires one light sweep across the glass. */
+     masked out before the text); hovering brings it to full brightness. */
   .card.star::before{content:'';position:absolute;top:0;left:0;right:0;height:auto;aspect-ratio:440/240;z-index:4;pointer-events:none;
     opacity:.62;transition:opacity .25s ease;
     -webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 97%);
     mask-image:linear-gradient(180deg,#000 55%,transparent 97%);
     background:
       linear-gradient(90deg, rgba(var(--mq),0) 2%, rgba(var(--mq),.85) 20%, rgba(var(--mq),.85) 80%, rgba(var(--mq),0) 98%) 50% 0/100% 2px no-repeat,
-      linear-gradient(105deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.13) 50%, rgba(255,255,255,0) 70%) -70% 0/55% 100% no-repeat,
       conic-gradient(from 152deg at 50% -6px, rgba(var(--mq),0) 0deg, rgba(var(--mq),.13) 18deg, rgba(var(--mq),.19) 28deg, rgba(var(--mq),.13) 38deg, rgba(var(--mq),0) 56deg),
       linear-gradient(180deg, rgba(var(--mq),var(--mqwash)), rgba(var(--mq),0) 55%);}
-  .card.star:hover::before{opacity:1;animation:mqsweep .9s ease-out 1;}
-  @keyframes mqsweep{
-    from{background-position:50% 0, -70% 0, 0 0, 0 0;}
-    to{background-position:50% 0, 170% 0, 0 0, 0 0;}}
-  @media (prefers-reduced-motion:reduce){.card.star:hover::before{animation:none;}}
+  .card.star:hover::before{opacity:1;}
   .card.star:not(:hover) .card-thumb,
   .card.star:not(:hover) .gwater{filter:saturate(1) brightness(.94);}
 
