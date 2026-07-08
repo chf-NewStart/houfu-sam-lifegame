@@ -57,6 +57,13 @@
   .dpad button:active{background:rgba(29,185,84,0.2);}
   /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch */
   html, body, button, a, input, select, label { touch-action: manipulation; }
+
+  /* touch: no tap-highlight flash, no double-tap text selection (inputs stay editable) */
+  body{-webkit-tap-highlight-color:transparent;}
+  @media (pointer:coarse){
+    body{-webkit-user-select:none;user-select:none;}
+    input,textarea{-webkit-user-select:text;user-select:text;}
+  }
 </style>
 </head>
 <body>

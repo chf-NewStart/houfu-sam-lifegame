@@ -29,11 +29,34 @@
   .over .nb{font-size:0.72rem;color:#ffce4d;min-height:1em;margin-bottom:16px;}
   .over .btn{max-width:220px;}
 
-  .padbar{display:flex;gap:8px;width:min(94vw,600px);margin:10px auto 0;}
-  .padbtn{flex:1;background:#0d0d0d;border:1px solid #2a2a2a;color:#cfcfcf;font-family:inherit;font-size:1.4rem;padding:14px 0;cursor:pointer;border-radius:6px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;transition:background .08s,border-color .08s;}
-  .padbtn:active,.padbtn.on{background:rgba(232,176,74,0.16);border-color:#e8b04a;}
-  .padbtn.thrust{flex:1.6;color:#e8b04a;}
-  .padbtn[disabled]{opacity:0.25;pointer-events:none;}
+  /* ── arcade control deck: slide joystick (tilt) + plunger button (thrust) ── */
+  .deck{display:flex;gap:16px;width:min(94vw,600px);margin:14px auto 0;align-items:center;justify-content:space-between;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  .deck.solo{justify-content:center;}
+  .joy{position:relative;flex:1;max-width:330px;height:88px;background:linear-gradient(#101216,#0a0b0e);border:1px solid #262a33;border-radius:46px;touch-action:none;cursor:grab;box-shadow:inset 0 3px 10px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.04);}
+  .joy-track{position:absolute;left:22px;right:22px;top:50%;height:6px;transform:translateY(-50%);background:#15171c;border-radius:3px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.8);}
+  .joy-mid{position:absolute;left:50%;top:50%;width:2px;height:16px;transform:translate(-50%,-50%);background:#2c313b;border-radius:1px;}
+  .joy-knob{position:absolute;top:50%;left:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;
+    background:radial-gradient(circle at 35% 28%, #454c57, #171a20 72%);
+    border:1px solid #3d434d;box-shadow:0 5px 12px rgba(0,0,0,0.65), inset 0 2px 3px rgba(255,255,255,0.10);
+    color:#9aa4ac;display:flex;align-items:center;justify-content:center;gap:8px;font-size:0.72rem;
+    transition:left .16s cubic-bezier(.2,.8,.35,1.25);pointer-events:none;}
+  .joy.drag{cursor:grabbing;}
+  .joy.drag .joy-knob{transition:none;color:#e8b04a;}
+  .arc-btn{width:96px;height:96px;flex-shrink:0;border-radius:50%;border:none;cursor:pointer;font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    color:#241804;font-weight:700;letter-spacing:1px;
+    background:radial-gradient(circle at 35% 26%, #ffd98a, #e8b04a 56%, #a87a22 100%);
+    box-shadow:0 7px 0 #5e4c20, 0 11px 18px rgba(0,0,0,0.55), inset 0 2px 4px rgba(255,255,255,0.5);
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:transform .06s,box-shadow .06s;}
+  .arc-btn .arc-arrow{font-size:1.5rem;line-height:1;}
+  .arc-btn .arc-word{font-size:0.6rem;}
+  .arc-btn.on{transform:translateY(5px);box-shadow:0 2px 0 #5e4c20, 0 4px 8px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.35);}
+  .joy{min-width:0;}
+  @media (max-width:430px){
+    .arc-btn{width:82px;height:82px;}
+    .joy{height:78px;}
+    .joy-knob{width:56px;height:56px;margin:-28px 0 0 -28px;}
+  }
 
   .side{flex:1;min-width:230px;max-width:300px;}
   .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:13px 14px;margin-bottom:11px;}
@@ -63,6 +86,13 @@
 
   html, body, button, a, input, select, label { touch-action: manipulation; }
   #field { touch-action: none; }
+
+  /* touch: no tap-highlight flash, no double-tap text selection (inputs stay editable) */
+  body{-webkit-tap-highlight-color:transparent;}
+  @media (pointer:coarse){
+    body{-webkit-user-select:none;user-select:none;}
+    input,textarea{-webkit-user-select:text;user-select:text;}
+  }
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -80,10 +110,12 @@
 <div class="wrap">
   <div class="stage">
     <canvas id="field" width="600" height="480"></canvas>
-    <div class="padbar" id="padbar">
-      <button class="padbtn" id="btnL" data-act="left">◀</button>
-      <button class="padbtn thrust" id="btnT" data-act="thrust">▲ THRUST</button>
-      <button class="padbtn" id="btnR" data-act="right">▶</button>
+    <div class="deck" id="deck">
+      <div class="joy" id="joy">
+        <div class="joy-track"></div><div class="joy-mid"></div>
+        <div class="joy-knob" id="joyKnob"><span>◀</span><span data-en="TILT" data-zh="倾斜">TILT</span><span>▶</span></div>
+      </div>
+      <button class="arc-btn" id="btnT"><span class="arc-arrow">▲</span><span class="arc-word" data-en="THRUST" data-zh="推力">THRUST</span></button>
     </div>
     <div class="over" id="over">
       <div class="big" id="overBig">—</div>
@@ -120,7 +152,7 @@
       <div class="card-title"><span data-en="// controls" data-zh="// 控制">// controls</span></div>
       <div class="help">
         <div data-en="<b>Thrust</b>: <b class='keycap'>W</b> / <b class='keycap'>↑</b> / Space (or hold ▲)." data-zh="<b>推力</b>：<b class='keycap'>W</b> / <b class='keycap'>↑</b> / 空格（或按住 ▲）。">Thrust: <b class="keycap">W</b> / <b class="keycap">↑</b> / Space (or hold ▲).</div>
-        <div data-en="<b>Tilt</b>: <b class='keycap'>←</b> / <b class='keycap'>→</b> or <b class='keycap'>A</b> / <b class='keycap'>D</b> (or the ◀ ▶ buttons)." data-zh="<b>倾斜</b>：<b class='keycap'>←</b> / <b class='keycap'>→</b> 或 <b class='keycap'>A</b> / <b class='keycap'>D</b>（或 ◀ ▶ 按钮）。">Tilt: <b class="keycap">←</b> / <b class="keycap">→</b> or <b class="keycap">A</b> / <b class="keycap">D</b> (or the ◀ ▶ buttons).</div>
+        <div data-en="<b>Tilt</b>: <b class='keycap'>←</b> / <b class='keycap'>→</b> or <b class='keycap'>A</b> / <b class='keycap'>D</b> — or slide the joystick: the further you slide, the faster you turn." data-zh="<b>倾斜</b>：<b class='keycap'>←</b> / <b class='keycap'>→</b> 或 <b class='keycap'>A</b> / <b class='keycap'>D</b>——或滑动摇杆：滑得越远转得越快。">Tilt: <b class="keycap">←</b> / <b class="keycap">→</b> or <b class="keycap">A</b> / <b class="keycap">D</b> — or slide the joystick: the further you slide, the faster you turn.</div>
         <div style="color:#8a9499" data-en="Tip: tilt aims the ship; thrust pushes wherever the nose points. Release tilt and it stops turning." data-zh="提示：倾斜负责对准机头，推力朝机头方向推进。松开倾斜键，飞船就停止转动。">Tip: tilt aims the ship; thrust pushes wherever the nose points. Release tilt and it stops turning.</div>
         <div id="localHint" data-en="Local: one of you on thrust, one on tilt — same keyboard." data-zh="本地：一人控推力，一人控倾斜——同一键盘。">Local: one of you on thrust, one on tilt — same keyboard.</div>
       </div>
@@ -152,7 +184,7 @@ const game = (function () {
 
   let canvas, ctx, DPR = 1, stars = [];
   let mode = 'local';                                  // 'local' | 'host' | 'guest'
-  let ship, pad, st, streak, keys = {}, btn = {};      // st: 0 flying, 1 safe, 2 crash
+  let ship, pad, st, streak, keys = {}, btn = {}, joyVal = 0;   // st: 0 flying, 1 safe, 2 crash
   let running = false, paused = false, pausedAt = 0, lastTs = 0, raf = 0, resultAt = 0;
   let netState = null, lastWrite = 0;                   // guest snapshot
 
@@ -266,12 +298,12 @@ const game = (function () {
   }
 
   function myThrust() { return !!(keys.thrust || btn.thrust); }
-  function myTilt() { return ((keys.right || btn.right) ? 1 : 0) - ((keys.left || btn.left) ? 1 : 0); }
+  function myTilt() { const kb = (keys.right ? 1 : 0) - (keys.left ? 1 : 0); return kb || joyVal; }   // keys are full-rate; joystick is analog
 
   function loop(ts) {
     const f = Math.min(2.2, (ts - lastTs) / 16.667) || 1; lastTs = ts;
     if (mode === 'guest') {
-      if (ts - lastWrite > 55) { lastWrite = ts; gameRef('gi').update({ tl: myTilt() }); }
+      if (ts - lastWrite > 55) { lastWrite = ts; gameRef('gi').update({ tl: +(+myTilt()).toFixed(2) }); }
       if (netState) { $('vStreak').textContent = netState.sk || 0; if (netState.st && !_resShown) showGuestResult(); if (!netState.st && _resShown) { _resShown = false; $('over').classList.remove('show'); } }
       render();
     } else {
@@ -306,22 +338,39 @@ const game = (function () {
       else if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = false;
       else if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = false;
     });
-    document.querySelectorAll('.padbtn').forEach(b => {
-      const act = b.dataset.act;
-      // capture the pointer so a press-and-hold sticks even if the finger drifts or iOS
-      // would otherwise fire a spurious pointercancel/leave (which dropped thrust/tilt)
-      const dn = (e) => { if (b.disabled) return; e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (_) {} btn[act] = true; b.classList.add('on'); };
-      const up = (e) => { e.preventDefault(); btn[act] = false; b.classList.remove('on'); };
-      b.addEventListener('pointerdown', dn);
-      b.addEventListener('pointerup', up);
-      b.addEventListener('pointercancel', up);
-      b.addEventListener('lostpointercapture', up);
-    });
+    // thrust plunger — capture the pointer so a press-and-hold sticks even if the finger
+    // drifts or iOS fires a spurious pointercancel (which used to drop the thrust)
+    const tb = $('btnT');
+    const tdn = (e) => { e.preventDefault(); try { tb.setPointerCapture(e.pointerId); } catch (_) {} btn.thrust = true; tb.classList.add('on'); };
+    const tup = (e) => { e.preventDefault(); btn.thrust = false; tb.classList.remove('on'); };
+    tb.addEventListener('pointerdown', tdn);
+    tb.addEventListener('pointerup', tup);
+    tb.addEventListener('pointercancel', tup);
+    tb.addEventListener('lostpointercapture', tup);
+    // tilt joystick — slide the knob; how far you slide is how fast you turn.
+    // Springs back to center (tilt 0) on release.
+    const joy = $('joy'), knob = $('joyKnob');
+    function joySet(e) {
+      const r = joy.getBoundingClientRect(), max = r.width / 2 - 42;
+      const dx = Math.max(-max, Math.min(max, e.clientX - (r.left + r.width / 2)));
+      joyVal = +(dx / max).toFixed(2);
+      knob.style.left = 'calc(50% + ' + dx.toFixed(1) + 'px)';
+    }
+    const jend = () => { joy.classList.remove('drag'); joyVal = 0; knob.style.left = '50%'; };
+    joy.addEventListener('pointerdown', (e) => { e.preventDefault(); try { joy.setPointerCapture(e.pointerId); } catch (_) {} joy.classList.add('drag'); joySet(e); });
+    joy.addEventListener('pointermove', (e) => { if (joy.classList.contains('drag')) joySet(e); });
+    joy.addEventListener('pointerup', jend);
+    joy.addEventListener('pointercancel', jend);
+    joy.addEventListener('lostpointercapture', jend);
     window.addEventListener('resize', layout);
   }
   function roleButtons() {
+    // remote: show only YOUR control, centered — host flies thrust, guest flies tilt
     const showThrust = mode !== 'guest', showTilt = mode !== 'host';
-    $('btnT').disabled = !showThrust; $('btnL').disabled = !showTilt; $('btnR').disabled = !showTilt;
+    $('btnT').style.display = showThrust ? '' : 'none';
+    $('joy').style.display = showTilt ? '' : 'none';
+    $('deck').classList.toggle('solo', !(showThrust && showTilt));
+    joyVal = 0;                          // a hidden stick must never keep steering
   }
   function layout() {
     DPR = window.devicePixelRatio || 1;
