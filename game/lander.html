@@ -272,9 +272,24 @@ const game = (function () {
     ctx.fillStyle = sSafe ? '#2bd46a' : '#e2523e'; ctx.fillText(t('SPD ', '速度 ') + spd.toFixed(2), 10, 10);
     ctx.fillStyle = aSafe ? '#2bd46a' : '#e2523e'; ctx.fillText(t('TILT ', '倾角 ') + Math.round(ang * 180 / Math.PI) + '°', 10, 26);
   }
+  function drawMoon(mx, my, mr) {
+    const glow = ctx.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 2.4);
+    glow.addColorStop(0, 'rgba(228,232,244,0.16)'); glow.addColorStop(1, 'rgba(228,232,244,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(mx, my, mr * 2.4, 0, 7); ctx.fill();
+    const disc = ctx.createRadialGradient(mx - mr * 0.35, my - mr * 0.35, mr * 0.2, mx, my, mr);
+    disc.addColorStop(0, '#e8ecf4'); disc.addColorStop(0.7, '#c2c9d8'); disc.addColorStop(1, '#8f97ab');
+    ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(120,128,148,0.5)';                                   // craters
+    const cr = [[-0.35, -0.18, 0.16], [0.22, 0.05, 0.22], [-0.05, 0.38, 0.12], [0.4, -0.38, 0.1], [-0.5, 0.25, 0.08]];
+    for (const c of cr) { ctx.beginPath(); ctx.arc(mx + c[0] * mr, my + c[1] * mr, c[2] * mr, 0, 7); ctx.fill(); }
+    const shade = ctx.createRadialGradient(mx + mr * 0.55, my + mr * 0.45, mr * 0.2, mx, my, mr * 1.02);
+    shade.addColorStop(0, 'rgba(6,7,11,0.45)'); shade.addColorStop(0.65, 'rgba(6,7,11,0.08)'); shade.addColorStop(1, 'rgba(6,7,11,0)');
+    ctx.fillStyle = shade; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 7); ctx.fill();
+  }
   function drawScene(sx, sy, sa, sth, pdx, spd, ang, paddw) {
     ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#06070b'; ctx.fillRect(0, 0, W, H);
     for (const s of stars) { ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + s[2] * 0.3).toFixed(2) + ')'; ctx.fillRect(s[0], s[1], s[2], s[2]); }
+    drawMoon(W - 92, 86, 44);
     // ground + pad
     ctx.fillStyle = '#161a24'; ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
     ctx.strokeStyle = '#2a3144'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(W, GROUND_Y); ctx.stroke();
