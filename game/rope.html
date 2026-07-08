@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b12</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b13</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -341,10 +341,11 @@ function applyMove(p,dir){
     // firm on the ground, gentle in FREE air (slack rope). A taut rope means a real
     // pendulum swing — that momentum is the core mechanic and is never braked.
     p.holdT=0;
-    // when the rope is TAUT, an input-less player is being dragged by their partner —
-    // braking then means fighting the tether (jitter + "wall" feel), so don't.
-    if(p.grounded){ if(!ropeTaut()){ const v=vx(p)*0.7; p.px=p.x-v; } }
-    else if(!ropeTaut()){ const v=vx(p)*0.84; p.px=p.x-v; }   // free-air stop close to the ground stop, so taps feel similar everywhere
+    // idle on the ground ALWAYS brakes — even against a taut rope. (An exemption here
+    // let both balls skate ~23px after every release near the tether limit; the drag
+    // still works fine through the brake because the rope constraint is positional.)
+    if(p.grounded){ const v=vx(p)*0.7; p.px=p.x-v; }
+    else if(!ropeTaut()){ const v=vx(p)*0.84; p.px=p.x-v; }   // free-air stop close to the ground stop; taut air = swing, never braked
     return;
   }
   // Response is INSTANT — full force from the first frame. Hold time ramps the top
