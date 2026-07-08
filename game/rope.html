@@ -115,7 +115,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b37</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b38</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -701,22 +701,24 @@ function drawPlayer(p,col,face){
   const sq=(p.squash||0)/5, st=(p.stretch||0)/5;
   const scX=1+0.22*sq-0.16*st, scY=1-0.26*sq+0.22*st;
   ctx.save(); ctx.translate(x,y); ctx.scale(scX,scY);
-  ctx.shadowColor=col; ctx.shadowBlur=12;
-  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill();
-  ctx.shadowBlur=0;
-  if(p.radiantUntil>t){                                // radiant aura — hue-cycling halo
-    ctx.strokeStyle='hsl('+Math.round((t*6)%360)+',90%,68%)'; ctx.lineWidth=2.2; ctx.globalAlpha=0.85;
-    ctx.beginPath(); ctx.arc(0,0,R+4+Math.sin(t*0.18)*1.6,0,7); ctx.stroke(); ctx.globalAlpha=1;
-  }
-  if(p.face){                                          // wearing an emote — the emoji IS the face
-    ctx.font='19px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
+  if(p.face){                                          // an emote REPLACES the ball entirely —
+    ctx.shadowColor=col; ctx.shadowBlur=16;            // only the player-color glow remains for identity
+    ctx.font='27px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(p.face,0,1.5);
+    ctx.fillText(p.face,0,1);
+    ctx.shadowBlur=0;
   } else {
+    ctx.shadowColor=col; ctx.shadowBlur=12;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill();
+    ctx.shadowBlur=0;
     ctx.fillStyle='#08110b';
     const lean=Math.max(-3,Math.min(3,vx(p)));
     ctx.beginPath(); ctx.arc(-4+lean,-2,2.1,0,7); ctx.arc(4+lean,-2,2.1,0,7); ctx.fill();
     ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-4,3,8,1.6);
+  }
+  if(p.radiantUntil>t){                                // radiant aura — hue-cycling halo
+    ctx.strokeStyle='hsl('+Math.round((t*6)%360)+',90%,68%)'; ctx.lineWidth=2.2; ctx.globalAlpha=0.85;
+    ctx.beginPath(); ctx.arc(0,0,R+4+Math.sin(t*0.18)*1.6,0,7); ctx.stroke(); ctx.globalAlpha=1;
   }
   ctx.restore();
 }
@@ -823,7 +825,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b37 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b38 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
