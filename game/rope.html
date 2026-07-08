@@ -115,7 +115,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b39</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b40</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -296,7 +296,7 @@ function genUpTo(targetY){
     // a WIND BAND across some courses (seeded): airborne balls drift with it
     const windRoll=rng();
     if(topY<-10*PX_PER_M && windRoll<0.10){
-      winds.push({y0:topY-30, y1:topY+46, dir:(rng()<0.5?-1:1), str:0.055+rng()*0.05});
+      winds.push({y0:topY-30, y1:topY+46, dir:(rng()<0.5?-1:1), str:0.5+rng()*0.3});
     }
     // REACHABILITY GUARANTEE: measured drum-tap jump reach is ~190px at course
     // height — a course whose nearest platform sits >110px (edge to edge) from the
@@ -610,11 +610,15 @@ function step(){
       pl.gone=true; brokenIds.push(pl.id); if(brokenIds.length>15)brokenIds.shift();
     }
   }
-  // wind bands: AIRBORNE balls drift with the wind (grounded stance is unaffected)
+  // wind bands: AIRBORNE balls drift with the wind (grounded stance is unaffected).
+  // Applied as pure displacement (x and px shift together, like riding a mover) so
+  // the approved control model is untouched: your velocity stays yours, the air
+  // just carries you sideways. Velocity-based wind was invisible — air damping and
+  // the air-steering snap cancelled it within the same frame.
   for(const p of [P1,P2]){
     if(p.grounded)continue;
     for(const wz of winds){
-      if(p.y>wz.y0&&p.y<wz.y1){ p.px-=wz.dir*wz.str; break; }
+      if(p.y>wz.y0&&p.y<wz.y1){ p.x+=wz.dir*wz.str; p.px+=wz.dir*wz.str; break; }
     }
   }
   // coins: touch to collect
