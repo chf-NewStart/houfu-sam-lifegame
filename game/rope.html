@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b35</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b36</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -160,7 +160,7 @@
       </label>
       <label style="display:flex;align-items:center;gap:7px;font-size:0.7rem;color:#9a9a9a;cursor:pointer;margin-top:2px">
         <input type="checkbox" id="smoothChk" style="accent-color:#e8b04a">
-        <span data-en="Experimental: smooth directions (hold to glide; taps still hop)" data-zh="实验：平滑方向（按住滑行；轻点仍是跳步）">Experimental: smooth directions (hold to glide; taps still hop)</span>
+        <span data-en="Smooth directions: hold to glide, tap to hop (untick for classic tap-only steps)" data-zh="平滑方向：按住滑行、轻点跳步（取消勾选＝经典纯跳步）">Smooth directions: hold to glide, tap to hop (untick for classic tap-only steps)</span>
       </label>
     </div>
     <div class="pcard">
@@ -422,7 +422,7 @@ cv.addEventListener('pointercancel',()=>{ swipe=null; });
 /* ── physics ── */
 let noRope=false;   // practice toggle: local-only, disables the tether entirely
 let noSurge=false;  // practice toggle: local-only, the surge never rises
-let smoothMove=false; // EXPERIMENTAL, local-only, default off: held keys glide continuously
+let smoothMove=true;  // MAIN control (promoted from experiment): held keys glide; taps still hop
 function ropeTaut(){ if(noRope)return false; const dx=P2.x-P1.x, dy=P2.y-P1.y; return dx*dx+dy*dy > (ropeLen*0.98)*(ropeLen*0.98); }   // 0.98: the rope only pulls past 1.0 — a wide margin left a brakeless dead band
 function applyMove(p,dir){
   if(!dir){
@@ -525,9 +525,12 @@ function step(){
   coy2=P2.grounded?7:Math.max(0,coy2-1);
   if(netMode==='host'){
     // host: every local key/pad/joystick drives P1; the guest's streamed inputs drive P2
-    // tap-steps drive movement (any new tap overrides); joystick stays continuous
-    let d1=jdz(joyV1)||jdz(joyV2);
+    // held keys glide (last-input-priority); taps still hop; joystick continuous
+    const Lh=(held.a||held.l), Rh=(held.d||held.r);
+    const kbh=(Lh&&Rh)?prefAny:((Rh?1:0)-(Lh?1:0));
+    let d1=(smoothMove?kbh:0)||jdz(joyV1)||jdz(joyV2);
     if(!d1&&mp1>0)d1=mp1d; if(!d1&&mp2>0)d1=mp2d;
+    P1.mi=d1; P2.mi=(gIn.m!=null?gIn.m:0)||(gp>0?gpd:0);
     let d2=(gIn.m!=null?gIn.m:((gIn.r?1:0)-(gIn.l?1:0)));
     if(!d2&&gp>0)d2=gpd;
     applyMove(P1,d1); applyMove(P2,d2);
@@ -548,6 +551,7 @@ function step(){
     if(!d1&&mp1>0)d1=mp1d;
     let d2=(smoothMove?kb2:0)||jdz(joyV2);
     if(!d2&&mp2>0)d2=mp2d;
+    P1.mi=d1; P2.mi=d2;
     applyMove(P1,d1); applyMove(P2,d2);
     if(jb1>0){
       if(P1.grounded||coy1>0){ setVel(P1,vx(P1)+jqk1,-JUMP); P1.grounded=false; P1.stretch=5; coy1=0; jb1=0; jqk1=0; }
@@ -629,8 +633,10 @@ function step(){
     if(p.grounded)p.djOK=true;                         // radiance: the mid-air jump re-arms on landing
     if(p.squash>0)p.squash--; if(p.stretch>0)p.stretch--;
     if(pl&&pl.mv){ const dx=plxAt(pl,t)-plxAt(pl,t-1); p.x+=dx; p.px+=dx; }   // ride the glider
-    if(onHead){ const hdx=(other.x-other.ox)+(other.x-p.x)*0.25;             // ride your partner —
-      p.x+=hdx; p.px+=hdx; }                                                  // with a little balance assist toward the apex
+    if(onHead){                                                              // ride your partner — balance assist
+      const steering=Math.abs(p.mi||0)>0.05;                                  // holds you centered ONLY while you aren't steering
+      const hdx=(other.x-other.ox)+(steering?0:(other.x-p.x)*0.25);           // (it used to trap riders — only jumping escaped)
+      p.x+=hdx; p.px+=hdx; }
   }
   stepRope();
   // camera only rises, following the higher player
@@ -798,7 +804,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b35 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b36 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
@@ -889,7 +895,7 @@ function sendInputs(){
   // tap edges additionally travel as tp for the min-nudge floor
   const L=(held.a||held.l), R=(held.d||held.r);
   const kb=(L&&R)?prefAny:((R?1:0)-(L?1:0));
-  const mv=Math.round((kb||jdz(joyV1)||jdz(joyV2))*100)/100;
+  const mv=Math.round(((smoothMove?kb:0)||jdz(joyV1)||jdz(joyV2))*100)/100;
   if(mv!==_sent.m){ _sent.m=mv; ropeRef('gi').update({m:mv}); }
 }
 function sendJump(k){ if(netMode==='guest')ropeRef('gi').update({j:Date.now(),jk:Math.round((k||0)*10)/10}); }
@@ -957,11 +963,11 @@ document.getElementById('noSurgeChk').addEventListener('change',e=>{
   noSurge=e.target.checked;
 });
 document.getElementById('smoothChk').addEventListener('change',e=>{
-  if(netMode!==''){ e.target.checked=false; return; }   // local experiment only
   smoothMove=e.target.checked;
   try{ localStorage.setItem('tether_smooth', smoothMove?'1':'0'); }catch(_){}
 });
-try{ if(localStorage.getItem('tether_smooth')==='1'){ smoothMove=true; document.getElementById('smoothChk').checked=true; } }catch(_){}
+document.getElementById('smoothChk').checked=true;
+try{ if(localStorage.getItem('tether_smooth')==='0'){ smoothMove=false; document.getElementById('smoothChk').checked=false; } }catch(_){}
 reset(); applyLang(); requestAnimationFrame(frame);
 
 /* remember the language across the whole arcade */
