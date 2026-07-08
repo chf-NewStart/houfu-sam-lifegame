@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b15</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b16</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -263,7 +263,7 @@ let jqk1=0, jqk2=0;                    // horizontal kick for slanted (flick) ju
 // minimum move pulse: a fresh tap guarantees this many frames of force, so identical
 // clicks always deliver the same baseline impulse (raw frame-sampling made a ~60ms
 // click land as anywhere from 1 to 4 sim frames — "a little or a lot" at random)
-const MOVE_PULSE=6;
+const MOVE_PULSE=4;   // at direct full-speed movement, 4 sim frames ≈ a one-ball-radius step per tap
 let mp1=0,mp1d=0, mp2=0,mp2d=0;
 const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
 // opposite keys held together resolve to the LAST one pressed (not a dead neutral)
@@ -365,7 +365,7 @@ function applyMove(p,dir){
     // idle on the ground ALWAYS brakes — even against a taut rope. (An exemption here
     // let both balls skate ~23px after every release near the tether limit; the drag
     // still works fine through the brake because the rope constraint is positional.)
-    if(p.grounded){ const v=vx(p)*0.7; p.px=p.x-v; }
+    if(p.grounded){ const v=vx(p)*0.6; p.px=p.x-v; }
     else if(!ropeTaut()){ const v=vx(p)*0.84; p.px=p.x-v; }   // free-air stop close to the ground stop; taut air = swing, never braked
     return;
   }
@@ -377,15 +377,23 @@ function applyMove(p,dir){
   if(p.holdDir!==sgn){ p.holdT=0; p.holdDir=sgn; }
   p.holdT=(p.holdT||0)+1;
   const v0=vx(p);
-  let v=(sgn*v0<0) ? v0*(p.grounded?0.55:0.90) : v0;
-  const accel=(p.grounded?2.2:1.05)*mag;
+  if(p.grounded){
+    // DIRECT ground control: full run speed the moment you press, instant reversals,
+    // dead stop on release — zero inertia, zero ramp-up. The one exception: overspeed
+    // in the SAME direction (rope slingshot, hot landing) bleeds 15%/frame instead of
+    // snapping, so carried momentum still feels physical but can never run away.
+    const run=5.2*Math.max(0.4,mag);
+    let v=sgn*run;
+    if(sgn*v0>run) v=sgn*Math.max(run, Math.abs(v0)*0.85);
+    p.px=p.x-v; return;
+  }
+  // AIRBORNE: accelerate toward the held direction; never clamp below an existing
+  // swing speed — holding "into" a pendulum swing must not brake it.
+  let v=(sgn*v0<0)? v0*0.90 : v0;
+  const accel=1.05*mag;
   const spdRamp=0.55+0.45*Math.min(1,p.holdT/26);
-  const maxv=(p.grounded?5.4:6.4)*spdRamp*Math.max(0.4,mag);
-  // AIRBORNE: never clamp below an existing swing speed — holding "into" a pendulum
-  // swing must not brake it. GROUNDED: excess speed (rope slingshot, hot landing)
-  // BLEEDS at 15%/frame toward maxv instead of a hard clamp — so landing from a
-  // swing doesn't stop dead like glue, but a slingshot can't sustain a runaway.
-  const cap=p.grounded? Math.max(maxv,Math.abs(v)*0.85) : Math.max(maxv,Math.abs(v));
+  const maxv=6.4*spdRamp*Math.max(0.4,mag);
+  const cap=Math.max(maxv,Math.abs(v));
   v+=sgn*accel; v=Math.max(-cap,Math.min(cap,v)); p.px=p.x-v;
 }
 function integrate(p){
@@ -405,6 +413,7 @@ function solveLink(a,b,len,ropeMode,stiff){
 // decorative rope — a light chain pinned to both players each frame. Pure eye-candy: it
 // never pushes the players (the tether itself is the single ideal constraint above).
 function stepRope(){
+  for(const r of ropeViz){ r.ox=r.x; r.oy=r.y; }
   const L=ropeViz.length-1;
   ropeViz[0].x=P1.x; ropeViz[0].y=P1.y; ropeViz[L].x=P2.x; ropeViz[L].y=P2.y;
   for(let i=1;i<L;i++){const r=ropeViz[i];let wx=(r.x-r.px)*0.97,wy=(r.y-r.py)*0.97;r.px=r.x;r.py=r.y;r.x+=wx;r.y+=wy+GRAV;}
@@ -446,7 +455,11 @@ function platformUnder(p){
 function onGround(p){ return !!platformUnder(p); }
 function clampSides(p){ if(p.x<R){p.x=R;p.px=R;} if(p.x>VW-R){p.x=VW-R;p.px=VW-R;} }
 
+let _camO=null, _surgeO=null;
 function step(){
+  // remember where everything was — render interpolates between sim steps so 120Hz
+  // displays get smooth motion instead of duplicated (juddering) frames
+  P1.ox=P1.x; P1.oy=P1.y; P2.ox=P2.x; P2.oy=P2.y; _camO=camY; _surgeO=surgeY;
   t++;
   // coyote windows tick from last frame's footing
   coy1=P1.grounded?7:Math.max(0,coy1-1);
@@ -526,9 +539,14 @@ function gameover(reason){
 }
 
 /* ── render ── */
-function sy(wy){return wy-camY;}
+// alpha-interpolated view state: render() blends between the previous and current
+// sim step so high-refresh displays (120Hz) see smooth motion, not doubled frames
+let _rA=1, _rCam=0, _rT=0, _rSurge=0;
+function sy(wy){return wy-_rCam;}
+function ix(p){ return p.ox==null?p.x:p.ox+(p.x-p.ox)*_rA; }
+function iy(p){ return p.oy==null?p.y:p.oy+(p.y-p.oy)*_rA; }
 function drawPlayer(p,col,face){
-  const x=p.x, y=sy(p.y);
+  const x=ix(p), y=sy(iy(p));
   ctx.save();
   ctx.shadowColor=col; ctx.shadowBlur=12;
   ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,R,0,7); ctx.fill();
@@ -538,7 +556,11 @@ function drawPlayer(p,col,face){
   ctx.beginPath(); ctx.arc(x-4+lean,y-2,2.1,0,7); ctx.arc(x+4+lean,y-2,2.1,0,7); ctx.fill();
   ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(x-4,y+3,8,1.6);
 }
-function render(){
+function render(a){
+  _rA=(a==null)?1:a;
+  _rCam=(_camO==null)?camY:_camO+(camY-_camO)*_rA;
+  _rSurge=(_surgeO==null)?surgeY:_surgeO+(surgeY-_surgeO)*_rA;
+  _rT=Math.max(0,t-1+_rA);
   // sky
   const g=ctx.createLinearGradient(0,0,0,VH);
   g.addColorStop(0,'#0b1018'); g.addColorStop(1,'#0a0c0a');
@@ -556,7 +578,7 @@ function render(){
   // platforms (gliders drawn at their current position, with little direction nubs)
   for(const pl of platforms){
     const Y=sy(pl.y); if(Y>VH+30||Y+pl.h<-30)continue;
-    const X=plx(pl);
+    const X=plxAt(pl,_rT);
     ctx.fillStyle='#141d16'; ctx.fillRect(X,Y,pl.w,pl.h);
     ctx.strokeStyle='rgba(29,185,84,0.35)'; ctx.lineWidth=1; ctx.strokeRect(X+0.5,Y+0.5,pl.w-1,pl.h-1);
     ctx.fillStyle=pl.mv?'#5fe694':'#1db954'; ctx.fillRect(X,Y,pl.w,2);
@@ -564,30 +586,30 @@ function render(){
   }
   // rope
   ctx.strokeStyle='#9a7b4f'; ctx.lineWidth=3; ctx.lineJoin='round';
-  ctx.beginPath(); ctx.moveTo(ropeViz[0].x,sy(ropeViz[0].y));
-  for(let i=1;i<ropeViz.length;i++)ctx.lineTo(ropeViz[i].x,sy(ropeViz[i].y));
+  ctx.beginPath(); ctx.moveTo(ix(ropeViz[0]),sy(iy(ropeViz[0])));
+  for(let i=1;i<ropeViz.length;i++)ctx.lineTo(ix(ropeViz[i]),sy(iy(ropeViz[i])));
   ctx.stroke();
   // players
   drawPlayer(P1,'#1db954'); drawPlayer(P2,'#46c8ff');
   // off-screen danger arrows
   arrowFor(P1,'#1db954'); arrowFor(P2,'#46c8ff');
   // the surge — a red tide swallowing the tower from below
-  const sYY=sy(surgeY);
+  const sYY=sy(_rSurge);
   if(sYY<VH+24){
     const sg=ctx.createLinearGradient(0,Math.min(sYY,VH-1),0,VH);
     sg.addColorStop(0,'rgba(226,64,40,0.88)'); sg.addColorStop(1,'rgba(84,12,6,0.96)');
     ctx.fillStyle=sg; ctx.fillRect(0,sYY,VW,VH-sYY+2);
     ctx.strokeStyle='#ff7a52'; ctx.lineWidth=2; ctx.beginPath();
-    for(let x=0;x<=VW;x+=8){ const yy=sYY+Math.sin(x*0.06+t*0.12)*3; x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy); }
+    for(let x=0;x<=VW;x+=8){ const yy=sYY+Math.sin(x*0.06+_rT*0.12)*3; x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy); }
     ctx.stroke();
   } else {
-    const warn=1-(surgeY-(camY+VH))/300;              // close below the view → bottom edge glows
+    const warn=1-(_rSurge-(_rCam+VH))/300;            // close below the view → bottom edge glows
     if(warn>0){ ctx.fillStyle='rgba(226,64,40,'+(warn*0.55).toFixed(2)+')'; ctx.fillRect(0,VH-5,VW,5); }
   }
 }
 function arrowFor(p,col){
-  const Y=sy(p.y);
-  if(Y>VH-6){ ctx.fillStyle=col; const x=Math.max(12,Math.min(VW-12,p.x));
+  const Y=sy(iy(p));
+  if(Y>VH-6){ ctx.fillStyle=col; const x=Math.max(12,Math.min(VW-12,ix(p)));
     ctx.beginPath(); ctx.moveTo(x,VH-4); ctx.lineTo(x-7,VH-16); ctx.lineTo(x+7,VH-16); ctx.fill(); }
 }
 
@@ -598,11 +620,12 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b15 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b16 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
-  render(); requestAnimationFrame(frame);
+  render(netMode==='guest'?1:Math.max(0,Math.min(1,acc/FT)));   // blend between sim steps → smooth on 120Hz
+  requestAnimationFrame(frame);
 }
 
 /* ── remote co-op — host-authoritative, same Firebase backend as Lander/Keep-Up.
