@@ -98,10 +98,9 @@
 .glow-life .lgrid{ position:absolute; left:0; right:0; bottom:0; z-index:0; pointer-events:none; }  /* top set in JS = thumbnail bottom */
 .glow-life .card-icon, .glow-life .card-title, .glow-life .card-desc, .glow-life .card-meta{ text-shadow:0 1px 4px rgba(0,0,0,0.92); }
 
-/* Tether — two climbers on a Verlet rope alternate anchor-and-jump up an endless wall */
+/* Tether — the two tethered balls live on the card: play-button climber + tag hopper */
 .card.glow-rope:hover { border-color: #2a5a78; box-shadow: 0 0 22px -8px rgba(70,200,255,0.5); }
-.glow-rope .rope-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
-.card.glow-rope:hover .rope-canvas { opacity: 1; }
+.glow-rope .rope-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 
 /* === Escape — "Escape vs Restraint" two-particle physics (Canvas) === */
 .card.glow-escape{ transition:border-color .25s ease, box-shadow .25s ease; }
@@ -551,6 +550,651 @@ document.addEventListener('DOMContentLoaded', applyLang);
   }
   card.addEventListener('mouseenter', () => { if (raf) return; reset(); inside = true; raf = requestAnimationFrame(frame); });
   card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+(function () {
+  const card = document.querySelector('.card.glow-gomoku');
+  if (!card) return;
+  const canvas = card.querySelector('.gwater');
+  const img = card.querySelector('.gsrc');
+  const band = card.querySelector('.gband');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const SIM_SCALE = 0.5, DAMP = 0.985, REFRACT = 6.0, SHADE = 24, SPEC = 0.9;
+  let DW, DH, SW, SH, SN, cur, prev, bg, out, outData, inited = false;
+  let rafId = 0, inside = false;
+  let wakeQ = [], lastX = 0, lastY = 0, haveLast = false;
+
+  function setup() {
+    const w = card.clientWidth | 0, h = card.clientHeight | 0;
+    if (!w || !h || !img.naturalWidth) return false;
+    DW = w; DH = h; canvas.width = DW; canvas.height = DH;
+    SW = Math.max(2, Math.round(DW * SIM_SCALE)); SH = Math.max(2, Math.round(DH * SIM_SCALE)); SN = SW * SH;
+    cur = new Float32Array(SN); prev = new Float32Array(SN);
+    out = ctx.createImageData(DW, DH); outData = out.data;
+    const BAND = Math.min(DH, Math.max(60, (band ? band.offsetHeight : 124)));   // thumbnail band height (px)
+    const off = document.createElement('canvas'); off.width = DW; off.height = DH;
+    const oc = off.getContext('2d');
+    oc.fillStyle = '#0d0d0d'; oc.fillRect(0, 0, DW, DH);                          // dark body
+    // stones thumbnail, cover-fit into the top band
+    const ir = img.naturalWidth / img.naturalHeight, br = DW / BAND;
+    let sw, sh, sx, sy;
+    if (ir > br) { sh = img.naturalHeight; sw = sh * br; sx = (img.naturalWidth - sw) / 2; sy = 0; }
+    else { sw = img.naturalWidth; sh = sw / br; sx = 0; sy = (img.naturalHeight - sh) / 2; }
+    oc.drawImage(img, sx, sy, sw, sh, 0, 0, DW, BAND);
+    oc.fillStyle = 'rgba(28,28,28,1)'; oc.fillRect(0, BAND - 1, DW, 1);           // separator line
+    try { bg = oc.getImageData(0, 0, DW, DH).data; } catch (e) { return false; }
+    inited = true; render(prev); card.classList.add('ready');
+    return true;
+  }
+  function ensureInit() { return inited || ((img.complete && img.naturalWidth) ? setup() : false); }
+
+  function poke(dx, dy, strength, radius) {
+    const sx = (dx * SIM_SCALE) | 0, sy = (dy * SIM_SCALE) | 0, r = radius || 2;
+    for (let y = -r; y <= r; y++) { const yy = sy + y; if (yy < 1 || yy >= SH - 1) continue;
+      for (let x = -r; x <= r; x++) { const xx = sx + x; if (xx < 1 || xx >= SW - 1) continue;
+        const d = Math.hypot(x, y); if (d > r) continue;
+        prev[yy * SW + xx] -= strength * Math.cos((d / r) * Math.PI * 0.5); } }
+    ensureRAF();
+  }
+  function ringPoke(dx, dy, ringR, strength) {
+    const sx = dx * SIM_SCALE, sy = dy * SIM_SCALE, rr = ringR * SIM_SCALE, steps = Math.max(10, (2 * Math.PI * rr) | 0);
+    for (let s = 0; s < steps; s++) { const a = s / steps * Math.PI * 2, xx = (sx + Math.cos(a) * rr) | 0, yy = (sy + Math.sin(a) * rr) | 0;
+      if (xx < 1 || yy < 1 || xx >= SW - 1 || yy >= SH - 1) continue; prev[yy * SW + xx] -= strength; }
+  }
+  function splash(x, y) { poke(x, y, 46, 5); ringPoke(x, y, 9, 16); ringPoke(x, y, 16, 9); }
+
+  function step() {
+    const c = cur, p = prev;
+    for (let y = 1; y < SH - 1; y++) { let i = y * SW + 1;
+      for (let x = 1; x < SW - 1; x++, i++) { c[i] = (((p[i-1] + p[i+1] + p[i-SW] + p[i+SW]) * 0.5) - c[i]) * DAMP; } }
+    const t = prev; prev = cur; cur = t;
+  }
+  function render(field) {
+    const data = outData, inv = 1 / SIM_SCALE;
+    for (let y = 0; y < DH; y++) {
+      const fy = y * SIM_SCALE, sy0 = fy | 0, wy = fy - sy0, sy1 = sy0 + 1 < SH ? sy0 + 1 : sy0, row0 = sy0 * SW, row1 = sy1 * SW;
+      for (let x = 0; x < DW; x++) {
+        const fx = x * SIM_SCALE, sx0 = fx | 0, sx1 = sx0 + 1 < SW ? sx0 + 1 : sx0;
+        const xm = sx0 > 0 ? sx0 - 1 : sx0, xp = sx1, ym = sy0 > 0 ? sy0 - 1 : sy0, yp = sy1;
+        const dhx = field[row0 + xp] - field[row0 + xm], dhy = field[yp * SW + sx0] - field[ym * SW + sx0];
+        let bx = x + ((dhx * REFRACT * inv) | 0), by = y + ((dhy * REFRACT * inv) | 0);
+        if (bx < 0) bx = 0; else if (bx >= DW) bx = DW - 1; if (by < 0) by = 0; else if (by >= DH) by = DH - 1;
+        const bi = (by * DW + bx) * 4, lit = (-dhx - dhy) * SHADE; let spec = (dhx * dhx + dhy * dhy) * SHADE * SPEC; if (spec > 32) spec = 32;
+        let r = bg[bi] + lit + spec * 0.9, g = bg[bi + 1] + lit + spec, b = bg[bi + 2] + lit + spec * 1.1;
+        const oi = (y * DW + x) * 4;
+        data[oi] = r < 0 ? 0 : r > 255 ? 255 : r; data[oi + 1] = g < 0 ? 0 : g > 255 ? 255 : g; data[oi + 2] = b < 0 ? 0 : b > 255 ? 255 : b; data[oi + 3] = 255;
+      }
+    }
+    ctx.putImageData(out, 0, 0);
+  }
+  function energy(f) { let e = 0; for (let i = 0; i < SN; i += 7) { const v = f[i]; e += v < 0 ? -v : v; } return e; }
+  function frame() {
+    for (let i = 0; i < wakeQ.length; i += 2) poke(wakeQ[i], wakeQ[i + 1], 6, 2); wakeQ.length = 0;
+    step(); render(prev);
+    if (!inside && energy(prev) < 0.1) { rafId = 0; return; }
+    rafId = requestAnimationFrame(frame);
+  }
+  function ensureRAF() { if (!rafId) rafId = requestAnimationFrame(frame); }
+  function pos(ev) { const r = card.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function queueWake(x, y) {
+    if (haveLast) { const dx = x - lastX, dy = y - lastY, dist = Math.hypot(dx, dy), segs = Math.min(8, Math.max(1, (dist / 6) | 0));
+      for (let s = 1; s <= segs; s++) wakeQ.push(lastX + dx * (s / segs), lastY + dy * (s / segs)); }
+    else wakeQ.push(x, y);
+    lastX = x; lastY = y; haveLast = true;
+  }
+  card.addEventListener('mouseenter', () => { if (!ensureInit()) return; inside = true; haveLast = false; ensureRAF(); });
+  card.addEventListener('mouseleave', () => { inside = false; haveLast = false; });
+  card.addEventListener('mousemove', (ev) => { if (!ensureInit()) return; const [x, y] = pos(ev); queueWake(x, y); ensureRAF(); });
+  card.addEventListener('click', (ev) => { if (!ensureInit()) return; const [x, y] = pos(ev); splash(x, y); ensureRAF(); });
+  // attract: when the card first scrolls into view, auto-ripple near the "→ play" button
+  let attracted = false;
+  function attract() {
+    if (!ensureInit()) return;
+    const pb = card.querySelector('.play-btn');
+    let px = DW * 0.82, py = DH * 0.9;
+    if (pb) { const r = card.getBoundingClientRect(), pr = pb.getBoundingClientRect(); px = pr.left + pr.width / 2 - r.left; py = pr.top + pr.height / 2 - r.top; }
+    poke(px, py - 26, 9, 3); ensureRAF();                                  // a soft approaching touch...
+    setTimeout(() => { poke(px, py - 12, 13, 3); ensureRAF(); }, 150);
+    setTimeout(() => { splash(px, py); ensureRAF(); }, 320);               // ...then a splash that propagates outward
+  }
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting && !attracted) { attracted = true; io.disconnect(); setTimeout(attract, 500); } }); }, { threshold: 0.5 });
+    io.observe(card);
+  } else { setTimeout(() => { if (!attracted) { attracted = true; attract(); } }, 1100); }
+  if (img.complete && img.naturalWidth) setup(); else img.addEventListener('load', setup, { once: true });
+})();
+
+/* Tomato card — a rain of little ASCII tomatoes (varied size & ripeness) falls from the cursor */
+(function () {
+  const card = document.querySelector('.card.glow-tomato');
+  if (!card) return;
+  const ART =
+`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠻⣶⡆⠀⠿⠀⣶⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣴⠾⠛⢹⣶⡤⢶⣿⡟⠶⠦⠄⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣠⣶⣤⣤⣤⣤⣴⠂⠸⠋⢀⣄⡉⠓⠀⠲⣶⣾⣿⣷⣄⠀⠀⠀⠀
+⠀⠀⠀⢀⣾⡿⠋⠁⣠⣤⣿⡟⢀⣠⣾⣿⣿⣿⣷⣶⣤⣼⣿⣿⣿⣿⣆⠀⠀⠀
+⠀⠀⠀⣾⡟⠀⣰⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀
+⠀⠀⢸⡿⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⢸⡇⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⢸⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
+⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀
+⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀
+⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`;
+  const COLORS = ['#6cc24a','#86d15a','#4fb33a','#f0973a','#e8a13a','#e23b2e','#cf3027'];  // green · orange · red(ripe)
+  const G = 0.40, REST = 0.10, WALL = 0.45, FRIC = 0.82, MAXV = 17, MAX_BODIES = 48, WAKEV = 1.2, VDX = 0.92, VDY = 0.99;
+  let layer = null, bodies = [], raf = 0, mx = 0, my = 0, spawning = false, timer = 0, W = 0, H = 0;
+  function ensureLayer(){ if(!layer){ layer = document.createElement('div'); layer.className = 'tomato-rain'; layer.setAttribute('aria-hidden','true'); card.appendChild(layer); } W = card.clientWidth; H = card.clientHeight; }
+  function place(b){ b.el.style.transform = 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px) translate(-50%,-50%) rotate(' + b.rot.toFixed(1) + 'deg)'; }
+  function wakeAll(){ for(const b of bodies){ b.asleep = false; b.sleep = 0; } ensureRAF(); }
+  function removeOldest(){ const b = bodies.shift(); if(b){ b.el.style.opacity = '0'; setTimeout(() => b.el.remove(), 350); wakeAll(); } }
+  function spawnAt(x, y){
+    ensureLayer();
+    if(bodies.length >= MAX_BODIES) removeOldest();
+    const fs = 2.6 + Math.random()*3.3, col = COLORS[(Math.random()*COLORS.length)|0];
+    const el = document.createElement('pre'); el.className = 'tdrop'; el.textContent = ART;
+    el.style.fontSize = fs.toFixed(2) + 'px'; el.style.color = col; el.style.textShadow = '0 0 6px ' + col + 'cc';
+    layer.appendChild(el);
+    const r = (el.offsetWidth * 0.32) || fs * 5.4;                       // collision radius ≈ the tomato body
+    const b = { x:x, y:y, vx:(Math.random()*2-1)*1.3, vy:Math.random()*1.2, r:r, el:el, rot:(Math.random()*30-15), vrot:(Math.random()*3-1.5), sleep:0, asleep:false };
+    place(b); el.style.opacity = '0';
+    requestAnimationFrame(() => { el.style.opacity = '0.96'; });
+    bodies.push(b); ensureRAF();
+  }
+  function collide(){                                                    // 3 relaxation passes: separate; wake only on real impact; impulse on awake only
+    for(let pass=0; pass<3; pass++){
+      for(let i=0;i<bodies.length;i++){ const a = bodies[i];
+        for(let j=i+1;j<bodies.length;j++){ const b = bodies[j];
+          let dx = b.x-a.x, dy = b.y-a.y, d = Math.hypot(dx,dy)||0.01, min = a.r+b.r;
+          if(d < min){
+            const ov = min-d, nx = dx/d, ny = dy/d, push = ov*0.5;
+            a.x -= nx*push; a.y -= ny*push; b.x += nx*push; b.y += ny*push;
+            if(a.asleep && b.asleep) continue;                            // resting contact: separate only, stay asleep
+            const rvx = b.vx-a.vx, rvy = b.vy-a.vy, vn = rvx*nx + rvy*ny;
+            if(vn < -WAKEV){ if(a.asleep){ a.asleep=false; a.sleep=0; } if(b.asleep){ b.asleep=false; b.sleep=0; } }
+            if(vn < 0){ const imp = -vn*0.5*(1+REST); if(!a.asleep){ a.vx -= imp*nx; a.vy -= imp*ny; } if(!b.asleep){ b.vx += imp*nx; b.vy += imp*ny; } }
+          }
+        }
+      }
+    }
+  }
+  function step(){
+    const floor = H - 2;
+    for(const b of bodies){
+      if(b.asleep) continue;
+      b.vy += G; b.vx *= VDX; b.vy *= VDY;
+      if(b.vx > MAXV) b.vx = MAXV; else if(b.vx < -MAXV) b.vx = -MAXV; if(b.vy > MAXV) b.vy = MAXV;
+      b.x += b.vx; b.y += b.vy; b.rot += b.vrot; b.vrot *= 0.92;
+      if(b.x-b.r < 0){ b.x = b.r; b.vx = -b.vx*WALL; } else if(b.x+b.r > W){ b.x = W-b.r; b.vx = -b.vx*WALL; }
+      if(b.y+b.r > floor){ b.y = floor-b.r; if(b.vy > 0) b.vy = 0; b.vx *= FRIC; }   // land: no floor bounce
+    }
+    collide();
+    let active = false;
+    for(const b of bodies){
+      if(!b.asleep){
+        if(Math.abs(b.vx) < 0.3 && Math.abs(b.vy) < 0.8){ if(++b.sleep > 12){ b.asleep = true; b.vx = 0; b.vy = 0; } } else b.sleep = 0;
+        if(!b.asleep) active = true;
+      }
+      place(b);
+    }
+    return active;
+  }
+  function frame(){ raf = (step() || spawning) ? requestAnimationFrame(frame) : 0; }
+  function ensureRAF(){ if(!raf) raf = requestAnimationFrame(frame); }
+  function setPos(e){ const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
+  card.addEventListener('mouseenter', (e) => { ensureLayer(); setPos(e); spawnAt(mx,my); spawning = true; if(!timer) timer = setInterval(() => spawnAt(mx,my), 120); });
+  card.addEventListener('mousemove', setPos);
+  card.addEventListener('mouseleave', () => { spawning = false; if(timer){ clearInterval(timer); timer = 0; } });
+  window.addEventListener('resize', () => { if(layer){ W = card.clientWidth; H = card.clientHeight; wakeAll(); } });
+  // attract: slow horizontal "hover" sweep on first view, raining tomatoes that pile up
+  let attracted = false;
+  function attract(){
+    if(attracted) return; attracted = true; ensureLayer();
+    my = H*0.26; const x0 = W*0.12, x1 = W*0.88, dur = 2400; let t0 = null, last = 0; spawning = true;
+    function sweep(ts){
+      if(t0 == null) t0 = ts; const p = Math.min(1, (ts-t0)/dur); mx = x0 + (x1-x0)*p;
+      if(ts-last > 130){ spawnAt(mx,my); last = ts; }
+      if(p < 1) requestAnimationFrame(sweep); else spawning = false;
+    }
+    requestAnimationFrame(sweep);
+  }
+  if('IntersectionObserver' in window){ const io = new IntersectionObserver((es) => es.forEach(e => { if(e.isIntersecting && !attracted){ io.disconnect(); setTimeout(attract, 400); } }), { threshold: 0.5 }); io.observe(card); }
+  else setTimeout(attract, 1000);
+})();
+
+/* Labyrinth card — on hover, A* light floods through a freshly-carved mini-maze (BFS wavefront) */
+(function () {
+  const card = document.querySelector('.card.glow-laby');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'laby-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0], OPP = [2, 3, 0, 1];
+  const C = 18;
+  let W, H, cols, rows, walls, dist, maxd, t = 0, raf = 0, inside = false;
+  function build() {
+    W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
+    cols = Math.max(4, Math.floor(W / C)); rows = Math.max(3, Math.floor(H / C));
+    const idx = (x, y) => y * cols + x, inb = (x, y) => x >= 0 && x < cols && y >= 0 && y < rows;
+    walls = []; for (let i = 0; i < cols * rows; i++) walls[i] = [1, 1, 1, 1];
+    const vis = new Uint8Array(cols * rows), st = [0]; vis[0] = 1;
+    while (st.length) {
+      const cur = st[st.length - 1], cx = cur % cols, cy = (cur / cols) | 0, nb = [];
+      for (let d = 0; d < 4; d++) { const nx = cx + DX[d], ny = cy + DY[d]; if (inb(nx, ny) && !vis[idx(nx, ny)]) nb.push(d); }
+      if (nb.length) { const d = nb[(Math.random() * nb.length) | 0], nx = cx + DX[d], ny = cy + DY[d], ni = idx(nx, ny); walls[cur][d] = 0; walls[ni][OPP[d]] = 0; vis[ni] = 1; st.push(ni); }
+      else st.pop();
+    }
+    dist = new Float32Array(cols * rows).fill(-1); maxd = 0;
+    const q = [0]; dist[0] = 0;
+    while (q.length) { const cur = q.shift(), cx = cur % cols, cy = (cur / cols) | 0;
+      for (let d = 0; d < 4; d++) { if (walls[cur][d]) continue; const ni = (cy + DY[d]) * cols + (cx + DX[d]); if (dist[ni] < 0) { dist[ni] = dist[cur] + 1; if (dist[ni] > maxd) maxd = dist[ni]; q.push(ni); } } }
+  }
+  function frame() {
+    t += 0.03; ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(54,150,140,0.18)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round'; ctx.beginPath();
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const w = walls[y * cols + x], cx = x * C, cy = y * C;
+      if (w[0]) { ctx.moveTo(cx, cy); ctx.lineTo(cx + C, cy); }
+      if (w[1]) { ctx.moveTo(cx + C, cy); ctx.lineTo(cx + C, cy + C); }
+      if (w[2]) { ctx.moveTo(cx, cy + C); ctx.lineTo(cx + C, cy + C); }
+      if (w[3]) { ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + C); }
+    }
+    ctx.stroke();
+    const wave = (t % 2.6) / 2.6 * (maxd + 9);
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const dv = dist[y * cols + x]; if (dv < 0) continue; const dd = wave - dv; if (dd < 0 || dd > 7) continue;
+      const a = 1 - dd / 7, front = dd < 1.6, r = front ? 130 : 43, g = front ? 235 : 255, b = front ? 220 : 140;
+      ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (a * 0.42).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(x * C + C / 2, y * C + C / 2, C * 0.32, 0, 7); ctx.fill();
+    }
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  card.addEventListener('mouseenter', () => { if (raf) return; build(); t = 0; inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Tomatoswipe card — hover: a tomato plops onto the board, wobbles… and EXPLODES
+   into ketchup. Droplets fly ballistically, splat into stains that drip and slowly
+   fade (offscreen stain layer), and another tomato drops in while you stay. */
+(function () {
+  const card = document.querySelector('.card.glow-tsweep');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'tsw-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const stain = document.createElement('canvas');                  // persistent ketchup layer
+  const sctx = stain.getContext('2d');
+  const KETCHUP = ['rgba(198,40,26,', 'rgba(226,58,38,', 'rgba(170,28,18,'];
+  let W, H, raf = 0, inside = false, mx = 0, my = 0;
+  let tomato = null, drops = [], drips = [], cool = 0, hold = 0;   // cool: frames to next tomato · hold: frames stains stay before fading
+
+  function build() {
+    W = card.clientWidth; H = card.clientHeight;
+    canvas.width = W; canvas.height = H; stain.width = W; stain.height = H;
+  }
+  function newTomato() {
+    // the tomato grows right under the cursor
+    tomato = { x: Math.max(26, Math.min(W - 26, mx)), y: Math.max(22, Math.min(H - 26, my)), r: 15 + Math.random() * 5, age: 0 };
+    cool = 150 + ((Math.random() * 50) | 0);             // ~2.5–3.3 s at 60 fps
+  }
+  function explode() {
+    const { x, y, r } = tomato; tomato = null;
+    for (let i = 0; i < 26 + r * 1.2; i++) {                       // bigger tomato, bigger mess
+      const a = Math.random() * 6.28, sp = 1.4 + Math.random() * 4;
+      drops.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.2, r: 1.6 + Math.random() * 3,
+                   floor: y + 8 + Math.random() * (H - y - 14), col: KETCHUP[(Math.random() * 3) | 0] });
+    }
+    // an immediate splat under the burst point, then let the mess sit before fading
+    splat(x, y, r * 1.15, KETCHUP[0]);
+    hold = 300;                                          // ~5 s of full-strength stains
+  }
+  function splat(x, y, r, col) {
+    sctx.fillStyle = col + '0.75)';
+    sctx.beginPath(); sctx.ellipse(x, y, r, r * 0.72, 0, 0, 7); sctx.fill();
+    for (let i = 0; i < 4; i++) {                                  // ragged blob edges
+      const a = Math.random() * 6.28, d = r * (0.7 + Math.random() * 0.5);
+      sctx.beginPath(); sctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7, r * 0.3, 0, 7); sctx.fill();
+    }
+    if (Math.random() < 0.6) drips.push({ x: x + (Math.random() - 0.5) * r, y, len: 0, max: 6 + Math.random() * 16, w: 1.2 + Math.random() * 1.6, col });
+  }
+  function frame() {
+    // stains stay at full strength for a while (hold), then evaporate
+    if (hold > 0) hold--;
+    else {
+      sctx.globalCompositeOperation = 'destination-out';
+      sctx.fillStyle = 'rgba(0,0,0,0.006)'; sctx.fillRect(0, 0, W, H);
+      sctx.globalCompositeOperation = 'source-over';
+    }
+    for (const d of drips) {
+      if (d.len < d.max) { d.len += 0.4; sctx.fillStyle = d.col + '0.55)'; sctx.fillRect(d.x - d.w / 2, d.y + d.len - 1, d.w, 1.6); }
+    }
+    drips = drips.filter(d => d.len < d.max);
+    for (const p of drops) {
+      p.vy += 0.14; p.x += p.vx; p.y += p.vy;
+      if (p.x < 3 || p.x > W - 3 || p.y > p.floor || p.y > H - 4) { splat(Math.max(3, Math.min(W - 3, p.x)), Math.min(p.y, H - 4), p.r * 1.6, p.col); p.dead = 1; }
+    }
+    drops = drops.filter(p => !p.dead);
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(stain, 0, 0);
+    for (const p of drops) { ctx.fillStyle = p.col + '0.9)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
+    if (tomato) {
+      const t = tomato, age = ++t.age;                             // frame-count clock (~60 fps)
+      // trail the cursor while growing, so it bursts where you actually are —
+      // not where the pointer happened to enter the card
+      t.x += (Math.max(26, Math.min(W - 26, mx)) - t.x) * 0.16;
+      t.y += (Math.max(22, Math.min(H - 26, my)) - t.y) * 0.16;
+      const scale = Math.min(1, age / 16);                         // plop in…
+      const shake = age > 26 ? Math.sin(age * 1.5) * Math.min(3.5, (age - 26) / 6) : 0;     // …tremble…
+      const r = t.r * (scale + (age > 22 ? (age - 22) / 62 : 0));  // …and swell to ~1.7× before bursting
+      const x = t.x + shake, y = t.y;
+      const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.2, x, y, r);
+      g.addColorStop(0, '#ff7a5e'); g.addColorStop(0.55, '#e2523e'); g.addColorStop(1, '#b32517');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, r * (1 + Math.abs(shake) * 0.02), r * 0.92, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#3d8c2f'; ctx.lineWidth = 2; ctx.lineCap = 'round';                // the star stem
+      for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * 0.55; ctx.beginPath(); ctx.moveTo(x, y - r * 0.75); ctx.lineTo(x + Math.cos(a) * r * 0.42, y - r * 0.75 + Math.sin(a) * r * 0.3); ctx.stroke(); }
+      if (age > 66) explode();
+    } else if (inside && --cool <= 0) newTomato();
+    raf = (inside || drops.length || drips.length) ? requestAnimationFrame(frame) : 0;
+  }
+  function setPos(e) { const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
+  card.addEventListener('mousemove', setPos);
+  card.addEventListener('mouseenter', (e) => { setPos(e); if (!tomato) cool = 1;   // a tomato grows under the cursor right away
+    if (raf) { inside = true; return; } build(); inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Sudoku card — hover: a pencil hand-writes digits in the cell under YOUR
+   cursor — a couple of small corner notes first, then the big answer (erasing
+   the notes, like a real solve). Older marks fade like graphite. */
+(function () {
+  const card = document.querySelector('.card.glow-sudoku');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'sudoku-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const C = 24, MAXMARKS = 20;
+  // each digit: one polyline in unit cell coords (y down), sketched progressively
+  const DIGITS = {
+    1: [[0.35,0.28],[0.52,0.14],[0.52,0.88]],
+    2: [[0.3,0.3],[0.38,0.16],[0.62,0.16],[0.7,0.32],[0.32,0.84],[0.72,0.84]],
+    3: [[0.3,0.2],[0.55,0.14],[0.68,0.3],[0.5,0.47],[0.68,0.64],[0.55,0.84],[0.3,0.78]],
+    4: [[0.62,0.88],[0.62,0.14],[0.28,0.62],[0.76,0.62]],
+    5: [[0.68,0.16],[0.34,0.16],[0.3,0.48],[0.58,0.42],[0.7,0.6],[0.58,0.84],[0.3,0.8]],
+    6: [[0.62,0.14],[0.38,0.3],[0.3,0.6],[0.42,0.84],[0.62,0.78],[0.66,0.56],[0.5,0.46],[0.34,0.56]],
+    7: [[0.28,0.16],[0.72,0.16],[0.44,0.88]],
+    8: [[0.66,0.3],[0.5,0.14],[0.34,0.3],[0.64,0.62],[0.5,0.88],[0.34,0.64],[0.66,0.3]],
+    9: [[0.66,0.42],[0.5,0.5],[0.34,0.36],[0.42,0.16],[0.62,0.14],[0.68,0.36],[0.6,0.88]],
+  };
+  const CORNERS = [[0.28, 0.3], [0.72, 0.3], [0.28, 0.74], [0.72, 0.74]];
+  let W, H, cols, rows, topH, raf = 0, inside = false, marks = [], nextIn = 0;   // nextIn: frames until the next digit
+  let mx = 0, my = 0;                                    // the pencil writes in the cell under the cursor
+
+  function build() {
+    W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
+    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight : Math.round(H * 0.4);
+    cols = Math.max(3, Math.floor(W / C)); rows = Math.max(2, Math.floor(topH / C));
+    marks = [];
+  }
+  function newMark() {
+    const cx = Math.max(0, Math.min(cols - 1, (mx / C) | 0));
+    const cy = Math.max(0, Math.min(rows - 1, (my / C) | 0));
+    const inCell = marks.filter(m => !m.dying && m.cx === cx && m.cy === cy);
+    if (inCell.some(m => m.final)) { nextIn = 10; return; }        // cell answered — wait for the cursor to move on
+    const freeCorners = [0, 1, 2, 3].filter(i => !inCell.some(m => m.cornerIdx === i));
+    // a couple of pencil notes first, then commit to the big answer (erasing the notes)
+    const final = !freeCorners.length || (inCell.length >= 2 && Math.random() < 0.6);
+    if (final) inCell.forEach(m => { m.dying = true; });
+    const digit = 1 + ((Math.random() * 9) | 0);
+    const jit = DIGITS[digit].map(() => [(Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.08]);
+    const cornerIdx = final ? -1 : freeCorners[(Math.random() * freeCorners.length) | 0];
+    marks.push({ cx, cy, digit, final, jit, corner: CORNERS[cornerIdx] || CORNERS[0], cornerIdx, prog: 0, alpha: final ? 0.95 : 0.6 });
+    if (marks.length > MAXMARKS) marks[0].dying = true;
+    nextIn = 16 + ((Math.random() * 20) | 0);            // ~0.3–0.6 s at 60 fps
+  }
+  function pts(m) {
+    const base = DIGITS[m.digit], s = m.final ? C * 0.66 : C * 0.34;
+    const ox = m.cx * C + (m.final ? C * 0.5 : m.corner[0] * C) - s / 2;
+    const oy = m.cy * C + (m.final ? C * 0.5 : m.corner[1] * C) - s / 2;
+    return base.map((p, i) => [ox + (p[0] + m.jit[i][0]) * s, oy + (p[1] + m.jit[i][1]) * s]);
+  }
+  function drawMark(m) {
+    const P = pts(m); let total = 0; const seg = [0];
+    for (let i = 1; i < P.length; i++) { total += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); seg.push(total); }
+    const drawn = m.prog * total;
+    ctx.strokeStyle = 'rgba(205,213,224,' + m.alpha.toFixed(3) + ')';
+    ctx.lineWidth = m.final ? 1.8 : 1.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]);
+    let tip = P[0];
+    for (let i = 1; i < P.length; i++) {
+      if (seg[i] <= drawn) { ctx.lineTo(P[i][0], P[i][1]); tip = P[i]; }
+      else { const f = (drawn - seg[i - 1]) / (seg[i] - seg[i - 1]); tip = [P[i - 1][0] + (P[i][0] - P[i - 1][0]) * f, P[i - 1][1] + (P[i][1] - P[i - 1][1]) * f]; ctx.lineTo(tip[0], tip[1]); break; }
+    }
+    ctx.stroke();
+    return tip;
+  }
+  function drawPencil(x, y) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.7);
+    ctx.strokeStyle = '#e0b45a'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(3.5, -3.5); ctx.lineTo(13, -13); ctx.stroke();       // body
+    ctx.strokeStyle = '#f4dede'; ctx.lineWidth = 3.4;
+    ctx.beginPath(); ctx.moveTo(13, -13); ctx.lineTo(15.5, -15.5); ctx.stroke();     // eraser
+    ctx.fillStyle = '#8a9096'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4.6, -1.6); ctx.lineTo(1.6, -4.6); ctx.closePath(); ctx.fill();   // tip
+    ctx.restore();
+  }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    // the thumbnail is a real grid now — no overlay grid, just the pencil work
+    let tip = null, writing = false;
+    for (const m of marks) {
+      if (m.dying) { m.alpha -= 0.02; continue; }
+      if (m.prog < 1) { m.prog = Math.min(1, m.prog + 0.08); writing = true; }
+      const t = drawMark(m);
+      if (m.prog < 1) tip = t;
+    }
+    marks = marks.filter(m => m.alpha > 0.02);
+    for (const m of marks) if (m.dying) drawMark(m);
+    if (tip) drawPencil(tip[0], tip[1]);
+    if (inside && !writing && --nextIn <= 0) newMark();
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  function setPos(e) { const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
+  card.addEventListener('mousemove', setPos);
+  card.addEventListener('mouseenter', (e) => { setPos(e); if (raf) { inside = true; return; } build(); nextIn = 1; inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Keep-Up card — a ball bounces in the card while two side paddles track it (hover) */
+(function () {
+  const card = document.querySelector('.card.glow-keepup');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'ku-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let W, H, ball, trail, pL, pR, raf = 0, inside = false;
+  function build() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; ball = { x: W / 2, y: H * 0.4, dx: 2, dy: 1.5, r: 5 }; trail = []; pL = H / 2; pR = H / 2; }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    ball.x += ball.dx; ball.y += ball.dy;
+    if (ball.y < 6) { ball.y = 6; ball.dy = Math.abs(ball.dy); }
+    if (ball.y > H - 6) { ball.y = H - 6; ball.dy = -Math.abs(ball.dy); }
+    const inset = 14;
+    if (ball.x < inset + ball.r) { ball.x = inset + ball.r; ball.dx = Math.abs(ball.dx); ball.dy += (ball.y - pL) * 0.03; }
+    if (ball.x > W - inset - ball.r) { ball.x = W - inset - ball.r; ball.dx = -Math.abs(ball.dx); ball.dy += (ball.y - pR) * 0.03; }
+    const sp = 2.7, m = Math.hypot(ball.dx, ball.dy) || 1; ball.dx = ball.dx / m * sp; ball.dy = ball.dy / m * sp;
+    pL += (ball.y - pL) * 0.08; pR += (ball.y - pR) * 0.08;
+    trail.push([ball.x, ball.y]); if (trail.length > 14) trail.shift();
+    ctx.fillStyle = 'rgba(43,212,106,0.75)'; ctx.fillRect(inset - 3, pL - 16, 4, 32);
+    ctx.fillStyle = 'rgba(54,197,208,0.75)'; ctx.fillRect(W - inset - 1, pR - 16, 4, 32);
+    for (let i = 0; i < trail.length; i++) { const a = i / trail.length; ctx.fillStyle = 'rgba(54,197,208,' + (a * 0.5).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(trail[i][0], trail[i][1], 2 + a * 3, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#eafdff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, 7); ctx.fill();
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  card.addEventListener('mouseenter', () => { if (raf) return; build(); inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Co-op Lander card — a little lander descends + thrusts toward a pad (hover) */
+(function () {
+  const card = document.querySelector('.card.glow-lander');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'ld-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let W, H, sx, sy, vy, ang, raf = 0, inside = false, stars = [], padx;
+  function reset() { sx = W * 0.5 + (Math.random() * 50 - 25); sy = 10; vy = 0.4; ang = (Math.random() * 0.4 - 0.2); }
+  function build() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; padx = W * 0.5 - 22; stars = []; for (let i = 0; i < 20; i++) stars.push([Math.random() * W, Math.random() * H * 0.75]); reset(); }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    for (const s of stars) { ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(s[0], s[1], 1, 1); }
+    const gy = H - 7;
+    ctx.fillStyle = 'rgba(43,212,106,0.85)'; ctx.fillRect(padx, gy - 2, 44, 3);
+    const thrust = sy > H * 0.32 && Math.sin(sy * 0.28) > -0.25;
+    vy += 0.018; if (thrust) vy -= 0.05; vy = Math.max(-0.6, Math.min(1.1, vy));
+    sy += vy; ang += Math.sin(sy * 0.11) * 0.004;
+    ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
+    if (thrust) { const fl = 4 + Math.random() * 4; ctx.fillStyle = 'rgba(255,170,70,0.85)'; ctx.beginPath(); ctx.moveTo(-3, 7); ctx.lineTo(3, 7); ctx.lineTo(0, 7 + fl); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = '#cfd6da'; ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(5, -5); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#36c5d0'; ctx.beginPath(); ctx.arc(0, -1, 1.8, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#8a9499'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-5, 6); ctx.lineTo(-8, 10); ctx.moveTo(5, 6); ctx.lineTo(8, 10); ctx.stroke();
+    ctx.restore();
+    if (sy > gy - 8) reset();
+    raf = inside ? requestAnimationFrame(frame) : 0;
+  }
+  card.addEventListener('mouseenter', () => { if (raf) return; build(); inside = true; raf = requestAnimationFrame(frame); });
+  card.addEventListener('mouseleave', () => { inside = false; });
+})();
+
+/* Tether card — the two tethered balls live down on the card itself: they hop out
+   of the screenshot, cross the floor, and take their spots — the green one climbs
+   onto the play button, the cyan one hops along the tag chips, pressing each one
+   down as it lands and dragging it as it leaps off. Plays once when the page
+   opens, then settles into a still pose; hovering the card replays it. */
+(function () {
+  const card = document.querySelector('.card.glow-rope');
+  if (!card) return;
+  const btn = card.querySelector('.play-btn');
+  const tags = Array.from(card.querySelectorAll('.card-tags .tag'));
+  const thumb = card.querySelector('.card-thumb');
+  if (!btn || !tags.length || !thumb) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'rope-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const G = 0.34, R = 10, L = 260;                          // rope goes taut (amber) past L
+  const A = mkBall('43,212,106'), B = mkBall('70,200,255'); // P1 green · P2 cyan, as in-game
+  let W, H, raf = 0, playing = false, settled = false;
+  function mkBall(col) { return { x: 0, y: 0, vx: 0, vy: 0, q: 0, col, plan: [], act: null, tick: 0, done: false }; }
+
+  const rel = el => { const c = card.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return { x: r.left - c.left + r.width / 2, top: r.top - c.top }; };
+  function press(el) { el.style.transition = 'transform .12s ease-out'; el.style.transform = 'translateY(2px)'; }
+  function dragOff(el, dir) {                                // tugged along, then springs back
+    el.style.transition = 'transform .13s ease-out';
+    el.style.transform = 'translate(' + (7 * dir) + 'px,1px) rotate(' + (2.5 * dir) + 'deg)';
+    setTimeout(() => { el.style.transition = 'transform .5s cubic-bezier(.2,2.1,.35,1)'; el.style.transform = ''; }, 140);
+  }
+
+  function stepBall(p) {
+    p.q *= 0.86;
+    if (p.done) return;
+    if (!p.act) {
+      if (!p.plan.length) { p.done = true; return; }
+      p.act = p.plan.shift(); p.tick = 0;
+      if (p.act.hop) {                                      // ballistic launch that lands exactly on target
+        const T = p.act.T, dx = p.act.hop[0] - p.x, dy = p.act.hop[1] - p.y;
+        p.vx = dx / T; p.vy = (dy - G * T * (T + 1) / 2) / T;
+        if (p.act.drag) dragOff(p.act.drag[0], p.act.drag[1]);
+      }
+    }
+    p.tick++;
+    if (p.act.w != null) { if (p.tick >= p.act.w) p.act = null; }
+    else {
+      p.vy += G; p.x += p.vx; p.y += p.vy;
+      if (p.tick >= p.act.T) {
+        p.x = p.act.hop[0]; p.y = p.act.hop[1];
+        p.q = Math.min(0.34, Math.abs(p.vy) * 0.05);        // landing squash
+        if (p.act.press) press(p.act.press);
+        p.vx = p.vy = 0; p.act = null;
+      }
+    }
+  }
+
+  function drawBall(p) {
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R * 2.1);
+    g.addColorStop(0, 'rgba(' + p.col + ',0.5)'); g.addColorStop(1, 'rgba(' + p.col + ',0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, R * 2.1, 0, 7); ctx.fill();
+    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1 + p.q, 1 - p.q);
+    ctx.fillStyle = 'rgb(' + p.col + ')'; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
+    const lk = Math.max(-1.6, Math.min(1.6, p.vx));          // eyes look where it's going
+    ctx.fillStyle = '#06131a';
+    ctx.beginPath(); ctx.arc(-3.4 + lk, -2.2, 1.7, 0, 7); ctx.arc(3.4 + lk, -2.2, 1.7, 0, 7); ctx.fill();
+    ctx.fillRect(-2.6 + lk, 3.2, 5.2, 1.6);
+    ctx.restore();
+  }
+  function drawFrame() {
+    ctx.clearRect(0, 0, W, H);
+    const d = Math.hypot(B.x - A.x, B.y - A.y), taut = d > L;
+    ctx.strokeStyle = taut ? 'rgba(232,176,74,0.75)' : 'rgba(220,235,240,0.55)';
+    ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(A.x, A.y);
+    ctx.quadraticCurveTo((A.x + B.x) / 2, (A.y + B.y) / 2 + (taut ? 2 : (L - d) * 0.1 + 6), B.x, B.y);
+    ctx.stroke();
+    drawBall(A); drawBall(B);
+  }
+
+  function size() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; }
+  function restSpots() {
+    const pb = rel(btn), lt = rel(tags[tags.length - 1]);
+    return { a: [pb.x, pb.top - R + 1], b: [lt.x, lt.top - R + 1] };
+  }
+
+  function play() {
+    if (playing || !card.offsetParent) return;
+    playing = true; size();
+    const floorY = H - 13, startY = rel(thumb).top + 40, spots = restSpots();
+    A.x = W * 0.30; A.y = startY; A.q = 0; A.done = false; A.act = null;
+    B.x = W * 0.20; B.y = startY; B.q = 0; B.done = false; B.act = null;
+    A.plan = [                                               // green: floor-hops to the play button
+      { hop: [W * 0.44, floorY], T: 30 }, { w: 26 },
+      { hop: [W * 0.62, floorY], T: 24 }, { w: 16 },
+      { hop: spots.a, T: 30 },
+    ];
+    B.plan = [{ w: 22 }, { hop: [W * 0.14, floorY], T: 30 }, { w: 34 }];
+    let prev = null;                                         // cyan: visits every tag chip in order
+    tags.forEach((tg, i) => {
+      const r = rel(tg), to = [r.x, r.top - R + 1];
+      B.plan.push({ hop: to, T: 26, press: tg, drag: prev ? [prev.el, to[0] > prev.x ? 1 : -1] : null });
+      if (i < tags.length - 1) B.plan.push({ w: 30 });
+      prev = { el: tg, x: r.x };
+    });
+    let coolOff = 26;                                        // let the last squash decay, then freeze
+    (function loop() {
+      stepBall(A); stepBall(B); drawFrame();
+      if (A.done && B.done && --coolOff <= 0) { playing = false; settled = true; raf = 0; return; }
+      raf = requestAnimationFrame(loop);
+    })();
+  }
+  function resettle() {                                      // redraw the still pose (resize / lang switch)
+    if (playing || !card.offsetParent) return;
+    size(); const sp = restSpots();
+    A.x = sp.a[0]; A.y = sp.a[1]; A.q = 0; A.vx = 0;
+    B.x = sp.b[0]; B.y = sp.b[1]; B.q = 0; B.vx = 0;
+    drawFrame(); settled = true;
+  }
+
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const io = new IntersectionObserver(es => {
+    if (!es.some(e => e.isIntersecting)) return;
+    io.disconnect(); setTimeout(still ? resettle : play, 500);
+  }, { threshold: 0.35 });
+  io.observe(card);
+  card.addEventListener('mouseenter', () => { if (!still && settled) play(); });
+  const _tl = window.toggleLang;
+  if (_tl) window.toggleLang = function () { _tl(); if (settled) requestAnimationFrame(resettle); };
+  let rz = 0;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (settled) resettle(); }, 160); });
 })();
 
 (function () {
