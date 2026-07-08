@@ -109,7 +109,7 @@
       <div class="pg-title" id="pgTitle">&gt;_ Tether</div>
       <div class="pg-sub" id="pgSub">A two-player co-op physics climber. You and a friend are roped together — jump, swing and anchor each other up the tower. Pull too hard and you both fall.</div>
       <a class="pg-back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
-      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b26</span>
+      <span id="buildTag" style="font-size:0.56rem;color:#3a3a3a;margin-left:8px">b27</span>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -261,10 +261,10 @@ const held={a:false,d:false,l:false,r:false};
 let jb1=0, jb2=0;                      // jump BUFFERS (frames): press a hair early and it still fires on landing
 let coy1=0, coy2=0;                    // coyote frames: jump still works just after stepping off a ledge
 let jqk1=0, jqk2=0;                    // horizontal kick for slanted (flick) jumps
-// minimum move pulse: a fresh tap guarantees this many frames of force, so identical
-// clicks always deliver the same baseline impulse (raw frame-sampling made a ~60ms
-// click land as anywhere from 1 to 4 sim frames — "a little or a lot" at random)
-const MOVE_PULSE=5;   // one tap = 5 full-speed frames + brake tail ≈ one ball-diameter step, identical every time
+// minimum move pulse: the smallest floor that makes a micro-tap visible (~11px nudge).
+// Movement is otherwise strictly 1:1 with how long the key is held — a bigger floor
+// made any sudden press glide a whole ball-width, partly after release ("it slides")
+const MOVE_PULSE=2;
 let mp1=0,mp1d=0, mp2=0,mp2d=0;
 const KEYJUMP={'w':1,'W':1,'ArrowUp':2};
 // opposite keys held together resolve to the LAST one pressed (not a dead neutral)
@@ -644,7 +644,7 @@ function frame(now){
   acc+=Math.min(now-last,100); last=now;
   // live fps in the build tag — a throttled tab (20-30fps) FEELS like an unresponsive
   // game no matter how tight the physics is; now it's visible and reportable
-  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b26 · '+f+'fps'; _fpsC=0; _fpsT=now; }
+  _fpsC++; if(now-_fpsT>1000){ const f=Math.round(_fpsC*1000/(now-_fpsT)); const bt=document.getElementById('buildTag'); if(bt)bt.textContent='b27 · '+f+'fps'; _fpsC=0; _fpsT=now; }
   let n=0; while(acc>=FT&&n<3){ if(netMode!=='guest'&&state==='play')step(); acc-=FT; n++; }
   if(acc>FT*2)acc=FT*2;   // after a hitch, don't burst-replay a backlog (it looked like a teleport) — just drop it
   if(netMode==='guest')netStep();   // guest renders the host's authoritative state
