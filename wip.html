@@ -47,6 +47,15 @@
   @keyframes coinblink{0%,55%{background:#1db954;color:#04150a;}56%,100%{background:transparent;color:#1db954;}}
   .footer{max-width:1060px;margin:30px auto 0;text-align:center;color:#555;font-size:0.7rem;line-height:1.7;}
   @media (pointer:coarse){ body{-webkit-user-select:none;user-select:none;} input,textarea{-webkit-user-select:text;user-select:text;} }
+
+  /* arcade player-mode ribbons on the card corners */
+  .card{overflow:hidden;}
+  .ribbon{position:absolute;top:16px;right:-38px;transform:rotate(45deg);z-index:4;width:150px;text-align:center;
+    font-size:0.56rem;font-weight:700;letter-spacing:1.5px;padding:4px 0;color:#04150a;background:#1db954;
+    box-shadow:0 2px 8px rgba(0,0,0,0.55);pointer-events:none;text-transform:uppercase;font-family:inherit;}
+  .ribbon.p2{background:#36c5d0;color:#04252a;}
+  .ribbon.p0{background:#b48cff;color:#1b1030;}
+  .ribbon.p12{background:#e8b04a;color:#241804;}
 </style>
 </head>
 <body>
@@ -62,6 +71,7 @@
 <div class="grid">
 
   <div class="card">
+    <div class="ribbon " data-en="1P" data-zh="单人">1P</div>
     <img class="card-thumb" src="/game/thumbs/escape.jpg?v=4" alt="Escape Grid board" loading="lazy" width="440" height="240">
     <div class="card-icon">[::]</div>
     <div class="card-title" data-en="escape_grid.exe" data-zh="逃脱方格.exe">escape_grid.exe</div>
@@ -79,6 +89,7 @@
   </div>
 
   <div class="card">
+    <div class="ribbon p2" data-en="2P · CO-OP" data-zh="双人合作">2P · CO-OP</div>
     <img class="card-thumb" src="/game/thumbs/keepup.png?v=1" alt="Keep-Up co-op pong" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#36c5d0">[◖●◗]</div>
     <div class="card-title" data-en="keep_up.exe" data-zh="接力球.exe">keep_up.exe</div>
@@ -96,7 +107,8 @@
   </div>
 
   <div class="card">
-    <img class="card-thumb" src="/game/thumbs/lander.png?v=3" alt="Co-op lunar lander descending to the pad under the moon" loading="lazy" width="440" height="240">
+    <div class="ribbon p2" data-en="2P · CO-OP" data-zh="双人合作">2P · CO-OP</div>
+    <img class="card-thumb" src="/game/thumbs/lander.png?v=4" alt="Co-op lunar lander descending to the pad under the moon" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#e8b04a">[◂▴▸]</div>
     <div class="card-title" data-en="lander.exe" data-zh="登月舱.exe">lander.exe</div>
     <div class="card-desc" data-en="Co-op lunar lander — one of you fires the thrust, the other steers the tilt, both flying one ship — tilt to aim, thrust to push. Land softly and upright on the pad. Play remotely (Create/Join a room) or on one device." data-zh="合作登月——一人控推力，一人控倾斜，共同驾驶一艘飞船——倾斜对准，推力推进。平稳且端正地降落在着陆台。可联机（创建/加入房间）或同设备双人。">Co-op lunar lander — one of you fires the thrust, the other steers the tilt, both flying one ship — tilt to aim, thrust to push. Land softly and upright on the pad. Play remotely (Create/Join a room) or on one device.</div>
@@ -113,6 +125,7 @@
   </div>
 
   <div class="card">
+    <div class="ribbon p0" data-en="0P · AUTO" data-zh="零玩家 · 自动">0P · AUTO</div>
     <div class="noimg">[▸▸▸]</div>
     <div class="card-icon" style="color:#46c8ff">[▸▸▸]</div>
     <div class="card-title" data-en="train_rl_hunter.exe" data-zh="训练猎手.exe">train_rl_hunter.exe</div>
@@ -129,6 +142,7 @@
   </div>
 
   <div class="card">
+    <div class="ribbon " data-en="1P · SIM" data-zh="单人 · 模拟">1P · SIM</div>
     <div class="noimg">[🌱]</div>
     <div class="card-icon" style="color:#1db954">[❀]</div>
     <div class="card-title" data-en="greenhouse.exe" data-zh="温室.exe">greenhouse.exe</div>

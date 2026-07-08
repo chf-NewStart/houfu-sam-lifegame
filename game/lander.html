@@ -272,24 +272,57 @@ const game = (function () {
     ctx.fillStyle = sSafe ? '#2bd46a' : '#e2523e'; ctx.fillText(t('SPD ', '速度 ') + spd.toFixed(2), 10, 10);
     ctx.fillStyle = aSafe ? '#2bd46a' : '#e2523e'; ctx.fillText(t('TILT ', '倾角 ') + Math.round(ang * 180 / Math.PI) + '°', 10, 26);
   }
+  // a BIG photographic moon — fills roughly a third of the frame. Crater field and
+  // dark maria are generated once (visual only) and drawn clipped inside the disc.
+  const MOON = { craters: [], maria: [] };
+  (function () {
+    for (let i = 0; i < 54; i++) {
+      const a = Math.random() * 6.283, d = Math.sqrt(Math.random()) * 0.93;
+      MOON.craters.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, r: 0.015 + Math.pow(Math.random(), 2.2) * 0.085 });
+    }
+    for (let i = 0; i < 7; i++) {
+      const a = Math.random() * 6.283, d = Math.sqrt(Math.random()) * 0.6;
+      MOON.maria.push({ x: Math.cos(a) * d * 0.9, y: Math.sin(a) * d - 0.25, r: 0.16 + Math.random() * 0.22 });
+    }
+  })();
   function drawMoon(mx, my, mr) {
-    const glow = ctx.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 2.4);
-    glow.addColorStop(0, 'rgba(228,232,244,0.16)'); glow.addColorStop(1, 'rgba(228,232,244,0)');
-    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(mx, my, mr * 2.4, 0, 7); ctx.fill();
-    const disc = ctx.createRadialGradient(mx - mr * 0.35, my - mr * 0.35, mr * 0.2, mx, my, mr);
-    disc.addColorStop(0, '#e8ecf4'); disc.addColorStop(0.7, '#c2c9d8'); disc.addColorStop(1, '#8f97ab');
+    const glow = ctx.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 1.5);
+    glow.addColorStop(0, 'rgba(200,206,220,0.10)'); glow.addColorStop(1, 'rgba(220,224,234,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(mx, my, mr * 1.5, 0, 7); ctx.fill();
+    const disc = ctx.createRadialGradient(mx - mr * 0.2, my - mr * 0.3, mr * 0.25, mx, my, mr);
+    disc.addColorStop(0, '#9ba1ae'); disc.addColorStop(0.72, '#7d8290'); disc.addColorStop(1, '#4b505e');
     ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(120,128,148,0.5)';                                   // craters
-    const cr = [[-0.35, -0.18, 0.16], [0.22, 0.05, 0.22], [-0.05, 0.38, 0.12], [0.4, -0.38, 0.1], [-0.5, 0.25, 0.08]];
-    for (const c of cr) { ctx.beginPath(); ctx.arc(mx + c[0] * mr, my + c[1] * mr, c[2] * mr, 0, 7); ctx.fill(); }
-    const shade = ctx.createRadialGradient(mx + mr * 0.55, my + mr * 0.45, mr * 0.2, mx, my, mr * 1.02);
-    shade.addColorStop(0, 'rgba(6,7,11,0.45)'); shade.addColorStop(0.65, 'rgba(6,7,11,0.08)'); shade.addColorStop(1, 'rgba(6,7,11,0)');
+    ctx.save(); ctx.beginPath(); ctx.arc(mx, my, mr, 0, 7); ctx.clip();
+    for (const m of MOON.maria) {                       // dark seas
+      const g = ctx.createRadialGradient(mx + m.x * mr, my + m.y * mr, 0, mx + m.x * mr, my + m.y * mr, m.r * mr);
+      g.addColorStop(0, 'rgba(42,46,58,0.55)'); g.addColorStop(1, 'rgba(42,46,58,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(mx + m.x * mr, my + m.y * mr, m.r * mr, 0, 7); ctx.fill();
+    }
+    for (const c of MOON.craters) {                     // crater bowls + sunlit rims
+      const cx = mx + c.x * mr, cy = my + c.y * mr, cr2 = c.r * mr;
+      ctx.fillStyle = 'rgba(22,25,34,0.42)'; ctx.beginPath(); ctx.arc(cx, cy, cr2, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(225,230,240,0.28)'; ctx.lineWidth = Math.max(1, cr2 * 0.16);
+      ctx.beginPath(); ctx.arc(cx, cy, cr2, Math.PI * 0.7, Math.PI * 1.6); ctx.stroke();
+    }
+    const shade = ctx.createRadialGradient(mx + mr * 0.45, my + mr * 0.55, mr * 0.35, mx, my, mr * 1.02);
+    shade.addColorStop(0, 'rgba(6,7,11,0.5)'); shade.addColorStop(0.7, 'rgba(6,7,11,0.06)'); shade.addColorStop(1, 'rgba(6,7,11,0)');
     ctx.fillStyle = shade; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 7); ctx.fill();
+    ctx.restore();
   }
+  // star dust: a thin veil of drifting, twinkling motes (44 particles — negligible cost)
+  const DUST = [];
+  for (let i = 0; i < 44; i++) DUST.push({ x: Math.random() * W, y: Math.random() * (H - 60), s: 0.5 + Math.random() * 1.1, v: 0.05 + Math.random() * 0.22, p: Math.random() * 6.283 });
   function drawScene(sx, sy, sa, sth, pdx, spd, ang, paddw) {
     ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#06070b'; ctx.fillRect(0, 0, W, H);
     for (const s of stars) { ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + s[2] * 0.3).toFixed(2) + ')'; ctx.fillRect(s[0], s[1], s[2], s[2]); }
-    drawMoon(W - 92, 86, 44);
+    drawMoon(W * 0.60, 205, 168);
+    const _tt = performance.now() * 0.001;
+    for (const d of DUST) {
+      const dx = (d.x + _tt * 60 * d.v) % W;
+      const a = 0.08 + 0.14 * (0.5 + 0.5 * Math.sin(_tt * 1.7 + d.p));
+      ctx.fillStyle = 'rgba(214,222,240,' + a.toFixed(2) + ')';
+      ctx.fillRect(dx, d.y, d.s, d.s);
+    }
     // ground + pad
     ctx.fillStyle = '#161a24'; ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
     ctx.strokeStyle = '#2a3144'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(W, GROUND_Y); ctx.stroke();
