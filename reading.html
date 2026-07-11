@@ -78,9 +78,11 @@
     .chapter-title { font-size: 1.3rem; font-style: italic; margin: 10px 0 2px; }
     .chapter-meta { color: var(--ink-soft); font-size: 0.8rem; margin-bottom: 24px; }
     .para { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; padding: 14px 0 6px; border-top: 1px solid var(--line); }
-    .para.solo { grid-template-columns: 1fr; }
+    .para.solo, .para.stack { grid-template-columns: 1fr; }
+    .para.stack { gap: 6px; }
     .para .fr { font-size: 1rem; }
     .para .en { font-size: 0.92rem; color: var(--ink-soft); }
+    .para.stack .en { font-style: italic; }
     .para-tools { grid-column: 1 / -1; display: flex; gap: 14px; font-size: 0.72rem; margin-top: 6px; }
     .para-tools a, .para-tools button {
       font-family: inherit; font-size: 0.72rem; color: var(--ink-soft);
@@ -158,6 +160,7 @@
   <div id="viewRead" class="hidden">
     <div class="row" style="margin:0 0 8px">
       <button class="btn quiet" id="backBtn">← bibliothèque</button>
+      <button class="btn quiet" id="layoutBtn"></button>
       <button class="btn quiet" id="editBtn">modifier</button>
       <button class="btn quiet" id="exportBtn">exporter mes notes (.md)</button>
       <button class="btn quiet" id="deleteBtn">supprimer</button>
@@ -245,17 +248,21 @@
 
   /* ---- reader ---- */
   var currentId = null;
+  var layout = localStorage.getItem('readingRoom.layout') || 'stack';
   function openReader(id){
     var ch = find(id); if (!ch) { show('viewHome'); return; }
     currentId = id;
     byId('rTitle').textContent = ch.title || 'Sans titre';
     var fr = paras(ch.fr), en = ch.en ? paras(ch.en) : [];
     byId('rMeta').textContent = fr.length + ' paragraphes' + (en.length ? ' · parallel English' : '');
+    var lb = byId('layoutBtn');
+    lb.classList.toggle('hidden', !en.length);
+    lb.textContent = layout === 'stack' ? '⇆ côte à côte' : '↕ ligne à ligne';
     var body = byId('rBody');
     body.innerHTML = '';
     fr.forEach(function(p, i){
       var div = document.createElement('div');
-      div.className = 'para' + (en.length ? '' : ' solo');
+      div.className = 'para' + (en.length ? (layout === 'stack' ? ' stack' : '') : ' solo');
       var noteVal = (ch.notes || {})[i] || '';
       var gUrl = 'https://translate.google.com/?sl=fr&tl=en&op=translate&text=' + encodeURIComponent(p.slice(0, 1800));
       div.innerHTML =
@@ -292,6 +299,11 @@
   }
 
   byId('backBtn').onclick = function(){ show('viewHome'); renderShelf(); };
+  byId('layoutBtn').onclick = function(){
+    layout = layout === 'stack' ? 'side' : 'stack';
+    localStorage.setItem('readingRoom.layout', layout);
+    openReader(currentId);
+  };
   byId('editBtn').onclick = function(){
     var ch = find(currentId); if (!ch) return;
     editingId = currentId;
