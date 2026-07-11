@@ -73,6 +73,7 @@
     textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
     input:focus, textarea:focus { outline: none; border-color: var(--accent); }
     .row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .import-row { display: flex; gap: 12px; align-items: center; margin: 6px 0 8px; flex-wrap: wrap; }
 
     /* reader */
     .chapter-title { font-size: 1.3rem; font-style: italic; margin: 10px 0 2px; }
@@ -132,7 +133,7 @@
 
     <div class="panel">
       <h2>Your texts</h2>
-      <p class="muted small">Paste a chapter from a copy you own to read it here with paragraph-level notes. Add an English translation alongside if you have one — otherwise use the “EN” link under each paragraph to translate it on the fly.</p>
+      <p class="muted small">Paste a chapter from a copy you own — or <strong>upload a PDF / .txt</strong> — to read it here with paragraph-level notes. The file is read entirely in your browser and never uploaded. On Chrome/Edge, one click translates it <strong>line by line into English on-device</strong> (built-in browser translator — the text never leaves your machine); elsewhere, use the “EN” link under each paragraph or paste your own translation.</p>
     </div>
 
     <div class="shelf" id="shelf"></div>
@@ -146,7 +147,12 @@
       <label for="fTitle">Titre</label>
       <input type="text" id="fTitle" placeholder="La grâce qui traverse au feu rouge">
       <label for="fFr">Texte (français) — blank line between paragraphs</label>
-      <textarea id="fFr" placeholder="Collez ici le texte de votre exemplaire…"></textarea>
+      <div class="import-row">
+        <button class="btn quiet" id="importBtn" type="button">importer un PDF / .txt…</button>
+        <span class="small muted" id="importStatus"></span>
+        <input type="file" id="importFile" accept=".pdf,.txt,application/pdf,text/plain" class="hidden">
+      </div>
+      <textarea id="fFr" placeholder="Collez ici le texte de votre exemplaire… ou importez un fichier ci-dessus."></textarea>
       <label for="fEn">English translation (optional) — same paragraph breaks to align side-by-side</label>
       <textarea id="fEn" placeholder="Optional…"></textarea>
       <div class="row">
@@ -161,6 +167,7 @@
     <div class="row" style="margin:0 0 8px">
       <button class="btn quiet" id="backBtn">← bibliothèque</button>
       <button class="btn quiet" id="layoutBtn"></button>
+      <button class="btn quiet" id="translateBtn"></button>
       <button class="btn quiet" id="editBtn">modifier</button>
       <button class="btn quiet" id="exportBtn">exporter mes notes (.md)</button>
       <button class="btn quiet" id="deleteBtn">supprimer</button>
@@ -235,7 +242,9 @@
     if (editingId) {
       var ch = find(editingId);
       ch.title = byId('fTitle').value.trim();
-      ch.fr = fr; ch.en = byId('fEn').value.trim();
+      var newEn = byId('fEn').value.trim();
+      if (newEn !== ch.en) ch.enAuto = false;
+      ch.fr = fr; ch.en = newEn;
       save(); openReader(ch.id);
     } else {
       var id = 'c' + (state.chapters.length + 1) + '_' + fr.length;
@@ -254,10 +263,15 @@
     currentId = id;
     byId('rTitle').textContent = ch.title || 'Sans titre';
     var fr = paras(ch.fr), en = ch.en ? paras(ch.en) : [];
-    byId('rMeta').textContent = fr.length + ' paragraphes' + (en.length ? ' · parallel English' : '');
+    byId('rMeta').textContent = fr.length + ' paragraphes' +
+      (en.length ? (ch.enAuto ? ' · English: machine-translated on-device' : ' · parallel English') : '');
     var lb = byId('layoutBtn');
     lb.classList.toggle('hidden', !en.length);
     lb.textContent = layout === 'stack' ? '⇆ côte à côte' : '↕ ligne à ligne';
+    var tb = byId('translateBtn');
+    tb.classList.toggle('hidden', !canTranslate);
+    tb.disabled = false;
+    tb.textContent = en.length ? '🌐 retraduire' : '🌐 traduire FR→EN';
     var body = byId('rBody');
     body.innerHTML = '';
     fr.forEach(function(p, i){
@@ -297,6 +311,122 @@
     });
     show('viewRead');
   }
+
+  /* ---- file import (all in-browser; the file is never uploaded anywhere) ---- */
+  byId('importBtn').onclick = function(){ byId('importFile').click(); };
+  byId('importFile').onchange = function(){
+    var f = this.files[0]; this.value = ''; if (!f) return;
+    var st = byId('importStatus');
+    var job;
+    if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') {
+      st.textContent = 'chargement du lecteur PDF…';
+      job = extractPdf(f, function(p, n){ st.textContent = 'page ' + p + '/' + n + '…'; });
+    } else {
+      job = f.text();
+    }
+    job.then(function(text){
+      if (!byId('fTitle').value) byId('fTitle').value = f.name.replace(/\.(pdf|txt)$/i, '');
+      byId('fFr').value = (text || '').trim();
+      st.textContent = byId('fFr').value
+        ? 'importé — relisez et ajustez les sauts de paragraphe si besoin'
+        : 'aucun texte trouvé (PDF scanné sans couche texte ?)';
+    }).catch(function(e){
+      st.textContent = 'échec de l\'import : ' + (e && e.message ? e.message.slice(0, 80) : 'erreur');
+    });
+  };
+
+  async function extractPdf(file, onPage){
+    var lib = await import('/vendor/pdfjs/pdf.min.js');
+    lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+    var pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+    var pages = [];
+    for (var p = 1; p <= pdf.numPages; p++){
+      onPage(p, pdf.numPages);
+      var tc = await (await pdf.getPage(p)).getTextContent();
+      var lines = [''], k = 0;
+      tc.items.forEach(function(it){
+        if (it.str) lines[k] += it.str;
+        if (it.hasEOL) lines[++k] = '';
+      });
+      var parasText = linesToParas(lines);
+      if (parasText) pages.push(parasText);
+    }
+    return pages.join('\n\n');
+  }
+
+  /* rebuild paragraphs from raw PDF lines: join hyphenated breaks, drop bare
+     page numbers, break where a sentence ends at a line end */
+  function linesToParas(lines){
+    var clean = lines.map(function(l){ return l.replace(/\s+/g, ' ').trim(); });
+    var lens = clean.filter(function(l){ return l.length > 3; })
+                    .map(function(l){ return l.length; })
+                    .sort(function(a, b){ return a - b; });
+    var med = lens.length ? lens[Math.floor(lens.length / 2)] : 60;
+    var out = [], cur = '';
+    clean.forEach(function(l, i){
+      if (!l || /^\d+$/.test(l)) {
+        if (cur) { out.push(cur); cur = ''; }
+        return;
+      }
+      cur = cur
+        ? (/[-­]$/.test(cur) ? cur.replace(/[-­]$/, '') + l : cur + ' ' + l)
+        : l;
+      var endsSentence = /[.!?…»"”]$/.test(l);
+      var short = l.length < med * 0.6;
+      var nextStartsNew = /^[«"“A-ZÀ-ÖØ-Þ—–-]/.test(clean[i + 1] || '');
+      if (endsSentence && (short || nextStartsNew)) { out.push(cur); cur = ''; }
+    });
+    if (cur) out.push(cur);
+    return out.join('\n\n');
+  }
+
+  /* ---- on-device translation (Chrome/Edge built-in Translator API) ---- */
+  var canTranslate = ('Translator' in window);
+  byId('translateBtn').onclick = async function(){
+    var ch = find(currentId); if (!ch || !canTranslate) return;
+    if (ch.en && !ch.enAuto &&
+        !confirm('Remplacer votre traduction anglaise par une traduction automatique ?')) return;
+    var btn = byId('translateBtn');
+    btn.disabled = true;
+    try {
+      var avail = await Translator.availability({ sourceLanguage: 'fr', targetLanguage: 'en' });
+      if (avail === 'unavailable') { btn.textContent = 'FR→EN indisponible sur ce navigateur'; return; }
+      var tr = await Translator.create({
+        sourceLanguage: 'fr', targetLanguage: 'en',
+        monitor: function(m){
+          m.addEventListener('downloadprogress', function(e){
+            btn.textContent = 'modèle de traduction… ' + Math.round((e.loaded || 0) * 100) + '%';
+          });
+        }
+      });
+      var frP = paras(ch.fr), out = [];
+      var paraEls = byId('rBody').querySelectorAll('.para');
+      for (var i = 0; i < frP.length; i++){
+        btn.textContent = 'traduction ' + (i + 1) + '/' + frP.length + '…';
+        var t = await tr.translate(frP[i]);
+        out.push(t);
+        var el = paraEls[i];
+        if (el){
+          el.classList.remove('solo');
+          if (layout === 'stack') el.classList.add('stack');
+          var enDiv = el.querySelector('.en');
+          if (!enDiv){
+            enDiv = document.createElement('div');
+            enDiv.className = 'en';
+            el.querySelector('.fr').after(enDiv);
+          }
+          enDiv.textContent = t;
+        }
+      }
+      ch.en = out.join('\n\n');
+      ch.enAuto = true;
+      save();
+      openReader(currentId);
+    } catch (e) {
+      btn.textContent = 'échec : ' + (e && e.message ? e.message.slice(0, 60) : 'erreur');
+      btn.disabled = false;
+    }
+  };
 
   byId('backBtn').onclick = function(){ show('viewHome'); renderShelf(); };
   byId('layoutBtn').onclick = function(){
