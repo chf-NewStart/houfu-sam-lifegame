@@ -100,7 +100,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从楷书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b6</span>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b7</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -693,6 +693,68 @@ function drawSpirit(ctx, cx, cy, s, phase, color){
   ctx.restore();
 }
 
+/* --- the tougher beasts: 豕 boar, 虎 tiger, 龍 dragon segments --- */
+function drawBoar(ctx, cx, cy, s, phase, color, face){
+  ctx.save(); ctx.translate(cx, cy); if(face<0) ctx.scale(-1,1);
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.15;
+  stroke(ctx, s*0.09);
+  const r = s*0.5;
+  ctx.beginPath(); ctx.moveTo(-r,-r*0.15); ctx.quadraticCurveTo(-r*0.2,-r*0.75, r*0.45,-r*0.35);
+  ctx.quadraticCurveTo(r*0.95,-r*0.2, r*0.95, r*0.05); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.95,r*0.05); ctx.lineTo(r*0.5,r*0.3); ctx.lineTo(-r*0.85,r*0.28); ctx.lineTo(-r,-r*0.15); ctx.stroke();
+  for(const bx of [-0.5,-0.1,0.3]){ ctx.beginPath(); ctx.moveTo(bx*r,-r*0.5); ctx.lineTo(bx*r+r*0.12,-r*0.82); ctx.stroke(); }
+  const k = Math.sin(phase)*r*0.12;
+  ctx.beginPath(); ctx.moveTo(-r*0.55,r*0.28); ctx.lineTo(-r*0.55+k,r*0.62); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.3,r*0.28); ctx.lineTo(r*0.3-k,r*0.62); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.8,r*0.12); ctx.lineTo(r*1.04,r*0.32); ctx.stroke();
+  ctx.save(); ctx.fillStyle = '#f0674a'; ctx.shadowColor = '#f0674a';
+  ctx.beginPath(); ctx.arc(r*0.55,-r*0.15,r*0.08,0,Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.restore();
+}
+function drawTiger(ctx, cx, cy, s, phase, color, face, crouch){
+  ctx.save(); ctx.translate(cx, cy); if(face<0) ctx.scale(-1,1);
+  if(crouch) ctx.scale(1, 0.82);
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.15;
+  stroke(ctx, s*0.08);
+  const r = s*0.5;
+  ctx.beginPath(); ctx.moveTo(-r*0.95,-r*0.1); ctx.quadraticCurveTo(-r*0.1,-r*0.6, r*0.5,-r*0.42); ctx.stroke(); // back
+  ctx.beginPath();                                                                                                // head + open jaw
+  ctx.moveTo(r*0.5,-r*0.42); ctx.quadraticCurveTo(r*0.95,-r*0.5, r*1.0,-r*0.15);
+  ctx.lineTo(r*0.6,0); ctx.moveTo(r*1.0,r*0.05); ctx.lineTo(r*0.62,r*0.18); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.62,r*0.18); ctx.lineTo(r*0.4,r*0.3); ctx.lineTo(-r*0.8,r*0.3); ctx.stroke();    // belly
+  ctx.beginPath(); ctx.moveTo(-r*0.8,r*0.3); ctx.lineTo(-r*0.95,-r*0.1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-r*0.95,-r*0.15); ctx.quadraticCurveTo(-r*1.4,-r*0.5,-r*1.3,-r*0.9); ctx.stroke();  // tail
+  for(const st of [-0.45,-0.12,0.2]){                                                                             // stripes
+    ctx.beginPath(); ctx.moveTo(st*r,-r*0.5); ctx.lineTo(st*r-r*0.12,-r*0.05); ctx.stroke();
+  }
+  const k = Math.sin(phase)*r*0.14;
+  ctx.beginPath(); ctx.moveTo(-r*0.5,r*0.3); ctx.lineTo(-r*0.5+k,r*0.66); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.25,r*0.3); ctx.lineTo(r*0.25-k,r*0.66); ctx.stroke();
+  ctx.save(); ctx.fillStyle = '#f0674a'; ctx.shadowColor = '#f0674a';
+  ctx.beginPath(); ctx.arc(r*0.68,-r*0.3,r*0.09,0,Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.restore();
+}
+function drawDragonSeg(ctx, sp, color){
+  const r = 15;
+  ctx.save(); ctx.translate(sp.x, sp.y);
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 6;
+  stroke(ctx, 2.6);
+  if(sp._prev){                                          // body ring + dorsal fin
+    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,r*0.45,-0.6,0.6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(0,-r-7); ctx.stroke();
+  } else {                                               // the head: horns, whisker, jaw
+    ctx.beginPath(); ctx.arc(0,0,r*1.15,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r*0.4,-r); ctx.lineTo(-r*0.9,-r*1.8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(r*0.4,-r); ctx.lineTo(r*0.9,-r*1.8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(r*1.1,r*0.2); ctx.quadraticCurveTo(r*1.9,r*0.4,r*2.1,r*0.1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(r*0.5,r*0.5); ctx.lineTo(r*1.4,r*0.85); ctx.stroke();
+    ctx.save(); ctx.fillStyle = '#f0674a'; ctx.shadowColor = '#f0674a';
+    ctx.beginPath(); ctx.arc(r*0.3,-r*0.3,r*0.18,0,Math.PI*2); ctx.fill(); ctx.restore();
+  }
+  ctx.restore();
+}
+
 /* --- 門 gate goal --- */
 function drawGate(ctx, x, groundY, h, color, glow){
   ctx.save();
@@ -891,7 +953,7 @@ const Game = (function(){
   let selChar = 'ren', lastSkillTxt = '', bufSkill = 0, shakeT = 0, slowAllT = 0;
   let player, keys = {}, joy = {x:0, y:0, on:false};
   let spirits = [], pickups = [], fires = [], clouds = [], fx = [], pedestals = [], projectiles = [], bolts = [];
-  let boltT = 5;
+  let boltT = 5, dragonDone = false;
   let weapons = [], wTimes = [];
 
   function overlay(id, show){ $(id).classList.toggle('show', show); }
@@ -904,7 +966,7 @@ const Game = (function(){
     era = ERAS[ERA_ORDER[i]];
     wave = WAVES[i];
     spirits = []; pickups = []; fires = []; clouds = []; fx = []; pedestals = []; projectiles = []; bolts = [];
-    boltT = 5;
+    boltT = 5; dragonDone = false;
     wTimes = [wave.len*0.6, wave.len*0.28];
     waveT = wave.len; spawnT = 1.2; fireT = 3.5; gate = null; slowAllT = 0;
     const c = C();
@@ -957,7 +1019,7 @@ const Game = (function(){
       const cf = cs.forms[level], fe = ERAS[ERA_ORDER[fi]], te = ERAS[ERA_ORDER[toIdx]];
       msg = `<b style="color:#e8b04a">${fe.sub} → ${te.sub}</b>`
           + `<br>${cf.ch} ${cf.py} · ${t(cf.mean_en, cf.mean_zh)} ${zdicLink(cf.ch)}`
-          + `<br><span style="color:#8bc34a;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${toIdx >= 2 ? t(' — and the storm gathers: 電 strikes from the sky (rain over 申, the bolt itself)','——风雨将至：「電」自天而击（雨在「申」上，申即闪电）') : ''}</span>`
+          + `<br><span style="color:#8bc34a;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${toIdx===1 ? t(' — and wild 豕 boars charge the field','——野「豕」直线冲撞') : toIdx===2 ? t(' — 虎 stalks the edges, and the storm gathers: 電 strikes from the sky (rain over 申, the bolt itself)','——「虎」环伺于侧；风雨将至，「電」自天而击（雨在「申」上，申即闪电）') : toIdx===3 ? t(' — and 龍 coils through the last night: carve it apart segment by segment','——「龍」盘旋于最后的长夜：须逐节斩落') : ''}</span>`
           + (level < 3 ? `<br><span style="font-size:0.8em;color:#8a8a8a">${t('gather glyphs to evolve','集字以进化')} · ${coins}/${LV_XP[level+1]}</span>` : '');
     } else {
       msg = t(`${cs.forms[level].ch} · the oldest gate is behind you`, `${cs.forms[level].ch} · 最古老的门已在身后`);
@@ -1013,10 +1075,17 @@ const Game = (function(){
 
   /* ---------- combat helpers ---------- */
   function addFx(o){ o.max = o.t; fx.push(o); }
+  function hurtSpirit(s, dmg){
+    if(s.dead || (s.iT||0) > 0) return;
+    s.hp = (s.hp||1) - dmg;
+    s.iT = 0.22;
+    if(s.hp <= 0){ killSpirit(s); return; }
+    addFx({kind:'poof', x:s.x, y:s.y, t:0.15, r:10});
+  }
   function killSpirit(s){
     s.dead = true;
     addFx({kind:'poof', x:s.x, y:s.y, t:0.3, r:20});
-    if(Math.random() < 0.35){
+    if(Math.random() < (s.type==='long' ? 0.6 : 0.35)){
       pickups.push({x:s.x, y:s.y, ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:9, bob:Math.random()*6});
     }
     const c = C();
@@ -1127,7 +1196,7 @@ const Game = (function(){
         const qr = c.quakeR[tier];
         addFx({kind:'quake', x:player.x, y:player.y, t:0.45, r:qr});
         shakeT = 0.3; player.sq = -0.25;
-        for(const s of spirits){ if(!s.dead && Math.hypot(s.x-player.x, s.y-player.y) <= qr+14) killSpirit(s); }
+        for(const s of spirits){ if(!s.dead && Math.hypot(s.x-player.x, s.y-player.y) <= qr+14) hurtSpirit(s, 2); }
         if(tier >= c.snuffTier) fires = fires.filter(f=>Math.hypot(f.x-player.x, f.y-player.y) > qr);  // 豫: stamp the fires out
         if(tier >= c.slowTier) slowAllT = 1.6;                     // 為: the whole field staggers
       }
@@ -1175,7 +1244,7 @@ const Game = (function(){
           addFx({kind:'ringatk', x:player.x, y:player.y, r:range, t:0.22});
         }
         cand.sort((a,b)=>a[0]-b[0]);                       // the ink only cuts so deep
-        for(const [,s] of cand.slice(0, c.atk.hits)) killSpirit(s);
+        for(const [,s] of cand.slice(0, c.atk.hits)) hurtSpirit(s, 1);
         player.atkT = c.atk.int * ATK_INT[tier];
       } else {
         player.atkT = 0.06;
@@ -1188,7 +1257,7 @@ const Game = (function(){
       for(const k of [0, Math.PI]){
         const ox = player.x + Math.cos(player.orbA+k)*58, oy = player.y + Math.sin(player.orbA+k)*58;
         for(const s of spirits){
-          if(!s.dead && Math.hypot(s.x-ox, s.y-oy) < 24) killSpirit(s);
+          if(!s.dead && Math.hypot(s.x-ox, s.y-oy) < 24) hurtSpirit(s, 1);
         }
       }
     }
@@ -1232,7 +1301,7 @@ const Game = (function(){
         }
         if(!cand.length){ w.t = 0.12; continue; }
         cand.sort((a,b)=>a[0]-b[0]);
-        for(const [,s] of cand.slice(0, W.hits[lv])) killSpirit(s);
+        for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'slash', x:player.x, y:player.y, ang:back, r:W.reach[lv]-8, t:0.18});
         w.recoil = 1;
         w.t = W.int[lv];
@@ -1247,7 +1316,7 @@ const Game = (function(){
         }
         if(!cand.length){ w.t = 0.12; continue; }
         cand.sort((a,b)=>a[0]-b[0]);
-        for(const [,s] of cand.slice(0, W.hits[lv])) killSpirit(s);
+        for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'lance', x:player.x, y:player.y, ang:fwd, r:W.reach[lv], t:0.16});
         w.recoil = 1;
         w.t = W.int[lv];
@@ -1256,7 +1325,7 @@ const Game = (function(){
         if(!chop){ w.t = 0.12; continue; }
         const sr = W.splash[lv];
         for(const s of spirits){
-          if(!s.dead && Math.hypot(s.x-chop.x, s.y-chop.y) <= sr) killSpirit(s);
+          if(!s.dead && Math.hypot(s.x-chop.x, s.y-chop.y) <= sr) hurtSpirit(s, 2);
         }
         addFx({kind:'ringatk', x:chop.x, y:chop.y, r:sr, t:0.2});
         w.recoil = 1;
@@ -1270,7 +1339,7 @@ const Game = (function(){
         }
         if(!cand.length){ w.t = 0.1; continue; }
         cand.sort((a,b)=>a[0]-b[0]);
-        for(const [,s] of cand.slice(0, W.hits[lv])) killSpirit(s);
+        for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'ringatk', x:player.x, y:player.y, r:W.reach[lv], t:0.16});
         w.recoil = 1;
         w.t = W.int[lv];
@@ -1293,7 +1362,7 @@ const Game = (function(){
       if(p.x < WALL || p.x > CW-WALL || p.y < WALL || p.y > CH-WALL) p.t = 0;
       for(const s of spirits){
         if(s.dead || p.pierce <= 0) continue;
-        if(Math.hypot(s.x-p.x, s.y-p.y) < 18){ killSpirit(s); p.pierce--; }
+        if(Math.hypot(s.x-p.x, s.y-p.y) < 18){ hurtSpirit(s, 1); p.pierce--; }
       }
       if(p.pierce <= 0) p.t = 0;
     }
@@ -1317,7 +1386,12 @@ const Game = (function(){
             const px = side===0? WALL+8 : side===1? CW-WALL-8 : WALL+20+Math.random()*(CW-WALL*2-40);
             const py = side===2? WALL+14 : side===3? CH-WALL-8 : WALL+20+Math.random()*(CH-WALL*2-40);
             if(Math.hypot(px-player.x, py-player.y) > 130 || tries===5){   // never on top of the player
-              spirits.push({x:px, y:py, phase:Math.random()*6, dead:false,
+              const roll = Math.random();
+              let type = 'gui', hp = 1, cr = 29;
+              if(stageIdx >= 1 && roll < [0,0.18,0.2,0.2][stageIdx]){ type = 'shi'; hp = 2; cr = 30; }
+              else if(stageIdx >= 2 && roll > 1 - [0,0,0.12,0.18][stageIdx]){ type = 'hu'; hp = 3; cr = 34; }
+              spirits.push({x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
+                            st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
                             spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)});
               addFx({kind:'poof', x:px, y:py, t:0.3, r:18});
               break;
@@ -1335,6 +1409,15 @@ const Game = (function(){
             }
           }
         }
+        // 龍 coils in from the east, halfway through the last night
+        if(stageIdx === 3 && !dragonDone && waveT <= wave.len*0.55){
+          dragonDone = true;
+          for(let i=0; i<9; i++){
+            spirits.push({x:CW-WALL-10, y:WALL+70+i*28, phase:Math.random()*6, dead:false,
+                          type:'long', order:i, hp: i===0?3:2, cr:26, st:0, stT:0, face:-1, dirn:1, spd:95});
+          }
+          addFx({kind:'levelup', x:CW-WALL-40, y:WALL+90, t:0.9, r:80, ch:'龍'});
+        }
         // a weapon surfaces from the dust
         if(wTimes.length && waveT <= wTimes[0]){
           wTimes.shift();
@@ -1350,29 +1433,73 @@ const Game = (function(){
       stageClear(); return;
     }
 
+    // dragon chain bookkeeping: each segment trails the nearest living one ahead
+    const dsegs = spirits.filter(o=>!o.dead && o.type==='long').sort((a,b)=>a.order-b.order);
+    for(let i=0; i<dsegs.length; i++) dsegs[i]._prev = i===0 ? null : dsegs[i-1];
+
     // --- spirits seek ---
     for(const s of spirits){
       if(s.dead) continue;
       s.phase += dt*8;
+      if((s.iT||0) > 0) s.iT -= dt;
       if((s.rootT||0) > 0){ s.rootT -= dt; }
       else {
         let sf = (slowAllT>0 ? 0.45 : 1);
         for(const cl of clouds){ if(Math.hypot(s.x-cl.x, s.y-cl.y) < cl.r){ sf *= 0.45; break; } }
         const ddx = player.x-s.x, ddy = player.y-s.y, d = Math.hypot(ddx,ddy)||1;
-        s.x += (ddx/d)*s.spd*sf*dt + Math.cos(s.phase)*10*dt;
-        s.y += (ddy/d)*s.spd*sf*dt + Math.sin(s.phase*0.8)*10*dt;
+        if(s.type==='shi'){
+          // 豕: line up, shiver, then a straight battering charge
+          if(s.st===1){
+            s.stT -= dt; s.x += Math.sin(s.phase*4)*1.2;
+            if(s.stT<=0){ s.st=2; s.stT=1.1; }
+          } else if(s.st===2){
+            s.stT -= dt;
+            s.x += s.cdx*310*sf*dt; s.y += s.cdy*310*sf*dt;
+            s.face = s.cdx>=0?1:-1;
+            if(s.stT<=0 || s.x<=WALL+7 || s.x>=CW-WALL-7 || s.y<=WALL+13 || s.y>=CH-WALL-7){ s.st=3; s.stT=0.8; }
+          } else if(s.st===3){ s.stT -= dt; if(s.stT<=0) s.st=0; }
+          else {
+            s.x += (ddx/d)*s.spd*0.6*sf*dt; s.y += (ddy/d)*s.spd*0.6*sf*dt;
+            s.face = ddx>=0?1:-1;
+            if(d < 260){ s.st=1; s.stT=0.55; s.cdx=ddx/d; s.cdy=ddy/d; }
+          }
+        } else if(s.type==='hu'){
+          // 虎: stalk a circle just out of reach, then pounce
+          if(s.st===1){ s.stT-=dt; if(s.stT<=0){ s.st=2; s.stT=0.38; s.cdx=ddx/d; s.cdy=ddy/d; } }
+          else if(s.st===2){ s.stT-=dt; s.x+=s.cdx*390*sf*dt; s.y+=s.cdy*390*sf*dt; s.face=s.cdx>=0?1:-1; if(s.stT<=0){ s.st=3; s.stT=0.7; } }
+          else if(s.st===3){ s.stT-=dt; if(s.stT<=0){ s.st=0; s.stT=1.6+Math.random(); } }
+          else {
+            const tx=-ddy/d, ty=ddx/d, err=(d-160)/160;
+            s.x += (tx*s.dirn + (ddx/d)*err)*s.spd*1.1*sf*dt;
+            s.y += (ty*s.dirn + (ddy/d)*err)*s.spd*1.1*sf*dt;
+            s.face = ddx>=0?1:-1;
+            s.stT -= dt; if(s.stT<=0){ s.st=1; s.stT=0.45; }
+          }
+        } else if(s.type==='long'){
+          if(!s._prev){                              // the head weaves toward you
+            const wob = Math.sin(s.phase*1.2)*0.7, ux=ddx/d, uy=ddy/d;
+            s.x += (ux - uy*wob)*95*sf*dt; s.y += (uy + ux*wob)*95*sf*dt;
+            s.face = ddx>=0?1:-1;
+          } else {                                   // the body follows the body
+            const px=s._prev.x-s.x, py=s._prev.y-s.y, pd=Math.hypot(px,py)||1;
+            if(pd>24){ const v=Math.min(260,(pd-24)*9); s.x += px/pd*v*dt; s.y += py/pd*v*dt; }
+          }
+        } else {
+          s.x += (ddx/d)*s.spd*sf*dt + Math.cos(s.phase)*10*dt;
+          s.y += (ddy/d)*s.spd*sf*dt + Math.sin(s.phase*0.8)*10*dt;
+        }
       }
       // light separation so the pack doesn't stack into one 鬼
       for(const o of spirits){
-        if(o===s || o.dead) continue;
+        if(o===s || o.dead || s.type==='long' || o.type==='long') continue;
         const ox = s.x-o.x, oy = s.y-o.y, od = Math.hypot(ox,oy);
         if(od > 0.01 && od < 26){ s.x += ox/od*30*dt; s.y += oy/od*30*dt; }
       }
       s.x = clamp(s.x, WALL+6, CW-WALL-6); s.y = clamp(s.y, WALL+12, CH-WALL-6);
       // touch
-      if(Math.hypot(s.x-player.x, s.y-player.y) < 29){
+      if(Math.hypot(s.x-player.x, s.y-player.y) < (s.cr||29)){
         if(player.dashT > 0 && (selChar==='niu' || (selChar==='ren' && level >= c.killTier))){
-          killSpirit(s);            // the ram / the cutting step
+          hurtSpirit(s, 2);         // the ram / the cutting step
         } else {
           hurtPlayer();
           if(lives <= 0) return;
@@ -1406,7 +1533,7 @@ const Game = (function(){
       if(!b.hit && b.t >= 1.1){
         b.hit = true;
         shakeT = Math.max(shakeT, 0.18);
-        for(const sp of spirits){ if(!sp.dead && Math.hypot(sp.x-b.tx, sp.y-b.ty) <= 48) killSpirit(sp); }
+        for(const sp of spirits){ if(!sp.dead && Math.hypot(sp.x-b.tx, sp.y-b.ty) <= 48) hurtSpirit(sp, 3); }
         if(Math.hypot(player.x-b.tx, player.y-b.ty) <= 52) hurtPlayer();
       }
     }
@@ -1573,8 +1700,20 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // spirits — spectral, red-eyed
-    for(const s of spirits){ if(!s.dead) drawSpirit(ctx, s.x, s.y, 34, s.phase, GHOST); }
+    // spirits — spectral, red-eyed; the tough ones flash white when struck
+    for(const s of spirits){
+      if(s.dead) continue;
+      const col = (s.iT||0) > 0.12 ? '#ffffff' : GHOST;
+      if(s.type==='shi') drawBoar(ctx, s.x, s.y, 38, s.phase, col, s.face||1);
+      else if(s.type==='hu') drawTiger(ctx, s.x, s.y, 48, s.phase, col, s.face||1, s.st===1);
+      else if(s.type==='long') drawDragonSeg(ctx, s, col);
+      else drawSpirit(ctx, s.x, s.y, 34, s.phase, col);
+      if((s.hp||1) > 1 && s.type!=='long'){
+        ctx.save(); ctx.fillStyle = '#f0674a';
+        for(let h=0; h<s.hp; h++) ctx.fillRect(s.x-7+h*6, s.y-36, 4, 4);
+        ctx.restore();
+      }
+    }
 
     // the flock orbiters 羴
     if(selChar==='yang' && level >= CHARS.yang.orbTier){
