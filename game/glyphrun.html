@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>字源 · Glyph Run // houfu.xyz</title>
-<meta name="description" content="A top-down arena survivor where you ARE a Chinese character. Spirits swarm, your ink fights back, and every survived wave rewinds the script an era — 楷書 → 篆書 → 金文 → 甲骨文 — your glyph evolving toward its oracle-bone root.">
+<meta name="description" content="A top-down arena survivor where you ARE a Chinese character. Spirits swarm, your ink fights back, and every survived wave rewinds the script an era — 隸書 → 篆書 → 金文 → 甲骨文 — your glyph evolving toward its oracle-bone root.">
 <link rel="icon" type="image/png" href="/game/thumbs/glyphrun-icon.png?v=2">
 <link rel="apple-touch-icon" href="/game/thumbs/glyphrun-icon.png?v=2">
 <style>
@@ -44,7 +44,8 @@
     font-family:inherit;font-size:1rem;width:42px;height:42px;border-radius:8px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
   #pauseBtn:hover{border-color:#e8b04a;color:#e8b04a;}
-  .wenIcon{width:15px;height:17px;vertical-align:-3px;margin-right:7px;}
+  .wenIcon,.zhanIcon{width:15px;height:17px;vertical-align:-3px;margin-right:7px;}
+  .zhanIcon{width:18px;}
   #toast .tg{font-size:1.7rem;color:#e8dfc8;line-height:1;}
   #toast .tp{font-size:0.7rem;color:#e8b04a;margin-top:3px;}
   #toast .tm{font-size:0.66rem;color:#9a9a9a;margin-top:1px;}
@@ -108,8 +109,8 @@
 <div class="hdr">
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
-    <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从楷书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b11</span>
+    <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b12</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -146,7 +147,7 @@
         </div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-        <button class="btn" id="startBtn" onclick="Game.start()" data-en="▶ INSERT COIN" data-zh="▶ 投币开始">▶ INSERT COIN</button>
+        <button class="btn" id="startBtn" onclick="Game.start()"><canvas class="zhanIcon" width="24" height="22"></canvas><span data-en="INSERT COIN" data-zh="投币开始">INSERT COIN</span></button>
         <button class="btn alt" style="margin-top:0" onclick="Game.openBook()"><canvas class="wenIcon" width="20" height="22"></canvas><span data-en="the codex" data-zh="字典图鉴">the codex</span></button>
       </div>
     </div>
@@ -205,7 +206,7 @@
 </div>
 
 <div class="footer">
-  <div data-en="A tiny lesson in disguise: the script eras (楷書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net." data-zh="一堂藏起来的小课：字体时代（楷书 → 篆书 → 金文 → 甲骨文）是真实的，字族也是——「大」是张臂之人，「舞」是执羽起舞，「牢」是圈中之牛，「犇」是三牛奔逐，「美」是戴羊角的舞者，「羴」是一整群羊，「為」是牵象助劳。韩非子说：世人少见生象，得死象之骨，按图想其生——「想象」原本就是想一头象。每个字的真实历代字形，见 zdic.net 的「字源字形」。">A tiny lesson in disguise: the script eras (楷書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net.</div>
+  <div data-en="A tiny lesson in disguise: the script eras (隸書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net." data-zh="一堂藏起来的小课：字体时代（隶书 → 篆书 → 金文 → 甲骨文）是真实的，字族也是——「大」是张臂之人，「舞」是执羽起舞，「牢」是圈中之牛，「犇」是三牛奔逐，「美」是戴羊角的舞者，「羴」是一整群羊，「為」是牵象助劳。韩非子说：世人少见生象，得死象之骨，按图想其生——「想象」原本就是想一头象。每个字的真实历代字形，见 zdic.net 的「字源字形」。">A tiny lesson in disguise: the script eras (隸書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net.</div>
 </div>
 
 <script>
@@ -469,6 +470,27 @@ function drawWen(ctx, cx, footY, s, color){
   ctx.moveTo(cx, footY-0.86*s); ctx.lineTo(cx-0.18*s, footY-0.68*s); ctx.lineTo(cx, footY-0.5*s);
   ctx.lineTo(cx+0.18*s, footY-0.68*s); ctx.closePath(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(cx-0.07*s, footY-0.72*s); ctx.lineTo(cx, footY-0.62*s); ctx.lineTo(cx+0.07*s, footY-0.72*s); ctx.stroke();
+  ctx.restore();
+}
+
+/* 戰 the war glyph — 單 the pronged rattle standing beside 戈 the axe */
+function drawZhan(ctx, cx, footY, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.12;
+  stroke(ctx, Math.max(1.6, s*0.09));
+  const lx = cx - 0.32*s;
+  ctx.beginPath(); ctx.moveTo(lx, footY); ctx.lineTo(lx, footY-0.85*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx, footY-0.85*s); ctx.lineTo(lx-0.2*s, footY-1.08*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx, footY-0.85*s); ctx.lineTo(lx+0.2*s, footY-1.08*s); ctx.stroke();
+  ctx.beginPath(); ctx.arc(lx-0.23*s, footY-1.14*s, 0.08*s, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(lx+0.23*s, footY-1.14*s, 0.08*s, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.rect(lx-0.15*s, footY-0.64*s, 0.3*s, 0.26*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx-0.15*s, footY-0.51*s); ctx.lineTo(lx+0.15*s, footY-0.51*s); ctx.stroke();
+  const rx = cx + 0.34*s;
+  ctx.beginPath(); ctx.moveTo(rx-0.08*s, footY-1.1*s); ctx.lineTo(rx+0.1*s, footY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx-0.3*s, footY-0.76*s); ctx.lineTo(rx+0.26*s, footY-0.92*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx+0.14*s, footY-0.9*s); ctx.lineTo(rx+0.3*s, footY-1.14*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx+0.1*s, footY); ctx.lineTo(rx-0.12*s, footY-0.08*s); ctx.stroke();
   ctx.restore();
 }
 
@@ -1116,31 +1138,31 @@ const ATK_RNG = [1, 1.08, 1.18, 1.30];   // and reaches further
    duplicates recast a weapon in ever-older script (bronze, then bone),
    faster and fiercer each time. The oracle tier of the bow IS 射.      */
 const WEAPONS = {
-  gong: {chs:['弓','弓','射'], pys:['gōng','gōng','shè'], eras:['楷書','金文','甲骨'],
+  gong: {chs:['弓','弓','射'], pys:['gōng','gōng','shè'], eras:['隸書','金文','甲骨'],
          tier_en:['a bow — arrows seek the pack', 'recast in bronze — twin arrows, quicker', '“to shoot” — the arrow on the string: three arrows, oracle-swift'],
          tier_zh:['「弓」——放矢逐鬼', '金文重铸——双箭更疾', '「射」——弦上之矢，三箭齐发'],
          int:[1.5, 1.05, 0.7]},
-  jian: {chs:['劍','劍','劍'], pys:['jiàn','jiàn','jiàn'], eras:['楷書','金文','甲骨'],
+  jian: {chs:['劍','劍','劍'], pys:['jiàn','jiàn','jiàn'], eras:['隸書','金文','甲骨'],
          tier_en:['a sword — quick arcs at whatever comes', 'bronze blade — wider, faster', "the king's sword — a great sweeping arc"],
          tier_zh:['「劍」——近身快斩', '青铜剑——更快更阔', '王者之剑——大开大阖'],
          int:[0.75, 0.6, 0.45], reach:[85, 96, 110], hits:[2,3,4]},
-  ge:   {chs:['戈','戈','戈'], pys:['gē','gē','gē'], eras:['楷書','金文','甲骨'],
+  ge:   {chs:['戈','戈','戈'], pys:['gē','gē','gē'], eras:['隸書','金文','甲骨'],
          tier_en:['dagger-axe — it guards your back', 'bronze edge — wider, quicker', 'oracle blade — a full reaping sweep'],
          tier_zh:['「戈」——护住身后', '青铜之刃——更阔更快', '甲骨之锋——横扫如割'],
          int:[1.3, 0.95, 0.62], hits:[3,4,5], reach:[96,110,124]},
-  mao:  {chs:['矛','矛','矛'], pys:['máo','máo','máo'], eras:['楷書','金文','甲骨'],
+  mao:  {chs:['矛','矛','矛'], pys:['máo','máo','máo'], eras:['隸書','金文','甲骨'],
          tier_en:['a spear — it thrusts where you run', 'bronze point — longer, through three', 'oracle pike — a whole lane falls'],
          tier_zh:['「矛」——向前突刺', '青铜之锋——更长，可穿三鬼', '甲骨长矛——一线尽穿'],
          int:[1.1, 0.85, 0.6], reach:[120,142,166], hits:[2,3,4]},
-  jin:  {chs:['斤','斤','斤'], pys:['jīn','jīn','jīn'], eras:['楷書','金文','甲骨'],
+  jin:  {chs:['斤','斤','斤'], pys:['jīn','jīn','jīn'], eras:['隸書','金文','甲骨'],
          tier_en:['an axe — it falls on the nearest knot of spirits', 'bronze bit — a wider cleave', 'oracle adze — the whole cluster falls'],
          tier_zh:['「斤」——落斧劈其群', '青铜斧刃——劈得更广', '甲骨之斤——一斧尽没'],
          int:[1.7, 1.3, 0.95], splash:[36,46,58]},
-  dao:  {chs:['刀','刀','刀'], pys:['dāo','dāo','dāo'], eras:['楷書','金文','甲骨'],
+  dao:  {chs:['刀','刀','刀'], pys:['dāo','dāo','dāo'], eras:['隸書','金文','甲骨'],
          tier_en:['a blade circling you, nicking the closest', 'bronze edge — quicker, three cuts', 'the oracle whirl — nothing stands beside you'],
          tier_zh:['「刀」——绕身旋斩', '青铜刀光——更快三斩', '甲骨旋刃——近身皆殒'],
          int:[0.9, 0.7, 0.5], reach:[58,66,76], hits:[2,3,4]},
-  wang: {chs:['網','網','網'], pys:['wǎng','wǎng','wǎng'], eras:['楷書','金文','甲骨'],
+  wang: {chs:['網','網','網'], pys:['wǎng','wǎng','wǎng'], eras:['隸書','金文','甲骨'],
          tier_en:['a net — holds the pack fast', 'bronze-weighted — wider, longer', 'the oracle net — the whole hunt stands still'],
          tier_zh:['「网」——缚住群鬼', '坠以青铜——更广更久', '甲骨之网——群鬼皆缚'],
          int:[3.2, 2.5, 1.9], reach:[60,74,88], root:[1.6, 2.0, 2.6]}
@@ -1150,7 +1172,7 @@ const BOW_SIGHT = 340;                    // the bow no longer snipes across the
 
 /* ============================== eras / waves ============================== */
 const ERAS = {
-  kai:    {name_en:'Regular Script', name_zh:'楷书',   sub:'楷書', ink:'#f0e9d2', accent:'#e8b04a',
+  kai:    {name_en:'Clerical Script', name_zh:'隶书',   sub:'隸書', ink:'#f0e9d2', accent:'#e8b04a',
            sky:['#0d1220','#141b2e'], hill:'#1a2540'},
   seal:   {name_en:'Seal Script',    name_zh:'篆书',   sub:'篆書', ink:'#ffcaa8', accent:'#e0533a',
            sky:['#1c0d12','#2a1016'], hill:'#3a141c'},
@@ -2608,6 +2630,7 @@ const Game = (function(){
 
   bindInput();
   document.querySelectorAll('.wenIcon').forEach(cv=>{ if(cv.getContext) drawWen(cv.getContext('2d'), 10, 21, 16, '#1db954'); });
+  document.querySelectorAll('.zhanIcon').forEach(cv=>{ if(cv.getContext) drawZhan(cv.getContext('2d'), 12, 21, 15, '#e8b04a'); });
   const bookWenCv = $('bookWen');
   if(bookWenCv && bookWenCv.getContext) drawWen(bookWenCv.getContext('2d'), 23, 47, 36, '#e8b04a');
   buildCharSelect(); buildArmSelect(); PV.reset();
