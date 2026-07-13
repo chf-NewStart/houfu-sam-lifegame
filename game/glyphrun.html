@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>字源 · Glyph Run // houfu.xyz</title>
+<meta name="description" content="A run-right platformer where you ARE a Chinese character. Each stage sends you deeper into the past — 楷書 → 篆書 → 金文 → 甲骨文 — your glyph morphing into its ancient oracle-bone form as the game gets harder.">
+<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body,button,a{touch-action:manipulation;}
+  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:18px 14px 26px;-webkit-tap-highlight-color:transparent;overflow-x:hidden;}
+  a{color:#1db954;}
+  .hdr{max-width:960px;margin:0 auto 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .hdr .title{color:#e8b04a;font-size:1.35rem;text-transform:uppercase;letter-spacing:-1px;}
+  .hdr .title .cn{color:#e8dfc8;font-size:1.15rem;margin-right:6px;letter-spacing:2px;}
+  .hdr .sub{color:#9a9a9a;font-size:0.74rem;margin-top:5px;line-height:1.6;max-width:620px;}
+  .hdr .back{color:#1db954;font-size:0.7rem;text-decoration:none;display:inline-block;margin-top:6px;}
+  .hdr .back:hover{text-decoration:underline;}
+  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.7rem;padding:5px 11px;cursor:pointer;flex-shrink:0;}
+  .lang-btn:hover{background:rgba(29,185,84,0.1);}
+
+  .stage-wrap{max-width:960px;margin:0 auto;position:relative;}
+  .hud{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:0.72rem;color:#bbb;margin-bottom:8px;flex-wrap:wrap;}
+  .hud .era{color:#e8dfc8;letter-spacing:1px;}
+  .hud .era b{color:#e8b04a;font-size:0.92rem;}
+  .hud .stat{color:#9a9a9a;}
+  .hud .stat b{color:#1db954;}
+  .hud .lives b{color:#f0674a;letter-spacing:2px;}
+
+  #cvsBox{position:relative;width:100%;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;background:#000;box-shadow:0 0 30px -12px rgba(232,176,74,0.4);}
+  canvas{display:block;width:100%;height:auto;image-rendering:auto;}
+  /* CRT scanlines to match the arcade cabinet look */
+  #cvsBox::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:5;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0 1px, transparent 1px 3px);opacity:.28;}
+
+  /* toast that pops when you collect a glyph */
+  #toast{position:absolute;left:50%;top:14%;transform:translate(-50%,-6px);z-index:8;pointer-events:none;
+    background:rgba(6,10,8,0.86);border:1px solid #1db954;border-radius:8px;padding:8px 16px 10px;text-align:center;
+    opacity:0;transition:opacity .18s, transform .18s;box-shadow:0 0 18px rgba(29,185,84,0.35);}
+  #toast.show{opacity:1;transform:translate(-50%,0);}
+  #toast .tg{font-size:1.7rem;color:#e8dfc8;line-height:1;}
+  #toast .tp{font-size:0.7rem;color:#e8b04a;margin-top:3px;}
+  #toast .tm{font-size:0.66rem;color:#9a9a9a;margin-top:1px;}
+
+  /* full-screen overlays */
+  .overlay{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:22px;background:rgba(4,6,8,0.9);backdrop-filter:blur(2px);}
+  .overlay.show{display:flex;}
+  .overlay h2{color:#e8b04a;font-size:1.5rem;letter-spacing:-0.5px;margin-bottom:8px;}
+  .overlay .big{font-size:0.86rem;color:#cfc6ae;line-height:1.7;max-width:520px;margin-bottom:14px;}
+  .overlay .keys{font-size:0.72rem;color:#8a8a8a;line-height:1.9;margin-bottom:16px;}
+  .overlay .keys kbd{background:#141414;border:1px solid #333;border-bottom-width:2px;border-radius:4px;padding:1px 7px;color:#e8dfc8;font-family:inherit;font-size:0.72rem;}
+  .btn{background:transparent;border:1px solid #e8b04a;color:#e8b04a;font-family:inherit;font-size:0.86rem;padding:10px 26px;cursor:pointer;transition:background .12s,color .12s;border-radius:5px;}
+  .btn:hover{background:#e8b04a;color:#1a1205;}
+  .btn.alt{border-color:#1db954;color:#1db954;margin-top:10px;}
+  .btn.alt:hover{background:#1db954;color:#07120b;}
+  #clearCanvas{margin:6px auto 14px;display:block;}
+  .evo-row{display:flex;gap:14px;align-items:flex-end;justify-content:center;flex-wrap:wrap;margin:8px 0 16px;}
+  .evo-cell{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .evo-cell canvas{width:66px;height:78px;background:transparent;border:none;}
+  .evo-cell span{font-size:0.62rem;color:#9a9a9a;letter-spacing:1px;}
+  .evo-cell.now span{color:#e8b04a;}
+
+  /* on-screen controls (mobile) */
+  .pad{max-width:960px;margin:12px auto 0;display:flex;justify-content:space-between;align-items:center;gap:12px;user-select:none;}
+  .pad-left{display:flex;gap:12px;}
+  .arc-btn{width:82px;height:82px;flex-shrink:0;border-radius:16px;border:none;cursor:pointer;font-family:inherit;
+    color:#e8dfc8;font-size:1.5rem;font-weight:bold;background:linear-gradient(#2a2a2a,#141414);
+    box-shadow:0 5px 0 #0a0a0a, inset 0 2px 3px rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;}
+  .arc-btn.jump{width:104px;background:linear-gradient(#274a2c,#12220f);color:#8ff0a8;box-shadow:0 5px 0 #08130a, inset 0 2px 3px rgba(255,255,255,0.1);}
+  .arc-btn.on{transform:translateY(4px);box-shadow:0 1px 0 #0a0a0a, inset 0 2px 4px rgba(0,0,0,0.5);}
+  @media (max-width:520px){ .arc-btn{width:72px;height:72px;} .arc-btn.jump{width:92px;} }
+  .pad-hint{text-align:center;color:#5a5a5a;font-size:0.66rem;margin-top:8px;max-width:960px;margin-left:auto;margin-right:auto;}
+
+  .footer{max-width:960px;margin:22px auto 0;text-align:center;color:#555;font-size:0.68rem;line-height:1.7;}
+  @media (pointer:coarse){ body{user-select:none;-webkit-user-select:none;} }
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
+    <div class="sub" data-en="Run right and you'll travel back in time. You ARE a character — and each stage rewinds it to an older form, ending in 甲骨文 oracle-bone script. The deeper the past, the harder the run." data-zh="向右奔跑，就是逆流时光。你就是一个「字」——每一关都把它倒回更古老的形态，直到甲骨文。越往古代，路越难走。">Run right and you'll travel back in time. You ARE a character — and each stage rewinds it to an older form, ending in 甲骨文 oracle-bone script. The deeper the past, the harder the run.</div>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+</div>
+
+<div class="stage-wrap">
+  <div class="hud">
+    <div class="era" data-en="STAGE 1/4 · Regular Script" data-zh="第 1/4 关 · 楷书" id="hudEra"><b id="hudGlyph">人</b> <span id="hudEraName">STAGE 1/4 · Regular Script</span></div>
+    <div class="stat" data-en="glyphs" data-zh="集字"><span data-en="glyphs" data-zh="集字">glyphs</span> <b id="hudCoins">0</b></div>
+    <div class="stat lives" data-en="lives" data-zh="生命"><span data-en="lives" data-zh="生命">lives</span> <b id="hudLives">♥♥♥</b></div>
+  </div>
+
+  <div id="cvsBox">
+    <canvas id="cvs" width="960" height="540"></canvas>
+
+    <div id="toast"><div class="tg" id="toastG">日</div><div class="tp" id="toastP">rì</div><div class="tm" id="toastM">sun</div></div>
+
+    <!-- START -->
+    <div class="overlay show" id="ovStart">
+      <h2 data-en="字源 · GLYPH RUN" data-zh="字源 · 汉字奔跑">字源 · GLYPH RUN</h2>
+      <div class="big" data-en="You are 人 — the character for &quot;person.&quot; Run to the ancient gate at the end of each stage. Every gate you pass rewinds your glyph one era further into the past, all the way to the oracle bones. Collect glyphs, dodge the 鬼 spirits and 火 fire." data-zh="你是「人」——表示「人」的那个字。跑到每关尽头的古门。每穿过一道门，你的字形就倒退一个时代，一路回到甲骨文。沿途集字，躲开「鬼」与「火」。">You are 人 — the character for "person." Run to the ancient gate at the end of each stage. Every gate you pass rewinds your glyph one era further into the past, all the way to the oracle bones. Collect glyphs, dodge the 鬼 spirits and 火 fire.</div>
+      <div class="keys">
+        <span data-en="move" data-zh="移动">move</span> <kbd>←</kbd> <kbd>→</kbd> &nbsp;·&nbsp;
+        <span data-en="jump" data-zh="跳跃">jump</span> <kbd>Space</kbd> / <kbd>↑</kbd> &nbsp;·&nbsp;
+        <span data-en="stomp a spirit by landing on it" data-zh="踩在鬼头上可击退它">stomp a spirit by landing on it</span>
+      </div>
+      <button class="btn" id="startBtn" onclick="Game.start()" data-en="▶ INSERT COIN" data-zh="▶ 投币开始">▶ INSERT COIN</button>
+    </div>
+
+    <!-- STAGE CLEAR / TRANSFORM -->
+    <div class="overlay" id="ovClear">
+      <h2 data-en="GATE PASSED" data-zh="穿门而过" id="clearTitle">GATE PASSED</h2>
+      <canvas id="clearCanvas" width="240" height="150"></canvas>
+      <div class="big" id="clearMsg" data-en="Your glyph rewinds…" data-zh="你的字形正在倒退……">Your glyph rewinds…</div>
+      <button class="btn" id="clearBtn" onclick="Game.nextStage()" data-en="▶ Deeper into the past" data-zh="▶ 更向古代">▶ Deeper into the past</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div class="overlay" id="ovOver">
+      <h2 style="color:#f0674a" data-en="LOST TO TIME" data-zh="湮没于时光">LOST TO TIME</h2>
+      <div class="big" id="overMsg" data-en="The character faded before reaching the bones." data-zh="这个字还没走到甲骨，就已消散。">The character faded before reaching the bones.</div>
+      <button class="btn" onclick="Game.restart()" data-en="↻ Try again" data-zh="↻ 再来一次">↻ Try again</button>
+    </div>
+
+    <!-- WIN -->
+    <div class="overlay" id="ovWin">
+      <h2 data-en="人 · TRACED TO THE ROOT" data-zh="人 · 溯至本源">人 · TRACED TO THE ROOT</h2>
+      <div class="evo-row" id="evoRow"></div>
+      <div class="big" id="winMsg" data-en="You rewound 人 across 3,000 years — from today's brush strokes back to the mark a diviner carved into an ox bone." data-zh="你把「人」倒回了三千年——从今天的笔画，回到贞人刻在牛骨上的那道痕迹。">You rewound 人 across 3,000 years — from today's brush strokes back to the mark a diviner carved into an ox bone.</div>
+      <button class="btn" onclick="Game.restart()" data-en="↻ Run it again" data-zh="↻ 再跑一次">↻ Run it again</button>
+      <a class="btn alt" href="/wip.html" style="text-decoration:none" data-en="← more games" data-zh="← 更多游戏">← more games</a>
+    </div>
+  </div>
+
+  <div class="pad">
+    <div class="pad-left">
+      <button class="arc-btn" id="btnL" aria-label="left">◀</button>
+      <button class="arc-btn" id="btnR" aria-label="right">▶</button>
+    </div>
+    <button class="arc-btn jump" id="btnJ" aria-label="jump" data-en="JUMP" data-zh="跳" style="font-size:0.9rem;">JUMP</button>
+  </div>
+  <div class="pad-hint" data-en="Keyboard ← → to run, Space / ↑ to jump — or use the pads above on touch." data-zh="键盘 ← → 奔跑，空格 / ↑ 跳跃——触屏可用上方按键。">Keyboard ← → to run, Space / ↑ to jump — or use the pads above on touch.</div>
+</div>
+
+<div class="footer">
+  <div data-en="A tiny lesson in disguise: the four scripts you run through — 楷書 (regular), 篆書 (seal), 金文 (bronze), 甲骨文 (oracle) — are the real stages Chinese writing passed through, newest to oldest." data-zh="一堂藏起来的小课：你跑过的四种字体——楷书、篆书、金文、甲骨文——正是汉字真实走过的阶段，由今及古。">A tiny lesson in disguise: the four scripts you run through — 楷書 (regular), 篆書 (seal), 金文 (bronze), 甲骨文 (oracle) — are the real stages Chinese writing passed through, newest to oldest.</div>
+</div>
+
+<script>
+/* ============================== language ============================== */
+function lang(){ return document.documentElement.lang === 'zh' ? 'zh' : 'en'; }
+function t(en, zh){ return lang() === 'zh' ? zh : en; }
+function toggleLang(){
+  const zh = document.documentElement.lang !== 'zh';
+  document.documentElement.lang = zh ? 'zh' : 'en';
+  document.querySelectorAll('[data-en]').forEach((el)=>{ el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
+  document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
+  try{ localStorage.setItem('arcade_lang', zh ? 'zh' : 'en'); }catch(e){}
+  Game.syncHud();
+}
+try{ if(localStorage.getItem('arcade_lang') === 'zh') toggleLang(); }catch(e){}
+
+/* ============================== glyph art ============================== */
+/* Every glyph is hand-drawn with rounded strokes so it scales crisply and
+   reads the same on any screen. Coordinates are local: feet/baseline at y=0,
+   head around y=-1 (times the size), x centred on 0.                     */
+
+function stroke(ctx, w, cap){ ctx.lineWidth = w; ctx.lineCap = cap||'round'; ctx.lineJoin='round'; }
+
+/* --- the player: 人 (person) drawn in four historical scripts --- */
+/* phase drives a little running gait; sq is a squash/stretch factor.     */
+function drawPerson(ctx, era, cx, footY, s, phase, sq, color){
+  ctx.save();
+  ctx.translate(cx, footY);
+  ctx.scale(1/(1+sq*0.0), 1); // keep x
+  ctx.transform(1+ -sq*0.25, 0, 0, 1+sq, 0, 0); // squash: sq>0 stretch tall, sq<0 squash
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
+  const swing = Math.sin(phase) * 0.16 * s;      // legs alternate
+  if(era==='kai'){
+    // modern 人: a 撇 and a 捺 meeting near the top
+    stroke(ctx, s*0.14);
+    ctx.beginPath();
+    ctx.moveTo(0, -s*1.02);
+    ctx.quadraticCurveTo(-s*0.14, -s*0.5, -s*0.42 + swing, 0);   // left leg
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-s*0.03, -s*0.72);
+    ctx.quadraticCurveTo(s*0.2, -s*0.42, s*0.44 - swing, 0);     // right leg
+    ctx.stroke();
+  } else if(era==='seal'){
+    // 篆書: even-weight, rounded, upright and calligraphic
+    stroke(ctx, s*0.13);
+    ctx.beginPath();                                   // head/shoulder arc
+    ctx.moveTo(-s*0.16, -s*0.86);
+    ctx.quadraticCurveTo(0, -s*1.12, s*0.16, -s*0.86);
+    ctx.stroke();
+    ctx.beginPath();                                   // left leg, S-curve
+    ctx.moveTo(-s*0.05, -s*0.9);
+    ctx.bezierCurveTo(-s*0.34, -s*0.6, -s*0.16, -s*0.25, -s*0.4 + swing, 0);
+    ctx.stroke();
+    ctx.beginPath();                                   // right leg, S-curve
+    ctx.moveTo(s*0.05, -s*0.9);
+    ctx.bezierCurveTo(s*0.34, -s*0.6, s*0.16, -s*0.25, s*0.4 - swing, 0);
+    ctx.stroke();
+  } else if(era==='bronze'){
+    // 金文: a bolder side-profile figure, back bent, arm hanging forward
+    stroke(ctx, s*0.17);
+    ctx.beginPath();                                   // bent spine, head to back foot
+    ctx.moveTo(s*0.1, -s*1.04);
+    ctx.bezierCurveTo(-s*0.1, -s*0.8, -s*0.3, -s*0.5, -s*0.34 + swing, 0);
+    ctx.stroke();
+    ctx.beginPath();                                   // front leg
+    ctx.moveTo(-s*0.12, -s*0.52);
+    ctx.quadraticCurveTo(s*0.16, -s*0.28, s*0.3 - swing, 0);
+    ctx.stroke();
+    ctx.beginPath();                                   // arm reaching forward
+    ctx.moveTo(-s*0.02, -s*0.82);
+    ctx.quadraticCurveTo(s*0.28, -s*0.72, s*0.4, -s*0.5);
+    ctx.stroke();
+  } else { // oracle 甲骨文: thin, incised, angular side-profile person
+    stroke(ctx, s*0.1, 'round');
+    ctx.beginPath();                                   // body: head, bent back, back leg
+    ctx.moveTo(s*0.04, -s*1.06);
+    ctx.lineTo(-s*0.02, -s*0.66);
+    ctx.lineTo(-s*0.2, -s*0.34);
+    ctx.lineTo(-s*0.34 + swing, 0);
+    ctx.stroke();
+    ctx.beginPath();                                   // front leg
+    ctx.moveTo(-s*0.14, -s*0.44);
+    ctx.lineTo(s*0.06, -s*0.24);
+    ctx.lineTo(s*0.28 - swing, 0);
+    ctx.stroke();
+    ctx.beginPath();                                   // arm, angular, forward
+    ctx.moveTo(-s*0.01, -s*0.78);
+    ctx.lineTo(s*0.24, -s*0.7);
+    ctx.lineTo(s*0.36, -s*0.48);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* the four eras of 人 as a static portrait (used in overlays) */
+function drawPersonPortrait(canvas, era, color){
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const s = Math.min(canvas.width, canvas.height) * 0.62;
+  drawPerson(ctx, era, canvas.width/2, canvas.height*0.86, s, 0, 0, color);
+}
+
+/* --- collectible pictographs, oracle-bone line style --- */
+function drawPicto(ctx, ch, cx, cy, s, color){
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.shadowColor = color; ctx.shadowBlur = s*0.18;
+  const r = s*0.42;
+  stroke(ctx, Math.max(2, s*0.08));
+  switch(ch){
+    case '日': // sun: ring + centre mark
+      ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.34,0); ctx.lineTo(r*0.34,0); ctx.stroke();
+      break;
+    case '月': // moon: crescent
+      ctx.beginPath(); ctx.arc(-r*0.2,0,r,-Math.PI*0.55,Math.PI*0.55); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.05,-r*0.3); ctx.lineTo(r*0.18,-r*0.05); ctx.stroke();
+      break;
+    case '山': // mountain: three peaks on a base
+      ctx.beginPath();
+      ctx.moveTo(-r,r*0.7); ctx.lineTo(-r*0.62,-r*0.15); ctx.lineTo(-r*0.28,r*0.35);
+      ctx.lineTo(0,-r*0.85); ctx.lineTo(r*0.28,r*0.35); ctx.lineTo(r*0.62,-r*0.15);
+      ctx.lineTo(r,r*0.7);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r,r*0.7); ctx.lineTo(r,r*0.7); ctx.stroke();
+      break;
+    case '水': // water: a stream with droplets either side
+      ctx.beginPath();
+      ctx.moveTo(0,-r); ctx.bezierCurveTo(-r*0.4,-r*0.4, r*0.4,r*0.4, 0,r);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.55,-r*0.35); ctx.quadraticCurveTo(-r*0.75,0,-r*0.5,r*0.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r*0.55,-r*0.35); ctx.quadraticCurveTo(r*0.75,0,r*0.5,r*0.4); ctx.stroke();
+      break;
+    case '木': // tree: trunk, branches up, roots down
+      ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(0,r); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.6,-r*0.15); ctx.lineTo(0,-r*0.55); ctx.lineTo(r*0.6,-r*0.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.55,r*0.6); ctx.lineTo(0,r*0.2); ctx.lineTo(r*0.55,r*0.6); ctx.stroke();
+      break;
+    case '火': // fire: central flame + two side sparks
+      ctx.beginPath(); ctx.moveTo(0,r); ctx.quadraticCurveTo(-r*0.2,0,0,-r); ctx.quadraticCurveTo(r*0.2,0,0,r); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.35,r*0.75); ctx.lineTo(-r*0.62,-r*0.1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r*0.35,r*0.75); ctx.lineTo(r*0.62,-r*0.1); ctx.stroke();
+      break;
+    case '目': // eye: almond outline + pupil
+      ctx.beginPath();
+      ctx.moveTo(-r,0); ctx.quadraticCurveTo(0,-r*0.7,r,0); ctx.quadraticCurveTo(0,r*0.7,-r,0);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,r*0.22,0,Math.PI*2); ctx.fill();
+      break;
+    case '魚': // fish: body, tail, eye
+      ctx.beginPath();
+      ctx.moveTo(-r*0.5,0); ctx.quadraticCurveTo(0,-r*0.6,r*0.55,0); ctx.quadraticCurveTo(0,r*0.6,-r*0.5,0);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.5,0); ctx.lineTo(-r,-r*0.4); ctx.moveTo(-r*0.5,0); ctx.lineTo(-r,r*0.4); ctx.stroke();
+      ctx.beginPath(); ctx.arc(r*0.22,-r*0.08,r*0.09,0,Math.PI*2); ctx.fill();
+      break;
+    default:
+      ctx.font = `${s}px Consolas`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(ch, 0, 0);
+  }
+  ctx.restore();
+}
+
+/* --- 鬼 spirit enemy --- */
+function drawSpirit(ctx, cx, cy, s, phase, color){
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.shadowColor = color; ctx.shadowBlur = s*0.2;
+  stroke(ctx, s*0.09);
+  const r = s*0.4;
+  // big square head (鬼 has a 田-like head)
+  ctx.beginPath(); ctx.rect(-r*0.7,-r,r*1.4,r*1.15); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-r*0.7,-r*0.4); ctx.lineTo(r*0.7,-r*0.4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(0,-r*0.4); ctx.stroke();
+  // little horns
+  ctx.beginPath(); ctx.moveTo(-r*0.5,-r); ctx.lineTo(-r*0.68,-r*1.35); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.5,-r); ctx.lineTo(r*0.68,-r*1.35); ctx.stroke();
+  // eyes
+  ctx.beginPath(); ctx.arc(-r*0.32,-r*0.7,r*0.11,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(r*0.32,-r*0.7,r*0.11,0,Math.PI*2); ctx.fill();
+  // wispy legs, shuffling
+  const w = Math.sin(phase)*r*0.2;
+  ctx.beginPath(); ctx.moveTo(-r*0.35,r*0.15); ctx.quadraticCurveTo(-r*0.5, r*0.6, -r*0.3+w, r); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.35,r*0.15); ctx.quadraticCurveTo(r*0.5, r*0.6, r*0.3-w, r); ctx.stroke();
+  ctx.restore();
+}
+
+/* --- 門 gate goal --- */
+function drawGate(ctx, x, groundY, h, color, glow){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.shadowColor = color; ctx.shadowBlur = 10 + glow*14;
+  const w = h*0.72;
+  stroke(ctx, Math.max(4, h*0.05));
+  const topY = groundY - h;
+  // lintel
+  ctx.beginPath(); ctx.moveTo(x - w*0.62, topY); ctx.lineTo(x + w*0.62, topY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - w*0.5, topY + h*0.14); ctx.lineTo(x + w*0.5, topY + h*0.14); ctx.stroke();
+  // two door leaves 門
+  for(const sgn of [-1, 1]){
+    const dx = x + sgn * w*0.28;
+    ctx.beginPath();
+    ctx.moveTo(dx, topY + h*0.14);
+    ctx.lineTo(dx, groundY);
+    ctx.stroke();
+    // little inner ticks, like the strokes of 門
+    ctx.beginPath(); ctx.moveTo(dx, topY + h*0.34); ctx.lineTo(dx + sgn*w*0.16, topY + h*0.34); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dx, topY + h*0.58); ctx.lineTo(dx + sgn*w*0.16, topY + h*0.58); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ============================== glyph data ============================== */
+const GLYPHS = {
+  '日': {py:'rì',   en:'sun',      zh:'太阳'},
+  '月': {py:'yuè',  en:'moon',     zh:'月亮'},
+  '山': {py:'shān', en:'mountain', zh:'山'},
+  '水': {py:'shuǐ', en:'water',    zh:'水'},
+  '木': {py:'mù',   en:'tree',     zh:'树木'},
+  '火': {py:'huǒ',  en:'fire',     zh:'火'},
+  '目': {py:'mù',   en:'eye',      zh:'眼睛'},
+  '魚': {py:'yú',   en:'fish',     zh:'鱼'}
+};
+
+/* ============================== stages ============================== */
+const GY = 470;          // ground surface (top of the ground strip)
+const GH = 70;           // ground thickness
+const CW = 960, CH = 540;
+function seg(x1, x2){ return {x:x1, y:GY, w:x2-x1, h:GH, ground:true}; }
+
+const ERAS = {
+  kai:    {name_en:'Regular Script', name_zh:'楷书',   sub:'楷書', ink:'#f0e9d2', accent:'#e8b04a',
+           sky:['#0d1220','#141b2e'], hill:'#1a2540', speed:3.3, jump:-13.0},
+  seal:   {name_en:'Seal Script',    name_zh:'篆书',   sub:'篆書', ink:'#ffcaa8', accent:'#e0533a',
+           sky:['#1c0d12','#2a1016'], hill:'#3a141c', speed:3.7, jump:-13.2},
+  bronze: {name_en:'Bronze Script',  name_zh:'金文',   sub:'金文', ink:'#d6e8b8', accent:'#8bc34a',
+           sky:['#0a1512','#0e1f1a'], hill:'#123028', speed:4.0, jump:-13.4},
+  oracle: {name_en:'Oracle Bone',    name_zh:'甲骨文', sub:'甲骨文', ink:'#ece0c4', accent:'#c9a04a',
+           sky:['#15100a','#1d160d'], hill:'#2a2013', speed:4.3, jump:-13.6}
+};
+const ERA_ORDER = ['kai','seal','bronze','oracle'];
+
+/* Each stage: ground segments (gaps between them are pits), floating
+   platforms, collectible glyphs, fire hazards, patrolling spirits, goal. */
+const STAGES = [
+  { // 1 — Regular script, gentle
+    era:'kai', len:2680, goalX:2560,
+    ground:[ seg(0,880), seg(1010,1720), seg(1850,2680) ],
+    plats:[ {x:900,y:360,w:120,h:20}, {x:1250,y:340,w:110,h:20}, {x:1500,y:296,w:110,h:20} ],
+    coins:[ {x:460,y:392,ch:'日'}, {x:1305,y:296,ch:'月'}, {x:1555,y:252,ch:'山'}, {x:2050,y:400,ch:'水'} ],
+    fires:[], spirits:[ {x:2150,min:1900,max:2500} ]
+  },
+  { // 2 — Seal script
+    era:'seal', len:3000, goalX:2880,
+    ground:[ seg(0,720), seg(860,1300), seg(1440,2050), seg(2200,3000) ],
+    plats:[ {x:740,y:352,w:110,h:20}, {x:1320,y:352,w:110,h:20}, {x:1720,y:300,w:120,h:20}, {x:2080,y:340,w:110,h:20} ],
+    coins:[ {x:520,y:400,ch:'木'}, {x:775,y:308,ch:'火'}, {x:1780,y:256,ch:'目'}, {x:2450,y:400,ch:'魚'} ],
+    fires:[ {x:1150,w:70}, {x:2620,w:70} ],
+    spirits:[ {x:1000,min:880,max:1280}, {x:2500,min:2220,max:2860} ]
+  },
+  { // 3 — Bronze script
+    era:'bronze', len:3300, goalX:3180,
+    ground:[ seg(0,640), seg(800,1180), seg(1340,1720), seg(1880,2360), seg(2520,3300) ],
+    plats:[ {x:660,y:344,w:100,h:20}, {x:1210,y:320,w:100,h:20}, {x:1560,y:280,w:100,h:20}, {x:1760,y:344,w:100,h:20}, {x:2400,y:320,w:100,h:20} ],
+    coins:[ {x:420,y:400,ch:'山'}, {x:1260,y:276,ch:'日'}, {x:1610,y:236,ch:'月'}, {x:2050,y:400,ch:'水'}, {x:2900,y:400,ch:'木'} ],
+    fires:[ {x:960,w:70}, {x:1520,w:60}, {x:2140,w:70} ],
+    spirits:[ {x:900,min:820,max:1160}, {x:2000,min:1900,max:2340}, {x:2750,min:2540,max:3140} ]
+  },
+  { // 4 — Oracle bone, hardest
+    era:'oracle', len:3600, goalX:3480,
+    ground:[ seg(0,560), seg(720,1040), seg(1200,1500), seg(1660,1980), seg(2140,2520), seg(2680,3600) ],
+    plats:[ {x:580,y:340,w:90,h:20}, {x:1060,y:320,w:90,h:20}, {x:1520,y:300,w:90,h:20}, {x:2000,y:330,w:90,h:20}, {x:2200,y:270,w:90,h:20}, {x:2560,y:330,w:90,h:20} ],
+    coins:[ {x:380,y:400,ch:'目'}, {x:1105,y:276,ch:'火'}, {x:1565,y:256,ch:'魚'}, {x:2245,y:226,ch:'日'}, {x:3050,y:400,ch:'山'} ],
+    fires:[ {x:460,w:56}, {x:1360,w:56}, {x:2360,w:56}, {x:3250,w:60} ],
+    spirits:[ {x:820,min:740,max:1020}, {x:1780,min:1680,max:1960}, {x:2320,min:2160,max:2500}, {x:2950,min:2700,max:3300} ]
+  }
+];
+
+/* ============================== game ============================== */
+const Game = (function(){
+  const cvs = document.getElementById('cvs');
+  const ctx = cvs.getContext('2d');
+  const $ = (id)=>document.getElementById(id);
+
+  let stageIdx = 0, lives = 3, coins = 0, running = false, raf = 0, lastTs = 0;
+  let stage, era, camX = 0, tGlobal = 0;
+  let player, keys = {}, btn = {};
+  let coinList = [], spiritList = [], gateGlow = 0;
+
+  function overlay(id, show){ $(id).classList.toggle('show', show); }
+  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin'].forEach(i=>overlay(i,false)); }
+
+  function loadStage(i){
+    stageIdx = i;
+    stage = STAGES[i];
+    era = ERAS[stage.era];
+    camX = 0;
+    // deep-copy the dynamic bits so a retry restores them
+    coinList = stage.coins.map(c=>({...c, got:false, bob: c.x*0.01}));
+    spiritList = stage.spirits.map(s=>({...s, x:s.x, dir:1, dead:false, phase:s.x*0.02, y:GY}));
+    player = { x:60, y:GY-46, w:28, h:46, vx:0, vy:0, onGround:true,
+               face:1, runPhase:0, sq:0, dead:false };
+    gateGlow = 0;
+    syncHud();
+  }
+
+  function platformsAt(){ return stage.ground.concat(stage.plats); }
+
+  function syncHud(){
+    $('hudGlyph').textContent = '人';
+    $('hudEraName').textContent = t(`STAGE ${stageIdx+1}/4 · ${era.name_en}`, `第 ${stageIdx+1}/4 关 · ${era.name_zh}`);
+    $('hudEra').style.color = era.ink;
+    $('hudEra').querySelector('b').style.color = era.accent;
+    $('hudCoins').textContent = coins;
+    $('hudLives').innerHTML = '♥'.repeat(Math.max(0,lives)) || '—';
+  }
+
+  /* ---------- lifecycle ---------- */
+  function start(){
+    stageIdx = 0; lives = 3; coins = 0;
+    hideAll();
+    loadStage(0);
+    running = true; lastTs = performance.now();
+    if(!raf) raf = requestAnimationFrame(loop);
+  }
+  function restart(){ start(); }
+  function nextStage(){
+    hideAll();
+    if(stageIdx+1 >= STAGES.length){ win(); return; }
+    loadStage(stageIdx+1);
+    running = true; lastTs = performance.now();
+    if(!raf) raf = requestAnimationFrame(loop);
+  }
+  function stageClear(){
+    running = false;
+    const fromEra = stage.era;
+    const toIdx = stageIdx+1;
+    if(toIdx >= STAGES.length){
+      // final gate → win screen
+      $('clearBtn').textContent = t('▶ See what you traced','▶ 看看你溯到了什么');
+    } else {
+      $('clearBtn').textContent = t('▶ Deeper into the past','▶ 更向古代');
+    }
+    // animate the morph from this era to the next (or itself if last)
+    const toEra = toIdx < STAGES.length ? STAGES[toIdx].era : stage.era;
+    $('clearTitle').textContent = t('GATE PASSED','穿门而过');
+    const fe = ERAS[fromEra], te = ERAS[toEra];
+    $('clearMsg').innerHTML = toIdx < STAGES.length
+      ? t(`人 · ${fe.sub} &nbsp;→&nbsp; ${te.sub}`, `人 · ${fe.sub} &nbsp;→&nbsp; ${te.sub}`)
+      : t('人 · the oldest form there is','人 · 已是最古老的形态');
+    overlay('ovClear', true);
+    animateMorph(fromEra, toEra, ERAS[toEra].ink);
+  }
+  function animateMorph(fromEra, toEra, color){
+    const c = $('clearCanvas'); const cx2 = c.getContext('2d');
+    let tt = 0;
+    (function step(){
+      tt += 0.028;
+      const k = Math.min(1, tt);
+      cx2.clearRect(0,0,c.width,c.height);
+      const s = Math.min(c.width, c.height)*0.62;
+      // crossfade old → new
+      cx2.globalAlpha = 1-k;
+      drawPerson(cx2, fromEra, c.width/2, c.height*0.9, s, 0, 0, color);
+      cx2.globalAlpha = k;
+      drawPerson(cx2, toEra, c.width/2, c.height*0.9, s, 0, 0, color);
+      cx2.globalAlpha = 1;
+      if(k < 1 && $('ovClear').classList.contains('show')) requestAnimationFrame(step);
+    })();
+  }
+  function loseLife(){
+    lives--;
+    syncHud();
+    if(lives <= 0){ gameOver(); return; }
+    // respawn: reload current stage state
+    loadStage(stageIdx);
+    running = true; lastTs = performance.now();
+  }
+  function gameOver(){
+    running = false;
+    $('overMsg').textContent = t(
+      `You gathered ${coins} glyphs before fading. The bones can wait.`,
+      `你在消散前集齐了 ${coins} 个字。甲骨可以再等等。`);
+    overlay('ovOver', true);
+  }
+  function win(){
+    running = false;
+    // build the full evolution row, oldest on the right — the way we ran it
+    const row = $('evoRow'); row.innerHTML='';
+    ERA_ORDER.forEach((e, i)=>{
+      const cell = document.createElement('div');
+      cell.className = 'evo-cell' + (e==='oracle'?' now':'');
+      const cc = document.createElement('canvas'); cc.width=66; cc.height=78;
+      const lab = document.createElement('span'); lab.textContent = ERAS[e].sub;
+      cell.appendChild(cc); cell.appendChild(lab); row.appendChild(cell);
+      drawPersonPortrait(cc, e, ERAS[e].ink);
+    });
+    $('winMsg').textContent = t(
+      `人 traced from today's brush all the way back to the oracle bones — with ${coins} glyphs gathered along the way.`,
+      `「人」从今日的笔画一路溯回甲骨——沿途集得 ${coins} 个字。`);
+    overlay('ovWin', true);
+  }
+
+  /* ---------- physics + update ---------- */
+  function moveDir(){ return (keys.left||btn.left?-1:0) + (keys.right||btn.right?1:0); }
+  function jumpHeld(){ return !!(keys.jump || btn.jump); }
+
+  function update(dt){
+    tGlobal += dt;
+    gateGlow = (Math.sin(tGlobal*4)+1)/2;
+    const spd = era.speed;
+    const dir = moveDir();
+    if(dir!==0){ player.face = dir; }
+    // horizontal
+    const target = dir * spd;
+    player.vx += (target - player.vx) * 0.3;
+    if(Math.abs(player.vx) < 0.05) player.vx = 0;
+    // gravity
+    player.vy += 0.72;
+    if(player.vy > 16) player.vy = 16;
+
+    // --- x axis ---
+    player.x += player.vx;
+    if(player.x < 0){ player.x = 0; player.vx = 0; }
+    for(const p of platformsAt()){
+      if(aabb(player, p)){
+        if(player.vx > 0) player.x = p.x - player.w;
+        else if(player.vx < 0) player.x = p.x + p.w;
+        player.vx = 0;
+      }
+    }
+    // --- y axis ---
+    player.y += player.vy;
+    const wasAir = !player.onGround;
+    player.onGround = false;
+    for(const p of platformsAt()){
+      if(aabb(player, p)){
+        if(player.vy > 0){ player.y = p.y - player.h; player.onGround = true; }
+        else if(player.vy < 0){ player.y = p.y + p.h; }
+        player.vy = 0;
+      }
+    }
+    // landing squash
+    if(player.onGround && wasAir){ player.sq = -0.22; }
+    player.sq += (0 - player.sq) * 0.2;
+
+    // jump
+    if(jumpHeld() && player.onGround){ player.vy = era.jump; player.onGround = false; player.sq = 0.18; btn._jumpConsumed = true; }
+
+    // run gait
+    if(player.onGround && Math.abs(player.vx) > 0.3) player.runPhase += Math.abs(player.vx) * 0.09;
+    else if(!player.onGround) player.runPhase = Math.PI/2; // legs mid-stride in air
+
+    // fell into a pit
+    if(player.y > CH + 80){ loseLife(); return; }
+
+    // camera
+    camX = clamp(player.x - CW*0.34, 0, stage.len - CW);
+
+    // coins
+    for(const c of coinList){
+      if(c.got) continue;
+      c.bob += dt*3;
+      if(Math.abs((player.x+player.w/2) - c.x) < 30 && Math.abs((player.y+player.h/2) - c.y) < 34){
+        c.got = true; coins++; syncHud(); popToast(c.ch);
+      }
+    }
+
+    // spirits
+    for(const s of spiritList){
+      if(s.dead) continue;
+      s.phase += dt*8;
+      s.x += s.dir * (0.9 + stageIdx*0.25);
+      if(s.x < s.min){ s.x = s.min; s.dir = 1; }
+      if(s.x > s.max){ s.x = s.max; s.dir = -1; }
+      // collision with player
+      const pcx = player.x+player.w/2, pcy = player.y+player.h/2;
+      if(Math.abs(pcx - s.x) < 26 && Math.abs(pcy - (s.y-18)) < 30){
+        if(player.vy > 1 && (player.y+player.h) < s.y - 6){
+          // stomp
+          s.dead = true; player.vy = -9; player.sq = 0.16;
+        } else {
+          loseLife(); return;
+        }
+      }
+    }
+
+    // fire hazards
+    for(const f of stage.fires){
+      const fx = f.x, fw = f.w;
+      if(player.x+player.w > fx && player.x < fx+fw && player.y+player.h > GY-18){
+        loseLife(); return;
+      }
+    }
+
+    // reached the gate
+    if(player.x+player.w/2 >= stage.goalX){ stageClear(); }
+  }
+
+  function aabb(a, b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
+  function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+
+  /* ---------- render ---------- */
+  function render(){
+    // sky
+    const g = ctx.createLinearGradient(0,0,0,CH);
+    g.addColorStop(0, era.sky[0]); g.addColorStop(1, era.sky[1]);
+    ctx.fillStyle = g; ctx.fillRect(0,0,CW,CH);
+
+    // parallax hills (era-tinted)
+    ctx.save();
+    ctx.fillStyle = era.hill;
+    const hp = -camX*0.35;
+    for(let i=-1;i<8;i++){
+      const bx = hp + i*300 + ((i*137)%90);
+      const bh = 120 + ((i*53)%70);
+      ctx.beginPath();
+      ctx.moveTo(bx, GY);
+      ctx.lineTo(bx+150, GY-bh);
+      ctx.lineTo(bx+300, GY);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(-camX, 0);
+
+    // ground + platforms
+    for(const p of platformsAt()) drawPlatform(p);
+
+    // fire hazards
+    for(const f of stage.fires) drawFire(f.x + f.w/2, GY, f.w);
+
+    // coins
+    for(const c of coinList){
+      if(c.got) continue;
+      const y = c.y + Math.sin(c.bob)*5;
+      drawPicto(ctx, c.ch, c.x, y, 30, era.accent);
+    }
+
+    // gate
+    drawGate(ctx, stage.goalX, GY, 150, era.accent, gateGlow);
+
+    // spirits
+    for(const s of spiritList){ if(!s.dead) drawSpirit(ctx, s.x, s.y-24, 34, s.phase, era.ink); }
+
+    // player (flip to face direction)
+    const cx = player.x + player.w/2, footY = player.y + player.h;
+    ctx.save();
+    if(player.face < 0){ ctx.translate(cx*2, 0); ctx.scale(-1,1); }
+    drawPerson(ctx, stage.era, cx, footY, 46, player.runPhase, player.sq, era.ink);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawPlatform(p){
+    // slab body
+    ctx.fillStyle = shade(era.hill, 1.5);
+    roundRect(p.x, p.y, p.w, p.h, 5); ctx.fill();
+    // top ink line + surface highlight
+    ctx.strokeStyle = era.accent; ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 3; ctx.beginPath();
+    ctx.moveTo(p.x+4, p.y+2); ctx.lineTo(p.x+p.w-4, p.y+2); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // faint incised marks, oracle-bone texture
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+    for(let x = p.x+18; x < p.x+p.w-10; x += 40){
+      ctx.beginPath(); ctx.moveTo(x, p.y+8); ctx.lineTo(x, p.y+p.h-6); ctx.stroke();
+    }
+  }
+  function drawFire(cx, baseY, w){
+    const s = w*0.7;
+    const flick = 1 + Math.sin(tGlobal*10 + cx)*0.08;
+    ctx.save();
+    ctx.translate(cx, baseY-4);
+    ctx.scale(flick, flick);
+    drawPicto(ctx, '火', 0, -s*0.5, s*1.2, '#f0674a');
+    ctx.restore();
+  }
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function shade(hex, f){
+    const n = parseInt(hex.slice(1),16);
+    let r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+    r=Math.min(255,r*f); g=Math.min(255,g*f); b=Math.min(255,b*f);
+    return `rgb(${r|0},${g|0},${b|0})`;
+  }
+
+  /* ---------- toast ---------- */
+  let toastTimer = 0;
+  function popToast(ch){
+    const info = GLYPHS[ch] || {py:'', en:'', zh:''};
+    $('toastG').textContent = ch;
+    $('toastP').textContent = info.py;
+    $('toastM').textContent = t(info.en, info.zh);
+    const el = $('toast'); el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>el.classList.remove('show'), 1200);
+  }
+
+  /* ---------- loop ---------- */
+  function loop(ts){
+    raf = requestAnimationFrame(loop);
+    let dt = (ts - lastTs)/1000; lastTs = ts;
+    if(dt > 0.05) dt = 0.05;      // clamp big frame gaps
+    if(running){ update(dt); }
+    render();
+  }
+
+  /* ---------- input ---------- */
+  function bindInput(){
+    window.addEventListener('keydown', (e)=>{
+      const k = e.key.toLowerCase();
+      if(['arrowleft','a'].includes(k)){ keys.left=true; e.preventDefault(); }
+      if(['arrowright','d'].includes(k)){ keys.right=true; e.preventDefault(); }
+      if([' ','arrowup','w'].includes(k)){ keys.jump=true; e.preventDefault();
+        if(!running && $('ovStart').classList.contains('show')) start();
+      }
+    });
+    window.addEventListener('keyup', (e)=>{
+      const k = e.key.toLowerCase();
+      if(['arrowleft','a'].includes(k)) keys.left=false;
+      if(['arrowright','d'].includes(k)) keys.right=false;
+      if([' ','arrowup','w'].includes(k)) keys.jump=false;
+    });
+    hold('btnL','left'); hold('btnR','right'); hold('btnJ','jump');
+  }
+  function hold(id, prop){
+    const el = $(id);
+    const dn = (e)=>{ e.preventDefault(); try{el.setPointerCapture(e.pointerId);}catch(_){} btn[prop]=true; el.classList.add('on'); };
+    const up = (e)=>{ e.preventDefault(); btn[prop]=false; el.classList.remove('on'); };
+    el.addEventListener('pointerdown', dn);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('lostpointercapture', up);
+  }
+
+  bindInput();
+  // idle attract render so the start screen isn't blank
+  loadStage(0); running=false; render();
+
+  return { start, restart, nextStage, syncHud };
+})();
+</script>
+</body>
+</html>
