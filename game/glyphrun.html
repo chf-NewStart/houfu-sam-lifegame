@@ -103,7 +103,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从楷书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b9</span>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b10</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -167,6 +167,8 @@
     <!-- GAME OVER -->
     <div class="overlay" id="ovOver">
       <h2 style="color:#f0674a" data-en="LOST TO TIME" data-zh="湮没于时光">LOST TO TIME</h2>
+      <canvas id="wangCanvas" width="110" height="120" style="display:block;margin:2px auto 8px;width:82px;height:auto"></canvas>
+      <div class="keys" style="margin-bottom:8px" data-en="亡 wáng — the broken blade: “to perish”" data-zh="「亡」——刃之折者，是为消亡">亡 wáng — the broken blade: “to perish”</div>
       <div class="big" id="overMsg">The character faded before reaching the bones.</div>
       <button class="btn" onclick="Game.restart()" data-en="↻ Try again" data-zh="↻ 再来一次">↻ Try again</button>
       <button class="btn alt" onclick="Game.chooseChar()" data-en="⇄ pick another glyph" data-zh="⇄ 换一个字">⇄ pick another glyph</button>
@@ -367,6 +369,78 @@ function guiForm(ctx, fi, s, swing){
     ctx.beginPath(); ctx.moveTo(-0.56*s, -1.32*s); ctx.lineTo(0.5*s, -1.32*s); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-0.56*s, -1.32*s); ctx.lineTo(-0.64*s, -0.6*s); ctx.stroke();
   }
+}
+
+/* oracle-bone numerals — bars to four, X five, ∧ six, cross seven,
+   八 eight, the nine-hook; tens are bound tally verticals            */
+function drawOracleDigit(ctx, d, cx, cy, h, color){
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 6;
+  stroke(ctx, Math.max(2, h*0.14));
+  const w = h*0.7;
+  if(d>=1 && d<=4){
+    const gap = h/(d+1);
+    for(let i=0;i<d;i++){
+      const y = cy - h/2 + gap*(i+1);
+      ctx.beginPath(); ctx.moveTo(cx-w/2, y); ctx.lineTo(cx+w/2, y); ctx.stroke();
+    }
+  } else if(d===5){
+    ctx.beginPath(); ctx.moveTo(cx-w/2, cy-h/2); ctx.lineTo(cx+w/2, cy-h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-w/2, cy+h/2); ctx.lineTo(cx+w/2, cy+h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-w/2, cy-h/2); ctx.lineTo(cx+w/2, cy+h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+w/2, cy-h/2); ctx.lineTo(cx-w/2, cy+h/2); ctx.stroke();
+  } else if(d===6){
+    ctx.beginPath(); ctx.moveTo(cx, cy-h/2); ctx.lineTo(cx-w/2, cy+h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy-h/2); ctx.lineTo(cx+w/2, cy+h/2); ctx.stroke();
+  } else if(d===7){
+    ctx.beginPath(); ctx.moveTo(cx-w/2, cy); ctx.lineTo(cx+w/2, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy-h/2); ctx.lineTo(cx, cy+h/2); ctx.stroke();
+  } else if(d===8){
+    ctx.beginPath(); ctx.moveTo(cx-w*0.1, cy-h/2); ctx.quadraticCurveTo(cx-w*0.5, cy, cx-w*0.35, cy+h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+w*0.1, cy-h/2); ctx.quadraticCurveTo(cx+w*0.5, cy, cx+w*0.35, cy+h/2); ctx.stroke();
+  } else if(d===9){
+    ctx.beginPath();
+    ctx.moveTo(cx-w/2, cy-h*0.2);
+    ctx.quadraticCurveTo(cx, cy-h*0.55, cx+w*0.3, cy-h*0.1);
+    ctx.quadraticCurveTo(cx+w*0.5, cy+h*0.25, cx+w*0.2, cy+h*0.45);
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-w*0.15, cy-h*0.5); ctx.lineTo(cx+w*0.05, cy+h*0.1); ctx.stroke();
+  }
+}
+function drawOracleNum(ctx, n, cx, cy, h, color){
+  n = Math.max(0, n|0);
+  const tens = (n/10)|0, units = n%10;
+  ctx.save();
+  const tw = tens>0 ? tens*8+4 : 0, uw = units>0 ? h*0.8 : 0;
+  const total = tw + (tens>0 && units>0 ? 8 : 0) + uw;
+  let x = cx - total/2;
+  if(tens > 0){
+    ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 6;
+    stroke(ctx, Math.max(2, h*0.12));
+    for(let i=0;i<tens;i++){
+      ctx.beginPath(); ctx.moveTo(x+4+i*8, cy-h/2); ctx.lineTo(x+4+i*8, cy+h/2); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.moveTo(x, cy+h/2); ctx.lineTo(x+8+(tens-1)*8, cy+h/2); ctx.stroke();
+    x += tw + 8;
+  }
+  if(units > 0) drawOracleDigit(ctx, units, x+uw/2, cy, h, color);
+  ctx.restore();
+}
+
+/* 亡 the death glyph — the broken blade, for the fallen */
+function drawWang(ctx, cx, footY, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.2;
+  stroke(ctx, Math.max(2.5, s*0.11));
+  ctx.beginPath();
+  ctx.moveTo(cx-0.16*s, footY-s);
+  ctx.quadraticCurveTo(cx-0.3*s, footY-0.5*s, cx-0.2*s, footY-0.14*s);
+  ctx.quadraticCurveTo(cx-0.14*s, footY, cx+0.12*s, footY-0.04*s);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx+0.3*s, footY-0.92*s);
+  ctx.quadraticCurveTo(cx+0.12*s, footY-0.6*s, cx-0.16*s, footY-0.38*s);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /* 光 the status glyph — fire carried high over a kneeling bearer */
@@ -1078,6 +1152,8 @@ const WAVES = [
 ];
 /* 電 lightning burns white-hot — neither your gold nor the spirits' teal */
 const BOLTC = '#fff0b8';
+/* wave & level numerals, the oracle way (four was 亖) */
+const NUMCH = ['一','二','三','亖'];
 
 /* ============================== game ============================== */
 const CW = 960, CH = 540, WALL = 22;
@@ -1120,9 +1196,9 @@ const Game = (function(){
 
   function syncHud(){
     $('hudGlyph').textContent = C().forms[level].ch;
-    $('hudSkill').textContent = 'LV' + (level+1);
+    $('hudSkill').textContent = 'LV' + NUMCH[level];
     lastSkillTxt = '';
-    $('hudEraName').textContent = t(`WAVE ${stageIdx+1}/4 · ${era.name_en}`, `第 ${stageIdx+1}/4 波 · ${era.name_zh}`);
+    $('hudEraName').textContent = t(`WAVE ${NUMCH[stageIdx]}/亖 · ${era.name_en}`, `第${NUMCH[stageIdx]}/亖波 · ${era.name_zh}`);
     $('hudEra').style.color = era.ink;
     $('hudEra').querySelector('b').style.color = era.accent;
     $('hudCoins').textContent = coins;
@@ -1191,6 +1267,12 @@ const Game = (function(){
   }
   function gameOver(){
     running = false;
+    const wc = $('wangCanvas');
+    if(wc && wc.getContext){
+      const c2 = wc.getContext('2d');
+      c2.clearRect(0, 0, wc.width, wc.height);
+      drawWang(c2, wc.width/2, wc.height*0.92, 92, '#f0674a');
+    }
     $('overMsg').textContent = t(
       `You gathered ${coins} glyphs before fading. The bones can wait.`,
       `你在消散前集齐了 ${coins} 个字。甲骨可以再等等。`);
@@ -1815,7 +1897,7 @@ const Game = (function(){
     fx = fx.filter(e=>e.t > 0);
 
     // --- live gift HUD ---
-    let txt = 'LV'+(level+1);
+    let txt = 'LV'+NUMCH[level];
     if(selChar==='ren') txt += player.slipT > 0 ? ' · '+player.slipT.toFixed(1) : ' · ⚡';
     else if(selChar==='gui') txt += player.phasedT > 0 ? ' · 魂' : ' · '+Math.max(0,player.phaseCdT).toFixed(1);
     if(txt !== lastSkillTxt){ $('hudSkill').textContent = txt; lastSkillTxt = txt; }
@@ -1863,7 +1945,7 @@ const Game = (function(){
       const c = C(), nf = c.forms[level];
       player.inv = Math.max(player.inv, 1.0);              // a breath to admire the new form
       addFx({kind:'levelup', x:player.x, y:player.y, t:0.9, r:96, ch:nf.ch});
-      popToastEx(nf.ch, `${nf.py} · LV${level+1}`, t(nf.tier_en, nf.tier_zh));
+      popToastEx(nf.ch, `${nf.py} · LV${NUMCH[level]}`, t(nf.tier_en, nf.tier_zh));
       syncHud();
     }
   }
@@ -2111,7 +2193,7 @@ const Game = (function(){
     ctx.fillRect(WALL+4, WALL+4, bw*Math.max(0,Math.min(1,xf)), 5);
     ctx.font = 'bold 12px Consolas'; ctx.textAlign = 'right';
     ctx.fillStyle = level>=3 ? era.accent : '#8bc34a';
-    ctx.fillText(level>=3 ? 'LV MAX' : `LV${level+1} ${coins}/${LV_XP[level+1]}`, CW-WALL-6, WALL+24);
+    ctx.fillText(level>=3 ? 'LV MAX' : `LV${NUMCH[level]} ${coins}/${LV_XP[level+1]}`, CW-WALL-6, WALL+24);
     const lowPulse = lives<=2 ? 0.55+0.45*Math.sin(tGlobal*8) : 1;
     for(let i=0;i<MAXHP;i++){
       const sx = WALL+22+i*24;
@@ -2151,11 +2233,10 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // wave clock
+    // wave clock — counted the oracle way: bound tally tens + digit
     if(!gate && running){
-      ctx.save(); ctx.fillStyle = era.ink; ctx.globalAlpha = 0.85;
-      ctx.font = 'bold 22px Consolas'; ctx.textAlign = 'center';
-      ctx.fillText(Math.ceil(waveT) + 's', CW/2, WALL+30);
+      ctx.save(); ctx.globalAlpha = 0.85;
+      drawOracleNum(ctx, Math.ceil(waveT), CW/2, WALL+24, 20, era.ink);
       ctx.restore();
     }
 
@@ -2387,6 +2468,10 @@ const Game = (function(){
       `<b style="color:#e8dfc8">圣</b> shèng ${zdicLink('圣')}<br>${t('the great listening ear, worn as a crown: longer reach, far magnet.','倾听之大耳，戴之为冠：及远更甚。')}`, 210);
     card(gd, bookCanvas(56,52,(bc)=>drawGuang(bc,28,34,26,BOLTC)),
       `<b style="color:#e8dfc8">光</b> guāng ${zdicLink('光')}<br>${t('the torch-bearer blinks overhead after a boss falls: swifter, sharper (8s).','斩落头目后，火炬加身：更快更利（8秒）。')}`, 210);
+    card(gd, bookCanvas(90,46,(bc)=>drawOracleNum(bc,47,45,24,18,'#e8dfc8')),
+      `<b style="color:#e8dfc8">一二三亖</b>…${zdicLink('五')}<br>${t('the clock counts in oracle numerals: bars to four, X five, ∧ six, cross seven, 八 eight, hook nine — tens are bound tally strokes (shown: 47).','时钟以甲骨数字计数：一至亖为横，X为五，∧为六，十字为七，八为八，钩为九——十位为束起的竖记（图为47）。')}`, 260);
+    card(gd, bookCanvas(56,52,(bc)=>drawWang(bc,28,48,40,'#f0674a')),
+      `<b style="color:#e8dfc8">亡</b> wáng ${zdicLink('亡')}<br>${t('the broken blade — “to perish”. It marks your end; do not meet it.','刃之折者——「亡」。它标记你的终局，愿你不遇。')}`, 210);
   }
   function openBook(){ buildBook(); overlay('ovBook', true); }
   function closeBook(){ overlay('ovBook', false); }
