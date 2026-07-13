@@ -85,6 +85,8 @@
    below. On hover the whole surface ripples — mousemove wakes, click splashes —
    refracting the image with specular glints. rAF auto-stops when flat. */
 .card.glow-glyph:hover{ border-color:#6e5a2a; box-shadow:0 0 22px -8px rgba(232,176,74,.55); }
+.glow-glyph .glyphfx{ position:absolute; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; opacity:0; transition:opacity .35s ease; mix-blend-mode:screen; }
+.card.glow-glyph:hover .glyphfx{ opacity:1; }
 .card.glow-gomoku{ transition: box-shadow .3s ease, border-color .3s ease; }
 .card.glow-gomoku:hover{ border-color:#2f6fa0; box-shadow:0 0 22px -8px rgba(58,158,230,.5); }
 .glow-gomoku .gwater{ position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none;
@@ -1282,6 +1284,102 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 
 /* remember the language across the whole arcade */
 try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
+</script>
+
+<script>
+/* Glyph Run card: hover plays ONE run — the profile 人 evolves to the plumed 舞 as it races to the oracle gate, then holds. */
+(() => {
+  const card = document.querySelector('.card.glow-glyph');
+  if (!card) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'glyphfx'; canvas.setAttribute('aria-hidden', 'true');
+  card.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let raf = 0, t0 = 0, playing = false, W = 0, H = 0;
+  const DUR = 1900, INK = '#ece0c4', GOLD = '#e8b04a';
+  function size() {
+    const r = card.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+    W = r.width; H = r.height;
+    canvas.width = W * d; canvas.height = H * d;
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  function st(w) { ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
+  function runner(fi, x, y, s, ph) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.strokeStyle = INK; ctx.shadowColor = INK; ctx.shadowBlur = 8; st(s * 0.14);
+    const sw = Math.sin(ph) * 0.16 * s;
+    if (fi === 0) {
+      ctx.beginPath(); ctx.moveTo(0.02*s,-1.05*s); ctx.quadraticCurveTo(-0.3*s,-0.8*s,-0.18*s,-0.48*s);
+      ctx.quadraticCurveTo(-0.08*s,-0.2*s,-0.16*s+sw,0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.15*s,-0.68*s); ctx.quadraticCurveTo(0.16*s,-0.56*s,0.24*s,-0.3*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.17*s,-0.45*s); ctx.quadraticCurveTo(0.1*s,-0.24*s,0.26*s-sw,0); ctx.stroke();
+    } else if (fi === 1) {
+      ctx.beginPath(); ctx.moveTo(-0.46*s,-0.58*s); ctx.quadraticCurveTo(0,-0.94*s,0.46*s,-0.58*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-1.08*s); ctx.lineTo(0,-0.5*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-0.5*s); ctx.quadraticCurveTo(-0.18*s,-0.26*s,-0.38*s+sw,0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-0.5*s); ctx.quadraticCurveTo(0.18*s,-0.26*s,0.38*s-sw,0); ctx.stroke();
+    } else if (fi === 2) {
+      ctx.beginPath(); ctx.moveTo(-0.28*s,-1.02*s); ctx.lineTo(0.28*s,-1.02*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.44*s,-0.62*s); ctx.quadraticCurveTo(0,-0.82*s,0.44*s,-0.62*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-1.16*s); ctx.lineTo(0,-0.48*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-0.48*s); ctx.quadraticCurveTo(-0.2*s,-0.24*s,-0.4*s+sw,0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-0.48*s); ctx.quadraticCurveTo(0.2*s,-0.24*s,0.4*s-sw,0); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.moveTo(0,-1.06*s); ctx.lineTo(0,-0.42*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-0.42*s); ctx.lineTo(-0.3*s+sw,0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-0.42*s); ctx.lineTo(0.3*s-sw,0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.46*s,-0.84*s); ctx.lineTo(0.46*s,-0.84*s); ctx.stroke();
+      for (const sg of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(sg*0.46*s,-0.84*s);
+        ctx.quadraticCurveTo(sg*0.58*s,-0.62*s, sg*0.48*s+sw*0.5,-0.36*s); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  function gate(x, gy, h, glow) {
+    ctx.save();
+    ctx.strokeStyle = GOLD; ctx.shadowColor = GOLD; ctx.shadowBlur = 8 + glow * 10;
+    st(Math.max(2.5, h * 0.06));
+    const w = h * 0.8, topY = gy - h;
+    ctx.beginPath(); ctx.moveTo(x - w*0.6, topY); ctx.lineTo(x + w*0.6, topY); ctx.stroke();
+    for (const sg of [-1, 1]) {
+      const po = x + sg*w*0.52, pi = x + sg*w*0.16;
+      ctx.beginPath(); ctx.moveTo(po, topY); ctx.lineTo(po, gy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pi, topY + h*0.1); ctx.lineTo(pi, gy - h*0.06); ctx.stroke();
+      for (const fy of [0.35, 0.65]) {
+        ctx.beginPath(); ctx.moveTo(po, topY + h*fy); ctx.lineTo(pi, topY + h*fy); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  function frame(ts) {
+    if (!playing) return;
+    if (!t0) t0 = ts;
+    const t = Math.min(1, (ts - t0) / DUR);
+    ctx.clearRect(0, 0, W, H);
+    const gy = H * 0.4, gx = W * 0.82, gs = H * 0.24;
+    gate(gx, gy, H * 0.3, 0.5 + 0.5 * Math.sin(ts / 260));
+    const x = W * 0.1 + (gx - 34 - W * 0.1) * t;
+    const fi = Math.min(3, (t * 4) | 0);
+    runner(fi, x, gy, gs, ts / 65);
+    const seg = t * 4 - fi;
+    if (seg < 0.3 && fi > 0) {
+      ctx.save(); ctx.strokeStyle = GOLD; ctx.globalAlpha = 1 - seg / 0.3; st(3);
+      ctx.beginPath(); ctx.arc(x, gy - gs * 0.5, 8 + seg * 200, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    if (t < 1) raf = requestAnimationFrame(frame);
+    else raf = 0;                                  // hold at the gate until the cursor leaves
+  }
+  card.addEventListener('mouseenter', () => {
+    size(); t0 = 0; playing = true;
+    if (!raf) raf = requestAnimationFrame(frame);
+  });
+  card.addEventListener('mouseleave', () => {
+    playing = false;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+  });
+})();
 </script>
 </body>
 </html>
