@@ -111,7 +111,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b21</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b22</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -532,6 +532,63 @@ function drawQi(ctx, cx, cy, s, color){
   ctx.stroke();
   ctx.beginPath(); ctx.moveTo(cx-0.24*s, cy-0.3*s); ctx.lineTo(cx-0.05*s, cy-0.38*s); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(cx-0.02*s, cy+0.02*s); ctx.lineTo(cx+0.24*s, cy-0.12*s); ctx.stroke();
+  ctx.restore();
+}
+
+/* 物 the things glyph — the ox beside the 勿 strokes (说文 form) */
+function drawWu(ctx, cx, cy, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.12;
+  stroke(ctx, Math.max(1.5, s*0.09));
+  const lx = cx - 0.3*s;
+  ctx.beginPath(); ctx.moveTo(lx, cy-0.55*s); ctx.lineTo(lx, cy+0.55*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx, cy-0.55*s); ctx.lineTo(lx-0.18*s, cy-0.85*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx, cy-0.55*s); ctx.lineTo(lx+0.18*s, cy-0.85*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx-0.2*s, cy-0.1*s); ctx.lineTo(lx+0.2*s, cy-0.1*s); ctx.stroke();
+  for(const o of [0, 1, 2]){
+    ctx.beginPath();
+    ctx.moveTo(cx+0.08*s + o*0.16*s, cy-0.7*s + o*0.1*s);
+    ctx.quadraticCurveTo(cx-0.02*s + o*0.16*s, cy, cx-0.12*s + o*0.16*s, cy+0.6*s - o*0.1*s);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* 怪 the monster glyph — the heart beside the hand over earth (篆 form) */
+function drawGuai(ctx, cx, cy, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.12;
+  stroke(ctx, Math.max(1.5, s*0.09));
+  const lx = cx - 0.32*s;
+  ctx.beginPath(); ctx.moveTo(lx-0.12*s, cy-0.7*s); ctx.quadraticCurveTo(lx-0.2*s, cy, lx-0.1*s, cy+0.7*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx+0.12*s, cy-0.7*s); ctx.quadraticCurveTo(lx+0.04*s, cy, lx+0.14*s, cy+0.7*s); ctx.stroke();
+  const rx = cx + 0.22*s;
+  ctx.beginPath(); ctx.moveTo(rx-0.24*s, cy-0.65*s); ctx.lineTo(rx+0.24*s, cy-0.65*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx-0.18*s, cy-0.42*s); ctx.lineTo(rx+0.18*s, cy-0.42*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx, cy-0.65*s); ctx.lineTo(rx, cy+0.3*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx-0.22*s, cy+0.3*s); ctx.lineTo(rx+0.22*s, cy+0.3*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx-0.16*s, cy+0.62*s); ctx.lineTo(rx+0.16*s, cy+0.62*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx, cy+0.3*s); ctx.lineTo(rx, cy+0.62*s); ctx.stroke();
+  ctx.restore();
+}
+
+/* 將 the commander glyph — the rail, the meat, the hand (篆 form) */
+function drawJiang(ctx, cx, cy, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.12;
+  stroke(ctx, Math.max(1.5, s*0.09));
+  const lx = cx - 0.34*s;
+  ctx.beginPath(); ctx.moveTo(lx, cy-0.8*s); ctx.lineTo(lx, cy+0.8*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx, cy-0.4*s); ctx.lineTo(lx-0.22*s, cy-0.4*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx, cy+0.15*s); ctx.lineTo(lx-0.22*s, cy+0.15*s); ctx.stroke();
+  const rx = cx + 0.2*s;
+  ctx.beginPath();
+  ctx.moveTo(rx-0.12*s, cy-0.8*s); ctx.quadraticCurveTo(rx+0.3*s, cy-0.7*s, rx+0.18*s, cy-0.15*s);
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx-0.12*s, cy-0.8*s); ctx.quadraticCurveTo(rx-0.05*s, cy-0.45*s, rx+0.18*s, cy-0.35*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx-0.15*s, cy+0.1*s); ctx.lineTo(rx+0.28*s, cy+0.05*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx+0.06*s, cy+0.05*s); ctx.quadraticCurveTo(rx+0.08*s, cy+0.6*s, rx-0.1*s, cy+0.75*s); ctx.stroke();
+  ctx.beginPath(); ctx.arc(rx+0.22*s, cy+0.45*s, s*0.05, 0, Math.PI*2); ctx.fill();
   ctx.restore();
 }
 
@@ -1492,7 +1549,7 @@ const Game = (function(){
     if(foesSeen[type]) return;
     foesSeen[type] = true;
     const F = FOE_INFO[type];
-    if(F) popToastEx(F.ch, F.py, t(F.en, F.zh));
+    if(F) popToastEx(F.ch, F.py, t(F.en, F.zh), 'guai');
   }
   function showBanner(type){
     foesSeen[type] = true;
@@ -2035,13 +2092,13 @@ const Game = (function(){
         if(owned && owned.lv < 3){
           owned.lv++;
           const l = owned.lv-1;
-          popToastEx(W.chs[l], `${W.pys[l]} · ${W.eras[l]}`, t(W.tier_en[l], W.tier_zh[l]), true);
+          popToastEx(W.chs[l], `${W.pys[l]} · ${W.eras[l]}`, t(W.tier_en[l], W.tier_zh[l]), 'qi');
         } else if(!owned){
           if(weapons.length >= 3) weapons.shift();          // the oldest is set down
           weapons.push({key:pd.key, lv:1, t:0.4});
-          popToastEx(W.chs[0], `${W.pys[0]} · ${W.eras[0]}`, t(W.tier_en[0], W.tier_zh[0]), true);
+          popToastEx(W.chs[0], `${W.pys[0]} · ${W.eras[0]}`, t(W.tier_en[0], W.tier_zh[0]), 'qi');
         } else {
-          popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'), true);
+          popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'), 'qi');
         }
         addFx({kind:'levelup', x:pd.x, y:pd.y, t:0.6, r:50, ch:''});
       }
@@ -2054,7 +2111,7 @@ const Game = (function(){
       if(Math.hypot(shengPed.x-player.x, shengPed.y-player.y) < 32){
         hatOn = true;
         addFx({kind:'levelup', x:shengPed.x, y:shengPed.y, t:0.8, r:70, ch:'圣'});
-        popToastEx('圣', 'shèng · 甲骨', t('the great listening ear — your ink and reach grow', '圣——倾听之大耳：及远更甚'));
+        popToastEx('圣', 'shèng · 甲骨', t('the great listening ear — your ink and reach grow', '圣——倾听之大耳：及远更甚'), 'wu');
         shengPed = null;
       }
     }
@@ -2112,7 +2169,7 @@ const Game = (function(){
       const c = C(), nf = c.forms[level];
       player.inv = Math.max(player.inv, 1.0);              // a breath to admire the new form
       addFx({kind:'levelup', x:player.x, y:player.y, t:0.9, r:96, ch:nf.ch});
-      popToastEx(nf.ch, `${nf.py} · LV${NUMCH[level]}`, t(nf.tier_en, nf.tier_zh));
+      popToastEx(nf.ch, `${nf.py} · LV${NUMCH[level]}`, t(nf.tier_en, nf.tier_zh), 'jiang');
       syncHud();
     }
   }
@@ -2416,9 +2473,16 @@ const Game = (function(){
     const info = GLYPHS[ch] || {py:'', en:'', zh:''};
     popToastEx(ch, info.py, t(info.en, info.zh));
   }
-  function popToastEx(ch, py, mean, isQi){
+  function popToastEx(ch, py, mean, bt){
     const badge = $('toastQi');
-    if(badge) badge.style.display = isQi ? 'block' : 'none';
+    if(badge && badge.getContext){
+      if(bt){
+        badge.style.display = 'block';
+        const c2 = badge.getContext('2d');
+        c2.clearRect(0, 0, badge.width, badge.height);
+        ({qi:drawQi, wu:drawWu, guai:drawGuai, jiang:drawJiang})[bt](c2, 13, 13, 18, '#e8b04a');
+      } else badge.style.display = 'none';
+    }
     $('toastG').textContent = ch;
     $('toastP').textContent = py;
     $('toastM').textContent = mean;
@@ -2548,13 +2612,13 @@ const Game = (function(){
   }
   function buildBook(){
     const B = $('bookBody'); B.innerHTML = '';
-    const sec = (title, withQi)=>{
+    const sec = (title, drawFn)=>{
       const h = document.createElement('div');
       h.style.cssText = 'color:#e8b04a;margin:16px 0 7px;font-size:0.82rem;letter-spacing:1.5px;display:flex;align-items:center;gap:8px;';
-      if(withQi){
+      if(drawFn){
         const cv = document.createElement('canvas'); cv.width = 26; cv.height = 26;
         cv.style.cssText = 'width:20px;height:20px;flex-shrink:0;';
-        drawQi(cv.getContext('2d'), 13, 13, 18, '#e8b04a');
+        drawFn(cv.getContext('2d'), 13, 13, 18, '#e8b04a');
         h.appendChild(cv);
       }
       const tx = document.createElement('span'); tx.textContent = title; h.appendChild(tx);
@@ -2573,7 +2637,7 @@ const Game = (function(){
       gd.appendChild(d);
     };
     // families
-    sec(t('THE FAMILIES — you are the character', '字族——你就是字'));
+    sec(t('將 · THE FAMILIES — you are the character', '將 · 字族——你就是字'), drawJiang);
     let gd = grid();
     for(const key of Object.keys(CHARS)){
       const c = CHARS[key];
@@ -2587,7 +2651,7 @@ const Game = (function(){
       drawCharPortrait(cv, key, 0, '#e8dfc8');
     }
     // weapons
-    sec(t('器 · THE ARMOURY — duplicates recast them in older script', '器 · 武库——重复拾取，以更古字体重铸'), true);
+    sec(t('器 · THE ARMOURY — duplicates recast them in older script', '器 · 武库——重复拾取，以更古字体重铸'), drawQi);
     gd = grid();
     for(const key of Object.keys(WEAPONS)){
       const W = WEAPONS[key];
@@ -2597,7 +2661,7 @@ const Game = (function(){
       card(gd, cv, html, 230);
     }
     // bestiary
-    sec(t('THE BESTIARY — every monster is a character', '妖物志——每只怪都是一个字'));
+    sec(t('怪 · THE BESTIARY — every monster is a character', '怪 · 妖物志——每只怪都是一个字'), drawGuai);
     gd = grid();
     const foeArt = {
       gui:  bookCanvas(48,42,(bc)=>drawSpirit(bc,24,23,27,0,GHOST)),
@@ -2625,7 +2689,7 @@ const Game = (function(){
       card(gd, cv, `<b style="color:#e8dfc8">${ch}</b> ${info.py} · ${t(info.en,info.zh)}<br><span style="color:#8bc34a">${t(info.eff_en,info.eff_zh)}</span>`, 150);
     }
     // wonders & hazards
-    sec(t('WONDERS & HAZARDS', '天象与奇物'));
+    sec(t('物 · WONDERS, WEARABLES & HAZARDS', '物 · 天象与奇物'), drawWu);
     gd = grid();
     card(gd, bookCanvas(44,40,(bc)=>drawDianBox(bc,22,21,30,BOLTC)),
       `<b style="color:#e8dfc8">電</b> diàn ${zdicLink('電')}<br>${t('bronze form: rain over 申, the bolt itself. Its tail lashes to earth — dodge the ring.','金文：雨在「申」上，申即闪电。尾笔劈落——避开预警圈。')}`, 210);
