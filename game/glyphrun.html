@@ -111,7 +111,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b15</span>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b16</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -597,18 +597,23 @@ function elephantSide(ctx, s, cx, cy, sc, w, legKick){
 }
 function xiangForm(ctx, fi, s, swing){
   const kick = swing*0.5/s || 0;
-  if(fi===0){ // 象 kai: ⺈ over 口 over the 豕-like body — the modern strokes
+  if(fi===0){ // 象 per 说文: the sinuous seal elephant — trunk coiled high
     stroke(ctx, s*0.11);
-    ctx.beginPath(); ctx.moveTo(0.1*s,-1.2*s); ctx.lineTo(-0.14*s,-1.05*s); ctx.stroke();             // ⺈ 撇
-    ctx.beginPath(); ctx.moveTo(-0.14*s,-1.05*s); ctx.lineTo(0.2*s,-1.05*s); ctx.lineTo(0.16*s,-0.94*s); ctx.stroke(); // ⺈ 横钩
-    ctx.beginPath(); ctx.rect(-0.14*s,-0.92*s,0.28*s,0.16*s); ctx.stroke();                           // 口
-    ctx.beginPath(); ctx.moveTo(-0.32*s,-0.68*s); ctx.lineTo(0.32*s,-0.68*s); ctx.stroke();           // 横
-    ctx.beginPath(); ctx.moveTo(0.02*s,-0.68*s); ctx.quadraticCurveTo(-0.14*s,-0.3*s,0.02*s,-0.02*s); // 弯钩
-    ctx.quadraticCurveTo(0.1*s,0.06*s,0.18*s,-0.06*s); ctx.stroke();
-    for(const [y1,x2,y2] of [[-0.6,-0.34,-0.42],[-0.44,-0.3,-0.2],[-0.28,-0.26,-0.02]]){              // 撇撇撇
-      ctx.beginPath(); ctx.moveTo(0.02*s,y1*s); ctx.lineTo(x2*s,y2*s); ctx.stroke();
+    ctx.beginPath();                                                   // the trunk coil
+    ctx.moveTo(-0.28*s,-1.18*s);
+    ctx.quadraticCurveTo(0.3*s,-1.34*s, 0.24*s,-1.05*s);
+    ctx.quadraticCurveTo(0.2*s,-0.88*s, -0.12*s,-0.96*s);
+    ctx.stroke();
+    ctx.beginPath();                                                   // head loop and the S spine
+    ctx.moveTo(-0.12*s,-0.96*s);
+    ctx.quadraticCurveTo(0.36*s,-0.86*s, 0.26*s,-0.6*s);
+    ctx.quadraticCurveTo(0.16*s,-0.4*s, -0.12*s,-0.5*s);
+    ctx.quadraticCurveTo(-0.32*s,-0.56*s, -0.26*s,-0.28*s);
+    ctx.quadraticCurveTo(-0.18*s,-0.02*s, 0.2*s,-0.1*s);
+    ctx.stroke();
+    for(const [x1,y1,x2,y2] of [[-0.02,-0.72,-0.38,-0.52],[-0.05,-0.45,-0.42,-0.22],[0,-0.2,-0.36,0.0]]){
+      ctx.beginPath(); ctx.moveTo(x1*s,y1*s); ctx.lineTo(x2*s,y2*s); ctx.stroke();   // legs sweeping left
     }
-    ctx.beginPath(); ctx.moveTo(0.02*s,-0.5*s); ctx.quadraticCurveTo(0.26*s,-0.26*s,0.42*s,-0.02*s); ctx.stroke(); // 捺
   } else if(fi===1){ // 像 seal: a person beside the sinuous seal-script elephant
     stroke(ctx, s*0.1);
     ctx.beginPath(); ctx.moveTo(-0.44*s,-1.04*s); ctx.quadraticCurveTo(-0.52*s,-0.6*s,-0.44*s,0); ctx.stroke();   // 亻 body
@@ -632,12 +637,25 @@ function xiangForm(ctx, fi, s, swing){
     ctx.beginPath(); ctx.moveTo(-0.26*s,-0.78*s); ctx.quadraticCurveTo(-0.3*s,-0.4*s,-0.44*s,-0.34*s); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-0.44*s,-0.62*s); ctx.lineTo(-0.6*s,-0.44*s); ctx.stroke();
     elephantSide(ctx, s, 0.22*s, 0, 0.92, s*0.13, kick);
-  } else { // 為 oracle: the hand takes the trunk — the elephant put to work
+  } else { // 為 oracle: the hand takes the trunk of the upright 甲骨 elephant
     stroke(ctx, s*0.085);
-    elephantSide(ctx, s, 0.02*s, 0, 1.0, s*0.085, kick);
-    ctx.beginPath(); ctx.moveTo(0.4*s,-1.3*s); ctx.lineTo(0.5*s,-1.06*s); ctx.stroke();               // 又 the hand, three fingers
-    ctx.beginPath(); ctx.moveTo(0.24*s,-1.28*s); ctx.lineTo(0.46*s,-1.12*s); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0.6*s,-1.26*s); ctx.lineTo(0.53*s,-1.08*s); ctx.stroke();
+    ctx.beginPath();                                                   // curled trunk crown
+    ctx.moveTo(-0.02*s,-1.28*s);
+    ctx.quadraticCurveTo(-0.46*s,-1.4*s, -0.42*s,-1.1*s);
+    ctx.quadraticCurveTo(-0.38*s,-0.9*s, -0.06*s,-1.0*s);
+    ctx.stroke();
+    ctx.beginPath();                                                   // long body tapering down
+    ctx.moveTo(-0.02*s,-1.28*s);
+    ctx.quadraticCurveTo(0.32*s,-1.0*s, 0.22*s,-0.58*s);
+    ctx.quadraticCurveTo(0.14*s,-0.26*s, 0.05*s,-0.04*s);
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0.18*s,-0.72*s); ctx.quadraticCurveTo(-0.18*s,-0.6*s,-0.22*s,-0.36*s); ctx.stroke(); // belly line
+    ctx.beginPath(); ctx.moveTo(-0.22*s,-0.36*s); ctx.lineTo(-0.4*s,-0.06*s + kick*s); ctx.stroke();  // pronged feet
+    ctx.beginPath(); ctx.moveTo(-0.22*s,-0.36*s); ctx.lineTo(-0.16*s,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0.05*s,-0.04*s); ctx.lineTo(-0.08*s,0.02*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0.35*s,-1.38*s); ctx.lineTo(0.28*s,-1.06*s); ctx.stroke();            // 又 the hand at the trunk
+    ctx.beginPath(); ctx.moveTo(0.2*s,-1.32*s); ctx.lineTo(0.3*s,-1.14*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0.5*s,-1.3*s); ctx.lineTo(0.33*s,-1.1*s); ctx.stroke();
   }
 }
 
@@ -898,15 +916,36 @@ function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
     ctx.restore(); return;
   }
   if(key==='mao'){
-    if(lv>=2){ drawPicto(ctx, '矛', cx, cy, s, color); return; }
-    ctx.save(); ctx.translate(cx, cy);                    // 楷 矛: 横撇 + 横钩 + 竖钩 + 撇
+    ctx.save(); ctx.translate(cx, cy);                    // 矛 per zdic: loop-head → tassel → the barbed Chu spear
     ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
     stroke(ctx, Math.max(2, s*0.09));
     const r = s*0.42;
-    ctx.beginPath(); ctx.moveTo(-r*0.35,-r); ctx.lineTo(r*0.32,-r); ctx.lineTo(0,-r*0.7); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-r*0.48,-r*0.42); ctx.lineTo(r*0.45,-r*0.42); ctx.lineTo(r*0.35,-r*0.2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-r*0.42); ctx.lineTo(0,r*0.85); ctx.quadraticCurveTo(-r*0.05,r,-r*0.25,r*0.9); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-r*0.45,r*0.45); ctx.stroke();
+    if(lv===1){                                           // 隸書: the looped head on its shaft
+      ctx.beginPath(); ctx.moveTo(r*0.1,-r); ctx.lineTo(r*0.05,r); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(r*0.1,-r*0.95);
+      ctx.quadraticCurveTo(-r*0.78,-r*0.9, -r*0.55,-r*0.32);
+      ctx.quadraticCurveTo(-r*0.38,0.02*r, r*0.35,-r*0.18);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.12,-r*0.55); ctx.lineTo(r*0.52,-r*0.62); ctx.stroke();
+    } else if(lv===2){                                    // 金文: pointed head, tassel curling off the shaft
+      ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(0,r); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0,-r);
+      ctx.quadraticCurveTo(-r*0.58,-r*0.55, -r*0.1,-r*0.12);
+      ctx.quadraticCurveTo(r*0.22,r*0.08, -r*0.05,r*0.14);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.05,r*0.14); ctx.quadraticCurveTo(-r*0.52,r*0.34,-r*0.36,r*0.72); ctx.stroke();
+    } else {                                              // 楚簡: barbed head to heel
+      ctx.beginPath(); ctx.moveTo(0,-r*1.05); ctx.lineTo(0,r*0.85); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-r*1.05); ctx.lineTo(-r*0.32,-r*0.68); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-r*1.05); ctx.lineTo(r*0.32,-r*0.68); ctx.stroke();
+      for(const yy of [-0.42, -0.08, 0.26]){
+        ctx.beginPath(); ctx.moveTo(0, yy*r); ctx.lineTo(-r*0.5, (yy-0.3)*r); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, yy*r); ctx.lineTo(r*0.5, (yy-0.3)*r); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(0,r*0.85); ctx.quadraticCurveTo(-r*0.36,r*0.96,-r*0.42,r*0.68); ctx.stroke();
+    }
     ctx.restore(); return;
   }
   if(key==='jin'){
@@ -1175,9 +1214,9 @@ const WEAPONS = {
          tier_en:['dagger-axe — it guards your back', 'bronze edge — wider, quicker', 'oracle blade — a full reaping sweep'],
          tier_zh:['「戈」——护住身后', '青铜之刃——更阔更快', '甲骨之锋——横扫如割'],
          int:[1.3, 0.95, 0.62], hits:[3,4,5], reach:[96,110,124]},
-  mao:  {chs:['矛','矛','矛'], pys:['máo','máo','máo'], eras:['隸書','金文','甲骨'],
-         tier_en:['a spear — it thrusts where you run', 'bronze point — longer, through three', 'oracle pike — a whole lane falls'],
-         tier_zh:['「矛」——向前突刺', '青铜之锋——更长，可穿三鬼', '甲骨长矛——一线尽穿'],
+  mao:  {chs:['矛','矛','矛'], pys:['máo','máo','máo'], eras:['隸書','金文','楚簡'],
+         tier_en:['a spear — it thrusts where you run', 'bronze point — longer, through three', 'the Chu spear — barbed head to heel, a whole lane falls'],
+         tier_zh:['「矛」——向前突刺', '青铜之锋——更长，可穿三鬼', '楚簡长矛——通体生棘，一线尽穿'],
          int:[1.1, 0.85, 0.6], reach:[120,142,166], hits:[2,3,4]},
   jin:  {chs:['斤','斤','斤'], pys:['jīn','jīn','jīn'], eras:['隸書','金文','甲骨'],
          tier_en:['an axe — it falls on the nearest knot of spirits', 'bronze bit — a wider cleave', 'oracle adze — the whole cluster falls'],
@@ -2200,7 +2239,7 @@ const Game = (function(){
       else if(w.key === 'ge' || w.key === 'jin' || w.key === 'jian') ctx.rotate(Math.sin(w.recoil*Math.PI)*0.9);
       else if(w.key === 'mao') ctx.translate(w.recoil*9, 0);              // the point drives forward
       else if(w.key === 'wang') ctx.scale(1+w.recoil*0.25, 1+w.recoil*0.25);
-      drawWeaponIcon(ctx, w.key, w.lv, 0, 0, 22, era.accent);
+      drawWeaponIcon(ctx, w.key, w.lv, 0, 0, w.key==='mao' ? 36 : 28, era.accent);
       ctx.restore();
     }
 
@@ -2629,7 +2668,7 @@ const Game = (function(){
       px.translate(CXp+Math.cos(aim)*26, CYp-26+Math.sin(aim)*26);
       px.rotate(aim);
       if(Math.cos(aim) < 0) px.scale(1, -1);
-      drawWeaponIcon(px, selArm, wlv+1, 0, 0, 20, era2.accent);
+      drawWeaponIcon(px, selArm, wlv+1, 0, 0, selArm==='mao' ? 32 : 26, era2.accent);
       px.restore();
       for(const e of efx){
         const k2 = e.t/e.max;
