@@ -13,6 +13,7 @@ What began as a Conway's Game of Life implementation grew into a terminal-themed
 | Cabinet | What it is |
 |---|---|
 | **game_of_life.exe** | The original. Draw patterns, watch them evolve, turn them into music — sandbox, 11 leaderboard challenges, and a Music Box sequencer. *(details below)* |
+| **glyph_run.exe** | An arena survivor where you ARE a Chinese character — evolve 3,000 years back to your oracle-bone form. Every monster, weapon and drop is a real ancient glyph. *(details below)* |
 | **gomoku.exe** | Classic 5-in-a-row. Beat a minimax AI (alpha-beta), watch AI-vs-AI, or play a friend online. |
 | **tether.exe** | Two players, one rope. Verlet rope physics, wind, ice, crumbling ledges — local or online co-op. |
 | **labyrinth.exe** | An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, a bigger maze every escape. |
@@ -24,22 +25,22 @@ Every game is bilingual (English / 中文, toggle in the header) and touch-frien
 
 ---
 
-## The WIP lab (`/wip.html`)
-
-Playable-but-rough experiments. The current star:
-
-### 字源 Glyph Run — an arena survivor that teaches oracle-bone script
+## 字源 Glyph Run — an arena survivor that teaches oracle-bone script
 
 A top-down Brotato-style survivor where **you are a Chinese character**, and every system doubles as a 字源 (etymology) lesson sourced from [zdic.net 字源字形](https://zdic.net):
 
-- **You only steer** (WASD / virtual joystick) — ink auto-attacks, weapons fire themselves, and each family's gift is woven into movement: 人→大→夫→舞 slips fated blows, 牛→牢→牧→犇 shoulders enemies aside, 鬼→畏→魅→魔 drifts and phases, 象→像→豫→為 quakes with every stride.
+- **You only steer** (WASD / virtual joystick) — ink auto-attacks, weapons fire themselves, and each family's gift is woven into movement: 人→大→夫→舞 slips fated blows, 牛→牢→牧→犇 shoulders enemies aside, 鬼→魂→魅→魔 drifts and phases, 象→像→豫→為 quakes with every stride.
 - **Glyph drops are XP — and each does its meaning**: 魚 heals, 貝 pays, 龜 shells you, 雨 slows the field, 鳥 dives the nearest three… level up and your character evolves mid-fight.
 - **Weapons age backward**: pick a starting arm (弓/劍/矛/刀); duplicates recast it 隸書 → 金文 → 甲骨文 — a second 弓 becomes 射, the arrow on the string.
 - **The script era rewinds each wave** (隸書 → 篆書 → 金文 → 甲骨文) through the oracle 門 gate; the wave clock counts in real oracle-bone numerals; death is marked by 亡, the broken blade.
 - **A bestiary of real characters**: 鬼 spirits, charging 豕, pouncing 虎, the vessel bosses 皿 and 蠱, and a nine-segment 龍 — each named on first sight, each with a slow-motion arrival banner.
 - **In-game codex** (文): every family, weapon, foe, glyph and wonder, all linked back to its zdic entry.
 
-Also on the shelf: **escape_grid.exe** (4 runners vs 1 hunter, Dijkstra AI), **keep_up.exe** (co-op Pong), **lander.exe** (two-player lunar lander — one throttles, one steers), **train_rl_hunter.exe** (watch an RL policy learn in-browser), and **greenhouse.exe** (the raw plant digital-twin behind grow_a_tomato).
+---
+
+## The WIP lab (`/wip.html`)
+
+Playable-but-rough experiments: **escape_grid.exe** (4 runners vs 1 hunter, Dijkstra AI), **keep_up.exe** (co-op Pong), **lander.exe** (two-player lunar lander — one throttles, one steers), **train_rl_hunter.exe** (watch an RL policy learn in-browser), and **greenhouse.exe** (the raw plant digital-twin behind grow_a_tomato).
 
 ---
 

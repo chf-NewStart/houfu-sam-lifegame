@@ -84,6 +84,7 @@
 /* The water canvas IS the card background: stones in the top band, dark body
    below. On hover the whole surface ripples — mousemove wakes, click splashes —
    refracting the image with specular glints. rAF auto-stops when flat. */
+.card.glow-glyph:hover{ border-color:#6e5a2a; box-shadow:0 0 22px -8px rgba(232,176,74,.55); }
 .card.glow-gomoku{ transition: box-shadow .3s ease, border-color .3s ease; }
 .card.glow-gomoku:hover{ border-color:#2f6fa0; box-shadow:0 0 22px -8px rgba(58,158,230,.5); }
 .glow-gomoku .gwater{ position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none;
@@ -225,6 +226,24 @@
     <div class="card-footer">
       <span class="card-meta" data-en="JS · PWA · leaderboard" data-zh="JS · PWA · 排行榜">JS · PWA · leaderboard</span>
       <a class="play-btn" href="/life.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
+    </div>
+  </div>
+
+  <div class="card glow-glyph star" data-players="1">
+    <div class="ribbon" data-en="1UP · NEW" data-zh="1UP · 新">1UP · NEW</div>
+    <img class="card-thumb" src="/game/thumbs/glyphrun.jpg?v=6" alt="Glyph Run — the hatted ghost races the spirit pack to the glowing oracle gate 門" loading="lazy" width="440" height="240">
+    <div class="card-icon" style="color:#e8b04a">[字]</div>
+    <div class="card-title" data-en="glyph_run.exe" data-zh="字源.exe">glyph_run.exe</div>
+    <div class="card-desc" data-en="You ARE a Chinese character, hunted through four nights of script. Steer — your ink fights on its own. Evolve your glyph 3,000 years back to the oracle bones; every monster, weapon and drop is a real ancient character." data-zh="你就是一个汉字，被追猎着穿过四夜字体。只管走位——笔墨自会出手。让你的字逆行三千年回到甲骨；每只妖物、每件兵器、每个掉落，都是真实的古文字。">You ARE a Chinese character, hunted through four nights of script. Steer — your ink fights on its own. Evolve your glyph 3,000 years back to the oracle bones; every monster, weapon and drop is a real ancient character.</div>
+    <div class="card-tags">
+      <span class="tag green" data-en="new" data-zh="新">new</span>
+      <span class="tag" data-en="arena survivor" data-zh="乱斗生存">arena survivor</span>
+      <span class="tag" data-en="甲骨文" data-zh="甲骨文">甲骨文</span>
+      <span class="tag" data-en="learn hanzi" data-zh="识字">learn hanzi</span>
+    </div>
+    <div class="card-footer">
+      <span class="card-meta" data-en="JS · canvas · bilingual" data-zh="JS · canvas · 双语">JS · canvas · bilingual</span>
+      <a class="play-btn" href="/game/glyphrun.html?v=b19" data-en="→ play" data-zh="→ 游玩">→ play</a>
     </div>
   </div>
 
