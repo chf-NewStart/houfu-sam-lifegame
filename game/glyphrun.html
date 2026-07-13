@@ -7,10 +7,21 @@
 <meta name="description" content="A top-down arena survivor where you ARE a Chinese character. Spirits swarm, your ink fights back, and every survived wave rewinds the script an era — 隸書 → 篆書 → 金文 → 甲骨文 — your glyph evolving toward its oracle-bone root.">
 <link rel="icon" type="image/png" href="/game/thumbs/glyphrun-icon.png?v=4">
 <link rel="apple-touch-icon" href="/game/thumbs/glyphrun-icon.png?v=4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <style>
+  /* the whole chrome is written with a brush, not typed — 楷书毛笔 first,
+     system kai faces as the fallback, monospace only for the build tag */
+  :root{
+    --brush:'Ma Shan Zheng','Kaiti SC','KaiTi','STKaiti','BiauKai','DFKai-SB',cursive,serif;
+    --mono:Consolas,'Courier New',monospace;
+    --paper0:#efe3c3; --paper1:#e2d0a4; --paper2:#cdb47f;
+    --pink:#2b2118; --pink2:#5d4b33; --cinnabar:#a3271b; --pgreen:#356b43;
+  }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body,button,a{touch-action:manipulation;}
-  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:18px 14px 26px;-webkit-tap-highlight-color:transparent;overflow-x:hidden;}
+  body{font-family:var(--brush);background:#080808;color:#ccc;min-height:100vh;padding:18px 14px 26px;-webkit-tap-highlight-color:transparent;overflow-x:hidden;}
   a{color:#1db954;}
   .hdr{max-width:960px;margin:0 auto 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
   .hdr .title{color:#e8b04a;font-size:1.35rem;text-transform:uppercase;letter-spacing:-1px;}
@@ -104,14 +115,176 @@
 
   .footer{max-width:960px;margin:22px auto 0;text-align:center;color:#555;font-size:0.68rem;line-height:1.7;}
   @media (pointer:coarse){ body{user-select:none;-webkit-user-select:none;} }
+
+  /* ================= the scholar's overhaul: paper · bone · bamboo · stone ================= */
+  .hdr .titlebox{display:flex;gap:12px;align-items:center;}
+  #sealTitle{width:54px;height:54px;flex-shrink:0;image-rendering:auto;}
+  .hdr .title{font-size:1.7rem;letter-spacing:1px;text-transform:none;}
+  .hdr .title .cn{font-size:1.5rem;letter-spacing:6px;}
+  .hdr .sub{font-size:0.86rem;}
+  .lang-btn,#muteBtn{font-family:var(--brush);}
+  .btn{font-size:1.05rem;letter-spacing:1px;}
+  .overlay h2{font-weight:normal;letter-spacing:3px;font-size:1.7rem;}
+  .overlay .big{font-size:1.0rem;}
+  .overlay .keys{font-size:0.85rem;}
+  .char-card .cname{font-size:0.95rem;}
+  .char-card .cskill{font-size:0.74rem;}
+  .char-card .chint{font-size:0.68rem;}
+  .pad-hint{font-size:0.8rem;color:#6b6b6b;}
+  .hud{font-size:0.85rem;}
+  #toast .tp{font-size:0.82rem;}
+  #toast .tm{font-size:0.78rem;}
+  .buildtag{font-family:var(--mono);}
+
+  /* --- aged paper: the menus are physical sheets, ink and cinnabar on rice paper --- */
+  .overlay.paper{
+    color:var(--pink2);
+    background:
+      radial-gradient(130% 100% at 50% 0%, rgba(43,33,24,0) 52%, rgba(43,33,24,0.30) 100%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.18 0 0 0 0 0.09 0 0 0 0.06 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+      linear-gradient(163deg, var(--paper0), var(--paper1) 55%, var(--paper2));
+    backdrop-filter:none;
+  }
+  .overlay.paper h2{color:var(--pink);}
+  .overlay.paper .big{color:var(--pink2);}
+  .overlay.paper .keys{color:#7a6845;}
+  .overlay.paper .keys kbd{background:#f5ecd6;border-color:#b49a68;color:var(--pink);}
+  .overlay.paper a{color:var(--pgreen);}
+  .overlay.paper .btn{border-color:var(--cinnabar);color:var(--cinnabar);border-width:2px;}
+  .overlay.paper .btn:hover{background:var(--cinnabar);color:var(--paper0);}
+  .overlay.paper .btn.alt{border-color:var(--pink2);color:var(--pink2);}
+  .overlay.paper .btn.alt:hover{background:var(--pink2);color:var(--paper0);}
+  .overlay.paper .char-card{background:rgba(255,250,232,0.42);border-color:#b49a68;}
+  .overlay.paper .char-card:hover{border-color:#8a6f3e;}
+  .overlay.paper .char-card.sel{border-color:var(--cinnabar);box-shadow:0 0 0 1px var(--cinnabar), 0 2px 10px -4px rgba(120,40,20,0.55);}
+  .overlay.paper .char-card .cname{color:var(--pink);}
+  .overlay.paper .char-card .cskill{color:var(--cinnabar);}
+  .overlay.paper .char-card .chint{color:#7a6845;}
+  .overlay.paper #prevBox{background:#171310;border-color:#8a6f3e;box-shadow:0 3px 14px -6px rgba(43,33,24,0.8);}
+  .overlay.paper #prevLine{color:#d9cba3;}
+  /* ink-wash hover: the brush touches the paper and the wash spreads */
+  .char-card{position:relative;overflow:hidden;}
+  .char-card::before{content:'';position:absolute;left:50%;top:55%;width:150%;aspect-ratio:1;
+    transform:translate(-50%,-50%) scale(0);opacity:0;pointer-events:none;
+    border-radius:46% 54% 52% 48%/49% 51% 44% 56%;
+    background:radial-gradient(closest-side, rgba(43,33,24,0.18), rgba(43,33,24,0.11) 52%, rgba(43,33,24,0.03) 72%, transparent 80%);
+    transition:transform .55s cubic-bezier(.2,.7,.3,1), opacity .35s;}
+  .char-card:hover::before{transform:translate(-50%,-50%) scale(1);opacity:1;}
+  .overlay:not(.paper) .char-card::before{background:radial-gradient(closest-side, rgba(232,223,200,0.14), rgba(232,223,200,0.08) 52%, rgba(232,223,200,0.02) 72%, transparent 80%);}
+
+  /* --- cracked bone: the death screen is the shell the diviners burned --- */
+  .overlay.bone{
+    color:#4a3c2a;
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540' viewBox='0 0 960 540'><g fill='none' stroke='%23715c40' stroke-width='1.6' opacity='0.55'><path d='M140 0L152 90 128 170 165 262 150 366 178 460 160 540'/><path d='M152 90L220 108M128 170L60 195M165 262L242 250M150 366L83 400M178 460L250 470'/><path d='M810 0L795 120 832 210 800 330 828 440 812 540'/><path d='M795 120L724 140M832 210L905 195M800 330L730 355M828 440L900 452'/><path d='M0 258L90 246 190 268'/><path d='M960 300L870 312 786 292'/></g></svg>") center/cover,
+      radial-gradient(120% 100% at 50% 10%, #efe7d2, #ded1b2 60%, #c8b790);
+  }
+  .overlay.bone .big{color:#4a3c2a;}
+  .overlay.bone .keys{color:#7a6845;}
+  .overlay.bone .btn{border-color:var(--cinnabar);color:var(--cinnabar);border-width:2px;}
+  .overlay.bone .btn:hover{background:var(--cinnabar);color:#efe7d2;}
+  .overlay.bone .btn.alt{border-color:#4a3c2a;color:#4a3c2a;}
+  .overlay.bone .btn.alt:hover{background:#4a3c2a;color:#efe7d2;}
+
+  /* --- the bamboo scroll: between waves, choices are written on the slats --- */
+  #ovDesk{justify-content:flex-start;}
+  .deskRoller{width:min(560px,86%);height:16px;border-radius:8px;margin:4px auto 0;
+    background:linear-gradient(#6b4a26,#3f2a12 55%,#2b1c0b);box-shadow:0 2px 6px rgba(0,0,0,0.55);position:relative;}
+  .deskRoller::before,.deskRoller::after{content:'';position:absolute;top:2px;width:10px;height:12px;border-radius:5px;background:#1d1308;}
+  .scrollWrap{transform-origin:top center;animation:unroll .55s cubic-bezier(.25,.8,.35,1) both;
+    width:min(560px,88%);margin:0 auto;padding:18px 10px 22px;position:relative;
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.18 0 0 0 0 0.09 0 0 0 0.05 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+      linear-gradient(178deg,#e9d9ae,#dcc793 60%,#c9ae72);
+    border-left:1px solid #8a6f3e;border-right:1px solid #8a6f3e;border-bottom:2px solid #6b4a26;border-radius:0 0 10px 10px;
+    box-shadow:0 14px 30px -14px rgba(0,0,0,0.85);}
+  .scrollWrap.rollup{animation:rollup .45s cubic-bezier(.6,0,.8,.4) both;}
+  @keyframes unroll{from{transform:scaleY(0.05);}to{transform:scaleY(1);}}
+  @keyframes rollup{from{transform:scaleY(1);}to{transform:scaleY(0.05);}}
+  .deskTitle{color:var(--pink);font-size:1.25rem;letter-spacing:4px;margin:0 0 4px;}
+  .deskSub{color:#7a6845;font-size:0.8rem;margin-bottom:12px;}
+  .slats{display:flex;gap:12px;justify-content:center;align-items:stretch;position:relative;padding:8px 0 4px;}
+  .slats::before,.slats::after{content:'';position:absolute;left:4%;right:4%;height:3px;border-radius:2px;
+    background:linear-gradient(90deg,#7c5f2e,#a8874a 30%,#7c5f2e 70%,#5f461f);opacity:0.85;z-index:2;pointer-events:none;}
+  .slats::before{top:34px;} .slats::after{bottom:34px;}
+  .slat{width:172px;min-height:370px;padding:36px 12px 40px;cursor:pointer;position:relative;text-align:center;
+    color:var(--pink);border:1px solid #7c5f2e;border-radius:9px/22px;
+    background:linear-gradient(90deg,#c3a258,#e2ca8c 26%,#d8bd78 55%,#b3924c);
+    box-shadow:inset 0 0 14px rgba(80,55,20,0.25), 0 3px 8px -4px rgba(0,0,0,0.6);
+    transition:transform .16s, box-shadow .16s;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .slat:hover{transform:translateY(-3px);box-shadow:inset 0 0 14px rgba(80,55,20,0.25), 0 8px 16px -6px rgba(0,0,0,0.7);}
+  .slat::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;
+    background:radial-gradient(closest-side at 50% 42%, rgba(43,33,24,0.20), rgba(43,33,24,0.08) 60%, transparent 78%);}
+  .slat:hover::before{opacity:1;}
+  /* the name runs down the slat like a real bamboo column; the working reads flat */
+  .slat .cat{color:#efe3c3;background:var(--pink2);border-radius:5px;padding:2px 9px;font-size:0.9rem;letter-spacing:2px;}
+  .slat .nm{font-size:1.5rem;line-height:1.5;color:var(--pink);min-height:96px;}  /* one glyph per row, a true bamboo column */
+  .slat .ds{font-size:0.76rem;color:#584624;line-height:1.55;}
+  .slat .inv{color:var(--cinnabar);font-size:0.74rem;letter-spacing:1px;}
+  .slat.picked{border-color:var(--cinnabar);}
+  .slat .ring{position:absolute;inset:0;pointer-events:none;}
+  .slat .ring ellipse{fill:none;stroke:var(--cinnabar);stroke-width:5;stroke-linecap:round;opacity:0.9;
+    stroke-dasharray:900;stroke-dashoffset:900;}
+  .slat.picked .ring ellipse{animation:brushring .5s ease-out forwards;}
+  @keyframes brushring{to{stroke-dashoffset:180;}}
+
+  /* --- the seal carver: a block of stone, radicals cut into it --- */
+  .stoneWrap{width:min(680px,94%);margin:0 auto;padding:18px 14px 20px;border-radius:12px;
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.12 0 0 0 0 0.1 0 0 0 0.10 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+      linear-gradient(148deg,#95a698,#71836f 55%,#59695c);
+    border:1px solid #3f4c42;box-shadow:inset 0 2px 14px rgba(230,240,225,0.25), 0 12px 26px -12px rgba(0,0,0,0.9);}
+  .stoneWrap .deskTitle{color:#f0ead2;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
+  .stoneWrap .deskSub{color:#d5dcc8;}
+  .carveRow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .carve{width:132px;background:rgba(20,28,22,0.25);border:1px solid #4b5a4e;border-radius:9px;
+    padding:9px 6px;cursor:pointer;transition:border-color .15s, transform .12s;position:relative;}
+  .carve:hover{border-color:#c9d4bd;transform:translateY(-1px);}
+  .carve canvas{width:40px;height:44px;display:block;margin:0 auto 4px;}
+  .carve .cname{color:#eef2dd;font-size:0.9rem;}
+  .carve .cdesc{color:#c2ccb2;font-size:0.68rem;line-height:1.45;margin-top:2px;}
+  .carve .ccost{color:#f5d98a;font-size:0.72rem;margin-top:4px;letter-spacing:2px;}
+  .carve.carved{border-color:var(--cinnabar);background:rgba(120,30,18,0.18);box-shadow:inset 0 2px 8px rgba(0,0,0,0.5);}
+  .carve.carved .ccost{color:#f2a08e;}
+  .carve.poor{opacity:0.55;cursor:default;}
+  #sealPts{color:#f5d98a;font-size:0.95rem;letter-spacing:2px;}
+
+  /* --- the run-start stamp: the carved seal strikes the paper --- */
+  #stampFx{position:absolute;inset:0;z-index:7;display:none;align-items:center;justify-content:center;pointer-events:none;}
+  #stampFx.go{display:flex;}
+  #stampFx canvas{width:150px;height:150px;animation:stamp .8s cubic-bezier(.15,.9,.2,1) both;}
+  @keyframes stamp{
+    0%{transform:scale(2.6) rotate(-9deg);opacity:0;}
+    45%{transform:scale(1.0) rotate(2deg);opacity:1;}
+    62%{transform:scale(1.12) rotate(2deg);opacity:0.95;}
+    100%{transform:scale(1.06) rotate(2deg);opacity:0;}
+  }
+
+  /* --- element chips: the five phases counted under the hud --- */
+  #elemRow{max-width:960px;margin:6px auto 0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;font-size:0.8rem;}
+  .echip{border:1px solid #333;border-radius:6px;padding:2px 9px;color:#7d7d7d;letter-spacing:2px;background:rgba(10,10,10,0.6);}
+  .echip b{font-size:0.9rem;}
+  .echip.lit{color:#e8dfc8;}
+  .echip.syn{border-color:var(--cinnabar);color:#f0b9a6;box-shadow:0 0 10px -4px rgba(163,39,27,0.9);}
+
+  #muteBtn{position:absolute;top:10px;right:58px;z-index:8;background:rgba(6,10,8,0.7);border:1px solid #3a3a3a;color:#bbb;
+    font-size:1.05rem;width:42px;height:42px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  #muteBtn:hover{border-color:#e8b04a;color:#e8b04a;}
+  #muteBtn.off{color:#5a5a5a;text-decoration:line-through;}
+  .overlay.paper .evo-cell span{color:#6b5a3e;}
+  .overlay.paper .evo-cell.now span{color:var(--cinnabar);}
 </style>
 </head>
 <body>
 <div class="hdr">
   <div>
-    <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
+    <div class="titlebox">
+      <canvas id="sealTitle" width="120" height="120" title="字源"></canvas>
+      <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
+    </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b25</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b26</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -130,9 +303,11 @@
     <div id="toast"><canvas id="toastQi" width="26" height="26" style="display:none;margin:0 auto 2px;width:18px;height:18px"></canvas><div class="tg" id="toastG">日</div><div class="tp" id="toastP">rì</div><div class="tm" id="toastM">sun</div></div>
 
     <button id="pauseBtn" aria-label="pause"><canvas id="pauseZhi" width="24" height="26"></canvas></button>
+    <button id="muteBtn" aria-label="sound">音</button>
+    <div id="stampFx"><canvas id="stampCvs" width="300" height="300"></canvas></div>
 
     <!-- START -->
-    <div class="overlay show" id="ovStart">
+    <div class="overlay paper show" id="ovStart">
       <h2 data-en="字源 · GLYPH RUN" data-zh="字源 · 汉字奔跑">字源 · GLYPH RUN</h2>
       <div class="big" style="margin-bottom:10px" data-en="You ARE the character. Steer — ink, arms and your family's gift fight on their own. Gather fallen glyphs, evolve back to the bones." data-zh="你就是字。只管走位——笔墨、兵器与天赋自动出手。集字升级，一路进化回甲骨。">You ARE the character. Steer — ink, arms and your family's gift fight on their own. Gather fallen glyphs, evolve back to the bones.</div>
       <div class="setup">
@@ -150,15 +325,37 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
         <button class="btn" id="startBtn" onclick="Game.start()"><canvas class="zhanIcon" width="24" height="22"></canvas><span data-en="GO TO BATTLE" data-zh="出戰">GO TO BATTLE</span></button>
         <button class="btn alt" style="margin-top:0" onclick="Game.openBook()"><canvas class="wenIcon" width="20" height="22"></canvas><span data-en="the scroll" data-zh="卷軸">the scroll</span></button>
+        <button class="btn alt" style="margin-top:0" onclick="Game.openSeal()"><canvas class="yinIcon" width="20" height="22"></canvas><span data-en="the seal" data-zh="篆刻">the seal</span></button>
       </div>
     </div>
 
     <!-- STAGE CLEAR / TRANSFORM -->
-    <div class="overlay" id="ovClear">
+    <div class="overlay paper" id="ovClear">
       <h2 id="clearTitle">GATE PASSED</h2>
       <canvas id="clearCanvas" width="240" height="150"></canvas>
       <div class="big" id="clearMsg">Your glyph evolves…</div>
-      <button class="btn" id="clearBtn" onclick="Game.nextStage()" data-en="▶ Deeper into the past" data-zh="▶ 更向古代">▶ Deeper into the past</button>
+      <button class="btn" id="clearBtn" onclick="Game.toDesk()" data-en="▶ Deeper into the past" data-zh="▶ 更向古代">▶ Deeper into the past</button>
+    </div>
+
+    <!-- THE SCHOLAR'S DESK: a bamboo scroll of choices between waves -->
+    <div class="overlay" id="ovDesk">
+      <div class="deskRoller"></div>
+      <div class="scrollWrap" id="deskScroll">
+        <div class="deskTitle" data-en="文房 · THE SCHOLAR'S DESK" data-zh="文房四宝 · 案前小憩">文房 · THE SCHOLAR'S DESK</div>
+        <div class="deskSub" data-en="One refinement is brushed onto the scroll. Choose what the desk sharpens: 筆 brush · 墨 ink · 硯 stone · 紙 paper." data-zh="卷上题一策。笔、墨、砚、纸——择其一而砺之。">One refinement is brushed onto the scroll. Choose what the desk sharpens: 筆 brush · 墨 ink · 硯 stone · 紙 paper.</div>
+        <div class="slats" id="deskSlats"></div>
+      </div>
+    </div>
+
+    <!-- THE SEAL CARVER: permanent radicals cut into stone -->
+    <div class="overlay" id="ovSeal">
+      <div class="stoneWrap">
+        <div class="deskTitle" data-en="篆刻 · THE SEAL CARVER" data-zh="篆刻 · 治印">篆刻 · THE SEAL CARVER</div>
+        <div class="deskSub" data-en="Radicals cut into the stone stay carved between runs. Every survived wave and every 15 glyphs earn a cut." data-zh="刻入石中的部首，永存于每一局。每撑过一波、每集十五字，得一刀。">Radicals cut into the stone stay carved between runs. Every survived wave and every 15 glyphs earn a cut.</div>
+        <div id="sealPts">0</div>
+        <div class="carveRow" id="carveRow" style="margin-top:10px"></div>
+      </div>
+      <button class="btn alt" style="margin-top:14px" onclick="Game.closeSeal()" data-en="✕ set down the knife" data-zh="✕ 收刀">✕ set down the knife</button>
     </div>
 
     <!-- PAUSE -->
@@ -172,7 +369,7 @@
     </div>
 
     <!-- CODEX -->
-    <div class="overlay" id="ovBook">
+    <div class="overlay paper" id="ovBook">
       <canvas id="bookWen" width="46" height="50" style="display:block;margin:0 auto 2px"></canvas>
       <h2 data-en="卷 · THE SCROLL" data-zh="卷軸 · 圖鑑">卷 · THE SCROLL</h2>
       <div id="bookBody" style="max-width:780px;text-align:left;"></div>
@@ -180,8 +377,8 @@
     </div>
 
     <!-- GAME OVER -->
-    <div class="overlay" id="ovOver">
-      <h2 style="color:#f0674a" data-en="LOST TO TIME" data-zh="湮没于时光">LOST TO TIME</h2>
+    <div class="overlay bone" id="ovOver">
+      <h2 style="color:#a3271b" data-en="LOST TO TIME" data-zh="湮没于时光">LOST TO TIME</h2>
       <canvas id="wangCanvas" width="110" height="120" style="display:block;margin:2px auto 8px;width:82px;height:auto"></canvas>
       <div class="keys" style="margin-bottom:8px" data-en="亡 wáng — the broken blade: “to perish”" data-zh="「亡」——刃之折者，是为消亡">亡 wáng — the broken blade: “to perish”</div>
       <div class="big" id="overMsg">The character faded before reaching the bones.</div>
@@ -190,7 +387,7 @@
     </div>
 
     <!-- WIN -->
-    <div class="overlay" id="ovWin">
+    <div class="overlay paper" id="ovWin">
       <h2 id="winTitle">TRACED TO THE ROOT</h2>
       <div class="evo-row" id="evoRow"></div>
       <div class="big" id="winMsg">You grew the glyph across 3,000 years of script.</div>
@@ -199,6 +396,8 @@
       <a class="btn alt" href="/" style="text-decoration:none" data-en="← more games" data-zh="← 更多游戏">← more games</a>
     </div>
   </div>
+
+  <div id="elemRow"></div>
 
   <div class="pad">
     <div id="joy"><div id="joyKnob"></div></div>
@@ -839,7 +1038,13 @@ const ORACLE = {
   '兵': {p:'M35.8 0.0L28.4 17.7 40.1 23.3 44.0 20.3 37.9 15.9 57.8 5.6 54.3 18.5 56.9 45.3 44.8 70.3 46.1 73.3 52.6 65.9 60.3 47.8 60.3 34.9 56.9 25.4 63.8 2.2 59.1 0.0 36.6 10.3 38.8 1.3 35.8 0.0ZM74.6 39.7L75.0 54.7 66.8 50.0 62.9 51.3 70.7 62.5 59.5 75.4 61.6 77.6 73.3 69.4 76.7 95.3 79.7 98.3 81.0 84.9 75.9 64.2 79.3 45.3 74.6 39.7ZM27.2 41.4L22.4 49.6 25.9 65.1 19.0 82.3 19.4 100.0 27.6 71.1 30.6 69.8 38.8 74.6 31.9 63.4 40.5 49.6 38.4 47.4 28.9 57.8 30.2 43.5 27.2 41.4Z'},
   '隹': {p:'M44.8 0.0L26.3 22.0 29.3 24.1 34.5 19.0 40.9 28.9 20.3 58.2 15.1 79.7 16.4 100.0 24.1 61.2 42.7 75.4 51.3 97.0 54.7 97.0 46.1 73.7 26.3 57.3 33.6 44.8 58.2 61.6 66.8 86.6 70.3 86.6 64.2 64.2 54.3 52.6 37.5 40.9 44.8 31.9 62.9 37.9 69.4 44.4 76.3 55.6 80.6 73.7 84.9 76.3 82.3 61.6 72.8 42.7 62.1 34.5 49.6 29.7 56.5 18.5 56.5 9.1 50.0 0.9 44.8 0.0ZM46.1 5.6L51.3 7.3 53.0 15.1 44.0 25.0 38.4 15.1 46.1 5.6Z'},
   '鳴': {p:'M53.9 0.0L53.5 10.1 50.0 12.7 57.9 17.1 56.1 24.1 43.9 20.6 53.5 31.1 40.4 59.2 40.4 68.0 46.5 75.0 39.5 90.8 43.4 100.0 46.5 98.7 43.9 88.2 51.8 89.9 48.2 84.6 50.4 78.9 58.3 82.5 65.8 93.4 69.3 94.3 66.7 86.4 43.9 66.2 46.5 51.3 57.5 31.6 66.7 31.1 66.7 42.5 74.6 53.1 70.2 68.0 78.5 61.4 73.7 73.2 78.5 71.9 81.1 78.1 83.3 70.6 80.7 57.5 70.2 41.7 72.8 26.8 71.1 18.9 78.1 11.0 70.6 13.2 68.9 2.6 57.5 10.5 53.9 0.0ZM64.9 9.2L66.7 13.6 62.7 14.9 64.9 9.2ZM62.3 18.9L68.4 22.4 64.5 28.9 59.6 27.6 62.3 18.9ZM18.0 30.7L16.7 51.3 20.6 56.1 34.6 56.1 37.7 52.2 37.7 31.1 35.1 31.1 32.9 39.5 22.4 39.5 18.0 30.7ZM21.1 43.4L35.1 44.3 31.1 55.3 21.1 51.3 21.1 43.4ZM62.7 49.1L53.5 65.4 60.1 63.2 71.5 81.6 71.9 75.9 62.3 59.2 64.9 53.9 62.7 49.1Z'},
-  '鳳': {p:'M36.0 0.0L33.0 2.2 46.9 15.3 39.1 21.4 46.5 21.8 47.8 27.5 35.6 33.6 46.5 33.2 50.4 45.0 29.5 61.6 15.5 96.5 17.7 98.7 23.8 88.2 26.9 100.0 31.2 99.1 27.7 73.8 37.8 58.5 41.7 62.4 42.6 72.9 37.3 80.8 40.4 82.1 45.6 76.0 47.8 78.2 42.6 92.1 50.0 87.3 52.2 93.9 56.6 93.9 54.8 87.8 60.0 85.2 51.3 78.2 50.4 72.9 57.4 70.3 49.1 69.0 42.6 57.2 50.9 48.9 62.7 59.8 60.0 75.5 62.2 76.9 66.2 69.4 68.8 70.3 68.8 76.4 63.5 86.0 67.5 87.3 72.7 82.1 74.0 93.9 77.1 94.3 77.5 80.8 84.1 82.1 84.5 79.9 75.3 76.0 72.3 67.7 79.3 65.1 66.2 59.8 57.4 47.6 66.2 38.9 66.2 35.4 52.2 28.4 53.1 22.3 60.0 20.5 54.8 15.3 64.4 1.3 36.0 0.0ZM45.2 3.9L57.4 4.8 50.9 13.1 45.2 3.9ZM53.9 33.6L60.9 36.2 56.1 42.8 53.1 40.6 53.9 33.6Z'}
+  '鳳': {p:'M36.0 0.0L33.0 2.2 46.9 15.3 39.1 21.4 46.5 21.8 47.8 27.5 35.6 33.6 46.5 33.2 50.4 45.0 29.5 61.6 15.5 96.5 17.7 98.7 23.8 88.2 26.9 100.0 31.2 99.1 27.7 73.8 37.8 58.5 41.7 62.4 42.6 72.9 37.3 80.8 40.4 82.1 45.6 76.0 47.8 78.2 42.6 92.1 50.0 87.3 52.2 93.9 56.6 93.9 54.8 87.8 60.0 85.2 51.3 78.2 50.4 72.9 57.4 70.3 49.1 69.0 42.6 57.2 50.9 48.9 62.7 59.8 60.0 75.5 62.2 76.9 66.2 69.4 68.8 70.3 68.8 76.4 63.5 86.0 67.5 87.3 72.7 82.1 74.0 93.9 77.1 94.3 77.5 80.8 84.1 82.1 84.5 79.9 75.3 76.0 72.3 67.7 79.3 65.1 66.2 59.8 57.4 47.6 66.2 38.9 66.2 35.4 52.2 28.4 53.1 22.3 60.0 20.5 54.8 15.3 64.4 1.3 36.0 0.0ZM45.2 3.9L57.4 4.8 50.9 13.1 45.2 3.9ZM53.9 33.6L60.9 36.2 56.1 42.8 53.1 40.6 53.9 33.6Z'},
+  '田': {p:'M13.8 0.0L4.8 6.2 5.7 99.5 88.1 100.0 91.4 95.7 95.2 40.5 92.4 1.4 13.8 0.0ZM66.7 5.2L86.7 8.1 88.6 43.3 85.2 48.6 51.0 49.5 47.6 47.1 50.5 7.1 66.7 5.2ZM33.3 6.2L40.5 5.7 43.8 10.0 41.9 47.1 39.5 49.5 14.8 49.5 10.5 47.1 11.4 9.0 33.3 6.2ZM32.4 54.8L38.6 54.3 41.9 57.6 42.9 91.9 40.5 94.3 13.8 94.3 11.4 92.9 10.5 58.6 13.8 55.2 32.4 54.8ZM49.5 54.8L85.7 56.7 85.7 91.0 83.3 93.3 49.5 92.9 49.5 54.8Z'},
+  '禾': {p:'M48.1 0.0L23.5 28.0 21.8 40.1 26.5 43.1 35.6 33.2 38.1 19.4 48.9 6.9 57.1 19.4 58.0 47.0 56.7 49.1 45.5 39.7 42.5 41.8 58.0 58.2 57.1 73.7 39.9 96.1 43.8 96.6 55.8 84.5 56.2 97.8 59.3 100.0 62.7 83.6 74.8 96.6 78.2 96.6 61.4 75.4 61.4 56.5 76.1 38.4 72.2 36.2 64.4 45.7 62.3 44.4 61.4 22.0 76.1 4.7 71.3 5.2 60.1 15.5 48.1 0.0ZM31.2 25.4L33.8 28.0 26.5 35.3 31.2 25.4Z'},
+  '鼎': {p:'M30.6 0.0L26.7 14.2 27.6 30.6 31.0 38.4 41.4 47.0 41.4 51.3 37.5 59.5 23.3 57.3 24.6 60.3 34.9 62.9 37.1 66.8 34.1 72.4 19.4 75.0 18.1 78.0 32.8 77.2 27.6 93.5 27.6 98.7 30.6 99.1 44.8 52.2 47.8 47.4 55.6 47.4 67.2 94.4 72.0 100.0 73.3 96.1 67.2 77.2 68.5 75.0 81.5 75.9 81.9 73.7 65.5 69.4 64.7 61.6 75.4 55.2 76.7 51.3 63.4 56.9 61.2 47.8 67.7 44.8 73.3 37.5 75.9 2.2 70.3 0.9 59.1 15.5 46.1 16.4 37.1 3.9 30.6 0.0ZM31.9 4.7L37.9 10.8 37.5 16.4 31.0 14.2 31.9 4.7ZM69.8 8.2L71.6 12.5 66.8 15.5 65.5 12.5 69.8 8.2ZM41.4 19.4L69.4 19.0 71.6 22.8 53.9 26.7 31.0 24.6 32.3 19.8 41.4 19.4ZM38.8 29.7L67.7 29.3 69.8 33.2 64.2 42.2 47.8 44.0 34.5 35.8 33.6 30.6 38.8 29.7Z'},
+  '印': {p:'M29.6 0.0L33.5 9.1 33.5 18.7 23.0 41.3 24.3 61.7 27.4 59.6 26.5 43.9 30.4 33.9 34.3 46.5 37.8 45.7 35.2 23.0 38.3 20.0 42.2 31.7 44.8 32.6 39.6 13.5 29.6 0.0ZM57.4 13.9L59.6 29.1 54.3 48.3 54.3 60.4 41.3 73.5 42.2 93.5 45.2 100.0 70.4 73.9 72.6 77.8 70.0 92.6 74.3 91.7 74.8 67.8 63.5 75.7 48.7 93.0 44.8 92.6 45.7 73.5 77.0 43.9 60.4 14.3 57.4 13.9ZM63.0 30.0L72.6 43.0 59.1 55.7 57.8 50.0 63.0 30.0Z'},
+  '心': {p:'M82.5 0.0L59.2 19.7 63.2 22.8 78.1 10.5 82.9 11.8 80.3 55.7 76.3 57.0 61.4 42.1 58.3 44.3 76.8 66.2 55.3 94.7 34.2 83.3 23.2 69.7 22.4 64.5 38.2 48.7 33.3 47.4 20.2 57.0 18.0 47.8 18.9 11.8 22.8 11.4 39.5 21.1 43.0 21.1 45.2 17.1 21.1 2.6 13.6 3.9 11.8 37.3 18.9 72.4 34.2 89.5 56.1 100.0 61.4 100.0 70.6 88.2 80.3 73.2 85.5 57.5 88.2 7.5 86.4 1.3 82.5 0.0Z'},
+  '又': {p:'M48.3 0.0L45.3 3.0 57.3 13.4 59.1 25.4 51.7 36.2 37.9 25.9 28.9 24.6 51.3 43.5 24.6 69.4 28.4 71.6 34.5 68.1 56.0 47.4 64.2 60.8 70.3 94.4 74.1 100.0 75.4 92.7 68.5 59.1 57.3 41.8 62.5 31.5 63.4 15.1 48.3 0.0Z'}
 };
 function drawOraclePath(ctx, g, cx, cy, s, color){
   if(typeof Path2D === 'undefined') return false;   // headless sim fallback
@@ -853,6 +1058,184 @@ function drawOraclePath(ctx, g, cx, cy, s, color){
   ctx.restore();
   return true;
 }
+
+/* ============================== brushwork ============================== */
+/* tapered strokes — pressure at the heel, a flying tip. Every hit in the
+   game is a brush touching paper, so the fx are drawn as real strokes.  */
+function brushLine(ctx, x0, y0, x1, y1, w){
+  const dx = x1-x0, dy = y1-y0, L = Math.hypot(dx,dy)||1, nx = -dy/L, ny = dx/L;
+  ctx.beginPath();
+  ctx.moveTo(x0+nx*w*0.5, y0+ny*w*0.5);
+  ctx.quadraticCurveTo((x0+x1)/2+nx*w*0.72, (y0+y1)/2+ny*w*0.72, x1, y1);
+  ctx.quadraticCurveTo((x0+x1)/2-nx*w*0.72, (y0+y1)/2-ny*w*0.72, x0-nx*w*0.5, y0-ny*w*0.5);
+  ctx.closePath(); ctx.fill();
+}
+function brushArc(ctx, x, y, r, a0, a1, w){
+  const N = 12;
+  ctx.beginPath();
+  for(let i=0;i<=N;i++){
+    const a = a0+(a1-a0)*i/N, ww = w*(0.14+0.86*Math.sin(Math.PI*i/N)), rr = r+ww*0.5;
+    if(i) ctx.lineTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr); else ctx.moveTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr);
+  }
+  for(let i=N;i>=0;i--){
+    const a = a0+(a1-a0)*i/N, ww = w*(0.14+0.86*Math.sin(Math.PI*i/N)), rr = r-ww*0.5;
+    ctx.lineTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr);
+  }
+  ctx.closePath(); ctx.fill();
+}
+/* an ink splatter, painted onto the stain layer where something fell */
+function inkSplat(g, x, y, r, color){
+  g.save(); g.translate(x, y); g.fillStyle = color; g.globalAlpha = 0.8;
+  for(let i=0;i<6;i++){
+    const a = Math.random()*Math.PI*2, d = Math.random()*r*0.45;
+    g.beginPath(); g.arc(Math.cos(a)*d, Math.sin(a)*d*0.8, r*(0.32+Math.random()*0.4), 0, Math.PI*2); g.fill();
+  }
+  g.globalAlpha = 0.65;
+  for(let i=0;i<5;i++){
+    const a = Math.random()*Math.PI*2, d = r*(0.9+Math.random()*1.4);
+    g.beginPath(); g.arc(Math.cos(a)*d, Math.sin(a)*d*0.8, r*0.08+Math.random()*r*0.09, 0, Math.PI*2); g.fill();
+  }
+  g.rotate(Math.random()*Math.PI*2);
+  g.beginPath(); g.ellipse(r*1.15, 0, r*0.5, r*0.1, 0, 0, Math.PI*2); g.fill();
+  g.restore();
+}
+
+/* ============================== the 字源 seal ============================== */
+/* 篆书 strokes, carved 白文 — the characters read as paper through cinnabar */
+function sealStroke(g, s, pts){
+  g.beginPath();
+  g.moveTo(pts[0][0]*s, pts[0][1]*s);
+  for(let i=1;i<pts.length;i++){
+    const p = pts[i];
+    if(p.length === 4) g.quadraticCurveTo(p[0]*s, p[1]*s, p[2]*s, p[3]*s);
+    else g.lineTo(p[0]*s, p[1]*s);
+  }
+  g.stroke();
+}
+function drawSealZi(g, cx, cy, s){   // 字: the roof 宀 sheltering the child 子
+  g.save(); g.translate(cx, cy);
+  sealStroke(g, s, [[0,-0.50],[0,-0.42]]);                                     // the tick above
+  sealStroke(g, s, [[-0.30,-0.14],[-0.32,-0.34,0,-0.40],[0.32,-0.34,0.30,-0.14]]); // the roof
+  g.beginPath(); g.arc(0, -0.10*s, 0.085*s, 0, Math.PI*2); g.stroke();         // the head
+  sealStroke(g, s, [[-0.26,0.10],[0,0.02,0.26,0.10]]);                         // the arms
+  sealStroke(g, s, [[0,-0.015],[0.02,0.22,0,0.30],[-0.06,0.36,-0.10,0.38]]);   // the swaddled body
+  g.restore();
+}
+function drawSealYuan(g, cx, cy, s){ // 源: the water, the cliff, the spring beneath it
+  g.save(); g.translate(cx, cy);
+  for(const yy of [-0.30, -0.03, 0.24])                                        // 氵
+    sealStroke(g, s, [[-0.40,yy-0.07],[-0.30,yy-0.02,-0.34,yy+0.07]]);
+  sealStroke(g, s, [[0.34,-0.42],[-0.10,-0.42],[-0.16,-0.10,-0.18,0.30]]);     // 厂
+  g.beginPath(); g.arc(0.10*s, -0.19*s, 0.08*s, 0, Math.PI*2); g.stroke();     // the spring's eye
+  sealStroke(g, s, [[0.10,-0.19],[0.10,-0.13]]);
+  sealStroke(g, s, [[0.10,-0.08],[0.10,0.30]]);                                // the streams
+  sealStroke(g, s, [[0.00,-0.06],[-0.06,0.12,-0.04,0.26]]);
+  sealStroke(g, s, [[0.20,-0.06],[0.26,0.12,0.24,0.26]]);
+  g.restore();
+}
+/* the stamp itself: worn cinnabar square, dashed border, carved marks */
+function drawSealStamp(cvs, marks){
+  const g = cvs.getContext('2d'), W = cvs.width, H = cvs.height;
+  g.clearRect(0, 0, W, H);
+  const m = W*0.055;
+  const J = [3,-2,4,-3,2,-4,3,-1,-3,2,-2,4]; let ji = 0;
+  const jit = ()=> J[(ji++)%J.length]*W/240;
+  const pts = [], steps = 7;
+  for(let i=0;i<=steps;i++) pts.push([m + (W-2*m)*i/steps, m + jit()]);
+  for(let i=1;i<=steps;i++) pts.push([W-m + jit(), m + (H-2*m)*i/steps]);
+  for(let i=1;i<=steps;i++) pts.push([W-m - (W-2*m)*i/steps, H-m + jit()]);
+  for(let i=1;i<steps;i++)  pts.push([m + jit(), H-m - (H-2*m)*i/steps]);
+  g.save();
+  g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+  for(const [x,y] of pts.slice(1)) g.lineTo(x, y);
+  g.closePath();
+  g.fillStyle = '#b23320'; g.fill();
+  g.clip();
+  const sh = g.createRadialGradient(W*0.36, H*0.3, W*0.1, W*0.5, H*0.55, W*0.78);
+  sh.addColorStop(0, 'rgba(255,130,95,0.18)'); sh.addColorStop(1, 'rgba(55,6,2,0.30)');
+  g.fillStyle = sh; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'destination-out';                 // three thousand years of wear
+  for(const [nx,ny,nr] of [[0.12,0.09,0.05],[0.9,0.86,0.06],[0.86,0.11,0.03],[0.09,0.9,0.04],[0.52,0.985,0.03],[0.99,0.5,0.025]]){
+    g.beginPath(); g.arc(W*nx, H*ny, W*nr, 0, Math.PI*2); g.fill();
+  }
+  g.globalCompositeOperation = 'source-over';
+  g.strokeStyle = '#f3e9d2'; g.lineCap = 'round'; g.lineJoin = 'round';
+  g.lineWidth = W*0.018; g.setLineDash([W*0.15, W*0.028]);
+  g.strokeRect(m+W*0.05, m+H*0.05, W-2*m-W*0.10, H-2*m-H*0.10);
+  g.setLineDash([]);
+  g.lineWidth = W*0.042;
+  if(marks && marks.length){                                      // the carved radicals, stamped in a grid
+    const cols = marks.length <= 4 ? 2 : 3, rows = Math.ceil(marks.length/cols);
+    const gw = (W-2*m-W*0.16)/cols, gh = (H-2*m-H*0.16)/rows;
+    marks.forEach((ch, i)=>{
+      const gx = m+W*0.08 + gw*(cols-1-(i%cols)) + gw/2;          // seals read right to left
+      const gy = m+H*0.08 + gh*((i/cols)|0) + gh/2;
+      if(ORACLE[ch]) drawOraclePath(g, ORACLE[ch], gx, gy, Math.min(gw,gh)*0.74, '#f3e9d2');
+    });
+  } else {
+    drawSealYuan(g, W*0.315, H*0.52, W*0.56);
+    drawSealZi(g, W*0.71, H*0.52, W*0.60);
+  }
+  g.restore();
+}
+
+/* ============================== sound: brush on paper ============================== */
+const SFX = (function(){
+  let ac = null, muted = false, lastThud = 0, noiseBuf = null;
+  try{ muted = localStorage.getItem('glyphrun_mute') === '1'; }catch(e){}
+  function actx(){
+    if(muted) return null;
+    if(!ac){ try{ ac = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ return null; } }
+    if(ac && ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+  function noise(a){
+    if(!noiseBuf){
+      noiseBuf = a.createBuffer(1, (a.sampleRate*0.5)|0, a.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    }
+    const src = a.createBufferSource(); src.buffer = noiseBuf; return src;
+  }
+  function burst(f0, f1, dur, gain, type){
+    const a = actx(); if(!a) return;
+    const t0 = a.currentTime, src = noise(a);
+    const flt = a.createBiquadFilter(); flt.type = type||'bandpass'; flt.Q.value = 1.1;
+    flt.frequency.setValueAtTime(f0, t0);
+    flt.frequency.exponentialRampToValueAtTime(Math.max(40,f1), t0+dur);
+    const g = a.createGain();
+    g.gain.setValueAtTime(gain, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    src.connect(flt); flt.connect(g); g.connect(a.destination);
+    src.start(t0); src.stop(t0+dur+0.02);
+  }
+  function tone(freq, dur, gain, type){
+    const a = actx(); if(!a) return;
+    const t0 = a.currentTime;
+    const o = a.createOscillator(); o.type = type||'sine'; o.frequency.value = freq;
+    const g = a.createGain();
+    g.gain.setValueAtTime(gain, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(t0); o.stop(t0+dur+0.02);
+  }
+  return {
+    swish(){ burst(2600, 600, 0.09, 0.045); },                                   // the brush sweeps
+    thud(){                                                                      // and lands, heavy, on the paper
+      const now = performance.now(); if(now-lastThud < 70) return; lastThud = now;
+      burst(300, 90, 0.12, 0.15, 'lowpass'); tone(72, 0.1, 0.11);
+    },
+    splat(){ burst(900, 200, 0.16, 0.09, 'lowpass'); },                          // ink splashes where they fall
+    crack(){ burst(3200, 1200, 0.05, 0.18, 'highpass'); tone(180, 0.16, 0.13, 'triangle'); }, // the shell cracks
+    tick(){ tone(1240, 0.05, 0.028, 'triangle'); },                              // a glyph caught
+    toll(){ tone(524, 0.7, 0.075); tone(786, 0.5, 0.045); },                     // the bronze bell
+    chisel(){ burst(2400, 900, 0.06, 0.13); tone(980, 0.08, 0.045, 'square'); }, // the carver's knife bites
+    unroll(){ burst(1400, 500, 0.28, 0.05); },                                   // bamboo clatters open
+    stamp(){ burst(240, 70, 0.18, 0.19, 'lowpass'); tone(60, 0.2, 0.15); },      // the seal strikes
+    toggle(){ muted = !muted; try{ localStorage.setItem('glyphrun_mute', muted?'1':'0'); }catch(e){} return !muted; },
+    isOn(){ return !muted; }
+  };
+})();
 
 /* --- collectible pictographs, oracle-bone line style --- */
 function drawPicto(ctx, ch, cx, cy, s, color){
@@ -1015,7 +1398,7 @@ function drawPicto(ctx, ch, cx, cy, s, color){
       ctx.beginPath(); ctx.arc(r*0.22,-r*0.08,r*0.09,0,Math.PI*2); ctx.fill();
       break;
     default:
-      ctx.font = `${s}px Consolas`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font = `${s}px "Ma Shan Zheng",KaiTi,serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(ch, 0, 0);
   }
   ctx.restore();
@@ -1372,9 +1755,60 @@ const GLYPHS = {
   '貝': {py:'bèi',  en:'cowrie',   zh:'贝',   eff_en:'riches — +3 extra glyphs',       eff_zh:'得贝——额外+3字'},
   '泉': {py:'quán', en:'spring',   zh:'泉',   eff_en:'the spring wells — +1 heart, every 火 quenched', eff_zh:'泉涌——回复一心，浇灭诸火'},
   '鹿': {py:'lù',   en:'deer',     zh:'鹿',   eff_en:'the deer bounds — a leap ahead',  eff_zh:'鹿跃——向前一跃'},
-  '犬': {py:'quǎn', en:'hound',    zh:'犬',   eff_en:'the hound harries — nearby foes flee', eff_zh:'犬吠——近敌溃逃'}
+  '犬': {py:'quǎn', en:'hound',    zh:'犬',   eff_en:'the hound harries — nearby foes flee', eff_zh:'犬吠——近敌溃逃'},
+  '禾': {py:'hé',   en:'grain',    zh:'禾苗', eff_en:'harvest — +2 extra glyphs',       eff_zh:'秋收——额外+2字'},
+  '田': {py:'tián', en:'field',    zh:'田地', eff_en:'furrows — the pack nearby wades slow (3s)', eff_zh:'阡陌纵横——近敌迟缓3秒'}
 };
 const GLYPH_KEYS = Object.keys(GLYPHS);
+
+/* ============================== 五行 · the five phases ============================== */
+/* every fallen glyph carries an element by its radical; the war pictographs
+   you pick up are 金, and so is the 鼎. Stack two elements that feed each
+   other (相生) and the pairing wakes as a permanent synergy for the run.  */
+const ELEM_OF = {'火':'火','日':'火','水':'水','雨':'水','泉':'水','魚':'水','舟':'水',
+                 '木':'木','禾':'木','山':'土','田':'土','鼎':'金'};
+const ELEM_COLOR = {'金':'#e8c15a','木':'#8bc34a','水':'#6fb7e8','火':'#f0674a','土':'#c49a6a'};
+const SYNERGIES = {
+  sheng:{ch:'生', need:{'水':3,'木':2}, name_en:'水木相生 · GROWTH',  name_zh:'水木相生',
+         en:'the waters feed the wood — a heart mends every 18s',            zh:'水生木——每18秒回复一心'},
+  duan: {ch:'鍛', need:{'金':2,'火':2}, name_en:'金火鍛造 · FORGING', name_zh:'金火鍛造',
+         en:'fire tempers metal — a 龜 shell re-forms every 12s',            zh:'火炼金——每12秒重铸一层龟甲'},
+  ni:   {ch:'泥', need:{'土':2,'水':2}, name_en:'土水成泥 · MIRE',    name_zh:'土水成泥',
+         en:'earth drinks water — roots, slows and ink pools hold half again as long', zh:'土得水而成泥——缠足、迟缓与墨池更久更广'},
+  liao: {ch:'燎', need:{'木':2,'火':2}, name_en:'木火燎原 · KINDLING', name_zh:'木火燎原',
+         en:'wood feeds fire — every glyph you catch sets your ink burning (3s)',      zh:'木助火势——每拾一字，焚墨三秒'}
+};
+
+/* ============================== 文房四宝 · the scholar's desk ============================== */
+/* between waves the scroll unrolls: one refinement, brushed on bamboo.
+   Some choices pay now; the ones marked 遠 (far-sighted) pay at the bones. */
+const DESK_POOL = [
+  {id:'ji',   cat:'筆', nm:'疾筆', en:'the strokes quicken — ink 12% faster',            zh:'落笔更疾——出手快12%',       ap:(d)=>d.atkInt*=0.88},
+  {id:'kuo',  cat:'筆', nm:'闊鋒', en:'a wider sweep — each stroke cuts one more',       zh:'锋更阔——每笔多斩一敌',       ap:(d)=>d.hits+=1},
+  {id:'chang',cat:'筆', nm:'長鋒', en:'a longer reach — +12% range',                     zh:'锋更长——及远+12%',          ap:(d)=>d.range*=1.12},
+  {id:'nong', cat:'墨', nm:'濃墨', en:'thick ink — every third stroke cuts deeper (+1)', zh:'墨浓——每三笔必有一记重墨(+1伤)', ap:(d)=>d.dmg3+=1},
+  {id:'chi',  cat:'墨', nm:'墨池', en:'fallen spirits leave ink pools that mire the pack', zh:'墨池——倒下之处积墨成潭，缓敌',  ap:(d)=>d.pools+=1},
+  {id:'jiao', cat:'墨', nm:'焦墨', en:'scorched ink — while your ink burns (火), it burns twice', zh:'焦墨——「火」焚墨时伤害加倍', ap:(d)=>d.jiao=true},
+  {id:'run',  cat:'硯', nm:'潤硯', en:"the family's gift returns 15% sooner",            zh:'砚润——字族天赋恢复快15%',    ap:(d)=>d.giftCd*=0.85},
+  {id:'yinm', cat:'硯', nm:'引墨', en:'fallen glyphs drift to you from 30% farther',     zh:'引墨——吸字更远30%',          ap:(d)=>d.magnet*=1.3},
+  {id:'zhong',cat:'硯', nm:'重硯', en:'carried arms strike 12% faster',                  zh:'砚重——兵器出手快12%',        ap:(d)=>d.wInt*=0.88},
+  {id:'hou',  cat:'紙', nm:'厚紙', en:'a stronger sheet — +1 heart, now and to the cap', zh:'纸厚——生命上限+1并回复',      ap:null},
+  {id:'renz', cat:'紙', nm:'韌紙', en:'tough paper — the first blow each wave is turned aside', zh:'纸韧——每波第一击化于无形', ap:(d)=>d.firstGuard=true},
+  {id:'yang', cat:'紙', nm:'養字', en:'each glyph teaches two — evolution comes far sooner',    zh:'养字——每字作两字用，进化更快', ap:(d)=>d.xpPer=2, inv:true},
+  {id:'hewen',cat:'墨', nm:'合文', en:'ground glyphs ripen into 鼎 twice as fast',        zh:'合文——落字更快熟成为「鼎」',  ap:(d)=>d.mature=2, inv:true},
+  {id:'wux',  cat:'硯', nm:'五行', en:'every glyph counts double toward its element',     zh:'五行——每字之五行属性倍计',    ap:(d)=>d.wuxing=true, inv:true}
+];
+
+/* ============================== 篆刻 · the seal carver ============================== */
+/* permanent radicals, cut into the soapstone between runs */
+const CARVES = {
+  xin: {ch:'心', cost:2, en:'+1 heart to every run',              zh:'每局初始+1心'},
+  zhi: {ch:'止', cost:2, en:'surer feet — +6% stride',            zh:'步履更疾——+6%'},
+  you: {ch:'又', cost:3, en:'the starting arm comes recast (LV2)', zh:'初始之器已经重铸(LV2)'},
+  mu:  {ch:'目', cost:3, en:'far sight — +25% glyph magnet',      zh:'明目——吸字+25%'},
+  huo: {ch:'火', cost:4, en:'fire in the wrist — ink 8% faster',  zh:'腕底生火——出手快8%'},
+  bei: {ch:'貝', cost:4, en:'the spirits drop glyphs more often', zh:'得贝——掉字更频'}
+};
 
 /* ============================== characters ============================== */
 /* Four playable glyph families (etymology per zdic 字源字形). There is no
@@ -1548,15 +1982,16 @@ const NUMCH = ['一','二','三','亖'];
 
 /* ============================== game ============================== */
 const CW = 960, CH = 540, WALL = 22;
-const zdicLink = (c)=>`<a href="https://zdic.net/hans/${encodeURIComponent(c)}" target="_blank" rel="noopener" style="color:#1db954;font-size:0.78em;text-decoration:none">字源字形 ↗</a>`;
+const zdicLink = (c)=>`<a href="https://zdic.net/hans/${encodeURIComponent(c)}" target="_blank" rel="noopener" style="color:#2e7d4f;font-size:0.78em;text-decoration:none">字源字形 ↗</a>`;
 
 const Game = (function(){
   const cvs = document.getElementById('cvs');
   const ctx = cvs.getContext('2d');
   const $ = (id)=>document.getElementById(id);
 
-  const MAXHP = 6, LV_XP = [0, 10, 24, 40];   // glyphs needed to reach each form
-  let stageIdx = 0, lives = MAXHP, coins = 0, nextHeart = 12, level = 0, running = false, raf = 0, lastTs = 0;
+  const HP_BASE = 6, LV_XP = [0, 10, 24, 40];   // glyphs needed to reach each form
+  let maxHp = HP_BASE;
+  let stageIdx = 0, lives = maxHp, coins = 0, nextHeart = 12, level = 0, running = false, raf = 0, lastTs = 0;
   let era, wave, tGlobal = 0, waveT = 0, spawnT = 1, fireT = 3, gate = null, gateGlow = 0;
   let selChar = 'ren', selArm = 'gong', lastSkillTxt = '', shakeT = 0, slowAllT = 0, buffT = 0;
   let player, keys = {}, joy = {x:0, y:0, on:false};
@@ -1565,8 +2000,29 @@ const Game = (function(){
   let pav = null, treeDone = false, pavDone = false;
   let hatOn = false, shengPed = null, paused = false, foesSeen = {}, banner = null;
 
+  /* --- the scholar's overhaul state --- */
+  const freshDesk = ()=>({atkInt:1, hits:0, range:1, wInt:1, giftCd:1, magnet:1,
+                          dmg3:0, pools:0, jiao:false, firstGuard:false, xpPer:1, mature:1, wuxing:false});
+  let desk = freshDesk();
+  let elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
+  let synOn = {}, shengT = 18, duanT = 12, oppSeen = false;
+  let pools = [], waveGuard = false, strokeN = 0, matT = 0.6, stainFade = 0, runGlyphs = 0;
+  const inkCvs = document.createElement('canvas'); inkCvs.width = CW; inkCvs.height = CH;
+  const inkCtx = inkCvs.getContext('2d');
+
+  /* --- what the stone and the scroll remember between runs --- */
+  function loadJSON(k, def){ try{ const v = JSON.parse(localStorage.getItem(k)); return v || def; }catch(e){ return def; } }
+  function saveJSON(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  const seal = loadJSON('glyphrun_seal', {pts:0, carved:{}});
+  const seen = loadJSON('glyphrun_codex', {foes:{}, forms:{}, glyphs:{}, arms:{}, syn:{}});
+  ['foes','forms','glyphs','arms','syn'].forEach(k=>{ if(!seen[k]) seen[k] = {}; });
+  function mark(cat, key, val){
+    const nv = val === undefined ? 1 : val, cur = seen[cat][key];
+    if(cur === undefined || nv > cur){ seen[cat][key] = nv; saveJSON('glyphrun_codex', seen); }
+  }
+
   function overlay(id, show){ $(id).classList.toggle('show', show); }
-  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin','ovPause'].forEach(i=>overlay(i,false)); }
+  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin','ovPause','ovDesk','ovSeal'].forEach(i=>overlay(i,false)); }
   function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
   const C = ()=>CHARS[selChar];
 
@@ -1580,6 +2036,8 @@ const Game = (function(){
     dragonDone = false; bossDone = false;
     shengPed = (i === 1 && !hatOn) ? {x:CW*0.3, y:CH*0.35, bob:0} : null;
     pav = null; treeDone = false; pavDone = false;
+    pools = []; waveGuard = desk.firstGuard; matT = 0.6;
+    inkCtx.clearRect(0, 0, CW, CH);                       // a fresh sheet for each era
     player = { x:CW/2, y:CH*0.62, vx:0, vy:0, face:1, runPhase:0, sq:0, inv:1.0,
                atkT:0.5, lastDir:{x:1,y:0},
                slipT:0, penT:0, phaseCdT:2.5, phasedT:0, pulseT:1,
@@ -1595,26 +2053,134 @@ const Game = (function(){
     $('hudEra').style.color = era.ink;
     $('hudEra').querySelector('b').style.color = era.accent;
     $('hudCoins').textContent = coins;
-    $('hudLives').innerHTML = '♥'.repeat(Math.max(0,lives)) + '<span style="opacity:0.3">' + '♥'.repeat(Math.max(0,MAXHP-lives)) + '</span>';
+    $('hudLives').innerHTML = '♥'.repeat(Math.max(0,lives)) + '<span style="opacity:0.3">' + '♥'.repeat(Math.max(0,maxHp-lives)) + '</span>';
+    syncElems();
+  }
+  /* the five phases, counted under the arena; woken synergies glow cinnabar */
+  function syncElems(){
+    const row = $('elemRow'); if(!row) return;
+    let html = '';
+    for(const el of ['金','木','水','火','土']){
+      const n = elems[el];
+      html += `<span class="echip${n>0?' lit':''}" style="${n>0?`border-color:${ELEM_COLOR[el]}55;`:''}"><b style="color:${n>0?ELEM_COLOR[el]:'#555'}">${el}</b> ${n}</span>`;
+    }
+    for(const id of Object.keys(SYNERGIES)){
+      if(synOn[id]) html += `<span class="echip syn" title="${t(SYNERGIES[id].en, SYNERGIES[id].zh)}">${SYNERGIES[id].ch} · ${t(SYNERGIES[id].name_en, SYNERGIES[id].name_zh)}</span>`;
+    }
+    row.innerHTML = html;
+  }
+  function checkSynergies(){
+    for(const id of Object.keys(SYNERGIES)){
+      if(synOn[id]) continue;
+      const S = SYNERGIES[id];
+      if(Object.keys(S.need).every(el=>elems[el] >= S.need[el])){
+        synOn[id] = true;
+        if(id === 'sheng') shengT = 18;
+        if(id === 'duan') duanT = 0.5;
+        mark('syn', id);
+        popToastEx(S.ch, t(S.name_en, S.name_zh), t(S.en, S.zh), 'jiang');
+        addFx({kind:'levelup', x:player.x, y:player.y, t:0.9, r:90, ch:S.ch});
+        SFX.toll();
+        syncElems();
+      }
+    }
+  }
+  function gainElem(el, n){
+    if(!el) return;
+    elems[el] += (n||1) * (desk.wuxing ? 2 : 1);
+    checkSynergies();
   }
 
   /* ---------- lifecycle ---------- */
   function start(){
-    stageIdx = 0; lives = MAXHP; coins = 0; nextHeart = 12; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
-    weapons = [{key:selArm, lv:1, t:0.8}];
+    maxHp = HP_BASE + (seal.carved.xin ? 1 : 0);
+    stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 12; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
+    desk = freshDesk();
+    elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
+    synOn = {}; shengT = 18; duanT = 12; oppSeen = false; strokeN = 0; runGlyphs = 0;
+    weapons = [{key:selArm, lv: seal.carved.you ? 2 : 1, t:0.8}];
+    mark('arms', selArm, weapons[0].lv);
+    mark('forms', selChar, 0);
     hideAll();
     loadStage(0);
+    stampRun();
     running = true; lastTs = performance.now();
     if(!raf) raf = requestAnimationFrame(loop);
+  }
+  /* the carved seal strikes the paper as the run begins */
+  function stampRun(){
+    const marks = Object.keys(seal.carved).filter(k=>seal.carved[k]).map(k=>CARVES[k].ch);
+    drawSealStamp($('stampCvs'), marks.length ? marks : null);
+    const fxEl = $('stampFx');
+    fxEl.classList.remove('go'); void fxEl.offsetWidth;      // restart the animation
+    fxEl.classList.add('go');
+    SFX.stamp();
+    setTimeout(()=>fxEl.classList.remove('go'), 900);
   }
   function restart(){ start(); }
   function nextStage(){
     hideAll();
     if(stageIdx+1 >= WAVES.length){ win(); return; }
     loadStage(stageIdx+1);
-    if(lives < MAXHP){ lives++; syncHud(); }   // the gate mends one heart
+    if(lives < maxHp){ lives++; syncHud(); }   // the gate mends one heart
     running = true; lastTs = performance.now();
     if(!raf) raf = requestAnimationFrame(loop);
+  }
+
+  /* ---------- 文房四宝: the desk between waves ---------- */
+  let deskPicked = false;
+  function toDesk(){
+    if(stageIdx+1 >= WAVES.length){ nextStage(); return; }   // past the last gate there is no desk
+    overlay('ovClear', false);
+    buildDesk();
+    overlay('ovDesk', true);
+    SFX.unroll();
+  }
+  function buildDesk(){
+    deskPicked = false;
+    const wrap = $('deskScroll');
+    wrap.classList.remove('rollup');
+    wrap.style.animation = 'none'; void wrap.offsetWidth; wrap.style.animation = '';
+    const slats = $('deskSlats'); slats.innerHTML = '';
+    /* three offers: distinct, at most one far-sighted investment among them */
+    const pool = DESK_POOL.slice();
+    const picks = [];
+    let invTaken = false;
+    while(picks.length < 3 && pool.length){
+      const i = (Math.random()*pool.length)|0;
+      const o = pool.splice(i, 1)[0];
+      if(o.inv && invTaken) continue;
+      if(o.id === 'hou' && maxHp >= HP_BASE+3) continue;     // the paper can only thicken so far
+      if(o.inv) invTaken = true;
+      picks.push(o);
+    }
+    picks.forEach((o, idx)=>{
+      const d = document.createElement('div');
+      d.className = 'slat';
+      d.innerHTML = `<span class="cat">${o.cat}</span><span class="nm">${o.nm.split('').join('<br>')}</span>`
+                  + `<span class="ds">${t(o.en, o.zh)}</span>`
+                  + (o.inv ? `<span class="inv">${t('遠 · pays at the bones','遠謀——利在甲骨')}</span>` : '')
+                  + `<svg class="ring" viewBox="0 0 118 320" preserveAspectRatio="none"><ellipse cx="59" cy="160" rx="46" ry="138" transform="rotate(-4 59 160)"/></svg>`;
+      d.onclick = ()=>pickDesk(o, d);
+      slats.appendChild(d);
+      d.dataset.key = idx+1;
+    });
+  }
+  function pickDesk(o, el){
+    if(deskPicked) return;
+    deskPicked = true;
+    if(o.ap) o.ap(desk);
+    if(o.id === 'hou'){ maxHp++; lives = Math.min(maxHp, lives+1); }
+    el.classList.add('picked');
+    SFX.swish();
+    setTimeout(()=>{ SFX.unroll(); $('deskScroll').classList.add('rollup'); }, 620);
+    setTimeout(()=>{ overlay('ovDesk', false); nextStage(); }, 1080);
+  }
+  function deskKey(n){
+    if(!$('ovDesk').classList.contains('show')) return false;
+    const el = $('deskSlats').children[n-1];
+    if(el) el.click();
+    return true;
   }
   function stageClear(){
     running = false;
@@ -1622,7 +2188,7 @@ const Game = (function(){
     const cs = C();
     $('clearBtn').textContent = toIdx >= WAVES.length
       ? t('▶ See what you became','▶ 看看你成了什么')
-      : t('▶ Deeper into the past','▶ 更向古代');
+      : t("▶ to the scholar's desk",'▶ 文房小憩');
     $('clearTitle').textContent = t('THE ERA REWINDS','时代倒退');
     let msg;
     if(toIdx < WAVES.length){
@@ -1630,20 +2196,22 @@ const Game = (function(){
       const threat = toIdx===1 ? t(' — wild 豕 boars charge, and 皿 the living vessel stirs','——野「豕」直线冲撞，活器「皿」蠢蠢欲动')
                    : toIdx===2 ? t(' — 虎 stalks, 蠱 brews its worms, and the storm gathers: 電 strikes from the sky (rain over 申, the bolt itself)','——「虎」环伺，「蠱」养其虫；风雨将至，「電」自天而击（雨在「申」上，申即闪电）')
                    : toIdx===3 ? t(' — and 龍 coils through the last night: carve it apart segment by segment','——「龍」盘旋于最后的长夜：须逐节斩落') : '';
-      msg = `<b style="color:#e8b04a">${fe.sub} → ${te.sub}</b>`
+      msg = `<b style="color:#a3271b">${fe.sub} → ${te.sub}</b>`
           + `<br>${cf.ch} ${cf.py} · ${t(cf.mean_en, cf.mean_zh)} ${zdicLink(cf.ch)}`
-          + `<br><span style="color:#8bc34a;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${threat}</span>`
-          + (level < 3 ? `<br><span style="font-size:0.8em;color:#8a8a8a">${t('gather glyphs to evolve','集字以进化')} · ${coins}/${LV_XP[level+1]}</span>` : '');
+          + `<br><span style="color:#356b43;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${threat}</span>`
+          + (level < 3 ? `<br><span style="font-size:0.8em;color:#7a6845">${t('gather glyphs to evolve','集字以进化')} · ${coins}/${LV_XP[level+1]}</span>` : '');
     } else {
       msg = t(`${cs.forms[level].ch} · the oldest gate is behind you`, `${cs.forms[level].ch} · 最古老的门已在身后`);
     }
     $('clearMsg').innerHTML = msg;
     overlay('ovClear', true);
+    SFX.toll();
     animateMorph(fi, Math.min(toIdx, WAVES.length-1));
   }
   function animateMorph(fromEraI, toEraI){
     const c = $('clearCanvas'); const cx2 = c.getContext('2d');
-    const colFrom = ERAS[ERA_ORDER[fromEraI]].ink, colTo = ERAS[ERA_ORDER[toEraI]].ink;
+    /* ink on paper now: the old form in faded ink, the new one struck in cinnabar */
+    const colFrom = '#5d4b33', colTo = '#a3271b';
     let tt = 0;
     (function step(){
       tt += 0.028;
@@ -1658,17 +2226,25 @@ const Game = (function(){
       if(k < 1 && $('ovClear').classList.contains('show')) requestAnimationFrame(step);
     })();
   }
+  /* every run pays the carver: a cut per wave survived, one per 15 glyphs */
+  function bankSealPts(wavesCleared){
+    const earned = wavesCleared + ((runGlyphs/15)|0);
+    if(earned > 0){ seal.pts += earned; saveJSON('glyphrun_seal', seal); }
+    return earned;
+  }
   function gameOver(){
     running = false;
     const wc = $('wangCanvas');
     if(wc && wc.getContext){
       const c2 = wc.getContext('2d');
       c2.clearRect(0, 0, wc.width, wc.height);
-      drawWang(c2, wc.width/2, wc.height*0.92, 92, '#f0674a');
+      drawWang(c2, wc.width/2, wc.height*0.92, 92, '#a3271b');
     }
+    const earned = bankSealPts(stageIdx);
     $('overMsg').textContent = t(
       `You gathered ${coins} glyphs before fading. The bones can wait.`,
-      `你在消散前集齐了 ${coins} 个字。甲骨可以再等等。`);
+      `你在消散前集齐了 ${coins} 个字。甲骨可以再等等。`)
+      + (earned > 0 ? ' ' + t(`The carver keeps ${earned} cut${earned>1?'s':''} for the seal.`, `刻印人为你记下${earned}刀。`) : '');
     overlay('ovOver', true);
   }
   function win(){
@@ -1682,14 +2258,17 @@ const Game = (function(){
       const lab = document.createElement('span');
       lab.innerHTML = `<a href="https://zdic.net/hans/${encodeURIComponent(f.ch)}" target="_blank" rel="noopener" style="color:inherit">${f.ch}</a> · ${ERAS[ERA_ORDER[i]].sub}`;
       cell.appendChild(cc); cell.appendChild(lab); row.appendChild(cell);
-      drawCharPortrait(cc, selChar, i, ERAS[ERA_ORDER[i]].ink);
+      drawCharPortrait(cc, selChar, i, i === level ? '#a3271b' : '#2b2118');   // ink on paper, the final form in cinnabar
     });
     const first = cs.forms[0], last = cs.forms[level];
+    const earned = bankSealPts(WAVES.length);
     $('winTitle').textContent = `${first.ch} → ${last.ch} · ` + t('GROWN TO THE ROOT','长成于本源');
     $('winMsg').textContent = t(
       `You grew ${first.ch} into ${last.ch} (${last.py} — ${last.mean_en}) across 3,000 years of script — ${coins} glyphs gathered from the dark.`,
-      `你让「${first.ch}」在三千年的字体长河中长成了「${last.ch}」（${last.py}）——自长夜中集得 ${coins} 个字。`);
+      `你让「${first.ch}」在三千年的字体长河中长成了「${last.ch}」（${last.py}）——自长夜中集得 ${coins} 个字。`)
+      + (earned > 0 ? ' ' + t(`The carver keeps ${earned} cuts for the seal.`, `刻印人为你记下${earned}刀。`) : '');
     overlay('ovWin', true);
+    SFX.toll();
   }
 
   /* ---------- combat helpers ---------- */
@@ -1704,8 +2283,13 @@ const Game = (function(){
   function killSpirit(s){
     s.dead = true;
     addFx({kind:'poof', x:s.x, y:s.y, t:0.3, r:20});
+    inkSplat(inkCtx, s.x, s.y, s.boss ? 26 : (s.type==='hu' ? 16 : 12), '#0d0b10');  // ink stains where it fell
+    SFX.thud();
+    if(desk.pools && s.type!=='guo')                  // 墨池: the ink lingers and mires
+      pools.push({x:s.x, y:s.y, r:(24+desk.pools*10)*(synOn.ni?1.4:1), t:6*(synOn.ni?1.5:1), max:6*(synOn.ni?1.5:1)});
+    if(s.opp === '火') fires.push({x:s.x, y:s.y, r:22, t:3.2});   // the fire spirit ignites as it falls
     if(s.type==='guo'){                               // 果: struck thrice, it gives
-      if(lives < MAXHP){ lives++; syncHud(); }
+      if(lives < maxHp){ lives++; syncHud(); }
       addFx({kind:'heal', x:s.x, y:s.y-24, t:0.8, r:0});
       for(const off of [-16, 16]) pickups.push({x:s.x+off, y:s.y+10, ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:10, bob:off});
       popToastEx('果', 'guǒ', t('the tree gives — +1 heart', '果树馈赠——回复一心'), 'wu');
@@ -1715,14 +2299,15 @@ const Game = (function(){
       for(let i=0;i<5;i++) pickups.push({x:s.x+Math.cos(i*1.26)*26, y:s.y+Math.sin(i*1.26)*26,
                                          ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:10, bob:i});
       buffT = 8;
-      if(lives < MAXHP){ lives++; syncHud(); }
+      if(lives < maxHp){ lives++; syncHud(); }
       addFx({kind:'levelup', x:s.x, y:s.y, t:1.0, r:110, ch:'光'});
       popToastEx('光', 'guāng · 甲骨', t('the torch-bearer lights you: swifter, sharper','火炬加身：更快、更利'));
-    } else if(Math.random() < (s.type==='long' ? 0.6 : 0.35)){
+    } else if(Math.random() < (s.type==='long' ? 0.6 : 0.35) + (seal.carved.bei ? 0.10 : 0)){
       pickups.push({x:s.x, y:s.y, ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:9, bob:Math.random()*6});
     }
   }
   function announceFoe(type){
+    mark('foes', type);
     if(foesSeen[type]) return;
     foesSeen[type] = true;
     const F = FOE_INFO[type];
@@ -1730,6 +2315,7 @@ const Game = (function(){
   }
   function showBanner(type){
     foesSeen[type] = true;
+    mark('foes', type);
     const F = FOE_INFO[type];
     banner = {ch:F.ch, py:F.py, line:t(F.en, F.zh), t:0, dur:2.8};
     shakeT = Math.max(shakeT, 0.25);
@@ -1745,6 +2331,8 @@ const Game = (function(){
   }
   function hit(){
     lives--; player.inv = 1.0; shakeT = 0.3;
+    inkSplat(inkCtx, player.x, player.y, 14, '#7e1f12');       // your own ink runs cinnabar
+    SFX.crack();
     addFx({kind:'hurt', x:player.x, y:player.y, t:0.35, r:34});
     addFx({kind:'flash', x:0, y:0, t:0.3, r:0});
     for(const s of spirits){                    // mercy shove so i-frames aren't chain-eaten
@@ -1756,6 +2344,11 @@ const Game = (function(){
   }
   function hurtPlayer(src){
     if(player.inv > 0 || player.phasedT > 0) return;
+    if(waveGuard){                                   // 韌紙: the first blow tears the sheet, not you
+      waveGuard = false; player.inv = 0.6;
+      addFx({kind:'shieldpop', x:player.x, y:player.y, t:0.3, r:38});
+      return;
+    }
     if(player.shellOn){                              // 龜: the shell takes it
       player.shellOn = false; player.inv = 0.4;
       addFx({kind:'shieldpop', x:player.x, y:player.y, t:0.3, r:36});
@@ -1763,7 +2356,7 @@ const Game = (function(){
     }
     if(selChar==='ren' && player.slipT <= 0){        // 祖灵借步: the ancestors lend a step
       const c = CHARS.ren;
-      player.slipT = c.slipCd[level];
+      player.slipT = c.slipCd[level] * desk.giftCd;
       player.inv = 0.6;
       addFx({kind:'poof', x:player.x, y:player.y, t:0.3, r:24});
       player.x = clamp(player.x + player.lastDir.x*38, WALL+16, CW-WALL-16);
@@ -1772,7 +2365,7 @@ const Game = (function(){
       return;
     }
     if(selChar==='niu' && level >= CHARS.niu.penTier && player.penT <= 0){  // 牢: the pen holds once
-      player.penT = CHARS.niu.penCd;
+      player.penT = CHARS.niu.penCd * desk.giftCd;
       addFx({kind:'shieldpop', x:player.x, y:player.y, t:0.3, r:38});
       if(src && src.x !== undefined && !src.boss){
         const dx = src.x-player.x, dy = src.y-player.y, d = Math.hypot(dx,dy)||1;
@@ -1805,6 +2398,31 @@ const Game = (function(){
     if(player.boatT > 0) player.boatT -= dt;
     if(player.phasedT > 0 && selChar!=='gui') player.phasedT -= dt;   // 月's veil ticks for everyone else
 
+    // --- the woken synergies do their quiet work ---
+    if(synOn.sheng){                                  // 水木相生: the growth mends you
+      shengT -= dt;
+      if(shengT <= 0){
+        shengT = 18;
+        if(lives < maxHp){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); syncHud(); }
+      }
+    }
+    if(synOn.duan && !player.shellOn){                // 金火鍛造: the shell re-tempers
+      duanT -= dt;
+      if(duanT <= 0){ duanT = 12; player.shellOn = true; addFx({kind:'shieldpop', x:player.x, y:player.y, t:0.3, r:30}); }
+    }
+    // ink pools dry; the stain layer slowly sinks into the paper
+    for(const pl of pools) pl.t -= dt;
+    pools = pools.filter(pl=>pl.t > 0);
+    stainFade += dt;
+    if(stainFade > 0.6){
+      stainFade = 0;
+      inkCtx.save();
+      inkCtx.globalCompositeOperation = 'destination-out';
+      inkCtx.globalAlpha = 0.045;
+      inkCtx.fillRect(0, 0, CW, CH);
+      inkCtx.restore();
+    }
+
     // --- steering: keyboard + joystick; the ghost drifts on momentum ---
     let dx = (keys.left?-1:0)+(keys.right?1:0), dy = (keys.up?-1:0)+(keys.down?1:0);
     if(joy.on && Math.hypot(joy.x,joy.y) > 0.16){ dx = joy.x; dy = joy.y; }
@@ -1814,7 +2432,9 @@ const Game = (function(){
       player.lastDir = {x:dx, y:dy};
       if(Math.abs(dx) > 0.25) player.face = dx>0?1:-1;
     }
-    const spd = 200 * c.spd * (buffT>0 ? 1.3 : 1) * (player.speedT>0 ? 1.45 : 1);
+    const inInk = pools.some(pl=>Math.hypot(pl.x-player.x, pl.y-player.y) < pl.r);  // your own ink carries you
+    const spd = 200 * c.spd * (buffT>0 ? 1.3 : 1) * (player.speedT>0 ? 1.45 : 1)
+              * (seal.carved.zhi ? 1.06 : 1) * (inInk ? 1.1 : 1);
     if(c.drift){
       const ax = mag>0.01 ? dx*spd*Math.min(1,mag) : 0;
       const ay = mag>0.01 ? dy*spd*Math.min(1,mag) : 0;
@@ -1838,7 +2458,7 @@ const Game = (function(){
         player.phaseCdT -= dt;
         if(player.phaseCdT <= 0){
           player.phasedT = c.phaseLen[tier];
-          player.phaseCdT = c.phaseCd[tier];
+          player.phaseCdT = c.phaseCd[tier] * desk.giftCd;
           addFx({kind:'poof', x:player.x, y:player.y, t:0.3, r:26});
         }
       }
@@ -1846,7 +2466,7 @@ const Game = (function(){
     if(selChar==='xiang'){                            // 撼地之步: the tread quakes on its own
       player.pulseT -= dt;
       if(player.pulseT <= 0 && mag > 0.01){
-        player.pulseT = c.pulseInt[tier];
+        player.pulseT = c.pulseInt[tier] * desk.giftCd;
         const pr = c.pulseR[tier];
         addFx({kind:'quake', x:player.x, y:player.y, t:0.4, r:pr});
         shakeT = Math.max(shakeT, 0.08); player.sq = -0.15;
@@ -1866,7 +2486,7 @@ const Game = (function(){
     if(selChar==='niao'){                             // 振翅: the wing-gust
       player.pulseT -= dt;
       if(player.pulseT <= 0){
-        player.pulseT = c.gustInt[tier];
+        player.pulseT = c.gustInt[tier] * desk.giftCd;
         const gr = c.gustR[tier];
         addFx({kind:'ringatk', x:player.x, y:player.y, r:gr, t:0.3});
         for(const s of spirits){
@@ -1876,7 +2496,7 @@ const Game = (function(){
             if(tier >= c.dmgTier) hurtSpirit(s, 1);
             if(!s.dead){
               s.x += (s.x-player.x)/(d2||1)*95; s.y += (s.y-player.y)/(d2||1)*95;
-              if(tier >= c.slowTier) s.slowT = 1.5;
+              if(tier >= c.slowTier) s.slowT = 1.5*(synOn.ni?1.5:1);
               s.iT = Math.max(s.iT||0, 0.3);
             }
           }
@@ -1887,7 +2507,7 @@ const Game = (function(){
     // --- auto-attack: the ink strikes the nearest spirit ---
     player.atkT -= dt;
     if(player.atkT <= 0){
-      const range = c.atk.range * ATK_RNG[tier] * (hatOn ? 1.22 : 1);
+      const range = c.atk.range * ATK_RNG[tier] * (hatOn ? 1.22 : 1) * desk.range;
       const tgt = nearestSpirit(range);
       if(tgt){
         const ang = Math.atan2(tgt.y-player.y, tgt.x-player.x);
@@ -1902,7 +2522,8 @@ const Game = (function(){
               if(Math.abs(da) < 0.85) cand.push([d, s]);
             }
           }
-          addFx({kind:'slash', x:player.x, y:player.y, ang, r:range, t:0.18});
+          /* the stroke is the glyph's own: 人 cuts with its two strokes 撇捺 */
+          addFx({kind: selChar==='ren' ? 'slashren' : 'slash', x:player.x, y:player.y, ang, r:range, t:0.18});
         } else if(c.atk.kind === 'lance'){
           const ux = Math.cos(ang), uy = Math.sin(ang);
           for(const s of spirits){
@@ -1921,8 +2542,13 @@ const Game = (function(){
           addFx({kind:'ringatk', x:player.x, y:player.y, r:range, t:0.22});
         }
         cand.sort((a,b)=>a[0]-b[0]);
-        for(const [,s] of cand.slice(0, c.atk.hits)) hurtSpirit(s, 1 + (player.fireInkT>0 ? 1 : 0));   // 火: the ink burns
-        player.atkT = c.atk.int * ATK_INT[tier] * (buffT>0 ? 0.72 : 1);
+        strokeN++;
+        const heavy = desk.dmg3 > 0 && strokeN % 3 === 0 ? desk.dmg3 : 0;                 // 濃墨: the third stroke lands loaded
+        const burn = player.fireInkT > 0 ? (desk.jiao ? 2 : 1) : 0;                       // 火: the ink burns; 焦墨 twice over
+        for(const [,s] of cand.slice(0, c.atk.hits + desk.hits))
+          hurtSpirit(s, 1 + heavy + (burn && s.opp==='水' ? 0 : burn));                   // water spirits shrug off the flame
+        SFX.swish();
+        player.atkT = c.atk.int * ATK_INT[tier] * (buffT>0 ? 0.72 : 1) * desk.atkInt * (seal.carved.huo ? 0.92 : 1);
       } else {
         player.atkT = 0.06;
       }
@@ -1952,7 +2578,7 @@ const Game = (function(){
         for(const da of spread) projectiles.push({x:bx, y:by, ux:Math.cos(ang+da), uy:Math.sin(ang+da),
                                                   t:1.2, pierce:2+lv, spd:430+lv*60, lv});
         addFx({kind:'ringatk', x:bx, y:by, r:12+lv*5, t:0.14});
-        w.recoil = 1; w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv] * desk.wInt;
       } else if(w.key === 'jian'){                    // 劍: quick arcs at whatever comes
         const tgt = nearestSpirit(W.reach[lv]+14);
         if(!tgt){ w.t = 0.1; continue; }
@@ -1970,7 +2596,7 @@ const Game = (function(){
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'slash', x:player.x, y:player.y, ang, r:W.reach[lv], t:0.16});
-        w.recoil = 1; w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv] * desk.wInt;
       } else if(w.key === 'ge'){
         const back = Math.atan2(-player.lastDir.y, -player.lastDir.x);
         const cand = [];
@@ -1986,7 +2612,7 @@ const Game = (function(){
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'slash', x:player.x, y:player.y, ang:back, r:W.reach[lv]-8, t:0.18});
-        w.recoil = 1; w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv] * desk.wInt;
       } else if(w.key === 'mao'){
         const fwd = Math.atan2(player.lastDir.y, player.lastDir.x);
         const ux = Math.cos(fwd), uy = Math.sin(fwd), cand = [];
@@ -2000,7 +2626,7 @@ const Game = (function(){
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'lance', x:player.x, y:player.y, ang:fwd, r:W.reach[lv], t:0.16});
-        w.recoil = 1; w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv] * desk.wInt;
       } else if(w.key === 'jin'){
         const chop = nearestSpirit(210);
         if(!chop){ w.t = 0.12; continue; }
@@ -2009,7 +2635,7 @@ const Game = (function(){
           if(!s.dead && Math.hypot(s.x-chop.x, s.y-chop.y) <= sr) hurtSpirit(s, 2);
         }
         addFx({kind:'ringatk', x:chop.x, y:chop.y, r:sr, t:0.2});
-        w.recoil = 1; w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv] * desk.wInt;
       } else if(w.key === 'dao'){
         const cand = [];
         for(const s of spirits){
@@ -2021,7 +2647,7 @@ const Game = (function(){
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'ringatk', x:player.x, y:player.y, r:W.reach[lv], t:0.16});
-        w.recoil = 1; w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv] * desk.wInt;
       } else if(w.key === 'shi'){                     // 矢: arrows out of heaven
         const live = spirits.filter(sp2=>!sp2.dead && sp2.type!=='guo');
         if(!live.length){ w.t = 0.15; continue; }
@@ -2031,16 +2657,16 @@ const Game = (function(){
           addFx({kind:'lance', x:tgt2.x, y:tgt2.y-70, ang:Math.PI/2, r:64, t:0.22});
           hurtSpirit(tgt2, 1);
         }
-        w.recoil = 1; w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv] * desk.wInt;
       } else { // 網
         const tgt = nearestSpirit(320);
         if(!tgt){ w.t = 0.15; continue; }
         const nr = W.reach[lv];
         for(const s of spirits){
-          if(!s.dead && Math.hypot(s.x-tgt.x, s.y-tgt.y) <= nr) s.rootT = W.root[lv];
+          if(!s.dead && Math.hypot(s.x-tgt.x, s.y-tgt.y) <= nr) s.rootT = W.root[lv] * (synOn.ni ? 1.5 : 1);
         }
         addFx({kind:'net', x:tgt.x, y:tgt.y, r:nr, t:1.4});
-        w.recoil = 1; w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv] * desk.wInt;
       }
     }
     // arrows in flight
@@ -2077,9 +2703,27 @@ const Game = (function(){
               let type = 'gui', hp = 1, cr = 29;
               if(stageIdx >= 1 && roll < [0,0.18,0.2,0.2][stageIdx]){ type = 'shi'; hp = 2; cr = 30; }
               else if(stageIdx >= 2 && roll > 1 - [0,0,0.12,0.18][stageIdx]){ type = 'hu'; hp = 3; cr = 34; }
-              spirits.push({x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
-                            st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
-                            spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)});
+              const sp = {x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
+                          st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
+                          spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)};
+              /* 相剋: stack an element and its opposite rises against you —
+                 hoard 火 and river spirits come to quench it (swift, unburnable);
+                 hoard 水 and ember spirits come, igniting the ground they die on */
+              if(type === 'gui' && Math.random() < 0.22){
+                const counters = [];
+                if(elems['火'] >= 3) counters.push('水');
+                if(elems['水'] >= 3) counters.push('火');
+                if(counters.length){
+                  sp.opp = counters[(Math.random()*counters.length)|0];
+                  if(sp.opp === '水'){ sp.spd *= 1.18; sp.hp = 2; }
+                  else sp.hp = 2;
+                  if(!oppSeen){
+                    oppSeen = true;
+                    popToastEx('剋', 'kè', t('the opposing element rises against you', '相剋之灵，逆流而来'), 'guai');
+                  }
+                }
+              }
+              spirits.push(sp);
               announceFoe(type);
               addFx({kind:'poof', x:px, y:py, t:0.3, r:18});
               break;
@@ -2169,6 +2813,7 @@ const Game = (function(){
       if((s.rootT||0) > 0){ s.rootT -= dt; }
       else {
         let sf = (slowAllT>0 ? 0.45 : 1) * ((s.slowT||0)>0 ? 0.5 : 1);
+        if(pools.length && pools.some(pl=>Math.hypot(pl.x-s.x, pl.y-s.y) < pl.r)) sf *= 0.55;  // 墨池: they wade in ink
         const ddx = player.x-s.x, ddy = player.y-s.y, d = Math.hypot(ddx,ddy)||1;
         if(s.type==='shi' || s.type==='meng'){
           // 豕 and 皿: line up, shiver, then a straight battering charge
@@ -2244,7 +2889,7 @@ const Game = (function(){
       // touch
       if(s.type!=='guo' && Math.hypot(s.x-player.x, s.y-player.y) < (s.cr||29)){
         if(player.phasedT > 0){                          // 魂游: you pass through them
-          if(selChar==='gui' && level >= CHARS.gui.slowTier) s.slowT = 1.5;
+          if(selChar==='gui' && level >= CHARS.gui.slowTier) s.slowT = 1.5*(synOn.ni?1.5:1);
           if(selChar==='gui' && level >= CHARS.gui.dmgTier) hurtSpirit(s, 1);
         } else if(selChar==='niu' && mag > 0.01 && !s.boss && s.type!=='long' && !(s.type==='shi' && s.st===2)
                   && ((s.x-player.x)*dx + (s.y-player.y)*dy) > 0){
@@ -2299,19 +2944,34 @@ const Game = (function(){
     if(lives <= 0) return;
 
     // --- fallen glyphs ---
-    const mr = player.magnetT>0 ? 280 : (hatOn ? 150 : 95);   // 圣 hears far; 目 sees farther
+    const mr = (player.magnetT>0 ? 280 : (hatOn ? 150 : 95)) * desk.magnet * (seal.carved.mu ? 1.25 : 1);
     for(const p of pickups){
-      p.t -= dt; p.bob += dt*3;
+      p.t -= dt; p.bob += dt*3; p.age = (p.age||0) + dt;
       const d = Math.hypot(p.x-player.x, p.y-player.y);
       if(d < mr && d > 1){ p.x += (player.x-p.x)/d*(hatOn?210:170)*dt; p.y += (player.y-p.y)/d*(hatOn?210:170)*dt; }
       if(d < 28){
-        p.t = 0; coins++;
-        const info = GLYPHS[p.ch] || {py:'',en:'',zh:'',eff_en:'',eff_zh:''};
-        popToastEx(p.ch, info.py, `${t(info.en, info.zh)} · ${t(info.eff_en, info.eff_zh)}`);
-        applyGlyphEffect(p.ch);
+        p.t = 0;
+        if(p.ch === '鼎'){                                   // the ripened vessel: a hoard in one piece
+          coins += 5 * desk.xpPer; runGlyphs += 5;
+          if(lives < maxHp){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
+          buffT = Math.max(buffT, 4);
+          gainElem('金');
+          mark('glyphs', '鼎');
+          popToastEx('鼎', 'dǐng', t('the bronze vessel — five glyphs, a heart, the light of 光', '鼎成——五字入卷，一心复原，光佑四秒'), 'qi');
+          SFX.toll();
+        } else {
+          coins += desk.xpPer; runGlyphs++;
+          const info = GLYPHS[p.ch] || {py:'',en:'',zh:'',eff_en:'',eff_zh:''};
+          popToastEx(p.ch, info.py, `${t(info.en, info.zh)} · ${t(info.eff_en, info.eff_zh)}`);
+          applyGlyphEffect(p.ch);
+          gainElem(ELEM_OF[p.ch]);
+          mark('glyphs', p.ch);
+          if(synOn.liao) player.fireInkT = Math.max(player.fireInkT, 3);   // 燎: every glyph kindles the ink
+          SFX.tick();
+        }
         if(coins >= nextHeart){
           nextHeart += 12;
-          if(lives < MAXHP){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
+          if(lives < maxHp){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
         }
         maybeLevelUp();
         syncHud();
@@ -2319,11 +2979,35 @@ const Game = (function(){
     }
     pickups = pickups.filter(p=>p.t > 0);
 
+    // --- 合文: glyphs left to ripen on the ground fuse into a 鼎 ---
+    matT -= dt;
+    if(matT <= 0){
+      matT = 0.5;
+      const ripeAge = desk.mature > 1 ? 2.2 : 4.2;
+      const ripe = pickups.filter(p=>!p.ding && p.t > 1.2 && (p.age||0) >= ripeAge);
+      for(const p of ripe){
+        const cluster = ripe.filter(q=>q.t > 0 && Math.hypot(q.x-p.x, q.y-p.y) < 74);
+        if(cluster.length >= 3){
+          let cx3 = 0, cy3 = 0;
+          const used = cluster.slice(0, 5);
+          for(const q of used){ cx3 += q.x; cy3 += q.y; q.t = 0; }
+          cx3 /= used.length; cy3 /= used.length;
+          pickups.push({x:cx3, y:cy3, ch:'鼎', ding:true, t:12, bob:0, age:0});
+          addFx({kind:'levelup', x:cx3, y:cy3, t:0.8, r:60, ch:'鼎'});
+          SFX.splat();
+          break;                                             // one casting per breath
+        }
+      }
+      pickups = pickups.filter(p=>p.t > 0);
+    }
+
     // --- weapon pedestals ---
     for(const pd of pedestals){
       pd.bob += dt*2.5;
       if(Math.hypot(pd.x-player.x, pd.y-player.y) < 32){
         pd.done = true;
+        gainElem('金');                                  // the war pictographs are the metal element
+        SFX.chisel();
         const W = WEAPONS[pd.key], owned = weapons.find(w=>w.key===pd.key);
         if(owned && owned.lv < 3){
           owned.lv++;
@@ -2337,6 +3021,8 @@ const Game = (function(){
           popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'), 'qi');
         }
         addFx({kind:'levelup', x:pd.x, y:pd.y, t:0.6, r:50, ch:''});
+        const now = weapons.find(w=>w.key===pd.key);
+        if(now) mark('arms', pd.key, now.lv);
       }
     }
     pedestals = pedestals.filter(pd=>!pd.done);
@@ -2401,10 +3087,10 @@ const Game = (function(){
         break;
       }
       case '水': for(const f of fires) addFx({kind:'poof', x:f.x, y:f.y, t:0.3, r:24}); fires = []; break;
-      case '木': for(const s of spirits){ if(!s.dead && Math.hypot(s.x-player.x, s.y-player.y) <= 130) s.rootT = Math.max(s.rootT||0, 1.2); } break;
+      case '木': for(const s of spirits){ if(!s.dead && Math.hypot(s.x-player.x, s.y-player.y) <= 130) s.rootT = Math.max(s.rootT||0, 1.2*(synOn.ni?1.5:1)); } break;
       case '火': player.fireInkT = 6; break;
       case '目': player.magnetT = 6; break;
-      case '魚': if(lives < MAXHP){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); } break;
+      case '魚': if(lives < maxHp){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); } break;
       case '雨': slowAllT = Math.max(slowAllT, 2.5); break;
       case '鳥': {
         addFx({kind:'levelup', x:player.x, y:player.y-10, t:0.5, r:36, ch:'鳥'});
@@ -2421,7 +3107,7 @@ const Game = (function(){
       case '舟': player.boatT = 5; break;
       case '貝': coins += 3; break;
       case '泉':
-        if(lives < MAXHP){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
+        if(lives < maxHp){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
         for(const f2 of fires) addFx({kind:'poof', x:f2.x, y:f2.y, t:0.3, r:24});
         fires = [];
         break;
@@ -2436,6 +3122,12 @@ const Game = (function(){
           if(!s.dead && !s.boss && s.type!=='guo' && Math.hypot(s.x-player.x, s.y-player.y) < 150) s.fleeT = 2;
         }
         break;
+      case '禾': coins += 2 * desk.xpPer; runGlyphs += 2; break;
+      case '田':
+        for(const s of spirits){
+          if(!s.dead && Math.hypot(s.x-player.x, s.y-player.y) < 140) s.slowT = Math.max(s.slowT||0, 3*(synOn.ni?1.5:1));
+        }
+        break;
     }
   }
   function maybeLevelUp(){
@@ -2445,6 +3137,8 @@ const Game = (function(){
       player.inv = Math.max(player.inv, 1.0);              // a breath to admire the new form
       addFx({kind:'levelup', x:player.x, y:player.y, t:0.9, r:96, ch:nf.ch});
       popToastEx(nf.ch, `${nf.py} · LV${NUMCH[level]}`, t(nf.tier_en, nf.tier_zh), 'jiang');
+      mark('forms', selChar, level);
+      SFX.toll();
       syncHud();
     }
   }
@@ -2468,6 +3162,22 @@ const Game = (function(){
       const mx = WALL+30+((i*137)%(CW-WALL*2-60)), my = WALL+26+((i*211)%(CH-WALL*2-60));
       ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx+((i%3)-1)*6, my+14+(i*7)%12); ctx.stroke();
     }
+
+    // the battle writes itself onto the ground: wet pools, then the drying stains
+    for(const pl of pools){
+      const k = Math.min(1, pl.t/(pl.max||6));
+      ctx.save();
+      ctx.globalAlpha = 0.30*k + 0.08; ctx.fillStyle = '#0a0910';
+      ctx.beginPath(); ctx.ellipse(pl.x, pl.y, pl.r, pl.r*0.72, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 0.35*k; ctx.strokeStyle = era.accent; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(pl.x, pl.y, pl.r*0.94, pl.r*0.66, 0, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.beginPath(); ctx.rect(WALL, WALL, CW-WALL*2, CH-WALL*2); ctx.clip();
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(inkCvs, 0, 0);
+    ctx.restore();
 
     // fires
     for(const f of fires){
@@ -2559,7 +3269,7 @@ const Game = (function(){
     if(gate){
       drawGate(ctx, gate.x, gate.y+55, 110, era.accent, gateGlow);
       ctx.save(); ctx.globalAlpha = 0.5+gateGlow*0.5; ctx.fillStyle = era.ink;
-      ctx.font = '13px Consolas'; ctx.textAlign = 'center';
+      ctx.font = '13px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
       ctx.fillText(t('step into 安','入「安」'), gate.x, gate.y+80);
       ctx.restore();
     }
@@ -2567,7 +3277,8 @@ const Game = (function(){
     // spirits — spectral, red-eyed; the tough ones flash white when struck
     for(const s of spirits){
       if(s.dead) continue;
-      const col = (s.iT||0) > 0.12 ? '#ffffff' : GHOST;
+      const col = (s.iT||0) > 0.12 ? '#ffffff'
+                : s.opp === '水' ? '#7ec8ff' : s.opp === '火' ? '#ff9a66' : GHOST;
       if(s.type==='shi') drawBoar(ctx, s.x, s.y, 38, s.phase, col, s.face||1);
       else if(s.type==='hu') drawTiger(ctx, s.x, s.y, 48, s.phase, col, s.face||1, s.st===1);
       else if(s.type==='long') drawDragonSeg(ctx, s, col);
@@ -2588,16 +3299,21 @@ const Game = (function(){
         ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.fillRect(s.x-26, s.y-52, 52, 6);
         ctx.globalAlpha = 0.95; ctx.fillStyle = '#f0674a';
         ctx.fillRect(s.x-25, s.y-51, 50*Math.max(0,s.hp)/s.maxHp, 4);
-        ctx.fillStyle = GHOST; ctx.font = 'bold 15px Consolas'; ctx.textAlign = 'center';
+        ctx.fillStyle = GHOST; ctx.font = 'bold 15px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
         ctx.fillText(s.bossCh, s.x, s.y-58);
         ctx.restore();
       } else if(s.type==='long' && !s._prev){
         ctx.save(); ctx.fillStyle = GHOST; ctx.globalAlpha = 0.85;
-        ctx.font = 'bold 14px Consolas'; ctx.textAlign = 'center';
+        ctx.font = 'bold 14px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
         ctx.fillText('龍', s.x, s.y-40); ctx.restore();
       } else if((s.hp||1) > 1 && s.type!=='long'){
         ctx.save(); ctx.fillStyle = '#f0674a';
         for(let h=0; h<s.hp; h++) ctx.fillRect(s.x-7+h*6, s.y-36, 4, 4);
+        ctx.restore();
+      }
+      if(s.opp && !s.dead){                       // 相剋: it wears its element over its head
+        ctx.save(); ctx.globalAlpha = 0.9;
+        drawPicto(ctx, s.opp, s.x, s.y-48, 15, col);
         ctx.restore();
       }
     }
@@ -2657,16 +3373,21 @@ const Game = (function(){
     // strike & event fx
     for(const e of fx){
       const k = e.t/e.max;
-      ctx.save(); ctx.strokeStyle = era.accent; ctx.globalAlpha = 0.75*k;   // attacks read gold
+      ctx.save(); ctx.strokeStyle = era.accent; ctx.fillStyle = era.accent; ctx.globalAlpha = 0.75*k;   // attacks read gold
       if(e.kind==='slash'){
-        ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.arc(e.x, e.y, e.r*0.8, e.ang-0.8, e.ang+0.8); ctx.stroke();
-        ctx.lineWidth = 2.5; ctx.globalAlpha = 0.45*k;
-        ctx.beginPath(); ctx.arc(e.x, e.y, e.r*0.62, e.ang-0.6, e.ang+0.6); ctx.stroke();
+        /* a real brush stroke: pressure in the belly, a flying tip */
+        brushArc(ctx, e.x, e.y, e.r*0.78, e.ang-0.8, e.ang+0.8, 10);
+        ctx.globalAlpha = 0.4*k;
+        brushArc(ctx, e.x, e.y, e.r*0.58, e.ang-0.55, e.ang+0.55, 5);
+      } else if(e.kind==='slashren'){
+        /* 人 fights with its own two strokes — the 撇 and the 捺 */
+        for(const sgn of [-1, 1]){
+          const off = 0.46*sgn;
+          brushLine(ctx, e.x + Math.cos(e.ang+off)*e.r*0.22, e.y + Math.sin(e.ang+off)*e.r*0.22,
+                         e.x + Math.cos(e.ang+off*0.45)*e.r*0.95, e.y + Math.sin(e.ang+off*0.45)*e.r*0.95, 11);
+        }
       } else if(e.kind==='lance'){
-        ctx.lineWidth = 6;
-        ctx.beginPath(); ctx.moveTo(e.x, e.y);
-        ctx.lineTo(e.x+Math.cos(e.ang)*e.r, e.y+Math.sin(e.ang)*e.r); ctx.stroke();
+        brushLine(ctx, e.x, e.y, e.x+Math.cos(e.ang)*e.r, e.y+Math.sin(e.ang)*e.r, 12);
       } else if(e.kind==='ringatk'){
         ctx.lineWidth = 5;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1.15-k*0.3), 0, Math.PI*2); ctx.stroke();
@@ -2700,11 +3421,11 @@ const Game = (function(){
         ctx.lineWidth = 5; ctx.globalAlpha = 0.8*k;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1-k)+18, 0, Math.PI*2); ctx.stroke();
         ctx.fillStyle = era.accent; ctx.globalAlpha = k;
-        ctx.font = 'bold 26px Consolas'; ctx.textAlign = 'center';
+        ctx.font = 'bold 26px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
         ctx.fillText(e.ch, e.x, e.y - 46 - (1-k)*26);
       } else if(e.kind==='heal'){
         ctx.fillStyle = '#f0674a'; ctx.globalAlpha = k;
-        ctx.font = 'bold 20px Consolas'; ctx.textAlign = 'center';
+        ctx.font = 'bold 20px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
         ctx.fillText('♥', e.x, e.y - (1-k)*24);
       }
       ctx.restore();
@@ -2718,11 +3439,11 @@ const Game = (function(){
     ctx.globalAlpha = 0.9; ctx.fillStyle = level>=3 ? era.accent : '#8bc34a';
     const xf = level>=3 ? 1 : (coins-LV_XP[level])/(LV_XP[level+1]-LV_XP[level]);
     ctx.fillRect(WALL+4, WALL+4, bw*Math.max(0,Math.min(1,xf)), 5);
-    ctx.font = 'bold 12px Consolas'; ctx.textAlign = 'right';
+    ctx.font = 'bold 12px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'right';
     ctx.fillStyle = level>=3 ? era.accent : '#8bc34a';
     ctx.fillText(level>=3 ? 'LV MAX' : `LV${NUMCH[level]} ${coins}/${LV_XP[level+1]}`, CW-WALL-76, WALL+24);   // clear of the 止 button
     const lowPulse = lives<=2 ? 0.55+0.45*Math.sin(tGlobal*8) : 1;
-    for(let i=0;i<MAXHP;i++){
+    for(let i=0;i<maxHp;i++){
       const sx = WALL+22+i*24;
       ctx.globalAlpha = 0.3; ctx.fillStyle = '#000';
       ctx.fillRect(sx, WALL+14, 20, 9);
@@ -2731,7 +3452,7 @@ const Game = (function(){
       ctx.strokeRect(sx+0.5, WALL+14.5, 20, 9);
     }
     ctx.globalAlpha = 0.9; ctx.fillStyle = '#f0674a';
-    ctx.font = 'bold 13px Consolas'; ctx.textAlign = 'left';
+    ctx.font = 'bold 13px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
     ctx.fillText('♥', WALL+6, WALL+23);
     ctx.restore();
     for(let i=0; i<weapons.length; i++){
@@ -2750,12 +3471,12 @@ const Game = (function(){
       ctx.fillRect(WALL, CH*0.32, CW-WALL*2, 96);
       ctx.globalAlpha = a;
       ctx.fillStyle = GHOST; ctx.shadowColor = GHOST; ctx.shadowBlur = 18;
-      ctx.font = 'bold 58px Consolas'; ctx.textAlign = 'left';
+      ctx.font = 'bold 58px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
       ctx.fillText(banner.ch, CW*0.3, CH*0.32+72);
       ctx.shadowBlur = 0;
-      ctx.fillStyle = era.accent; ctx.font = 'bold 16px Consolas';
+      ctx.fillStyle = era.accent; ctx.font = 'bold 16px "Ma Shan Zheng",KaiTi,serif';
       ctx.fillText(banner.py + ' — ' + t('IT COMES', '大敌当前'), CW*0.3+82, CH*0.32+40);
-      ctx.fillStyle = '#cfc6ae'; ctx.font = '13px Consolas';
+      ctx.fillStyle = '#cfc6ae'; ctx.font = '13px "Ma Shan Zheng",KaiTi,serif';
       ctx.fillText(banner.line, CW*0.3+82, CH*0.32+64);
       ctx.restore();
     }
@@ -2816,9 +3537,10 @@ const Game = (function(){
         if(paused){ resume(); return; }
         if(!running){
           if($('ovStart').classList.contains('show')){ start(); return; }
-          if($('ovClear').classList.contains('show')){ nextStage(); return; }
+          if($('ovClear').classList.contains('show')){ toDesk(); return; }
         }
       }
+      if(['1','2','3'].includes(k) && deskKey(+k)){ e.preventDefault(); return; }   // pick a slat from the keyboard
       if(k==='escape' || k==='p'){
         e.preventDefault();
         if(paused) resume(); else pause();
@@ -2852,6 +3574,11 @@ const Game = (function(){
     joyEl.addEventListener('pointercancel', joyUp);
     joyEl.addEventListener('lostpointercapture', joyUp);
     $('pauseBtn').addEventListener('click', ()=>{ paused ? resume() : pause(); });
+    // 音/默: the sound toggle
+    const mb = $('muteBtn');
+    const syncMute = ()=>{ mb.textContent = SFX.isOn() ? '音' : '默'; mb.classList.toggle('off', !SFX.isOn()); };
+    mb.addEventListener('click', ()=>{ SFX.toggle(); syncMute(); });
+    syncMute();
   }
 
   /* ---------- character + starting-arm select ---------- */
@@ -2867,7 +3594,7 @@ const Game = (function(){
       card.append(cc, nm);
       card.onclick = () => selectChar(key);
       row.appendChild(card);
-      drawCharPortrait(cc, key, 0, '#e8dfc8');
+      drawCharPortrait(cc, key, 0, '#2b2118');       // ink on the paper menu
     }
   }
   function buildArmSelect(){
@@ -2885,7 +3612,34 @@ const Game = (function(){
       row.appendChild(card);
       const cctx = cc.getContext('2d');
       cctx.clearRect(0,0,36,42);
-      drawWeaponIcon(cctx, key, 1, 18, 22, 30, '#e8dfc8');
+      drawWeaponIcon(cctx, key, 1, 18, 22, 30, '#2b2118');
+    }
+  }
+  /* ---------- 篆刻: the stone between runs ---------- */
+  function openSeal(){ buildSeal(); overlay('ovSeal', true); }
+  function closeSeal(){ overlay('ovSeal', false); }
+  function buildSeal(){
+    $('sealPts').textContent = t(`cuts to spend: ${seal.pts}`, `可用刻刀：${seal.pts}`);
+    const row = $('carveRow'); row.innerHTML = '';
+    for(const id of Object.keys(CARVES)){
+      const cv = CARVES[id], done = !!seal.carved[id];
+      const d = document.createElement('div');
+      d.className = 'carve' + (done ? ' carved' : (seal.pts < cv.cost ? ' poor' : ''));
+      const cc = document.createElement('canvas'); cc.width = 60; cc.height = 66;
+      const nm = document.createElement('div'); nm.className = 'cname'; nm.textContent = cv.ch;
+      const ds = document.createElement('div'); ds.className = 'cdesc'; ds.textContent = t(cv.en, cv.zh);
+      const co = document.createElement('div'); co.className = 'ccost';
+      co.textContent = done ? t('◆ carved', '◆ 已刻') : t(`${cv.cost} cuts`, `${cv.cost}刀`);
+      d.append(cc, nm, ds, co);
+      d.onclick = ()=>{
+        if(seal.carved[id] || seal.pts < cv.cost) return;
+        seal.pts -= cv.cost; seal.carved[id] = 1;
+        saveJSON('glyphrun_seal', seal);
+        SFX.chisel();
+        buildSeal();
+      };
+      row.appendChild(d);
+      drawPicto(cc.getContext('2d'), cv.ch, 30, 33, 40, done ? '#e86a50' : '#eef2dd');
     }
   }
   function selectChar(key){
@@ -2915,13 +3669,15 @@ const Game = (function(){
   }
   function buildBook(){
     const B = $('bookBody'); B.innerHTML = '';
+    /* ink-on-paper palette for the scroll */
+    const INK = '#2b2118', INK2 = '#6b5a3e', RED = '#a3271b', GRN = '#356b43', DIM = '#8d7c58';
     const sec = (title, drawFn)=>{
       const h = document.createElement('div');
-      h.style.cssText = 'color:#e8b04a;margin:16px 0 7px;font-size:0.82rem;letter-spacing:1.5px;display:flex;align-items:center;gap:8px;';
+      h.style.cssText = `color:${RED};margin:16px 0 7px;font-size:0.95rem;letter-spacing:1.5px;display:flex;align-items:center;gap:8px;`;
       if(drawFn){
         const cv = document.createElement('canvas'); cv.width = 26; cv.height = 26;
         cv.style.cssText = 'width:20px;height:20px;flex-shrink:0;';
-        drawFn(cv.getContext('2d'), 13, 13, 18, '#e8b04a');
+        drawFn(cv.getContext('2d'), 13, 13, 18, RED);
         h.appendChild(cv);
       }
       const tx = document.createElement('span'); tx.textContent = title; h.appendChild(tx);
@@ -2932,47 +3688,78 @@ const Game = (function(){
       gd.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;';
       B.appendChild(gd); return gd;
     };
-    const card = (gd, cv, html, wpx)=>{
+    const card = (gd, cv, html, wpx, locked)=>{
       const d = document.createElement('div');
-      d.style.cssText = `width:${wpx||170}px;background:#0d0d0d;border:1px solid #242424;border-radius:8px;padding:8px;font-size:0.62rem;color:#9a9a9a;line-height:1.55;`;
+      d.style.cssText = `width:${wpx||170}px;background:rgba(255,250,232,0.5);border:1px solid #b49a68;border-radius:8px;padding:8px;font-size:0.7rem;color:${INK2};line-height:1.55;`
+                      + (locked ? 'opacity:0.55;' : '');
       if(cv){ cv.style.display='block'; cv.style.margin='0 auto 5px'; d.appendChild(cv); }
       const tx = document.createElement('div'); tx.innerHTML = html; d.appendChild(tx);
       gd.appendChild(d);
     };
-    // families
+    /* a page for what the run hasn't shown you yet */
+    const unknown = (gd, wpx, hint)=>{
+      const cv = bookCanvas(30, 34, (bc)=>{
+        bc.fillStyle = DIM; bc.font = '26px "Ma Shan Zheng",KaiTi,serif'; bc.textAlign = 'center';
+        bc.fillText('？', 15, 27);
+      });
+      card(gd, cv, `<b style="color:${DIM}">${t('unmet','未識')}</b><br><span style="color:${DIM}">${hint||t('keep running — the scroll fills itself','再跑一局，卷轴自会写满')}</span>`, wpx, true);
+    };
+    /* how much of the scroll is inked in */
+    const totalGlyphKeys = GLYPH_KEYS.length + 1;   // +鼎
+    const gCount = Object.keys(seen.glyphs).length;
+    const fCount = Object.keys(seen.foes).length;
+    const sCount = Object.keys(seen.syn).length;
+    const prog = document.createElement('div');
+    prog.style.cssText = `color:${INK2};font-size:0.78rem;margin:2px 0 4px;`;
+    prog.textContent = t(
+      `the scroll remembers every run — glyphs ${Math.min(gCount,totalGlyphKeys)}/${totalGlyphKeys} · beasts ${fCount}/${Object.keys(FOE_INFO).length} · synergies ${sCount}/${Object.keys(SYNERGIES).length}`,
+      `卷轴记得每一局——集字 ${Math.min(gCount,totalGlyphKeys)}/${totalGlyphKeys} · 妖物 ${fCount}/${Object.keys(FOE_INFO).length} · 相生 ${sCount}/${Object.keys(SYNERGIES).length}`);
+    B.appendChild(prog);
+    // families — deeper forms stay veiled until you have grown them
     sec(t('將 · THE FAMILIES — you are the character', '將 · 字族——你就是字'), drawJiang);
     let gd = grid();
     for(const key of Object.keys(CHARS)){
       const c = CHARS[key];
+      const reached = seen.forms[key] === undefined ? 0 : seen.forms[key];
       const cv = document.createElement('canvas'); cv.width = 40; cv.height = 46;
-      let html = `<b style="color:#e8dfc8">${c.forms.map(x=>x.ch).join('→')}</b> · ${t(c.title_en,c.title_zh)}`
-               + `<br><span style="color:#e8b04a">${t(c.skill_en,c.skill_zh)}</span> — ${t(c.hint_en,c.hint_zh)}`;
-      for(const fm of c.forms){
-        html += `<br><b style="color:#cfc6ae">${fm.ch}</b> ${fm.py} · ${t(fm.mean_en,fm.mean_zh)} ${zdicLink(fm.ch)}<br><span style="color:#6a6a6a">${t(fm.tier_en,fm.tier_zh)}</span>`;
-      }
+      let html = `<b style="color:${INK}">${c.forms.map((x,i)=>i<=reached?x.ch:'？').join('→')}</b> · ${t(c.title_en,c.title_zh)}`
+               + `<br><span style="color:${RED}">${t(c.skill_en,c.skill_zh)}</span> — ${t(c.hint_en,c.hint_zh)}`;
+      c.forms.forEach((fm, i)=>{
+        if(i <= reached)
+          html += `<br><b style="color:${INK}">${fm.ch}</b> ${fm.py} · ${t(fm.mean_en,fm.mean_zh)} ${zdicLink(fm.ch)}<br><span style="color:${DIM}">${t(fm.tier_en,fm.tier_zh)}</span>`;
+        else
+          html += `<br><b style="color:${DIM}">？</b> <span style="color:${DIM}">${t('an elder form, not yet grown','更古之形，尚未长成')} · LV${NUMCH[i]}</span>`;
+      });
       card(gd, cv, html, 350);
-      drawCharPortrait(cv, key, 0, '#e8dfc8');
+      drawCharPortrait(cv, key, 0, INK);
     }
-    // weapons
+    // weapons — recast tiers reveal themselves when you have held them
     sec(t('器 · THE ARMOURY — duplicates recast them in older script', '器 · 武库——重复拾取，以更古字体重铸'), drawQi);
     gd = grid();
     for(const key of Object.keys(WEAPONS)){
       const W = WEAPONS[key];
-      const cv = bookCanvas(34, 38, (bc)=>drawWeaponIcon(bc, key, 1, 17, 20, 26, '#e8dfc8'));
-      let html = `<b style="color:#e8dfc8">${W.chs[0]}</b> ${W.pys[0]} ${zdicLink(W.chs[0])}`;
-      for(let i=0;i<3;i++) html += `<br><span style="color:#8a8a8a">${W.eras[i]}${W.chs[i]!==W.chs[0]?' · '+W.chs[i]:''}</span> — <span style="color:#6a6a6a">${t(W.tier_en[i],W.tier_zh[i])}</span>`;
-      card(gd, cv, html, 230);
+      const held = seen.arms[key] || 0;
+      const cv = bookCanvas(34, 38, (bc)=>drawWeaponIcon(bc, key, 1, 17, 20, 26, held ? INK : DIM));
+      let html = `<b style="color:${held?INK:DIM}">${W.chs[0]}</b> ${W.pys[0]} ${zdicLink(W.chs[0])}`;
+      for(let i=0;i<3;i++){
+        if(held > i)
+          html += `<br><span style="color:${INK2}">${W.eras[i]}${W.chs[i]!==W.chs[0]?' · '+W.chs[i]:''}</span> — <span style="color:${DIM}">${t(W.tier_en[i],W.tier_zh[i])}</span>`;
+        else
+          html += `<br><span style="color:${DIM}">${W.eras[i]} · ？ — ${t('not yet held at this tier','此形尚未上手')}</span>`;
+      }
+      card(gd, cv, html, 230, !held);
     }
-    // bestiary
+    // bestiary — only what has come at you in the dark
     sec(t('怪 · THE BESTIARY — every monster is a character', '怪 · 妖物志——每只怪都是一个字'), drawGuai);
     gd = grid();
+    const INKGHOST = '#41584f';
     const foeArt = {
-      gui:  bookCanvas(48,42,(bc)=>drawSpirit(bc,24,23,27,0,GHOST)),
-      shi:  bookCanvas(48,42,(bc)=>drawBoar(bc,24,23,28,0,GHOST,1)),
-      hu:   bookCanvas(54,42,(bc)=>drawTiger(bc,28,23,34,0,GHOST,1,false)),
-      meng: bookCanvas(54,54,(bc)=>drawVesselBoss(bc,27,30,42,0,GHOST,false)),
-      gu:   bookCanvas(54,54,(bc)=>drawVesselBoss(bc,27,30,42,0,GHOST,true)),
-      long: bookCanvas(54,44,(bc)=>drawDragonSeg(bc,{x:27,y:26,_prev:null},GHOST))
+      gui:  ()=>bookCanvas(48,42,(bc)=>drawSpirit(bc,24,23,27,0,INKGHOST)),
+      shi:  ()=>bookCanvas(48,42,(bc)=>drawBoar(bc,24,23,28,0,INKGHOST,1)),
+      hu:   ()=>bookCanvas(54,42,(bc)=>drawTiger(bc,28,23,34,0,INKGHOST,1,false)),
+      meng: ()=>bookCanvas(54,54,(bc)=>drawVesselBoss(bc,27,30,42,0,INKGHOST,false)),
+      gu:   ()=>bookCanvas(54,54,(bc)=>drawVesselBoss(bc,27,30,42,0,INKGHOST,true)),
+      long: ()=>bookCanvas(54,44,(bc)=>drawDragonSeg(bc,{x:27,y:26,_prev:null},INKGHOST))
     };
     const foeNote = {
       gui: t('1 hp · the swarm','1血 · 群袭'), shi: t('2 hp · wave 2+','2血 · 第2波起'),
@@ -2981,35 +3768,59 @@ const Game = (function(){
     };
     for(const key of Object.keys(FOE_INFO)){
       const F = FOE_INFO[key];
-      card(gd, foeArt[key], `<b style="color:#e8dfc8">${F.ch}</b> ${F.py} ${zdicLink(F.ch)}<br>${t(F.en,F.zh)}<br><span style="color:#f0674a">${foeNote[key]}</span>`, 170);
+      if(seen.foes[key])
+        card(gd, foeArt[key](), `<b style="color:${INK}">${F.ch}</b> ${F.py} ${zdicLink(F.ch)}<br>${t(F.en,F.zh)}<br><span style="color:${RED}">${foeNote[key]}</span>`, 170);
+      else
+        unknown(gd, 170, t('something still waits in the dark','暗处仍有未见之物'));
     }
-    // fallen glyphs
+    // fallen glyphs — the permanent gallery; each shows its real historic form
     sec(t('THE FALLEN GLYPHS — each one does its meaning', '集字——每个字都会做它的意思'));
     gd = grid();
-    for(const ch of GLYPH_KEYS){
-      const info = GLYPHS[ch];
-      const cv = bookCanvas(30, 34, (bc)=>drawPicto(bc, ch, 15, 17, 20, '#e8b04a'));
-      card(gd, cv, `<b style="color:#e8dfc8">${ch}</b> ${info.py} · ${t(info.en,info.zh)}<br><span style="color:#8bc34a">${t(info.eff_en,info.eff_zh)}</span>`, 150);
+    for(const ch of GLYPH_KEYS.concat(['鼎'])){
+      if(!seen.glyphs[ch]){ unknown(gd, 150); continue; }
+      const info = GLYPHS[ch] || {py:'dǐng', en:'the bronze vessel', zh:'鼎', eff_en:'ripened from glyphs left to mature', eff_zh:'落字熟成之器'};
+      const el = ELEM_OF[ch];
+      const cv = bookCanvas(30, 34, (bc)=>drawPicto(bc, ch, 15, 17, 20, RED));
+      card(gd, cv, `<b style="color:${INK}">${ch}</b> ${info.py} · ${t(info.en,info.zh)} ${zdicLink(ch)}<br><span style="color:${GRN}">${t(info.eff_en,info.eff_zh)}</span>`
+                 + (el ? `<br><span style="color:${ELEM_COLOR[el]}">◆ ${el}</span>` : ''), 150);
     }
+    // 五行 synergies — recipes shown, workings hidden until woken
+    sec(t('五行 · THE PHASES — pairings wake as set bonuses', '五行 · 相生——凑齐则醒'), drawWu);
+    gd = grid();
+    for(const id of Object.keys(SYNERGIES)){
+      const S = SYNERGIES[id];
+      const need = Object.keys(S.need).map(el=>`<span style="color:${ELEM_COLOR[el]}">${el}×${S.need[el]}</span>`).join(' + ');
+      const cv = bookCanvas(30, 34, (bc)=>{
+        bc.fillStyle = seen.syn[id] ? RED : DIM; bc.font = '24px "Ma Shan Zheng",KaiTi,serif'; bc.textAlign = 'center';
+        bc.fillText(S.ch, 15, 26);
+      });
+      card(gd, cv, `<b style="color:${seen.syn[id]?INK:DIM}">${t(S.name_en, S.name_zh)}</b><br>${need}<br><span style="color:${seen.syn[id]?GRN:DIM}">${seen.syn[id] ? t(S.en, S.zh) : t('wake it once to read its working','醒来一次，方知其效')}</span>`, 210, !seen.syn[id]);
+    }
+    // the desk & the seal — how the run is refined
+    sec(t('文房 · THE DESK & THE SEAL', '文房与篆刻'), drawJiang);
+    gd = grid();
+    card(gd, null, `<b style="color:${INK}">文房四宝</b><br>${t('between waves the scroll unrolls: one refinement from 筆 brush · 墨 ink · 硯 stone · 紙 paper. Choices marked 遠 pay little now and much at the bones.','每波之间，竹简展开：笔、墨、砚、纸，择一而砺。标「遠」者眼前微利，甲骨大用。')}`, 260);
+    card(gd, null, `<b style="color:${INK}">篆刻 · ${t('the seal','治印')}</b><br>${t('waves survived and glyphs gathered earn cuts; carve radicals into the stone and every later run starts stamped with them.','撑过的波数与集得的字换作刻刀；刻部首入石，之后每一局开局盖印生效。')}`, 260);
+    card(gd, null, `<b style="color:${INK}">合文 · ${t('ripening','熟成')}</b><br>${t('three glyphs left lying close for a few breaths fuse into a 鼎 — guard the ground instead of hoovering, and the ground pays you back.','三字落地相邻，静置数息即熔铸为「鼎」——守土不贪，土自报之。')}`, 260);
     // wonders & hazards
     sec(t('物 · WONDERS, WEARABLES & HAZARDS', '物 · 天象与奇物'), drawWu);
     gd = grid();
-    card(gd, bookCanvas(44,40,(bc)=>drawDianBox(bc,22,21,30,BOLTC)),
-      `<b style="color:#e8dfc8">電</b> diàn ${zdicLink('電')}<br>${t('bronze form: rain over 申, the bolt itself. Its tail lashes to earth — dodge the ring.','金文：雨在「申」上，申即闪电。尾笔劈落——避开预警圈。')}`, 210);
-    card(gd, bookCanvas(44,40,(bc)=>drawGate(bc,22,37,30,'#e8b04a',0.6)),
-      `<b style="color:#e8dfc8">安</b> ān ${zdicLink('安')}<br>${t('“safety” — survive the wave and step beneath the safe roof; the era rewinds.','「安」——撑过一波，步入安檐——时代倒退。')}`, 210);
-    card(gd, bookCanvas(44,40,(bc)=>drawShengHat(bc,22,31,23,'#e8b04a')),
-      `<b style="color:#e8dfc8">圣</b> shèng ${zdicLink('圣')}<br>${t('the great listening ear, worn as a crown: longer reach, far magnet.','倾听之大耳，戴之为冠：及远更甚。')}`, 210);
-    card(gd, bookCanvas(44,40,(bc)=>drawGuang(bc,22,26,20,BOLTC)),
-      `<b style="color:#e8dfc8">光</b> guāng ${zdicLink('光')}<br>${t('the torch-bearer blinks overhead after a boss falls: swifter, sharper (8s).','斩落头目后，火炬加身：更快更利（8秒）。')}`, 210);
-    card(gd, bookCanvas(72,36,(bc)=>drawOracleNum(bc,47,36,19,14,'#e8dfc8')),
-      `<b style="color:#e8dfc8">一二三亖</b>…${zdicLink('五')}<br>${t('the clock counts in oracle numerals: bars to four, X five, ∧ six, cross seven, 八 eight, hook nine — tens are bound tally strokes (shown: 47).','时钟以甲骨数字计数：一至亖为横，X为五，∧为六，十字为七，八为八，钩为九——十位为束起的竖记（图为47）。')}`, 260);
-    card(gd, bookCanvas(44,44,(bc)=>{ if(ORACLE['果'] && typeof Path2D!=='undefined') drawOraclePath(bc, ORACLE['果'], 22, 22, 38, '#b9dd9a'); }),
-      `<b style="color:#e8dfc8">果</b> guǒ ${zdicLink('果')}<br>${t('the fruit tree — strike it thrice and it yields a heart and glyphs.','果树——三击而落，予心予字。')}`, 210);
-    card(gd, bookCanvas(44,44,(bc)=>{ if(ORACLE['亭'] && typeof Path2D!=='undefined') drawOraclePath(bc, ORACLE['亭'], 22, 22, 38, '#e8b04a'); }),
-      `<b style="color:#e8dfc8">亭</b> tíng ${zdicLink('亭')}<br>${t('the pavilion — enter it and nothing may harm you for three breaths.','「亭」——入此亭者，三息之内诸邪莫近。')}`, 210);
-    card(gd, bookCanvas(44,40,(bc)=>drawWang(bc,22,37,30,'#f0674a')),
-      `<b style="color:#e8dfc8">亡</b> wáng ${zdicLink('亡')}<br>${t('the broken blade — “to perish”. It marks your end; do not meet it.','刃之折者——「亡」。它标记你的终局，愿你不遇。')}`, 210);
+    card(gd, bookCanvas(44,40,(bc)=>drawDianBox(bc,22,21,30,'#8a6f3e')),
+      `<b style="color:${INK}">電</b> diàn ${zdicLink('電')}<br>${t('bronze form: rain over 申, the bolt itself. Its tail lashes to earth — dodge the ring.','金文：雨在「申」上，申即闪电。尾笔劈落——避开预警圈。')}`, 210);
+    card(gd, bookCanvas(44,40,(bc)=>drawGate(bc,22,37,30,RED,0.6)),
+      `<b style="color:${INK}">安</b> ān ${zdicLink('安')}<br>${t('“safety” — survive the wave and step beneath the safe roof; the era rewinds.','「安」——撑过一波，步入安檐——时代倒退。')}`, 210);
+    card(gd, bookCanvas(44,40,(bc)=>drawShengHat(bc,22,31,23,RED)),
+      `<b style="color:${INK}">圣</b> shèng ${zdicLink('圣')}<br>${t('the great listening ear, worn as a crown: longer reach, far magnet.','倾听之大耳，戴之为冠：及远更甚。')}`, 210);
+    card(gd, bookCanvas(44,40,(bc)=>drawGuang(bc,22,26,20,'#8a6f3e')),
+      `<b style="color:${INK}">光</b> guāng ${zdicLink('光')}<br>${t('the torch-bearer blinks overhead after a boss falls: swifter, sharper (8s).','斩落头目后，火炬加身：更快更利（8秒）。')}`, 210);
+    card(gd, bookCanvas(72,36,(bc)=>drawOracleNum(bc,47,36,19,14,INK)),
+      `<b style="color:${INK}">一二三亖</b>…${zdicLink('五')}<br>${t('the clock counts in oracle numerals: bars to four, X five, ∧ six, cross seven, 八 eight, hook nine — tens are bound tally strokes (shown: 47).','时钟以甲骨数字计数：一至亖为横，X为五，∧为六，十字为七，八为八，钩为九——十位为束起的竖记（图为47）。')}`, 260);
+    card(gd, bookCanvas(44,44,(bc)=>{ if(ORACLE['果'] && typeof Path2D!=='undefined') drawOraclePath(bc, ORACLE['果'], 22, 22, 38, GRN); }),
+      `<b style="color:${INK}">果</b> guǒ ${zdicLink('果')}<br>${t('the fruit tree — strike it thrice and it yields a heart and glyphs.','果树——三击而落，予心予字。')}`, 210);
+    card(gd, bookCanvas(44,44,(bc)=>{ if(ORACLE['亭'] && typeof Path2D!=='undefined') drawOraclePath(bc, ORACLE['亭'], 22, 22, 38, RED); }),
+      `<b style="color:${INK}">亭</b> tíng ${zdicLink('亭')}<br>${t('the pavilion — enter it and nothing may harm you for three breaths.','「亭」——入此亭者，三息之内诸邪莫近。')}`, 210);
+    card(gd, bookCanvas(44,40,(bc)=>drawWang(bc,22,37,30,RED)),
+      `<b style="color:${INK}">亡</b> wáng ${zdicLink('亡')}<br>${t('the broken blade — “to perish”. It marks your end; do not meet it.','刃之折者——「亡」。它标记你的终局，愿你不遇。')}`, 210);
   }
   function openBook(){ buildBook(); overlay('ovBook', true); }
   function closeBook(){ overlay('ovBook', false); }
@@ -3026,9 +3837,9 @@ const Game = (function(){
       const wlv = Math.min(2, lv), Wp = WEAPONS[selArm];
       const pl = $('prevLine');
       if(pl) pl.innerHTML =
-        `<b style="color:#e8b04a">${fm.ch}</b> ${fm.py} · ${t(fm.mean_en, fm.mean_zh)}<br>` +
-        `<span style="color:#8bc34a">${t(fm.tier_en, fm.tier_zh)}</span><br>` +
-        `<span style="color:#8a8a8a">${Wp.chs[wlv]} · ${Wp.eras[wlv]} — ${t(Wp.tier_en[wlv], Wp.tier_zh[wlv])}</span>`;
+        `<b style="color:#e8c15a">${fm.ch}</b> ${fm.py} · ${t(fm.mean_en, fm.mean_zh)}<br>` +
+        `<span style="color:#a4c98a">${t(fm.tier_en, fm.tier_zh)}</span><br>` +
+        `<span style="color:#a2937a">${Wp.chs[wlv]} · ${Wp.eras[wlv]} — ${t(Wp.tier_en[wlv], Wp.tier_zh[wlv])}</span>`;
     }
     function kill(m){
       efx.push({k:'poof', x:m.x, y:m.y, r:16, t:0.3, max:0.3});
@@ -3085,7 +3896,7 @@ const Game = (function(){
       px.fillStyle = era2.hill; px.fillRect(8, 8, W2-16, H2-16);
       px.save(); px.strokeStyle = era2.accent; px.globalAlpha = 0.4; px.lineWidth = 2;
       px.strokeRect(9, 9, W2-18, H2-18); px.restore();
-      px.save(); px.fillStyle = era2.accent; px.font = 'bold 13px Consolas'; px.textAlign = 'left';
+      px.save(); px.fillStyle = era2.accent; px.font = 'bold 13px "Ma Shan Zheng",KaiTi,serif'; px.textAlign = 'left';
       px.fillText(era2.sub, 18, 28); px.restore();
       drawOracleNum(px, lv+1, W2-30, 24, 12, era2.accent);
       px.save();                                   // the world exists only inside the border
@@ -3131,22 +3942,34 @@ const Game = (function(){
   })();
 
   bindInput();
-  document.querySelectorAll('.wenIcon').forEach(cv=>{ if(cv.getContext) drawWen(cv.getContext('2d'), 10, 21, 16, '#1db954'); });
-  document.querySelectorAll('.zhanIcon').forEach(cv=>{ if(cv.getContext) drawZhan(cv.getContext('2d'), 12, 21, 15, '#e8b04a'); });
+  /* chrome icons pick their ink by the sheet they sit on: paper takes dark ink */
+  document.querySelectorAll('.wenIcon').forEach(cv=>{
+    if(cv.getContext) drawWen(cv.getContext('2d'), 10, 21, 16, cv.closest('.paper') ? '#5d4b33' : '#1db954');
+  });
+  document.querySelectorAll('.zhanIcon').forEach(cv=>{
+    if(cv.getContext) drawZhan(cv.getContext('2d'), 12, 21, 15, cv.closest('.paper') ? '#a3271b' : '#e8b04a');
+  });
+  document.querySelectorAll('.yinIcon').forEach(cv=>{
+    if(cv.getContext) drawPicto(cv.getContext('2d'), '印', 10, 11, 17, cv.closest('.paper') ? '#5d4b33' : '#1db954');
+  });
   const pz = $('pauseZhi');
   if(pz && pz.getContext) drawZhi(pz.getContext('2d'), 12, 23, 17, '#bbbbbb');
   const tq = $('toastQi');
   if(tq && tq.getContext) drawQi(tq.getContext('2d'), 13, 13, 18, '#e8b04a');
   const bookWenCv = $('bookWen');
-  if(bookWenCv && bookWenCv.getContext) drawWen(bookWenCv.getContext('2d'), 23, 47, 36, '#e8b04a');
+  if(bookWenCv && bookWenCv.getContext) drawWen(bookWenCv.getContext('2d'), 23, 47, 36, '#a3271b');
+  const st = $('sealTitle');
+  if(st && st.getContext) drawSealStamp(st);        // the 字源 stamp in the masthead
   buildCharSelect(); buildArmSelect(); PV.reset();
   // idle attract render so the start screen isn't blank
   loadStage(0); running = false; render();
 
-  return { start, restart, nextStage, syncHud, onLang, chooseChar, pause, resume, openBook, closeBook,
+  return { start, restart, nextStage, toDesk, syncHud, onLang, chooseChar, pause, resume,
+           openBook, closeBook, openSeal, closeSeal,
            dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, pav,
-                         stageIdx, selChar, selArm, waveT, gate, hp: lives, level, coins,
-                         hat: hatOn, sheng: shengPed, buffT, paused, banner }) };
+                         stageIdx, selChar, selArm, waveT, gate, hp: lives, maxHp, level, coins,
+                         hat: hatOn, sheng: shengPed, buffT, paused, banner,
+                         desk, elems, synOn, pools, sealSave: seal, codexSave: seen }) };
 })();
 
 </script>

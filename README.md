@@ -34,7 +34,13 @@ A top-down Brotato-style survivor where **you are a Chinese character**, and eve
 - **Weapons age backward**: pick a starting arm (弓/劍/矛/刀); duplicates recast it 隸書 → 金文 → 甲骨文 — a second 弓 becomes 射, the arrow on the string.
 - **The script era rewinds each wave** (隸書 → 篆書 → 金文 → 甲骨文) through the oracle 門 gate; the wave clock counts in real oracle-bone numerals; death is marked by 亡, the broken blade.
 - **A bestiary of real characters**: 鬼 spirits, charging 豕, pouncing 虎, the vessel bosses 皿 and 蠱, and a nine-segment 龍 — each named on first sight, each with a slow-motion arrival banner.
-- **In-game codex** (文): every family, weapon, foe, glyph and wonder, all linked back to its zdic entry.
+- **The UI is a physical object**: menus are aged rice paper struck with a hand-carved 字源 seal, the death screen is a cracked oracle shell, upgrade choices are written on an unrolling bamboo scroll (竹简) and circled in cinnabar brush — all set in a brush-script face, not a keyboard font.
+- **Ink is the feedback**: every strike is a tapered brush stroke, fallen spirits splatter lasting ink on the ground, your own wounds run cinnabar, and a synthesized brush-on-paper soundscape (mutable 音/默) gives each hit weight.
+- **五行 synergies**: every drop carries an element (weapons and 鼎 are 金); stack pairs that feed each other — 水木相生 regenerates, 金火鍛造 re-tempers a shield, 土水成泥 lengthens every slow, 木火燎原 keeps your ink burning. Hoard one element and its opposite (相剋) starts hunting you.
+- **The scholar's desk (文房四宝)**: between waves a bamboo scroll unrolls with three refinements across 筆 brush · 墨 ink · 硯 inkstone · 紙 paper — some pay now, the ones marked 遠 pay at the bones. 墨池 makes kills leave mire-ink pools.
+- **合文 ripening**: glyphs left clustered on the ground fuse into a 鼎 worth five glyphs, a heart and the light of 光 — guard territory instead of hoovering XP.
+- **篆刻 meta-progression**: waves survived and glyphs gathered earn cuts; carve radicals (心止又目火貝) into a soapstone seal and every later run opens with the seal stamping your bonuses onto the paper.
+- **In-game codex** (文): a permanent unlock gallery — foes met, forms grown, tiers held and synergies woken persist between runs; the rest stays veiled as 未識 — with every entry linked back to its zdic 字源字形 page.
 
 ---
 
