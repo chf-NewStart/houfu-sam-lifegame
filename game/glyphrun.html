@@ -111,7 +111,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b24</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b25</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -801,6 +801,14 @@ function drawCharPortrait(canvas, charKey, fi, color){
 
 /* exact 甲骨文 forms — traced from the 甲骨文汉字对应表 PDF via tools/extract_glyphs.py */
 const ORACLE = {
+  '亭': {p:'M49.1 0.0L25.9 28.5 27.2 30.7 33.3 27.2 44.3 28.5 44.3 43.4 36.0 44.7 33.8 46.9 36.0 49.1 64.0 47.4 66.2 44.3 58.3 40.8 60.1 25.9 64.0 24.6 74.1 29.4 53.9 2.2 49.1 0.0ZM49.6 5.7L64.5 20.6 53.9 24.1 55.7 40.8 50.0 44.7 47.8 29.4 50.4 25.0 36.4 23.2 49.6 5.7ZM61.4 52.6L29.4 55.7 30.7 57.9 46.9 57.5 46.1 79.4 51.8 100.0 54.8 98.7 50.4 85.5 51.3 57.5 67.1 54.8 61.4 52.6Z'},
+  '果': {p:'M50.4 0.0L46.5 3.9 47.8 35.1 31.1 24.6 25.0 14.0 18.4 16.2 18.4 21.5 22.4 25.4 48.2 44.3 48.2 66.2 43.4 66.7 34.6 61.4 19.7 46.5 15.8 47.8 14.9 54.8 47.4 75.9 34.2 93.4 34.6 98.2 46.1 87.7 47.4 98.7 51.3 100.0 53.9 85.1 69.7 98.2 70.2 93.4 56.1 78.5 55.3 73.2 82.9 51.8 85.1 45.2 82.9 42.1 75.0 42.1 71.1 52.2 53.9 66.7 53.5 44.3 68.0 28.1 81.6 18.9 82.5 12.7 79.4 8.8 75.0 8.8 70.2 20.6 56.6 33.3 53.5 22.4 56.1 8.3 50.4 0.0Z'},
+  '安': {p:'M50.0 0.0L15.4 18.9 12.7 53.1 14.9 94.7 18.9 91.7 16.2 63.6 18.9 23.2 49.1 5.3 72.8 14.0 82.9 22.4 82.9 91.7 85.1 93.9 87.3 91.7 87.3 19.7 50.0 0.0ZM47.4 13.2L47.8 30.3 33.8 39.0 32.9 53.1 22.4 61.8 31.6 60.5 32.9 67.1 36.0 68.4 37.3 56.6 50.4 51.3 50.4 59.2 38.2 73.2 36.4 89.0 43.0 93.9 56.1 79.8 58.8 100.0 60.1 77.6 54.4 76.3 42.1 88.6 41.7 75.9 54.8 61.0 54.8 49.6 66.2 41.7 69.7 32.9 64.0 24.6 53.5 28.1 47.4 13.2ZM57.5 29.4L63.2 28.9 65.4 35.5 61.4 41.2 53.5 43.9 52.2 32.9 57.5 29.4ZM44.3 37.3L48.7 37.3 49.6 46.1 37.7 51.8 37.3 42.5 44.3 37.3Z'},
+  '泉': {p:'M36.1 0.0L16.1 2.6 12.2 17.8 11.3 46.5 14.3 49.6 27.4 51.3 30.4 57.0 29.1 100.0 33.0 98.7 33.9 48.3 23.0 47.0 15.7 42.2 18.3 7.4 30.0 4.3 77.8 4.3 84.3 8.3 82.6 39.6 65.2 54.3 67.8 70.9 66.1 97.0 70.0 100.0 71.3 55.2 87.8 42.2 88.7 3.9 85.7 0.9 36.1 0.0ZM30.9 16.5L30.0 21.7 45.7 20.0 48.7 22.2 47.0 75.2 49.1 76.5 52.2 73.5 53.9 22.2 71.7 20.9 75.7 17.0 30.9 16.5Z'},
+  '鹿': {p:'M65.3 0.0L62.6 9.7 53.3 7.5 60.4 16.4 47.6 25.7 34.7 13.7 38.3 5.8 36.1 0.9 32.5 8.0 26.3 1.8 24.1 3.1 26.3 11.5 17.9 10.2 23.7 15.0 30.8 15.9 38.3 24.3 36.1 27.4 21.5 29.6 17.9 47.3 47.1 45.6 47.1 49.1 26.8 65.9 23.2 80.1 24.6 100.0 28.1 96.5 35.6 96.9 27.7 90.7 29.0 86.7 66.2 76.1 69.2 77.4 71.0 96.9 74.6 96.9 75.0 92.0 81.6 93.4 72.8 84.5 72.8 72.1 75.4 65.0 82.1 60.2 32.1 66.8 51.5 50.9 52.0 45.1 66.2 40.7 75.4 32.3 74.1 23.0 57.7 24.3 73.7 8.4 65.3 0.0ZM69.2 27.0L71.9 29.6 68.8 33.6 62.6 38.1 56.9 37.6 58.2 28.3 69.2 27.0ZM46.2 29.6L51.1 29.2 53.3 32.3 50.2 40.7 43.6 35.8 46.2 29.6ZM37.4 30.5L40.0 31.4 41.4 40.7 22.3 42.9 26.3 31.9 37.4 30.5ZM65.7 66.8L69.2 67.7 67.0 72.6 27.7 82.7 27.7 77.4 33.4 71.7 65.7 66.8Z'},
+  '犬': {p:'M60.3 0.0L57.3 3.0 56.0 15.5 42.2 6.0 37.5 7.3 53.9 19.4 53.0 25.4 29.3 44.0 23.3 44.8 22.0 48.7 37.1 44.0 43.5 65.1 45.3 72.0 30.6 82.3 36.2 83.6 57.8 71.6 55.6 80.6 57.3 91.8 63.8 99.1 69.0 100.0 78.0 87.5 75.0 86.2 67.2 95.7 59.9 87.5 66.8 51.3 57.3 30.6 57.3 23.7 60.3 22.4 73.3 30.2 77.2 28.0 60.8 17.7 62.5 1.3 60.3 0.0ZM52.2 32.3L61.6 45.3 62.5 59.9 49.1 69.8 42.7 49.6 42.7 40.1 52.2 32.3Z'},
+  '矢': {p:'M50.4 0.0L48.3 9.1 32.8 24.6 35.8 27.6 45.3 17.2 49.1 17.7 49.1 30.6 37.9 33.2 39.2 37.1 49.1 38.4 42.2 66.8 43.1 77.2 48.3 86.6 34.5 97.8 37.5 99.1 53.0 89.7 65.9 100.0 67.2 97.0 55.2 87.5 60.3 76.3 60.3 65.1 52.6 40.9 55.6 36.2 60.8 36.2 62.1 32.3 53.4 30.6 53.4 17.7 56.5 17.2 64.2 25.0 67.2 22.0 54.3 10.8 50.4 0.0ZM50.0 54.7L53.4 54.7 56.9 64.2 56.0 77.2 52.2 82.8 46.6 74.6 50.0 54.7Z'},
+  '斧': {p:'M23.0 1.4L5.4 18.0 0.0 30.6 0.0 58.6 9.9 81.1 25.7 95.9 37.4 98.6 38.7 96.4 35.6 93.2 27.5 90.5 17.1 79.3 59.9 53.6 77.0 47.3 79.3 49.5 80.2 82.9 82.4 84.2 85.6 76.6 84.7 50.5 100.0 46.8 97.7 42.8 88.7 43.7 85.6 40.5 86.5 15.3 81.1 16.2 79.3 39.6 69.8 41.0 37.4 31.1 14.0 20.3 12.6 18.0 25.2 5.4 23.0 1.4ZM9.0 26.1L31.1 33.8 34.2 43.2 34.2 61.3 15.8 74.3 12.2 74.3 8.1 66.7 3.6 47.7 3.6 38.7 9.0 26.1ZM39.6 37.8L63.1 45.9 40.1 58.1 39.6 37.8Z'},
   '日': {p:'M54.7 3.1L17.2 6.2 3.1 14.1 0.0 62.0 6.2 79.7 24.5 94.8 54.7 96.9 80.7 91.7 90.6 82.8 96.9 66.1 100.0 47.4 90.6 17.2 77.6 7.3 54.7 3.1ZM42.7 12.0L74.5 14.6 89.6 31.8 89.6 58.9 78.6 84.4 59.9 88.5 32.8 87.5 18.2 81.2 12.5 74.5 9.4 66.1 12.5 19.3 22.4 13.5 42.7 12.0ZM29.7 43.8L27.1 49.5 34.9 53.1 71.9 49.5 67.2 43.8 29.7 43.8Z'},
   '月': {p:'M33.2 0.0L31.0 2.2 39.7 9.9 39.7 87.5 27.2 95.7 25.0 97.8 27.2 100.0 47.0 88.8 62.9 74.6 70.7 63.4 75.0 48.7 70.7 24.6 47.8 6.0 33.2 0.0ZM45.7 11.6L65.5 25.4 70.7 41.8 69.8 53.0 64.7 65.1 47.0 83.6 43.1 82.3 45.7 11.6ZM54.7 36.2L53.4 49.6 56.5 51.7 57.8 37.5 54.7 36.2Z'},
   '山': {p:'M46.7 5.3L27.6 50.5 10.6 31.4 5.0 33.9 0.0 92.2 2.5 94.7 30.7 94.7 100.0 91.7 89.4 32.9 84.9 30.4 66.8 49.5 53.3 11.8 46.7 5.3ZM46.2 16.8L49.2 16.8 55.3 29.9 73.4 81.2 72.9 87.7 22.1 87.2 46.2 16.8ZM10.1 41.0L25.1 57.0 14.6 88.7 7.5 88.7 5.0 84.2 10.1 41.0ZM82.4 42.0L86.4 43.0 94.5 79.1 93.0 85.7 83.9 87.7 78.4 83.2 69.3 59.0 82.4 42.0Z'},
@@ -1036,8 +1044,11 @@ function drawDianBox(ctx, cx, cy, s, color){
 
 /* weapon glyphs age with their tier: modern 楷 strokes, then the pictographs */
 function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
+  if(key === 'shi' && ORACLE['矢'] && typeof Path2D !== 'undefined'){
+    drawOraclePath(ctx, ORACLE['矢'], cx, cy, s*(0.85 + lv*0.08), color); return;
+  }
   if(lv >= 3 && typeof Path2D !== 'undefined'){
-    const m3 = {gong:'射', ge:'戈', dao:'刃', wang:'網', jian:'兵'}[key];
+    const m3 = {gong:'射', ge:'戈', dao:'刃', wang:'網', jian:'兵', jin:'斧', shi:'矢'}[key];
     if(m3 && ORACLE[m3]){ drawOraclePath(ctx, ORACLE[m3], cx, cy, s*1.05, color); return; }
   }
   if(key==='gong'){
@@ -1319,7 +1330,7 @@ function drawDragonSeg(ctx, sp, color){
 
 /* --- 門 gate goal — the 甲骨文 form: two ladder-like door leaves --- */
 function drawGate(ctx, x, groundY, h, color, glow){
-  const og = ORACLE['門'];
+  const og = ORACLE['安'];
   if(og && typeof Path2D !== 'undefined'){
     drawOraclePath(ctx, og, x, groundY - h*0.52, h*1.08, color, 10 + glow*14);
     return;
@@ -1358,7 +1369,10 @@ const GLYPHS = {
   '馬': {py:'mǎ',   en:'horse',    zh:'马',   eff_en:'gallop — swifter (3s)',          eff_zh:'策马——疾行三秒'},
   '龜': {py:'guī',  en:'turtle',   zh:'龟',   eff_en:'shell — blocks the next hit',    eff_zh:'龟甲——挡下一击'},
   '舟': {py:'zhōu', en:'boat',     zh:'小舟', eff_en:'safe passage — 火 spares you (5s)', eff_zh:'舟渡——五秒火不能伤'},
-  '貝': {py:'bèi',  en:'cowrie',   zh:'贝',   eff_en:'riches — +3 extra glyphs',       eff_zh:'得贝——额外+3字'}
+  '貝': {py:'bèi',  en:'cowrie',   zh:'贝',   eff_en:'riches — +3 extra glyphs',       eff_zh:'得贝——额外+3字'},
+  '泉': {py:'quán', en:'spring',   zh:'泉',   eff_en:'the spring wells — +1 heart, every 火 quenched', eff_zh:'泉涌——回复一心，浇灭诸火'},
+  '鹿': {py:'lù',   en:'deer',     zh:'鹿',   eff_en:'the deer bounds — a leap ahead',  eff_zh:'鹿跃——向前一跃'},
+  '犬': {py:'quǎn', en:'hound',    zh:'犬',   eff_en:'the hound harries — nearby foes flee', eff_zh:'犬吠——近敌溃逃'}
 };
 const GLYPH_KEYS = Object.keys(GLYPHS);
 
@@ -1476,14 +1490,18 @@ const WEAPONS = {
          tier_en:['a spear — it thrusts where you run', 'bronze point — longer, through three', 'the Chu spear — barbed head to heel, a whole lane falls'],
          tier_zh:['「矛」——向前突刺', '青铜之锋——更长，可穿三鬼', '楚簡长矛——通体生棘，一线尽穿'],
          int:[1.1, 0.85, 0.6], reach:[120,142,166], hits:[2,3,4]},
-  jin:  {chs:['斤','斤','斤'], pys:['jīn','jīn','jīn'], eras:['隸書','金文','甲骨'],
-         tier_en:['an axe — it falls on the nearest knot of spirits', 'bronze bit — a wider cleave', 'oracle adze — the whole cluster falls'],
-         tier_zh:['「斤」——落斧劈其群', '青铜斧刃——劈得更广', '甲骨之斤——一斧尽没'],
+  jin:  {chs:['斤','斤','斧'], pys:['jīn','jīn','fǔ'], eras:['隸書','金文','甲骨'],
+         tier_en:['an axe — it falls on the nearest knot of spirits', 'bronze bit — a wider cleave', '斧 — the oracle axe: the whole cluster falls'],
+         tier_zh:['「斤」——落斧劈其群', '青铜斧刃——劈得更广', '「斧」——甲骨之斧，一劈尽没'],
          int:[1.7, 1.3, 0.95], splash:[36,46,58]},
   dao:  {chs:['刀','刃','刃'], pys:['dāo','rèn','rèn'], eras:['隸書','篆書','甲骨'],
          tier_en:['a blade circling you, nicking the closest', '刃 — the edge is marked: quicker, three cuts', 'the oracle 刃 — nothing stands beside you'],
          tier_zh:['「刀」——绕身旋斩', '「刃」——点出锋芒，更快三斩', '甲骨之刃——近身皆殒'],
          int:[0.9, 0.7, 0.5], reach:[58,66,76], hits:[2,3,4]},
+  shi:  {chs:['矢','矢','矢'], pys:['shǐ','shǐ','shǐ'], eras:['隸書','金文','甲骨'],
+         tier_en:['arrows out of heaven — two fall on the pack', 'recast in bronze — three fall', 'the oracle volley — five arrows rain'],
+         tier_zh:['「矢」——天降之矢，落敌其二', '金文重铸——天矢落三', '甲骨箭雨——五矢齐落'],
+         int:[2.3, 1.8, 1.4], count:[2, 3, 5]},
   wang: {chs:['網','網','網'], pys:['wǎng','wǎng','wǎng'], eras:['隸書','金文','甲骨'],
          tier_en:['a net — holds the pack fast', 'bronze-weighted — wider, longer', 'the oracle net — the whole hunt stands still'],
          tier_zh:['「网」——缚住群鬼', '坠以青铜——更广更久', '甲骨之网——群鬼皆缚'],
@@ -1544,6 +1562,7 @@ const Game = (function(){
   let player, keys = {}, joy = {x:0, y:0, on:false};
   let spirits = [], pickups = [], fires = [], fx = [], pedestals = [], projectiles = [], bolts = [];
   let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
+  let pav = null, treeDone = false, pavDone = false;
   let hatOn = false, shengPed = null, paused = false, foesSeen = {}, banner = null;
 
   function overlay(id, show){ $(id).classList.toggle('show', show); }
@@ -1560,6 +1579,7 @@ const Game = (function(){
     waveT = wave.len; spawnT = 1.2; fireT = 3.5; boltT = 5; gate = null; slowAllT = 0;
     dragonDone = false; bossDone = false;
     shengPed = (i === 1 && !hatOn) ? {x:CW*0.3, y:CH*0.35, bob:0} : null;
+    pav = null; treeDone = false; pavDone = false;
     player = { x:CW/2, y:CH*0.62, vx:0, vy:0, face:1, runPhase:0, sq:0, inv:1.0,
                atkT:0.5, lastDir:{x:1,y:0},
                slipT:0, penT:0, phaseCdT:2.5, phasedT:0, pulseT:1,
@@ -1684,6 +1704,13 @@ const Game = (function(){
   function killSpirit(s){
     s.dead = true;
     addFx({kind:'poof', x:s.x, y:s.y, t:0.3, r:20});
+    if(s.type==='guo'){                               // 果: struck thrice, it gives
+      if(lives < MAXHP){ lives++; syncHud(); }
+      addFx({kind:'heal', x:s.x, y:s.y-24, t:0.8, r:0});
+      for(const off of [-16, 16]) pickups.push({x:s.x+off, y:s.y+10, ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:10, bob:off});
+      popToastEx('果', 'guǒ', t('the tree gives — +1 heart', '果树馈赠——回复一心'), 'wu');
+      return;
+    }
     if(s.bossCh){                                     // a boss falls: glyph burst + the light of 光
       for(let i=0;i<5;i++) pickups.push({x:s.x+Math.cos(i*1.26)*26, y:s.y+Math.sin(i*1.26)*26,
                                          ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:10, bob:i});
@@ -1909,6 +1936,7 @@ const Game = (function(){
       if(w.key === 'ge') wantAim = Math.atan2(-player.lastDir.y, -player.lastDir.x);
       else if(w.key === 'mao') wantAim = Math.atan2(player.lastDir.y, player.lastDir.x);
       else if(w.key === 'dao'){ w.aim += dt*7; wantAim = w.aim; }
+      else if(w.key === 'shi') wantAim = -Math.PI/2;   // the quiver points at heaven
       else { const tg = nearestSpirit(360); if(tg) wantAim = Math.atan2(tg.y-player.y, tg.x-player.x); }
       const dAim = Math.atan2(Math.sin(wantAim-w.aim), Math.cos(wantAim-w.aim));
       w.aim += dAim * Math.min(1, dt*10);
@@ -1994,6 +2022,16 @@ const Game = (function(){
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'ringatk', x:player.x, y:player.y, r:W.reach[lv], t:0.16});
         w.recoil = 1; w.t = W.int[lv];
+      } else if(w.key === 'shi'){                     // 矢: arrows out of heaven
+        const live = spirits.filter(sp2=>!sp2.dead && sp2.type!=='guo');
+        if(!live.length){ w.t = 0.15; continue; }
+        const n = Math.min(W.count[lv], live.length);
+        for(let i2 = 0; i2 < n; i2++){
+          const tgt2 = live[(Math.random()*live.length)|0];
+          addFx({kind:'lance', x:tgt2.x, y:tgt2.y-70, ang:Math.PI/2, r:64, t:0.22});
+          hurtSpirit(tgt2, 1);
+        }
+        w.recoil = 1; w.t = W.int[lv];
       } else { // 網
         const tgt = nearestSpirit(320);
         if(!tgt){ w.t = 0.15; continue; }
@@ -2028,7 +2066,7 @@ const Game = (function(){
       } else {
         const prog = 1 - waveT/wave.len;
         spawnT -= dt;
-        if(spawnT <= 0 && spirits.filter(s=>!s.dead).length < wave.cap){
+        if(spawnT <= 0 && spirits.filter(s=>!s.dead && s.type!=='guo').length < wave.cap){
           spawnT = wave.spawn * (1 - 0.35*prog);
           for(let tries=0; tries<6; tries++){
             const side = (Math.random()*4)|0;
@@ -2077,6 +2115,29 @@ const Game = (function(){
             for(let tries=0; tries<8; tries++){
               const fxp = WALL+60+Math.random()*(CW-WALL*2-120), fyp = WALL+60+Math.random()*(CH-WALL*2-120);
               if(Math.hypot(fxp-player.x, fyp-player.y) > 140){ fires.push({x:fxp, y:fyp, r:32, t:5.5}); break; }
+            }
+          }
+        }
+        // the 果 tree takes root — strike it thrice and it gives
+        if(!treeDone && waveT <= wave.len*0.45){
+          treeDone = true;
+          for(let tries=0; tries<8; tries++){
+            const tx2 = WALL+70+Math.random()*(CW-WALL*2-140), ty2 = WALL+70+Math.random()*(CH-WALL*2-140);
+            if(Math.hypot(tx2-player.x, ty2-player.y) > 130 || tries===7){
+              spirits.push({x:tx2, y:ty2, phase:Math.random()*6, dead:false, type:'guo', hp:3, cr:29,
+                            st:0, stT:0, face:1, dirn:1, spd:0});
+              break;
+            }
+          }
+        }
+        // the 安 pavilion rises — enter it for three breaths of safety
+        if(!pavDone && waveT <= wave.len*0.35){
+          pavDone = true;
+          for(let tries=0; tries<8; tries++){
+            const px2 = WALL+80+Math.random()*(CW-WALL*2-160), py2 = WALL+80+Math.random()*(CH-WALL*2-160);
+            if(Math.hypot(px2-player.x, py2-player.y) > 150 || tries===7){
+              pav = {x:px2, y:py2, state:'idle', t:0, bob:0};
+              break;
             }
           }
         }
@@ -2163,21 +2224,25 @@ const Game = (function(){
             const px=s._prev.x-s.x, py=s._prev.y-s.y, pd=Math.hypot(px,py)||1;
             if(pd>24){ const v=Math.min(260,(pd-24)*9); s.x += px/pd*v*dt; s.y += py/pd*v*dt; }
           }
+        } else if(s.type==='guo'){
+          // the tree stands
         } else {
-          s.x += (ddx/d)*s.spd*sf*dt + Math.cos(s.phase)*10*dt;
-          s.y += (ddy/d)*s.spd*sf*dt + Math.sin(s.phase*0.8)*10*dt;
-          s.face = ddx >= 0 ? 1 : -1;
+          const fdir = (s.fleeT||0) > 0 ? -1 : 1;
+          if(s.fleeT > 0) s.fleeT -= dt;
+          s.x += fdir*(ddx/d)*s.spd*sf*dt + Math.cos(s.phase)*10*dt;
+          s.y += fdir*(ddy/d)*s.spd*sf*dt + Math.sin(s.phase*0.8)*10*dt;
+          s.face = (fdir*ddx) >= 0 ? 1 : -1;
         }
       }
       // light separation so the pack doesn't stack into one 鬼
       for(const o of spirits){
-        if(o===s || o.dead || s.type==='long' || o.type==='long' || s.boss || o.boss) continue;
+        if(o===s || o.dead || s.type==='long' || o.type==='long' || s.boss || o.boss || s.type==='guo') continue;
         const ox = s.x-o.x, oy = s.y-o.y, od = Math.hypot(ox,oy);
         if(od > 0.01 && od < 26){ s.x += ox/od*30*dt; s.y += oy/od*30*dt; }
       }
       s.x = clamp(s.x, WALL+6, CW-WALL-6); s.y = clamp(s.y, WALL+12, CH-WALL-6);
       // touch
-      if(Math.hypot(s.x-player.x, s.y-player.y) < (s.cr||29)){
+      if(s.type!=='guo' && Math.hypot(s.x-player.x, s.y-player.y) < (s.cr||29)){
         if(player.phasedT > 0){                          // 魂游: you pass through them
           if(selChar==='gui' && level >= CHARS.gui.slowTier) s.slowT = 1.5;
           if(selChar==='gui' && level >= CHARS.gui.dmgTier) hurtSpirit(s, 1);
@@ -2287,6 +2352,28 @@ const Game = (function(){
       }
     }
 
+    // --- the 安 pavilion ---
+    if(pav){
+      pav.bob += dt*2;
+      if(pav.state === 'idle' && Math.hypot(pav.x-player.x, pav.y-player.y) < 38){
+        pav.state = 'active'; pav.t = 3;
+        popToastEx('亭', 'tíng', t('the pavilion — no harm beneath this roof (3s)', '「亭」——此亭之下，诸邪莫近（3秒）'), 'wu');
+      }
+      if(pav.state === 'active'){
+        pav.t -= dt;
+        if(Math.hypot(pav.x-player.x, pav.y-player.y) < 88) player.inv = Math.max(player.inv, 0.12);
+        for(const s of spirits){
+          if(s.dead || s.boss || s.type==='guo' || s.type==='long') continue;
+          const d = Math.hypot(s.x-pav.x, s.y-pav.y);
+          if(d < 92){ s.x += (s.x-pav.x)/(d||1)*(94-d)*0.5; s.y += (s.y-pav.y)/(d||1)*(94-d)*0.5; }
+        }
+        if(pav.t <= 0){
+          addFx({kind:'poof', x:pav.x, y:pav.y, t:0.4, r:44});
+          pav = null;
+        }
+      }
+    }
+
     // --- fx decay ---
     for(const e of fx) e.t -= dt;
     fx = fx.filter(e=>e.t > 0);
@@ -2333,6 +2420,22 @@ const Game = (function(){
       case '龜': player.shellOn = true; break;
       case '舟': player.boatT = 5; break;
       case '貝': coins += 3; break;
+      case '泉':
+        if(lives < MAXHP){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
+        for(const f2 of fires) addFx({kind:'poof', x:f2.x, y:f2.y, t:0.3, r:24});
+        fires = [];
+        break;
+      case '鹿':
+        player.x = clamp(player.x + player.lastDir.x*95, WALL+16, CW-WALL-16);
+        player.y = clamp(player.y + player.lastDir.y*95, WALL+34, CH-WALL-10);
+        player.inv = Math.max(player.inv, 0.4);
+        addFx({kind:'poof', x:player.x, y:player.y, t:0.3, r:22});
+        break;
+      case '犬':
+        for(const s of spirits){
+          if(!s.dead && !s.boss && s.type!=='guo' && Math.hypot(s.x-player.x, s.y-player.y) < 150) s.fleeT = 2;
+        }
+        break;
     }
   }
   function maybeLevelUp(){
@@ -2419,6 +2522,24 @@ const Game = (function(){
       ctx.beginPath(); ctx.ellipse(pd.x, pd.y+16, 22, 8, 0, 0, Math.PI*2); ctx.stroke(); ctx.restore();
       drawWeaponIcon(ctx, pd.key, nlv, pd.x, pd.y + Math.sin(pd.bob)*3 - 2, 34, era.ink);
     }
+    // the 安 pavilion
+    if(pav){
+      const active = pav.state === 'active';
+      ctx.save();
+      if(active){
+        ctx.globalAlpha = 0.25 + 0.15*Math.sin(tGlobal*6);
+        ctx.fillStyle = era.accent;
+        ctx.beginPath(); ctx.arc(pav.x, pav.y, 88, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = active ? 0.9 : 0.4 + 0.15*Math.sin(pav.bob*2);
+      ctx.strokeStyle = era.accent; ctx.lineWidth = 2;
+      if(!active) ctx.setLineDash([6, 6]);
+      ctx.beginPath(); ctx.arc(pav.x, pav.y, active ? 88 : 34, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      if(ORACLE['亭'] && typeof Path2D !== 'undefined')
+        drawOraclePath(ctx, ORACLE['亭'], pav.x, pav.y + Math.sin(pav.bob)*3, 48, active ? era.accent : era.ink);
+    }
     // the 圣 crest on its plinth
     if(shengPed){
       ctx.save(); ctx.globalAlpha = 0.35; ctx.strokeStyle = era.accent; ctx.lineWidth = 2;
@@ -2439,7 +2560,7 @@ const Game = (function(){
       drawGate(ctx, gate.x, gate.y+55, 110, era.accent, gateGlow);
       ctx.save(); ctx.globalAlpha = 0.5+gateGlow*0.5; ctx.fillStyle = era.ink;
       ctx.font = '13px Consolas'; ctx.textAlign = 'center';
-      ctx.fillText(t('enter the gate','入门'), gate.x, gate.y+80);
+      ctx.fillText(t('step into 安','入「安」'), gate.x, gate.y+80);
       ctx.restore();
     }
 
@@ -2450,6 +2571,16 @@ const Game = (function(){
       if(s.type==='shi') drawBoar(ctx, s.x, s.y, 38, s.phase, col, s.face||1);
       else if(s.type==='hu') drawTiger(ctx, s.x, s.y, 48, s.phase, col, s.face||1, s.st===1);
       else if(s.type==='long') drawDragonSeg(ctx, s, col);
+      else if(s.type==='guo'){
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(Math.sin(s.phase*0.5)*0.04);
+        if(ORACLE['果'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['果'], 0, 0, 54, '#b9dd9a');
+        else {
+          ctx.strokeStyle = '#b9dd9a'; ctx.shadowColor = '#b9dd9a'; ctx.shadowBlur = 6;
+          ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 24); ctx.lineTo(0, -20); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, -22, 12, 0, Math.PI*2); ctx.stroke();
+        }
+        ctx.restore();
+      }
       else if(s.type==='meng' || s.type==='gu') drawVesselBoss(ctx, s.x, s.y, 64, s.phase, col, s.type==='gu');
       else drawSpirit(ctx, s.x, s.y, 34, s.phase, col, s.face||1);
       if(s.boss){
@@ -2866,13 +2997,17 @@ const Game = (function(){
     card(gd, bookCanvas(44,40,(bc)=>drawDianBox(bc,22,21,30,BOLTC)),
       `<b style="color:#e8dfc8">電</b> diàn ${zdicLink('電')}<br>${t('bronze form: rain over 申, the bolt itself. Its tail lashes to earth — dodge the ring.','金文：雨在「申」上，申即闪电。尾笔劈落——避开预警圈。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawGate(bc,22,37,30,'#e8b04a',0.6)),
-      `<b style="color:#e8dfc8">門</b> mén ${zdicLink('門')}<br>${t('the oracle gate: survive the wave and walk through — the era rewinds.','甲骨之门：撑过一波，穿门而过——时代倒退。')}`, 210);
+      `<b style="color:#e8dfc8">安</b> ān ${zdicLink('安')}<br>${t('“safety” — survive the wave and step beneath the safe roof; the era rewinds.','「安」——撑过一波，步入安檐——时代倒退。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawShengHat(bc,22,31,23,'#e8b04a')),
       `<b style="color:#e8dfc8">圣</b> shèng ${zdicLink('圣')}<br>${t('the great listening ear, worn as a crown: longer reach, far magnet.','倾听之大耳，戴之为冠：及远更甚。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawGuang(bc,22,26,20,BOLTC)),
       `<b style="color:#e8dfc8">光</b> guāng ${zdicLink('光')}<br>${t('the torch-bearer blinks overhead after a boss falls: swifter, sharper (8s).','斩落头目后，火炬加身：更快更利（8秒）。')}`, 210);
     card(gd, bookCanvas(72,36,(bc)=>drawOracleNum(bc,47,36,19,14,'#e8dfc8')),
       `<b style="color:#e8dfc8">一二三亖</b>…${zdicLink('五')}<br>${t('the clock counts in oracle numerals: bars to four, X five, ∧ six, cross seven, 八 eight, hook nine — tens are bound tally strokes (shown: 47).','时钟以甲骨数字计数：一至亖为横，X为五，∧为六，十字为七，八为八，钩为九——十位为束起的竖记（图为47）。')}`, 260);
+    card(gd, bookCanvas(44,44,(bc)=>{ if(ORACLE['果'] && typeof Path2D!=='undefined') drawOraclePath(bc, ORACLE['果'], 22, 22, 38, '#b9dd9a'); }),
+      `<b style="color:#e8dfc8">果</b> guǒ ${zdicLink('果')}<br>${t('the fruit tree — strike it thrice and it yields a heart and glyphs.','果树——三击而落，予心予字。')}`, 210);
+    card(gd, bookCanvas(44,44,(bc)=>{ if(ORACLE['亭'] && typeof Path2D!=='undefined') drawOraclePath(bc, ORACLE['亭'], 22, 22, 38, '#e8b04a'); }),
+      `<b style="color:#e8dfc8">亭</b> tíng ${zdicLink('亭')}<br>${t('the pavilion — enter it and nothing may harm you for three breaths.','「亭」——入此亭者，三息之内诸邪莫近。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawWang(bc,22,37,30,'#f0674a')),
       `<b style="color:#e8dfc8">亡</b> wáng ${zdicLink('亡')}<br>${t('the broken blade — “to perish”. It marks your end; do not meet it.','刃之折者——「亡」。它标记你的终局，愿你不遇。')}`, 210);
   }
@@ -3009,7 +3144,7 @@ const Game = (function(){
   loadStage(0); running = false; render();
 
   return { start, restart, nextStage, syncHud, onLang, chooseChar, pause, resume, openBook, closeBook,
-           dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts,
+           dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, pav,
                          stageIdx, selChar, selArm, waveT, gate, hp: lives, level, coins,
                          hat: hatOn, sheng: shengPed, buffT, paused, banner }) };
 })();
