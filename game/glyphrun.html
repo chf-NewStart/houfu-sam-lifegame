@@ -100,7 +100,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从楷书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b3</span>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b4</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -121,7 +121,7 @@
     <!-- START -->
     <div class="overlay show" id="ovStart">
       <h2 data-en="字源 · GLYPH RUN" data-zh="字源 · 汉字奔跑">字源 · GLYPH RUN</h2>
-      <div class="big" data-en="Pick a glyph — you play as the character itself. 鬼 spirits swarm from every side; your ink auto-slashes the nearest while you steer. Fallen spirits drop glyphs — that's your experience: fill the bar to LEVEL UP and evolve into a related character with a stronger skill. Every 12 glyphs also mends a heart. Survive each wave and pass the gate — the script rewinds an era: 楷書 → 篆書 → 金文 → 甲骨文. Ancient weapons surface from the dust: walk over 弓 the bow, 戈 the dagger-axe, 網 the net — a second 弓 becomes 射." data-zh="选一个字——你扮演的就是字形本身。「鬼」自四面八方涌来，笔墨会自动斩向最近之敌，你只管走位。倒下的鬼掉落古字——那就是经验：攒满经验条即升级，进化成同族新字、技能更强。每集 12 字还能补一颗心。撑过每一波、穿过门——字体倒退一个时代：楷书 → 篆书 → 金文 → 甲骨文。尘土之下还会浮出古兵：走上前拾取「弓」「戈」「网」——再得一弓，便成「射」。">Pick a glyph — you play as the character itself. 鬼 spirits swarm from every side; your ink auto-slashes the nearest while you steer. Fallen spirits drop glyphs — that's your experience: fill the bar to LEVEL UP and evolve into a related character with a stronger skill. Every 12 glyphs also mends a heart. Survive each wave and pass the gate — the script rewinds an era: 楷書 → 篆書 → 金文 → 甲骨文. Ancient weapons surface from the dust: walk over 弓 the bow, 戈 the dagger-axe, 網 the net — a second 弓 becomes 射.</div>
+      <div class="big" data-en="Pick a glyph — you play as the character itself. 鬼 spirits swarm from every side; your ink auto-slashes the nearest while you steer. Fallen spirits drop glyphs — that's your experience: fill the bar to LEVEL UP and evolve into a related character with a stronger skill. Every 12 glyphs also mends a heart. Survive each wave and pass the gate — the script rewinds an era: 楷書 → 篆書 → 金文 → 甲骨文. You carry a modern 弓 from the start — its arrows fire on their own. Weapon drops recast your arsenal in ever-older script — bronze, then bone — until the bow becomes 射 itself; 戈 guards your back, 網 holds the pack." data-zh="选一个字——你扮演的就是字形本身。「鬼」自四面八方涌来，笔墨会自动斩向最近之敌，你只管走位。倒下的鬼掉落古字——那就是经验：攒满经验条即升级，进化成同族新字、技能更强。每集 12 字还能补一颗心。撑过每一波、穿过门——字体倒退一个时代：楷书 → 篆书 → 金文 → 甲骨文。你开局自带一张现代的「弓」——箭矢自动离弦。拾取兵器会以更古的字体重铸——金文、再到甲骨——弓最终化为「射」；「戈」护你身后，「网」缚住群鬼。">Pick a glyph — you play as the character itself. 鬼 spirits swarm from every side; your ink auto-slashes the nearest while you steer. Fallen spirits drop glyphs — that's your experience: fill the bar to LEVEL UP and evolve into a related character with a stronger skill. Every 12 glyphs also mends a heart. Survive each wave and pass the gate — the script rewinds an era: 楷書 → 篆書 → 金文 → 甲骨文. You carry a modern 弓 from the start — its arrows fire on their own. Weapon drops recast your arsenal in ever-older script — bronze, then bone — until the bow becomes 射 itself; 戈 guards your back, 網 holds the pack.</div>
       <div class="char-row" id="charRow"></div>
       <div class="keys" id="skillLine"></div>
       <div class="keys">
@@ -559,6 +559,49 @@ function drawPicto(ctx, ch, cx, cy, s, color){
   ctx.restore();
 }
 
+/* weapon glyphs age with their tier: modern 楷 strokes, then the pictographs */
+function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
+  if(key==='gong'){
+    if(lv>=3){ drawPicto(ctx, '射', cx, cy, s, color); return; }
+    if(lv===2){ drawPicto(ctx, '弓', cx, cy, s, color); return; }
+    ctx.save(); ctx.translate(cx, cy);                    // 楷 弓: three-bar zigzag, final hook
+    ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
+    stroke(ctx, Math.max(2, s*0.09));
+    const r = s*0.42;
+    ctx.beginPath();
+    ctx.moveTo(-r*0.55,-r); ctx.lineTo(r*0.5,-r); ctx.lineTo(r*0.5,-r*0.35); ctx.lineTo(-r*0.55,-r*0.35);
+    ctx.lineTo(-r*0.55,r*0.2); ctx.lineTo(r*0.5,r*0.2); ctx.lineTo(r*0.5,r*0.8);
+    ctx.quadraticCurveTo(r*0.5,r*1.05,r*0.1,r*0.95);
+    ctx.stroke();
+    ctx.restore(); return;
+  }
+  if(key==='ge'){
+    if(lv>=2){ drawPicto(ctx, '戈', cx, cy, s, color); return; }
+    ctx.save(); ctx.translate(cx, cy);                    // 楷 戈: 横 斜钩 撇 点
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
+    stroke(ctx, Math.max(2, s*0.09));
+    const r = s*0.42;
+    ctx.beginPath(); ctx.moveTo(-r*0.7,-r*0.4); ctx.lineTo(r*0.35,-r*0.55); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r*0.05,-r); ctx.quadraticCurveTo(r*0.15,r*0.3,r*0.6,r*0.85); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(r*0.6,r*0.85); ctx.lineTo(r*0.7,r*0.55); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-r*0.1); ctx.lineTo(-r*0.55,r*0.75); ctx.stroke();
+    ctx.beginPath(); ctx.arc(r*0.5,-r*0.9,r*0.09,0,Math.PI*2); ctx.fill();
+    ctx.restore(); return;
+  }
+  if(lv>=2){ drawPicto(ctx, '網', cx, cy, s, color); return; }
+  ctx.save(); ctx.translate(cx, cy);                      // 楷 网: 冂 with crossed lattice
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
+  stroke(ctx, Math.max(2, s*0.09));
+  const r = s*0.42;
+  ctx.beginPath(); ctx.moveTo(-r*0.6,-r*0.85); ctx.lineTo(-r*0.6,r*0.9); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-r*0.6,-r*0.85); ctx.lineTo(r*0.6,-r*0.85); ctx.lineTo(r*0.6,r*0.9); ctx.stroke();
+  for(const ox of [-0.28, 0.3]){
+    ctx.beginPath(); ctx.moveTo((ox-0.18)*r,-r*0.5); ctx.lineTo((ox+0.18)*r,r*0.1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo((ox+0.18)*r,-r*0.5); ctx.lineTo((ox-0.18)*r,r*0.1); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /* --- 鬼 spirit enemy --- */
 function drawSpirit(ctx, cx, cy, s, phase, color){
   ctx.save();
@@ -574,9 +617,11 @@ function drawSpirit(ctx, cx, cy, s, phase, color){
   // little horns
   ctx.beginPath(); ctx.moveTo(-r*0.5,-r); ctx.lineTo(-r*0.68,-r*1.35); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(r*0.5,-r); ctx.lineTo(r*0.68,-r*1.35); ctx.stroke();
-  // eyes
+  // eyes — hostile red, so friend and foe never read the same
+  ctx.save(); ctx.fillStyle = '#f0674a'; ctx.shadowColor = '#f0674a';
   ctx.beginPath(); ctx.arc(-r*0.32,-r*0.7,r*0.11,0,Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(r*0.32,-r*0.7,r*0.11,0,Math.PI*2); ctx.fill();
+  ctx.restore();
   // wispy legs, shuffling
   const w = Math.sin(phase)*r*0.2;
   ctx.beginPath(); ctx.moveTo(-r*0.35,r*0.15); ctx.quadraticCurveTo(-r*0.5, r*0.6, -r*0.3+w, r); ctx.stroke();
@@ -711,17 +756,23 @@ const CHARS = {
 const ATK_INT = [1, 0.88, 0.76, 0.62];   // auto-attack quickens per tier
 const ATK_RNG = [1, 1.08, 1.18, 1.30];   // and reaches further
 
-/* pickup weapons — real war pictographs that surface mid-wave; walking a
-   duplicate upgrades it, and a second 弓 becomes 射 — the oracle form of
+/* pickup weapons — real war pictographs. You carry a modern 楷書 bow from
+   the start; duplicates recast a weapon in ever-older script (bronze, then
+   bone), faster and fiercer each time. The oracle tier of the bow IS 射 —
    “to shoot” really is the arrow set on the bowstring.                  */
 const WEAPONS = {
-  gong: {ch:'弓', py:'gōng', mean_en:'a bow — arrows seek the pack', mean_zh:'「弓」——放矢逐鬼',
-         ch2:'射', py2:'shè', mean2_en:'“to shoot” — the arrow on the bow: twin arrows, faster', mean2_zh:'「射」——弓上之矢：双箭齐发，更快',
-         int:[1.6, 1.0]},
-  ge:   {ch:'戈', py:'gē', mean_en:'dagger-axe — it guards your back', mean_zh:'「戈」——护住身后',
-         int:[1.3, 0.85]},
-  wang: {ch:'網', py:'wǎng', mean_en:'a net — holds the pack fast', mean_zh:'「网」——缚住群鬼',
-         int:[3.2, 2.2]}
+  gong: {chs:['弓','弓','射'], pys:['gōng','gōng','shè'], eras:['楷書','金文','甲骨'],
+         tier_en:['a bow — arrows seek the pack', 'recast in bronze — twin arrows, quicker', '“to shoot” — the arrow on the string: three arrows, oracle-swift'],
+         tier_zh:['「弓」——放矢逐鬼', '金文重铸——双箭更疾', '「射」——弦上之矢，三箭齐发'],
+         int:[1.5, 1.05, 0.7]},
+  ge:   {chs:['戈','戈','戈'], pys:['gē','gē','gē'], eras:['楷書','金文','甲骨'],
+         tier_en:['dagger-axe — it guards your back', 'bronze edge — wider, quicker', 'oracle blade — a full reaping sweep'],
+         tier_zh:['「戈」——护住身后', '青铜之刃——更阔更快', '甲骨之锋——横扫如割'],
+         int:[1.3, 0.95, 0.62], hits:[3,4,5], reach:[96,110,124]},
+  wang: {chs:['網','網','網'], pys:['wǎng','wǎng','wǎng'], eras:['楷書','金文','甲骨'],
+         tier_en:['a net — holds the pack fast', 'bronze-weighted — wider, longer', 'the oracle net — the whole hunt stands still'],
+         tier_zh:['「网」——缚住群鬼', '坠以青铜——更广更久', '甲骨之网——群鬼皆缚'],
+         int:[3.2, 2.5, 1.9], reach:[60,74,88], root:[1.6, 2.0, 2.6]}
 };
 
 /* ============================== eras / waves ============================== */
@@ -736,6 +787,8 @@ const ERAS = {
            sky:['#15100a','#1d160d'], hill:'#2a2013'}
 };
 const ERA_ORDER = ['kai','seal','bronze','oracle'];
+/* spirits get their own spectral tint — foes must never share your ink */
+const GHOST = '#9fe0cf';
 
 /* per-era wave tuning: survive the timer and the gate opens */
 const WAVES = [
@@ -772,7 +825,7 @@ const Game = (function(){
     era = ERAS[ERA_ORDER[i]];
     wave = WAVES[i];
     spirits = []; pickups = []; fires = []; clouds = []; fx = []; pedestals = []; projectiles = [];
-    wTimes = stageIdx >= 2 ? [wave.len*0.55, wave.len*0.22] : [wave.len*0.55];
+    wTimes = [wave.len*0.6, wave.len*0.28];
     waveT = wave.len; spawnT = 1.2; fireT = 3.5; gate = null; slowAllT = 0;
     const c = C();
     player = { x:CW/2, y:CH*0.62, face:1, runPhase:0, sq:0, inv:1.0,
@@ -795,7 +848,8 @@ const Game = (function(){
 
   /* ---------- lifecycle ---------- */
   function start(){
-    stageIdx = 0; lives = MAXHP; coins = 0; nextHeart = 12; level = 0; weapons = [];
+    stageIdx = 0; lives = MAXHP; coins = 0; nextHeart = 12; level = 0;
+    weapons = [{key:'gong', lv:1, t:0.8}];   // everyone starts with the modern bow
     hideAll();
     loadStage(0);
     running = true; lastTs = performance.now();
@@ -1068,8 +1122,10 @@ const Game = (function(){
         const tgt = nearestSpirit(9999);
         if(!tgt){ w.t = 0.1; continue; }
         const ang = Math.atan2(tgt.y-player.y, tgt.x-player.x);
-        const shots = w.lv > 1 ? [ang-0.09, ang+0.09] : [ang];
-        for(const a of shots) projectiles.push({x:player.x, y:player.y, ux:Math.cos(a), uy:Math.sin(a), t:1.1, pierce:2});
+        const spread = [[0], [-0.09, 0.09], [-0.16, 0, 0.16]][lv];
+        for(const da of spread) projectiles.push({x:player.x, y:player.y, ux:Math.cos(ang+da), uy:Math.sin(ang+da),
+                                                  t:1.2, pierce:2+lv, spd:430+lv*60, lv});
+        addFx({kind:'ringatk', x:player.x, y:player.y, r:12+lv*5, t:0.14});
         w.t = W.int[lv];
       } else if(w.key === 'ge'){
         const back = Math.atan2(-player.lastDir.y, -player.lastDir.x);
@@ -1077,22 +1133,22 @@ const Game = (function(){
         for(const s of spirits){
           if(s.dead) continue;
           const d = Math.hypot(s.x-player.x, s.y-player.y);
-          if(d > 96) continue;
+          if(d > W.reach[lv]) continue;
           let da = Math.atan2(s.y-player.y, s.x-player.x) - back;
           da = Math.atan2(Math.sin(da), Math.cos(da));
-          if(Math.abs(da) < 1.15) cand.push([d, s]);
+          if(Math.abs(da) < 1.15 + lv*0.2) cand.push([d, s]);
         }
         if(!cand.length){ w.t = 0.12; continue; }
         cand.sort((a,b)=>a[0]-b[0]);
-        for(const [,s] of cand.slice(0, 3)) killSpirit(s);
-        addFx({kind:'slash', x:player.x, y:player.y, ang:back, r:88, t:0.18});
+        for(const [,s] of cand.slice(0, W.hits[lv])) killSpirit(s);
+        addFx({kind:'slash', x:player.x, y:player.y, ang:back, r:W.reach[lv]-8, t:0.18});
         w.t = W.int[lv];
       } else { // 網: cast at the nearest knot of spirits
         const tgt = nearestSpirit(320);
         if(!tgt){ w.t = 0.15; continue; }
-        const nr = w.lv > 1 ? 78 : 60;
+        const nr = W.reach[lv];
         for(const s of spirits){
-          if(!s.dead && Math.hypot(s.x-tgt.x, s.y-tgt.y) <= nr) s.rootT = 1.6;
+          if(!s.dead && Math.hypot(s.x-tgt.x, s.y-tgt.y) <= nr) s.rootT = W.root[lv];
         }
         addFx({kind:'net', x:tgt.x, y:tgt.y, r:nr, t:1.4});
         w.t = W.int[lv];
@@ -1101,7 +1157,7 @@ const Game = (function(){
     // arrows in flight
     for(const p of projectiles){
       p.t -= dt;
-      p.x += p.ux*430*dt; p.y += p.uy*430*dt;
+      p.x += p.ux*p.spd*dt; p.y += p.uy*p.spd*dt;
       if(p.x < WALL || p.x > CW-WALL || p.y < WALL || p.y > CH-WALL) p.t = 0;
       for(const s of spirits){
         if(s.dead || p.pierce <= 0) continue;
@@ -1150,7 +1206,7 @@ const Game = (function(){
         // a weapon surfaces from the dust
         if(wTimes.length && waveT <= wTimes[0]){
           wTimes.shift();
-          const pool = Object.keys(WEAPONS).filter(k=>!weapons.some(w=>w.key===k && w.lv>1));
+          const pool = Object.keys(WEAPONS).filter(k=>!weapons.some(w=>w.key===k && w.lv>2));
           const key = pool.length ? pool[(Math.random()*pool.length)|0] : 'gong';
           for(let tries=0; tries<8; tries++){
             const wx = WALL+70+Math.random()*(CW-WALL*2-140), wy = WALL+70+Math.random()*(CH-WALL*2-140);
@@ -1230,16 +1286,16 @@ const Game = (function(){
       if(Math.hypot(pd.x-player.x, pd.y-player.y) < 32){
         pd.done = true;
         const W = WEAPONS[pd.key], owned = weapons.find(w=>w.key===pd.key);
-        if(owned && owned.lv === 1){
-          owned.lv = 2;
-          if(pd.key==='gong') popToastEx(W.ch2, W.py2, t(W.mean2_en, W.mean2_zh));
-          else popToastEx(W.ch, W.py+' Ⅱ', t(W.mean_en, W.mean_zh));
+        if(owned && owned.lv < 3){
+          owned.lv++;
+          const l = owned.lv-1;
+          popToastEx(W.chs[l], `${W.pys[l]} · ${W.eras[l]}`, t(W.tier_en[l], W.tier_zh[l]));
         } else if(!owned){
           if(weapons.length >= 2) weapons.shift();          // the oldest is set down
           weapons.push({key:pd.key, lv:1, t:0.4});
-          popToastEx(W.ch, W.py, t(W.mean_en, W.mean_zh));
+          popToastEx(W.chs[0], `${W.pys[0]} · ${W.eras[0]}`, t(W.tier_en[0], W.tier_zh[0]));
         } else {
-          popToastEx(W.ch, W.py, t('already mastered','已然精通'));
+          popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'));
         }
         addFx({kind:'levelup', x:pd.x, y:pd.y, t:0.6, r:50, ch:''});
       }
@@ -1302,11 +1358,13 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // weapon pedestals
+    // weapon pedestals — each shows the form you'd walk away with
     for(const pd of pedestals){
+      const owned = weapons.find(w=>w.key===pd.key);
+      const nlv = owned ? Math.min(3, owned.lv+1) : 1;
       ctx.save(); ctx.globalAlpha = 0.35; ctx.strokeStyle = era.accent; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(pd.x, pd.y+16, 22, 8, 0, 0, Math.PI*2); ctx.stroke(); ctx.restore();
-      drawPicto(ctx, WEAPONS[pd.key].ch, pd.x, pd.y + Math.sin(pd.bob)*3 - 2, 34, era.ink);
+      drawWeaponIcon(ctx, pd.key, nlv, pd.x, pd.y + Math.sin(pd.bob)*3 - 2, 34, era.ink);
     }
 
     // fallen glyphs
@@ -1326,8 +1384,8 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // spirits
-    for(const s of spirits){ if(!s.dead) drawSpirit(ctx, s.x, s.y, 34, s.phase, era.ink); }
+    // spirits — spectral, red-eyed
+    for(const s of spirits){ if(!s.dead) drawSpirit(ctx, s.x, s.y, 34, s.phase, GHOST); }
 
     // the flock orbiters 羴
     if(selChar==='yang' && level >= CHARS.yang.orbTier){
@@ -1340,11 +1398,20 @@ const Game = (function(){
       }
     }
 
-    // arrows in flight
+    // arrows in flight — gold like every strike of yours
     for(const p of projectiles){
-      ctx.save(); ctx.strokeStyle = era.ink; ctx.shadowColor = era.ink; ctx.shadowBlur = 6;
+      ctx.save();
+      ctx.strokeStyle = era.accent; ctx.shadowColor = era.accent; ctx.shadowBlur = 6 + p.lv*4;
       ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.moveTo(p.x-p.ux*12, p.y-p.uy*12); ctx.lineTo(p.x, p.y); ctx.stroke();
+      const L = 15 + p.lv*4;
+      ctx.beginPath(); ctx.moveTo(p.x-p.ux*L, p.y-p.uy*L); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x-p.ux*6-p.uy*4, p.y-p.uy*6+p.ux*4);
+      ctx.moveTo(p.x, p.y); ctx.lineTo(p.x-p.ux*6+p.uy*4, p.y-p.uy*6-p.ux*4); ctx.stroke();
+      if(p.lv >= 1){
+        const bx = p.x-p.ux*L, by = p.y-p.uy*L;
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx-p.ux*5-p.uy*4, by-p.uy*5+p.ux*4);
+        ctx.moveTo(bx, by); ctx.lineTo(bx-p.ux*5+p.uy*4, by-p.uy*5-p.ux*4); ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -1376,7 +1443,7 @@ const Game = (function(){
     // strike & event fx
     for(const e of fx){
       const k = e.t/e.max;
-      ctx.save(); ctx.strokeStyle = era.ink; ctx.globalAlpha = 0.75*k;
+      ctx.save(); ctx.strokeStyle = era.accent; ctx.globalAlpha = 0.75*k;   // attacks read gold
       if(e.kind==='slash'){
         ctx.lineWidth = 5;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*0.8, e.ang-0.8, e.ang+0.8); ctx.stroke();
@@ -1395,7 +1462,7 @@ const Game = (function(){
         ctx.lineWidth = 3; ctx.globalAlpha = 0.4*k;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1-k)*0.6, 0, Math.PI*2); ctx.stroke();
       } else if(e.kind==='poof'){
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = GHOST; ctx.lineWidth = 2.5;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1.3-k), 0, Math.PI*2); ctx.stroke();
       } else if(e.kind==='hurt'){
         ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 4;
@@ -1454,13 +1521,11 @@ const Game = (function(){
     ctx.fillText('♥', WALL+6, WALL+23);
     ctx.restore();
     for(let i=0; i<weapons.length; i++){
-      const W = WEAPONS[weapons[i].key];
-      const wch = (weapons[i].key==='gong' && weapons[i].lv>1) ? W.ch2 : W.ch;
-      drawPicto(ctx, wch, WALL+20+i*32, WALL+44, 20, era.accent);
-      if(weapons[i].lv>1 && weapons[i].key!=='gong'){
-        ctx.save(); ctx.fillStyle = era.accent; ctx.font = 'bold 9px Consolas'; ctx.textAlign = 'left';
-        ctx.fillText('Ⅱ', WALL+30+i*32, WALL+54); ctx.restore();
-      }
+      const w = weapons[i];
+      drawWeaponIcon(ctx, w.key, w.lv, WALL+20+i*34, WALL+46, 20, era.accent);
+      ctx.save(); ctx.fillStyle = era.accent; ctx.globalAlpha = 0.9;
+      for(let pip=0; pip<w.lv; pip++) ctx.fillRect(WALL+13+i*34+pip*7, WALL+58, 4, 3);
+      ctx.restore();
     }
 
     // wave clock
