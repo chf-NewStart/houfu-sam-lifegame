@@ -75,7 +75,7 @@
   .char-card .chint{color:#8a8a8a;font-size:0.56rem;margin-top:2px;line-height:1.45;}
 
   /* on-screen controls (mobile): virtual joystick + one skill button */
-  .pad{max-width:960px;margin:12px auto 0;display:flex;justify-content:space-between;align-items:center;gap:12px;user-select:none;}
+  .pad{max-width:960px;margin:12px auto 0;display:flex;justify-content:center;align-items:center;gap:12px;user-select:none;}
   #joy{width:132px;height:132px;border-radius:50%;flex-shrink:0;position:relative;touch-action:none;
     background:radial-gradient(circle at 50% 42%, #1a1a1a, #0d0d0d 70%);
     box-shadow:inset 0 3px 10px rgba(0,0,0,0.7), 0 2px 0 #1e1e1e;border:1px solid #222;}
@@ -83,12 +83,10 @@
     background:linear-gradient(#2e2e2e,#161616);box-shadow:0 4px 8px rgba(0,0,0,0.6), inset 0 2px 3px rgba(255,255,255,0.09);
     border:1px solid #333;pointer-events:none;}
   #joy.on #joyKnob{background:linear-gradient(#3a3a3a,#1d1d1d);}
-  .arc-btn.skill{width:96px;height:96px;flex-shrink:0;border-radius:50%;border:none;cursor:pointer;font-family:inherit;
-    color:#f0c070;font-size:0.92rem;font-weight:bold;background:linear-gradient(#4a3416,#201406);
-    box-shadow:0 5px 0 #120b03, inset 0 2px 3px rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;}
-  .arc-btn.skill.cd{opacity:0.4;}
-  .arc-btn.on{transform:translateY(4px);box-shadow:0 1px 0 #0a0a0a, inset 0 2px 4px rgba(0,0,0,0.5);}
-  @media (max-width:520px){ #joy{width:116px;height:116px;} .arc-btn.skill{width:84px;height:84px;} }
+  @media (max-width:520px){ #joy{width:124px;height:124px;} }
+  .char-card.arm{width:88px;padding:7px 4px;}
+  .char-card.arm canvas{width:36px;height:42px;}
+  .char-card.arm .cname{font-size:0.7rem;}
   .pad-hint{text-align:center;color:#5a5a5a;font-size:0.66rem;margin-top:8px;max-width:960px;margin-left:auto;margin-right:auto;}
 
   .footer{max-width:960px;margin:22px auto 0;text-align:center;color:#555;font-size:0.68rem;line-height:1.7;}
@@ -100,7 +98,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从楷书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b7</span>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b8</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -124,9 +122,11 @@
       <div class="big" data-en="Pick a glyph — you play as the character itself. 鬼 spirits swarm from every side; your ink auto-slashes the nearest while you steer. Fallen spirits drop glyphs — that's your experience: fill the bar to LEVEL UP and evolve into a related character with a stronger skill. Every 12 glyphs also mends a heart. Survive each wave and pass the gate — the script rewinds an era: 楷書 → 篆書 → 金文 → 甲骨文. You carry a modern 弓 from the start — its arrows fire on their own. Weapon drops recast your arsenal in ever-older script — bronze, then bone — until the bow becomes 射 itself; and the armoury runs deeper: 戈 guards your back, 矛 thrusts where you run, 斤 falls on the thickest knot, 刀 whirls beside you, 網 holds the hunt still. You carry three." data-zh="选一个字——你扮演的就是字形本身。「鬼」自四面八方涌来，笔墨会自动斩向最近之敌，你只管走位。倒下的鬼掉落古字——那就是经验：攒满经验条即升级，进化成同族新字、技能更强。每集 12 字还能补一颗心。撑过每一波、穿过门——字体倒退一个时代：楷书 → 篆书 → 金文 → 甲骨文。你开局自带一张现代的「弓」——箭矢自动离弦。拾取兵器会以更古的字体重铸——金文、再到甲骨——弓最终化为「射」；武库不止于此：「戈」护你身后，「矛」向前突刺，「斤」劈其密集，「刀」绕身旋斩，「网」缚住群鬼。可携三件。">Pick a glyph — you play as the character itself. 鬼 spirits swarm from every side; your ink auto-slashes the nearest while you steer. Fallen spirits drop glyphs — that's your experience: fill the bar to LEVEL UP and evolve into a related character with a stronger skill. Every 12 glyphs also mends a heart. Survive each wave and pass the gate — the script rewinds an era: 楷書 → 篆書 → 金文 → 甲骨文. You carry a modern 弓 from the start — its arrows fire on their own. Weapon drops recast your arsenal in ever-older script — bronze, then bone — until the bow becomes 射 itself; and the armoury runs deeper: 戈 guards your back, 矛 thrusts where you run, 斤 falls on the thickest knot, 刀 whirls beside you, 網 holds the hunt still. You carry three.</div>
       <div class="char-row" id="charRow"></div>
       <div class="keys" id="skillLine"></div>
+      <div class="keys" style="margin-bottom:6px" data-en="choose your starting arm:" data-zh="选择初始兵器：">choose your starting arm:</div>
+      <div class="char-row" id="armRow"></div>
       <div class="keys">
         <span data-en="move" data-zh="移动">move</span> <kbd>WASD</kbd> / <kbd>←↑→↓</kbd> &nbsp;·&nbsp;
-        <span data-en="skill" data-zh="技能">skill</span> <kbd>Space</kbd> / <kbd>K</kbd> / <kbd>Shift</kbd>
+        <span data-en="everything else fights on its own" data-zh="其余一切自动出手">everything else fights on its own</span>
       </div>
       <button class="btn" id="startBtn" onclick="Game.start()" data-en="▶ INSERT COIN" data-zh="▶ 投币开始">▶ INSERT COIN</button>
     </div>
@@ -160,9 +160,8 @@
 
   <div class="pad">
     <div id="joy"><div id="joyKnob"></div></div>
-    <button class="arc-btn skill" id="btnS" aria-label="skill" data-en="SKILL" data-zh="技能">SKILL</button>
   </div>
-  <div class="pad-hint" data-en="Keyboard WASD / arrows to move, Space / K / Shift for your skill — or steer with the joystick and tap the button on touch." data-zh="键盘 WASD / 方向键移动，空格 / K / Shift 释放技能——触屏用摇杆移动、按钮放技能。">Keyboard WASD / arrows to move, Space / K / Shift for your skill — or steer with the joystick and tap the button on touch.</div>
+  <div class="pad-hint" data-en="Just steer — WASD / arrows, or the joystick on touch. Your ink, your weapons and your family's gift all act on their own." data-zh="只管走位——键盘 WASD / 方向键，触屏用摇杆。笔墨、兵器与字族天赋都会自行出手。">Just steer — WASD / arrows, or the joystick on touch. Your ink, your weapons and your family's gift all act on their own.</div>
 </div>
 
 <div class="footer">
@@ -318,6 +317,94 @@ function yangForm(ctx, fi, s, swing){
   }
 }
 
+/* the drifter family 鬼→畏→魅→魔 — you play the ghost itself */
+function guiForm(ctx, fi, s, swing){
+  stroke(ctx, s*0.1);
+  const r = 0.32*s;
+  ctx.beginPath(); ctx.rect(-r, -1.15*s, r*2, 0.48*s); ctx.stroke();       // the 田-like head
+  ctx.beginPath(); ctx.moveTo(-r, -0.91*s); ctx.lineTo(r, -0.91*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -1.15*s); ctx.lineTo(0, -0.67*s); ctx.stroke();
+  ctx.beginPath();                                                          // kneeling shade
+  ctx.moveTo(0, -0.67*s); ctx.quadraticCurveTo(0.05*s, -0.35*s, -0.05*s, -0.2*s);
+  ctx.quadraticCurveTo(-0.16*s, -0.05*s, 0.12*s + swing*0.5, 0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-0.02*s, -0.45*s); ctx.lineTo(0.3*s, -0.56*s); ctx.stroke();
+  if(fi>=1){                                                                // 畏: it takes up the club
+    ctx.beginPath(); ctx.moveTo(0.3*s, -0.56*s); ctx.lineTo(0.44*s, -0.96*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0.37*s, -0.86*s); ctx.lineTo(0.54*s, -0.8*s); ctx.stroke();
+  }
+  if(fi>=2){                                                                // 魅: the 彡 tail trails
+    for(const o of [0,1,2]){
+      ctx.beginPath(); ctx.moveTo(-0.26*s, -0.52*s + o*0.14*s);
+      ctx.quadraticCurveTo(-0.5*s, -0.46*s + o*0.14*s, -0.62*s, -0.32*s + o*0.14*s); ctx.stroke();
+    }
+  }
+  if(fi>=3){                                                                // 魔: the canopy of the demon
+    ctx.beginPath(); ctx.moveTo(-0.56*s, -1.32*s); ctx.lineTo(0.5*s, -1.32*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.56*s, -1.32*s); ctx.lineTo(-0.64*s, -0.6*s); ctx.stroke();
+  }
+}
+
+/* 光 the status glyph — fire carried high over a kneeling bearer */
+function drawGuang(ctx, cx, cy, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.35;
+  stroke(ctx, Math.max(2, s*0.11));
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.15*s); ctx.lineTo(cx, cy-0.75*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-0.28*s, cy-0.12*s); ctx.quadraticCurveTo(cx-0.45*s, cy-0.5*s, cx-0.28*s, cy-0.68*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+0.28*s, cy-0.12*s); ctx.quadraticCurveTo(cx+0.45*s, cy-0.5*s, cx+0.28*s, cy-0.68*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.1*s); ctx.quadraticCurveTo(cx+0.16*s, cy+0.14*s, cx, cy+0.35*s); ctx.stroke();
+  ctx.restore();
+}
+
+/* 圣 the oracle crest — the great listening ear, worn like a crown */
+function drawShengHat(ctx, cx, cy, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.25;
+  stroke(ctx, Math.max(2, s*0.11));
+  ctx.beginPath(); ctx.moveTo(cx-0.42*s, cy); ctx.quadraticCurveTo(cx-0.1*s, cy-0.5*s, cx, cy-0.95*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+0.42*s, cy); ctx.quadraticCurveTo(cx+0.1*s, cy-0.5*s, cx, cy-0.95*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-0.42*s, cy); ctx.lineTo(cx-0.6*s, cy-0.2*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+0.42*s, cy); ctx.lineTo(cx+0.6*s, cy-0.2*s); ctx.stroke();
+  ctx.restore();
+}
+
+/* the vessel bosses 皿 and 蠱 — living cauldrons off the oracle drawings */
+function drawVesselBoss(ctx, cx, cy, s, phase, color, worms){
+  ctx.save(); ctx.translate(cx, cy);
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
+  stroke(ctx, s*0.07);
+  const r = s*0.5;
+  ctx.beginPath();                                        // the bowl
+  ctx.moveTo(-r*0.85, -r*0.35); ctx.quadraticCurveTo(-r*0.75, r*0.35, -r*0.35, r*0.42);
+  ctx.lineTo(r*0.35, r*0.42); ctx.quadraticCurveTo(r*0.75, r*0.35, r*0.85, -r*0.35);
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-r*0.95, -r*0.35); ctx.lineTo(r*0.95, -r*0.35); ctx.stroke();  // rim
+  ctx.beginPath(); ctx.moveTo(-r*0.9, -r*0.5); ctx.lineTo(-r*0.95, -r*0.35); ctx.stroke();   // ears
+  ctx.beginPath(); ctx.moveTo(r*0.9, -r*0.5); ctx.lineTo(r*0.95, -r*0.35); ctx.stroke();
+  const k = Math.sin(phase)*r*0.08;                                                          // splayed legs
+  ctx.beginPath(); ctx.moveTo(-r*0.3, r*0.42); ctx.lineTo(-r*0.45+k, r*0.95); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, r*0.42); ctx.lineTo(0, r*0.95); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.3, r*0.42); ctx.lineTo(r*0.45-k, r*0.95); ctx.stroke();
+  if(worms){                                              // 蠱: the worms rise from the mouth
+    for(const [ox, ph] of [[-0.4, 0], [0, 2.1], [0.4, 4.2]]){
+      const wx = ox*r, sw = Math.sin(phase*1.4+ph)*r*0.14;
+      ctx.beginPath(); ctx.moveTo(wx, -r*0.35);
+      ctx.quadraticCurveTo(wx-sw, -r*0.75, wx+sw, -r*1.05);
+      ctx.quadraticCurveTo(wx+sw*1.5, -r*1.25, wx, -r*1.35); ctx.stroke();
+      ctx.beginPath(); ctx.arc(wx, -r*1.35, r*0.06, 0, Math.PI*2); ctx.fill();
+    }
+  } else {                                                // 皿: the crest sprouting from the lid
+    ctx.beginPath(); ctx.moveTo(0, -r*0.35); ctx.lineTo(0, -r*1.05); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -r*0.7); ctx.quadraticCurveTo(-r*0.35, -r*0.95, -r*0.4, -r*1.25); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -r*0.7); ctx.quadraticCurveTo(r*0.35, -r*0.95, r*0.4, -r*1.25); ctx.stroke();
+  }
+  ctx.save(); ctx.fillStyle = '#f0674a'; ctx.shadowColor = '#f0674a';
+  ctx.beginPath(); ctx.arc(-r*0.25, 0, r*0.09, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(r*0.25, 0, r*0.09, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+}
+
 /* the colossus family 象→像→豫→為 — forms checked against zdic 字源字形.
    為 in oracle bone really is a hand leading an elephant by the trunk.   */
 function elephantSide(ctx, s, cx, cy, sc, w, legKick){
@@ -393,11 +480,12 @@ function drawGlyphChar(ctx, charKey, fi, cx, footY, s, phase, sq, color){
   ctx.strokeStyle = color; ctx.fillStyle = color;
   ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
   const swing = Math.sin(phase) * 0.16 * s;      // legs alternate
-  const legged = charKey==='ren' || (charKey==='yang' && fi===2);
+  const legged = charKey==='ren';
   if(!legged) ctx.rotate(Math.sin(phase)*0.05);  // head-glyphs waddle instead
   if(charKey==='ren') renForm(ctx, fi, s, swing);
   else if(charKey==='niu') niuForm(ctx, fi, s);
   else if(charKey==='xiang') xiangForm(ctx, fi, s, swing);
+  else if(charKey==='gui') guiForm(ctx, fi, s, swing);
   else yangForm(ctx, fi, s, swing);
   ctx.restore();
 }
@@ -578,13 +666,21 @@ function drawPicto(ctx, ch, cx, cy, s, color){
 /* 电 the lightning glyph — the boxy body rides the sky; its lower stroke
    is the bolt itself, and when it strikes, that tail stretches to earth */
 function drawDianBox(ctx, cx, cy, s, color){
+  // 金文 電 per zdic 字源字形: the rain canopy over the coiled bolt 申
   ctx.save();
   ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.3;
-  stroke(ctx, Math.max(2, s*0.1));
-  const w = s*0.3, h = s*0.26;
-  ctx.beginPath(); ctx.rect(cx-w, cy-h, w*2, h*2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx-w, cy); ctx.lineTo(cx+w, cy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx, cy-h-s*0.12); ctx.lineTo(cx, cy+h); ctx.stroke();
+  stroke(ctx, Math.max(2, s*0.09));
+  ctx.beginPath(); ctx.moveTo(cx-0.5*s, cy-0.3*s); ctx.quadraticCurveTo(cx, cy-0.72*s, cx+0.5*s, cy-0.3*s); ctx.stroke();
+  for(const dx of [-0.26, 0, 0.26]){
+    ctx.beginPath(); ctx.moveTo(cx+dx*s, cy-0.34*s); ctx.lineTo(cx+dx*s*0.9, cy-0.16*s); ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(cx+0.16*s, cy-0.1*s);
+  ctx.quadraticCurveTo(cx-0.2*s, cy-0.02*s, cx-0.12*s, cy+0.14*s);
+  ctx.quadraticCurveTo(cx-0.02*s, cy+0.3*s, cx+0.14*s, cy+0.22*s);
+  ctx.quadraticCurveTo(cx+0.3*s, cy+0.14*s, cx+0.18*s, cy+0.34*s);
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+0.16*s, cy-0.1*s); ctx.lineTo(cx+0.3*s, cy-0.22*s); ctx.stroke();
   ctx.restore();
 }
 
@@ -615,6 +711,22 @@ function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
     ctx.beginPath(); ctx.moveTo(r*0.6,r*0.85); ctx.lineTo(r*0.7,r*0.55); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0,-r*0.1); ctx.lineTo(-r*0.55,r*0.75); ctx.stroke();
     ctx.beginPath(); ctx.arc(r*0.5,-r*0.9,r*0.09,0,Math.PI*2); ctx.fill();
+    ctx.restore(); return;
+  }
+  if(key==='jian'){
+    ctx.save(); ctx.translate(cx, cy);                    // the sword: blade, guard, grip
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*(0.12+lv*0.05);
+    stroke(ctx, Math.max(2, s*0.09));
+    const r = s*0.42;
+    ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(0,r*0.42); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r*0.1,-r*0.78); ctx.lineTo(0,-r); ctx.lineTo(r*0.1,-r*0.78); ctx.stroke();
+    if(lv>=3){ ctx.beginPath(); ctx.moveTo(-r*0.06,-r*0.6); ctx.lineTo(-r*0.06,r*0.2); ctx.stroke(); }
+    ctx.beginPath();
+    if(lv>=2){ ctx.moveTo(-r*0.34,r*0.32); ctx.quadraticCurveTo(0,r*0.55,r*0.34,r*0.32); }
+    else { ctx.moveTo(-r*0.3,r*0.42); ctx.lineTo(r*0.3,r*0.42); }
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,r*0.45); ctx.lineTo(0,r*0.95); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,r*1.02,r*0.08,0,Math.PI*2); ctx.fill();
     ctx.restore(); return;
   }
   if(key==='mao'){
@@ -755,27 +867,22 @@ function drawDragonSeg(ctx, sp, color){
   ctx.restore();
 }
 
-/* --- 門 gate goal --- */
+/* --- 門 gate goal — the 甲骨文 form: two ladder-like door leaves --- */
 function drawGate(ctx, x, groundY, h, color, glow){
   ctx.save();
   ctx.strokeStyle = color; ctx.fillStyle = color;
   ctx.shadowColor = color; ctx.shadowBlur = 10 + glow*14;
-  const w = h*0.72;
+  const w = h*0.8;
   stroke(ctx, Math.max(4, h*0.05));
   const topY = groundY - h;
-  // lintel
-  ctx.beginPath(); ctx.moveTo(x - w*0.62, topY); ctx.lineTo(x + w*0.62, topY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(x - w*0.5, topY + h*0.14); ctx.lineTo(x + w*0.5, topY + h*0.14); ctx.stroke();
-  // two door leaves 門
+  ctx.beginPath(); ctx.moveTo(x - w*0.6, topY); ctx.lineTo(x + w*0.6, topY); ctx.stroke();
   for(const sgn of [-1, 1]){
-    const dx = x + sgn * w*0.28;
-    ctx.beginPath();
-    ctx.moveTo(dx, topY + h*0.14);
-    ctx.lineTo(dx, groundY);
-    ctx.stroke();
-    // little inner ticks, like the strokes of 門
-    ctx.beginPath(); ctx.moveTo(dx, topY + h*0.34); ctx.lineTo(dx + sgn*w*0.16, topY + h*0.34); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(dx, topY + h*0.58); ctx.lineTo(dx + sgn*w*0.16, topY + h*0.58); ctx.stroke();
+    const po = x + sgn*w*0.52, pi = x + sgn*w*0.16;
+    ctx.beginPath(); ctx.moveTo(po, topY); ctx.lineTo(po, groundY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pi, topY + h*0.1); ctx.lineTo(pi, groundY - h*0.06); ctx.stroke();
+    for(const fy of [0.3, 0.55, 0.8]){
+      ctx.beginPath(); ctx.moveTo(po, topY + h*fy); ctx.lineTo(pi, topY + h*fy); ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -800,105 +907,98 @@ const GLYPHS = {
 const GLYPH_KEYS = Object.keys(GLYPHS);
 
 /* ============================== characters ============================== */
-/* Four playable glyph families. At every gate you EVOLVE into a related
-   character (real etymology — see 字源字形 on zdic.net) and your skill
-   gains a new twist. Every family also auto-attacks: your ink strikes
-   the nearest spirit on its own; the skill button is your signature move. */
+/* Four playable glyph families (etymology per zdic 字源字形). There is no
+   skill button any more: each family's gift is woven into how it moves.
+   Your ink auto-slashes and your carried weapons fire on their own.      */
 const CHARS = {
   ren: {
     title_en:'the Walker', title_zh:'行者',
-    skill_en:"Ancestor's Step", skill_zh:'祖灵疾步',
-    hint_en:'skill = a quick dash through danger', hint_zh:'技能＝穿魂疾步',
-    btn_en:'DASH', btn_zh:'疾步',
-    atk:{int:0.7, range:88, kind:'arc', hits:2},
+    skill_en:"Ancestor's Slip", skill_zh:'祖灵借步',
+    hint_en:'a strike that would land is slipped, every few seconds', hint_zh:'每隔数秒，命定一击化作虚空',
+    atk:{int:0.7, range:105, kind:'arc', hits:2},
     forms:[
       {ch:'人', py:'rén', mean_en:'a person in profile', mean_zh:'侧立之人',
-       tier_en:'LV1 · a quick untouchable dash', tier_zh:'LV1 · 轻巧一步，鬼影难近'},
+       tier_en:'LV1 · slips one blow every 6s', tier_zh:'LV1 · 每6秒借步避开一击'},
       {ch:'大', py:'dà', mean_en:'“big” — a person, arms spread wide', mean_zh:'「大」——张开双臂的人',
-       tier_en:'LV2 · TWO dash charges', tier_zh:'LV2 · 两段疾步'},
+       tier_en:'LV2 · the ancestors answer sooner (5s)', tier_zh:'LV2 · 祖灵更快应答（5秒）'},
       {ch:'夫', py:'fū', mean_en:'a grown man — 大 wearing a hairpin', mean_zh:'「夫」——束发加簪的大人',
-       tier_en:'LV3 · the dash itself cuts spirits down', tier_zh:'LV3 · 疾步所过，斩鬼于途'},
+       tier_en:'LV3 · sooner still (4s)', tier_zh:'LV3 · 更快（4秒）'},
       {ch:'舞', py:'wǔ', mean_en:'“to dance” — plumes swaying in both hands', mean_zh:'「舞」——双手执羽而舞',
-       tier_en:'LV4 · air-dance — three charges, every kill refunds a step', tier_zh:'LV4 · 凌空之舞——三段疾步，斩鬼回步'}
+       tier_en:'LV4 · every 3s — and the slip itself cuts', tier_zh:'LV4 · 每3秒——且借步反斩来敌'}
     ],
-    charges:[1,2,2,3], dashCd:2.2, dashLen:170, dashDur:0.16, killTier:2, refundTier:3, spd:1.02
+    slipCd:[6,5,4,3], slipCutTier:3, spd:1.06
   },
   niu: {
     title_en:'the Charger', title_zh:'冲撞者',
-    skill_en:'Ox Charge', skill_zh:'蛮牛冲撞',
-    hint_en:'skill = ram through everything in your path', hint_zh:'技能＝一路撞穿',
-    btn_en:'RAM', btn_zh:'冲撞',
-    atk:{int:0.95, range:140, kind:'lance', hits:3},
+    skill_en:'Ox Shoulder', skill_zh:'蛮牛之肩',
+    hint_en:'walking into spirits shoves them aside', hint_zh:'迎面走去，便将群鬼顶开',
+    atk:{int:0.95, range:150, kind:'lance', hits:3},
     forms:[
       {ch:'牛', py:'niú', mean_en:'an ox — horns curving UP', mean_zh:'「牛」——牛角向上',
-       tier_en:'LV1 · a short ram that flattens 鬼', tier_zh:'LV1 · 短距冲撞，撞飞「鬼」'},
+       tier_en:'LV1 · what you walk into, you shove away', tier_zh:'LV1 · 迎面之鬼，一肩顶开'},
       {ch:'牢', py:'láo', mean_en:'“pen” — an ox safe inside its fold', mean_zh:'「牢」——圈中之牛',
-       tier_en:'LV2 · the pen lingers: a brief shield after each ram', tier_zh:'LV2 · 圈栏余护：冲撞后短暂护盾'},
+       tier_en:'LV2 · the pen holds: one rear hit blocked every 4s', tier_zh:'LV2 · 圈栏护后：每4秒挡下一次背袭'},
       {ch:'牧', py:'mù', mean_en:'“to herd” — a hand drives the ox', mean_zh:'「牧」——执鞭驱牛',
-       tier_en:'LV3 · driven hard: ram straight through 火', tier_zh:'LV3 · 鞭策疾驰：可径直冲过「火」'},
+       tier_en:'LV3 · driven hard: walk through 火 unburnt', tier_zh:'LV3 · 鞭策疾行：踏火不伤'},
       {ch:'犇', py:'bēn', mean_en:'“stampede” — three oxen at full run', mean_zh:'「犇」——三牛奔逐',
-       tier_en:'LV4 · stampede — a longer ram, near-instant recharge', tier_zh:'LV4 · 万牛奔腾——冲得更远，几乎无冷却'}
+       tier_en:'LV4 · the shoulder wounds and hurls them further', tier_zh:'LV4 · 顶撞伤敌，掷之更远'}
     ],
-    cd:[2.8,2.4,1.9,1.1], len:[230,250,300,360], dur:[0.3,0.3,0.34,0.4],
-    shieldTier:1, firesafeTier:2, spd:1.0
+    penTier:1, penCd:4, firesafeTier:2, bumpDmgTier:3, spd:1.0
   },
-  yang: {
-    title_en:'the Drifter', title_zh:'云游者',
-    skill_en:'Wool-Cloud', skill_zh:'云绒之息',
-    hint_en:'skill = a wool cloud that slows spirits', hint_zh:'技能＝减速云绒',
-    btn_en:'WOOL', btn_zh:'云绒',
-    atk:{int:0.85, range:100, kind:'arc', hits:2},
+  gui: {
+    title_en:'the Drifter', title_zh:'幽魂',
+    skill_en:'Ghost Drift', skill_zh:'魂游',
+    hint_en:'floaty steps; every few seconds you phase, untouchable', hint_zh:'步履飘忽；每隔数秒化虚，诸邪不侵',
+    atk:{int:0.8, range:115, kind:'arc', hits:2},
     forms:[
-      {ch:'羊', py:'yáng', mean_en:'a sheep — horns curling DOWN', mean_zh:'「羊」——羊角下卷',
-       tier_en:'LV1 · shed a wool cloud that slows spirits', tier_zh:'LV1 · 落下云绒，迟滞群鬼'},
-      {ch:'羔', py:'gāo', mean_en:'“lamb” — light as new wool', mean_zh:'「羔」——羔羊轻如新绒',
-       tier_en:'LV2 · a bigger, woollier cloud', tier_zh:'LV2 · 云绒更大更蓬松'},
-      {ch:'美', py:'měi', mean_en:'“beautiful” — a dancer crowned with ram horns', mean_zh:'「美」——头戴羊角的舞者',
-       tier_en:'LV3 · graceful: casting darts you swiftly forward', tier_zh:'LV3 · 曼妙之姿：施放时向前疾飘'},
-      {ch:'羴', py:'shān', mean_en:'a whole flock of sheep', mean_zh:'「羴」——一整群羊',
-       tier_en:'LV4 · the flock: two lambs circle you, felling spirits', tier_zh:'LV4 · 群羊环卫——双羔绕行，触之即倒'}
+      {ch:'鬼', py:'guǐ', mean_en:'the ghost — a great-headed kneeling shade', mean_zh:'「鬼」——巨首跪坐之影',
+       tier_en:'LV1 · drift, and phase for 1s every 6s', tier_zh:'LV1 · 飘移，每6秒化虚1秒'},
+      {ch:'畏', py:'wèi', mean_en:'“dread” — the ghost takes up a club', mean_zh:'「畏」——鬼执杖而立，是为可畏',
+       tier_en:'LV2 · a longer, quicker phase', tier_zh:'LV2 · 化虚更久更频'},
+      {ch:'魅', py:'mèi', mean_en:'“enchant” — the ghost grows its tail 彡', mean_zh:'「魅」——鬼生长尾',
+       tier_en:'LV3 · what you drift through is bewitched slow', tier_zh:'LV3 · 虚身所过，群鬼迟缓'},
+      {ch:'魔', py:'mó', mean_en:'the demon — the latecomer of the family', mean_zh:'「魔」——鬼族的后来者',
+       tier_en:'LV4 · the phase deepens — and your passing wounds', tier_zh:'LV4 · 化虚更深——虚身所过即伤'}
     ],
-    cd:[3.4,3.0,2.6,2.1], cloudR:[70,88,104,120], burstTier:2, orbTier:3, spd:1.1
+    phaseCd:[6,5,4.5,3.5], phaseLen:[1.0,1.2,1.3,1.6], slowTier:2, dmgTier:3, spd:1.12, drift:true
   },
   xiang: {
     title_en:'the Colossus', title_zh:'撼地者',
-    skill_en:'Earthshaker Stomp', skill_zh:'撼地重踏',
-    hint_en:'skill = a quake around you', hint_zh:'技能＝周身地震',
-    btn_en:'STOMP', btn_zh:'重踏',
-    atk:{int:1.35, range:80, kind:'ring', hits:99},
+    skill_en:'Earthshaker Tread', skill_zh:'撼地之步',
+    hint_en:'your strides quake the ground on their own', hint_zh:'步步生震，无须号令',
+    atk:{int:1.35, range:95, kind:'ring', hits:99},
     forms:[
       {ch:'象', py:'xiàng', mean_en:'an elephant — trunk curling high', mean_zh:'「象」——长鼻高卷的巨兽',
-       tier_en:'LV1 · slam the earth: a quake fells nearby spirits', tier_zh:'LV1 · 落足一震，撼倒近旁之鬼'},
+       tier_en:'LV1 · every stride sends a small quake', tier_zh:'LV1 · 迈步即有小震'},
       {ch:'像', py:'xiàng', mean_en:'“likeness” — a person beside the elephant', mean_zh:'「像」——人立象侧，摹其形',
        tier_en:'LV2 · the quake spreads wider', tier_zh:'LV2 · 震波更远'},
       {ch:'豫', py:'yù', mean_en:'“at ease” — the great elephant, unhurried', mean_zh:'「豫」——巨象安然，从容不迫',
-       tier_en:'LV3 · the great quake snuffs 火 outright', tier_zh:'LV3 · 巨震可将「火」踏灭'},
+       tier_en:'LV3 · the tread snuffs 火 outright', tier_zh:'LV3 · 巨步踏灭「火」'},
       {ch:'為', py:'wèi', mean_en:'“to do” — a hand leading an elephant to work', mean_zh:'「為」——牵象助劳，是为「做」',
-       tier_en:'LV4 · put to work — a vast quake that staggers the whole field', tier_zh:'LV4 · 驱象撼地——巨震及远，全场皆缓'}
+       tier_en:'LV4 · vast quakes that stagger the whole field', tier_zh:'LV4 · 巨震及远，全场皆缓'}
     ],
-    cd:[2.6,2.2,1.8,1.2], quakeR:[95,120,150,200], snuffTier:2, slowTier:3, spd:0.94
+    pulseInt:[1.6,1.5,1.4,1.2], pulseR:[70,85,100,115], snuffTier:2, slowTier:3, spd:0.92
   }
 };
 const ATK_INT = [1, 0.88, 0.76, 0.62];   // auto-attack quickens per tier
 const ATK_RNG = [1, 1.08, 1.18, 1.30];   // and reaches further
 
-/* pickup weapons — real war pictographs. You carry a modern 楷書 bow from
-   the start; duplicates recast a weapon in ever-older script (bronze, then
-   bone), faster and fiercer each time. The oracle tier of the bow IS 射 —
-   “to shoot” really is the arrow set on the bowstring.                  */
+/* pickup weapons — real war pictographs. Choose one to start with;
+   duplicates recast a weapon in ever-older script (bronze, then bone),
+   faster and fiercer each time. The oracle tier of the bow IS 射.      */
 const WEAPONS = {
   gong: {chs:['弓','弓','射'], pys:['gōng','gōng','shè'], eras:['楷書','金文','甲骨'],
          tier_en:['a bow — arrows seek the pack', 'recast in bronze — twin arrows, quicker', '“to shoot” — the arrow on the string: three arrows, oracle-swift'],
          tier_zh:['「弓」——放矢逐鬼', '金文重铸——双箭更疾', '「射」——弦上之矢，三箭齐发'],
          int:[1.5, 1.05, 0.7]},
+  jian: {chs:['劍','劍','劍'], pys:['jiàn','jiàn','jiàn'], eras:['楷書','金文','甲骨'],
+         tier_en:['a sword — quick arcs at whatever comes', 'bronze blade — wider, faster', "the king's sword — a great sweeping arc"],
+         tier_zh:['「劍」——近身快斩', '青铜剑——更快更阔', '王者之剑——大开大阖'],
+         int:[0.75, 0.6, 0.45], reach:[85, 96, 110], hits:[2,3,4]},
   ge:   {chs:['戈','戈','戈'], pys:['gē','gē','gē'], eras:['楷書','金文','甲骨'],
          tier_en:['dagger-axe — it guards your back', 'bronze edge — wider, quicker', 'oracle blade — a full reaping sweep'],
          tier_zh:['「戈」——护住身后', '青铜之刃——更阔更快', '甲骨之锋——横扫如割'],
          int:[1.3, 0.95, 0.62], hits:[3,4,5], reach:[96,110,124]},
-  wang: {chs:['網','網','網'], pys:['wǎng','wǎng','wǎng'], eras:['楷書','金文','甲骨'],
-         tier_en:['a net — holds the pack fast', 'bronze-weighted — wider, longer', 'the oracle net — the whole hunt stands still'],
-         tier_zh:['「网」——缚住群鬼', '坠以青铜——更广更久', '甲骨之网——群鬼皆缚'],
-         int:[3.2, 2.5, 1.9], reach:[60,74,88], root:[1.6, 2.0, 2.6]},
   mao:  {chs:['矛','矛','矛'], pys:['máo','máo','máo'], eras:['楷書','金文','甲骨'],
          tier_en:['a spear — it thrusts where you run', 'bronze point — longer, through three', 'oracle pike — a whole lane falls'],
          tier_zh:['「矛」——向前突刺', '青铜之锋——更长，可穿三鬼', '甲骨长矛——一线尽穿'],
@@ -910,8 +1010,14 @@ const WEAPONS = {
   dao:  {chs:['刀','刀','刀'], pys:['dāo','dāo','dāo'], eras:['楷書','金文','甲骨'],
          tier_en:['a blade circling you, nicking the closest', 'bronze edge — quicker, three cuts', 'the oracle whirl — nothing stands beside you'],
          tier_zh:['「刀」——绕身旋斩', '青铜刀光——更快三斩', '甲骨旋刃——近身皆殒'],
-         int:[0.9, 0.7, 0.5], reach:[58,66,76], hits:[2,3,4]}
+         int:[0.9, 0.7, 0.5], reach:[58,66,76], hits:[2,3,4]},
+  wang: {chs:['網','網','網'], pys:['wǎng','wǎng','wǎng'], eras:['楷書','金文','甲骨'],
+         tier_en:['a net — holds the pack fast', 'bronze-weighted — wider, longer', 'the oracle net — the whole hunt stands still'],
+         tier_zh:['「网」——缚住群鬼', '坠以青铜——更广更久', '甲骨之网——群鬼皆缚'],
+         int:[3.2, 2.5, 1.9], reach:[60,74,88], root:[1.6, 2.0, 2.6]}
 };
+const STARTER_ARMS = ['gong','jian','mao','dao'];
+const BOW_SIGHT = 340;                    // the bow no longer snipes across the world
 
 /* ============================== eras / waves ============================== */
 const ERAS = {
@@ -950,11 +1056,11 @@ const Game = (function(){
   const MAXHP = 6, LV_XP = [0, 10, 24, 40];   // glyphs needed to reach each form
   let stageIdx = 0, lives = MAXHP, coins = 0, nextHeart = 12, level = 0, running = false, raf = 0, lastTs = 0;
   let era, wave, tGlobal = 0, waveT = 0, spawnT = 1, fireT = 3, gate = null, gateGlow = 0;
-  let selChar = 'ren', lastSkillTxt = '', bufSkill = 0, shakeT = 0, slowAllT = 0;
+  let selChar = 'ren', selArm = 'gong', lastSkillTxt = '', shakeT = 0, slowAllT = 0, buffT = 0;
   let player, keys = {}, joy = {x:0, y:0, on:false};
-  let spirits = [], pickups = [], fires = [], clouds = [], fx = [], pedestals = [], projectiles = [], bolts = [];
-  let boltT = 5, dragonDone = false;
-  let weapons = [], wTimes = [];
+  let spirits = [], pickups = [], fires = [], fx = [], pedestals = [], projectiles = [], bolts = [];
+  let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
+  let hatOn = false, shengPed = null;
 
   function overlay(id, show){ $(id).classList.toggle('show', show); }
   function hideAll(){ ['ovStart','ovClear','ovOver','ovWin'].forEach(i=>overlay(i,false)); }
@@ -965,15 +1071,14 @@ const Game = (function(){
     stageIdx = i;
     era = ERAS[ERA_ORDER[i]];
     wave = WAVES[i];
-    spirits = []; pickups = []; fires = []; clouds = []; fx = []; pedestals = []; projectiles = []; bolts = [];
-    boltT = 5; dragonDone = false;
+    spirits = []; pickups = []; fires = []; fx = []; pedestals = []; projectiles = []; bolts = [];
     wTimes = [wave.len*0.6, wave.len*0.28];
-    waveT = wave.len; spawnT = 1.2; fireT = 3.5; gate = null; slowAllT = 0;
-    const c = C();
-    player = { x:CW/2, y:CH*0.62, face:1, runPhase:0, sq:0, inv:1.0,
-               dashT:0, dashVec:{x:1,y:0}, cd:0, chargeT:0,
-               charges: c.charges ? c.charges[level] : 0,
-               shieldT:0, burstT:0, orbA:0, atkT:0.5, lastDir:{x:1,y:0} };
+    waveT = wave.len; spawnT = 1.2; fireT = 3.5; boltT = 5; gate = null; slowAllT = 0;
+    dragonDone = false; bossDone = false;
+    shengPed = (i === 1 && !hatOn) ? {x:CW*0.3, y:CH*0.35, bob:0} : null;
+    player = { x:CW/2, y:CH*0.62, vx:0, vy:0, face:1, runPhase:0, sq:0, inv:1.0,
+               atkT:0.5, lastDir:{x:1,y:0},
+               slipT:0, penT:0, phaseCdT:2.5, phasedT:0, pulseT:1 };
     syncHud();
   }
 
@@ -990,8 +1095,8 @@ const Game = (function(){
 
   /* ---------- lifecycle ---------- */
   function start(){
-    stageIdx = 0; lives = MAXHP; coins = 0; nextHeart = 12; level = 0;
-    weapons = [{key:'gong', lv:1, t:0.8}];   // everyone starts with the modern bow
+    stageIdx = 0; lives = MAXHP; coins = 0; nextHeart = 12; level = 0; buffT = 0; hatOn = false;
+    weapons = [{key:selArm, lv:1, t:0.8}];
     hideAll();
     loadStage(0);
     running = true; lastTs = performance.now();
@@ -1017,9 +1122,12 @@ const Game = (function(){
     let msg;
     if(toIdx < WAVES.length){
       const cf = cs.forms[level], fe = ERAS[ERA_ORDER[fi]], te = ERAS[ERA_ORDER[toIdx]];
+      const threat = toIdx===1 ? t(' — wild 豕 boars charge, and 皿 the living vessel stirs','——野「豕」直线冲撞，活器「皿」蠢蠢欲动')
+                   : toIdx===2 ? t(' — 虎 stalks, 蠱 brews its worms, and the storm gathers: 電 strikes from the sky (rain over 申, the bolt itself)','——「虎」环伺，「蠱」养其虫；风雨将至，「電」自天而击（雨在「申」上，申即闪电）')
+                   : toIdx===3 ? t(' — and 龍 coils through the last night: carve it apart segment by segment','——「龍」盘旋于最后的长夜：须逐节斩落') : '';
       msg = `<b style="color:#e8b04a">${fe.sub} → ${te.sub}</b>`
           + `<br>${cf.ch} ${cf.py} · ${t(cf.mean_en, cf.mean_zh)} ${zdicLink(cf.ch)}`
-          + `<br><span style="color:#8bc34a;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${toIdx===1 ? t(' — and wild 豕 boars charge the field','——野「豕」直线冲撞') : toIdx===2 ? t(' — 虎 stalks the edges, and the storm gathers: 電 strikes from the sky (rain over 申, the bolt itself)','——「虎」环伺于侧；风雨将至，「電」自天而击（雨在「申」上，申即闪电）') : toIdx===3 ? t(' — and 龍 coils through the last night: carve it apart segment by segment','——「龍」盘旋于最后的长夜：须逐节斩落') : ''}</span>`
+          + `<br><span style="color:#8bc34a;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${threat}</span>`
           + (level < 3 ? `<br><span style="font-size:0.8em;color:#8a8a8a">${t('gather glyphs to evolve','集字以进化')} · ${coins}/${LV_XP[level+1]}</span>` : '');
     } else {
       msg = t(`${cs.forms[level].ch} · the oldest gate is behind you`, `${cs.forms[level].ch} · 最古老的门已在身后`);
@@ -1085,12 +1193,15 @@ const Game = (function(){
   function killSpirit(s){
     s.dead = true;
     addFx({kind:'poof', x:s.x, y:s.y, t:0.3, r:20});
-    if(Math.random() < (s.type==='long' ? 0.6 : 0.35)){
+    if(s.bossCh){                                     // a boss falls: glyph burst + the light of 光
+      for(let i=0;i<5;i++) pickups.push({x:s.x+Math.cos(i*1.26)*26, y:s.y+Math.sin(i*1.26)*26,
+                                         ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:10, bob:i});
+      buffT = 8;
+      if(lives < MAXHP){ lives++; syncHud(); }
+      addFx({kind:'levelup', x:s.x, y:s.y, t:1.0, r:110, ch:'光'});
+      popToastEx('光', 'guāng · 甲骨', t('the torch-bearer lights you: swifter, sharper','火炬加身：更快、更利'));
+    } else if(Math.random() < (s.type==='long' ? 0.6 : 0.35)){
       pickups.push({x:s.x, y:s.y, ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:9, bob:Math.random()*6});
-    }
-    const c = C();
-    if(selChar==='ren' && level >= c.refundTier){
-      player.charges = Math.min(c.charges[level], player.charges + 0.34);   // 舞: the dance feeds on the fallen
     }
   }
   function nearestSpirit(range){
@@ -1102,36 +1213,35 @@ const Game = (function(){
     }
     return best;
   }
-  function maybeLevelUp(){
-    while(level < 3 && coins >= LV_XP[level+1]){
-      level++;
-      const c = C(), nf = c.forms[level];
-      if(c.charges) player.charges = c.charges[level];
-      player.inv = Math.max(player.inv, 1.0);              // a breath to admire the new form
-      addFx({kind:'levelup', x:player.x, y:player.y, t:0.9, r:96, ch:nf.ch});
-      popToastEx(nf.ch, `${nf.py} · LV${level+1}`, t(nf.tier_en, nf.tier_zh));
-      syncHud();
-    }
-  }
   function hit(){
     lives--; player.inv = 1.0; shakeT = 0.3;
     addFx({kind:'hurt', x:player.x, y:player.y, t:0.35, r:34});
     addFx({kind:'flash', x:0, y:0, t:0.3, r:0});
     for(const s of spirits){                    // mercy shove so i-frames aren't chain-eaten
       const dx = s.x-player.x, dy = s.y-player.y, d = Math.hypot(dx,dy)||1;
-      if(d < 110){ s.x += dx/d*80; s.y += dy/d*80; }
+      if(d < 110 && !s.boss){ s.x += dx/d*80; s.y += dy/d*80; }
     }
     syncHud();
     if(lives <= 0) gameOver();
   }
-  function hurtPlayer(){
-    if(player.inv > 0 || player.dashT > 0) return;         // dashes slip through
-    if(player.shieldT > 0){                                 // 牢: the pen holds once
-      player.shieldT = 0;
+  function hurtPlayer(src){
+    if(player.inv > 0 || player.phasedT > 0) return;
+    if(selChar==='ren' && player.slipT <= 0){        // 祖灵借步: the ancestors lend a step
+      const c = CHARS.ren;
+      player.slipT = c.slipCd[level];
+      player.inv = 0.6;
+      addFx({kind:'poof', x:player.x, y:player.y, t:0.3, r:24});
+      player.x = clamp(player.x + player.lastDir.x*38, WALL+16, CW-WALL-16);
+      player.y = clamp(player.y + player.lastDir.y*38, WALL+34, CH-WALL-10);
+      if(level >= c.slipCutTier && src && src.hp !== undefined) hurtSpirit(src, 1);  // 舞: the slip cuts
+      return;
+    }
+    if(selChar==='niu' && level >= CHARS.niu.penTier && player.penT <= 0){  // 牢: the pen holds once
+      player.penT = CHARS.niu.penCd;
       addFx({kind:'shieldpop', x:player.x, y:player.y, t:0.3, r:38});
-      for(const s of spirits){                              // shove the pack back
-        const dx = s.x-player.x, dy = s.y-player.y, d = Math.hypot(dx,dy)||1;
-        if(d < 90){ s.x += dx/d*55; s.y += dy/d*55; }
+      if(src && src.x !== undefined && !src.boss){
+        const dx = src.x-player.x, dy = src.y-player.y, d = Math.hypot(dx,dy)||1;
+        src.x += dx/d*70; src.y += dy/d*70;
       }
       return;
     }
@@ -1143,15 +1253,14 @@ const Game = (function(){
     tGlobal += dt;
     gateGlow = (Math.sin(tGlobal*4)+1)/2;
     const c = C(), tier = level;
-    if(bufSkill > 0) bufSkill -= dt;
     if(player.inv > 0) player.inv -= dt;
-    if(player.shieldT > 0) player.shieldT -= dt;
-    if(player.burstT > 0) player.burstT -= dt;
-    if(player.cd > 0) player.cd -= dt;
+    if(player.slipT > 0) player.slipT -= dt;
+    if(player.penT > 0) player.penT -= dt;
     if(shakeT > 0) shakeT -= dt;
     if(slowAllT > 0) slowAllT -= dt;
+    if(buffT > 0) buffT -= dt;
 
-    // --- steering: keyboard + joystick ---
+    // --- steering: keyboard + joystick; the ghost drifts on momentum ---
     let dx = (keys.left?-1:0)+(keys.right?1:0), dy = (keys.up?-1:0)+(keys.down?1:0);
     if(joy.on && Math.hypot(joy.x,joy.y) > 0.16){ dx = joy.x; dy = joy.y; }
     const mag = Math.hypot(dx,dy);
@@ -1160,14 +1269,14 @@ const Game = (function(){
       player.lastDir = {x:dx, y:dy};
       if(Math.abs(dx) > 0.25) player.face = dx>0?1:-1;
     }
-    let spd = 200 * c.spd * (player.burstT>0 ? 1.45 : 1);
-    if(player.dashT > 0){
-      // dash / ram movement overrides steering
-      player.dashT -= dt;
-      const dv = player.dashVec;
-      const dl = selChar==='niu' ? c.len[tier]/c.dur[tier] : c.dashLen/c.dashDur;
-      player.x += dv.x*dl*dt; player.y += dv.y*dl*dt;
-      if(player.dashT <= 0 && selChar==='niu' && tier >= c.shieldTier) player.shieldT = 1.5;
+    const spd = 200 * c.spd * (buffT>0 ? 1.3 : 1);
+    if(c.drift){
+      const ax = mag>0.01 ? dx*spd*Math.min(1,mag) : 0;
+      const ay = mag>0.01 ? dy*spd*Math.min(1,mag) : 0;
+      player.vx += (ax - player.vx) * Math.min(1, dt*3.2);
+      player.vy += (ay - player.vy) * Math.min(1, dt*3.2);
+      player.x += player.vx*dt; player.y += player.vy*dt;
+      if(Math.hypot(player.vx, player.vy) > 25) player.runPhase += Math.hypot(player.vx,player.vy)*dt*0.05;
     } else if(mag > 0.01){
       player.x += dx*spd*Math.min(1,mag)*dt;
       player.y += dy*spd*Math.min(1,mag)*dt;
@@ -1177,40 +1286,42 @@ const Game = (function(){
     player.y = clamp(player.y, WALL+34, CH-WALL-10);
     player.sq += (0-player.sq)*0.2;
 
-    // --- skill button ---
-    if(bufSkill > 0){
-      const aim = (mag>0.01) ? {x:dx,y:dy} : player.lastDir;
-      if(selChar==='ren' && player.charges >= 1 && player.dashT <= 0){
-        player.charges--; bufSkill = 0;
-        player.dashT = c.dashDur; player.dashVec = aim; player.sq = 0.14;
-        addFx({kind:'poof', x:player.x, y:player.y, t:0.25, r:16});
-      } else if(selChar==='niu' && player.cd <= 0 && player.dashT <= 0){
-        player.cd = c.cd[tier]; bufSkill = 0;
-        player.dashT = c.dur[tier]; player.dashVec = aim; player.sq = 0.14;
-      } else if(selChar==='yang' && player.cd <= 0){
-        player.cd = c.cd[tier]; bufSkill = 0;
-        clouds.push({x:player.x, y:player.y, r:c.cloudR[tier], t:3});
-        if(tier >= c.burstTier) player.burstT = 1.5;               // 美: the cast darts you onward
-      } else if(selChar==='xiang' && player.cd <= 0){
-        player.cd = c.cd[tier]; bufSkill = 0;
-        const qr = c.quakeR[tier];
-        addFx({kind:'quake', x:player.x, y:player.y, t:0.45, r:qr});
-        shakeT = 0.3; player.sq = -0.25;
-        for(const s of spirits){ if(!s.dead && Math.hypot(s.x-player.x, s.y-player.y) <= qr+14) hurtSpirit(s, 2); }
-        if(tier >= c.snuffTier) fires = fires.filter(f=>Math.hypot(f.x-player.x, f.y-player.y) > qr);  // 豫: stamp the fires out
-        if(tier >= c.slowTier) slowAllT = 1.6;                     // 為: the whole field staggers
+    // --- family gifts, woven into the walk ---
+    if(selChar==='gui'){                              // 魂游: the periodic phase
+      if(player.phasedT > 0) player.phasedT -= dt;
+      else {
+        player.phaseCdT -= dt;
+        if(player.phaseCdT <= 0){
+          player.phasedT = c.phaseLen[tier];
+          player.phaseCdT = c.phaseCd[tier];
+          addFx({kind:'poof', x:player.x, y:player.y, t:0.3, r:26});
+        }
       }
     }
-    // 人: dash charges regrow
-    if(selChar==='ren' && player.charges < c.charges[tier]){
-      player.chargeT += dt;
-      if(player.chargeT >= c.dashCd){ player.chargeT = 0; player.charges = Math.min(c.charges[tier], player.charges+1); }
+    if(selChar==='xiang'){                            // 撼地之步: the tread quakes on its own
+      player.pulseT -= dt;
+      if(player.pulseT <= 0 && mag > 0.01){
+        player.pulseT = c.pulseInt[tier];
+        const pr = c.pulseR[tier];
+        addFx({kind:'quake', x:player.x, y:player.y, t:0.4, r:pr});
+        shakeT = Math.max(shakeT, 0.08); player.sq = -0.15;
+        for(const s of spirits){
+          if(s.dead) continue;
+          const d2 = Math.hypot(s.x-player.x, s.y-player.y);
+          if(d2 <= pr){
+            if(d2 <= pr*0.65) hurtSpirit(s, 1);
+            if(!s.dead && !s.boss){ s.x += (s.x-player.x)/(d2||1)*50; s.y += (s.y-player.y)/(d2||1)*50; }
+          }
+        }
+        if(tier >= c.snuffTier) fires = fires.filter(f=>Math.hypot(f.x-player.x, f.y-player.y) > pr);
+        if(tier >= c.slowTier) slowAllT = Math.max(slowAllT, 1.2);
+      }
     }
 
     // --- auto-attack: the ink strikes the nearest spirit ---
     player.atkT -= dt;
     if(player.atkT <= 0){
-      const range = c.atk.range * ATK_RNG[tier];
+      const range = c.atk.range * ATK_RNG[tier] * (hatOn ? 1.22 : 1);
       const tgt = nearestSpirit(range);
       if(tgt){
         const ang = Math.atan2(tgt.y-player.y, tgt.x-player.x);
@@ -1232,10 +1343,10 @@ const Game = (function(){
             if(s.dead) continue;
             const rx = s.x-player.x, ry = s.y-player.y;
             const along = rx*ux + ry*uy, perp = Math.abs(rx*uy - ry*ux);
-            if(along > -6 && along < range+14 && perp < 28) cand.push([along, s]);   // the gore pierces the file
+            if(along > -6 && along < range+14 && perp < 28) cand.push([along, s]);
           }
           addFx({kind:'lance', x:player.x, y:player.y, ang, r:range, t:0.16});
-        } else { // ring — the trunk sweeps full circle
+        } else {
           for(const s of spirits){
             if(s.dead) continue;
             const d = Math.hypot(s.x-player.x, s.y-player.y);
@@ -1243,42 +1354,30 @@ const Game = (function(){
           }
           addFx({kind:'ringatk', x:player.x, y:player.y, r:range, t:0.22});
         }
-        cand.sort((a,b)=>a[0]-b[0]);                       // the ink only cuts so deep
+        cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, c.atk.hits)) hurtSpirit(s, 1);
-        player.atkT = c.atk.int * ATK_INT[tier];
+        player.atkT = c.atk.int * ATK_INT[tier] * (buffT>0 ? 0.72 : 1);
       } else {
         player.atkT = 0.06;
-      }
-    }
-
-    // 羴: the flock circles you
-    if(selChar==='yang' && tier >= c.orbTier){
-      player.orbA += dt*3;
-      for(const k of [0, Math.PI]){
-        const ox = player.x + Math.cos(player.orbA+k)*58, oy = player.y + Math.sin(player.orbA+k)*58;
-        for(const s of spirits){
-          if(!s.dead && Math.hypot(s.x-ox, s.y-oy) < 24) hurtSpirit(s, 1);
-        }
       }
     }
 
     // --- picked-up weapons fire on their own (and are visibly held) ---
     for(const w of weapons){
       w.t -= dt;
-      // the bow tracks its prey, the axe watches your back
       if(w.aim === undefined){ w.aim = player.face > 0 ? 0 : Math.PI; w.recoil = 0; }
       let wantAim = w.aim;
       if(w.key === 'ge') wantAim = Math.atan2(-player.lastDir.y, -player.lastDir.x);
       else if(w.key === 'mao') wantAim = Math.atan2(player.lastDir.y, player.lastDir.x);
-      else if(w.key === 'dao'){ w.aim += dt*7; wantAim = w.aim; }   // the whirl never rests
-      else { const tg = nearestSpirit(9999); if(tg) wantAim = Math.atan2(tg.y-player.y, tg.x-player.x); }
+      else if(w.key === 'dao'){ w.aim += dt*7; wantAim = w.aim; }
+      else { const tg = nearestSpirit(360); if(tg) wantAim = Math.atan2(tg.y-player.y, tg.x-player.x); }
       const dAim = Math.atan2(Math.sin(wantAim-w.aim), Math.cos(wantAim-w.aim));
       w.aim += dAim * Math.min(1, dt*10);
       if(w.recoil > 0) w.recoil = Math.max(0, w.recoil - dt*4);
       if(w.t > 0) continue;
       const W = WEAPONS[w.key], lv = w.lv-1;
       if(w.key === 'gong'){
-        const tgt = nearestSpirit(9999);
+        const tgt = nearestSpirit(BOW_SIGHT);
         if(!tgt){ w.t = 0.1; continue; }
         const ang = Math.atan2(tgt.y-player.y, tgt.x-player.x);
         const spread = [[0], [-0.09, 0.09], [-0.16, 0, 0.16]][lv];
@@ -1286,8 +1385,25 @@ const Game = (function(){
         for(const da of spread) projectiles.push({x:bx, y:by, ux:Math.cos(ang+da), uy:Math.sin(ang+da),
                                                   t:1.2, pierce:2+lv, spd:430+lv*60, lv});
         addFx({kind:'ringatk', x:bx, y:by, r:12+lv*5, t:0.14});
-        w.recoil = 1;
-        w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv];
+      } else if(w.key === 'jian'){                    // 劍: quick arcs at whatever comes
+        const tgt = nearestSpirit(W.reach[lv]+14);
+        if(!tgt){ w.t = 0.1; continue; }
+        const ang = Math.atan2(tgt.y-player.y, tgt.x-player.x);
+        const cand = [];
+        for(const s of spirits){
+          if(s.dead) continue;
+          const d = Math.hypot(s.x-player.x, s.y-player.y);
+          if(d > W.reach[lv]+12) continue;
+          let da = Math.atan2(s.y-player.y, s.x-player.x) - ang;
+          da = Math.atan2(Math.sin(da), Math.cos(da));
+          if(Math.abs(da) < 1.0) cand.push([d, s]);
+        }
+        if(!cand.length){ w.t = 0.1; continue; }
+        cand.sort((a,b)=>a[0]-b[0]);
+        for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
+        addFx({kind:'slash', x:player.x, y:player.y, ang, r:W.reach[lv], t:0.16});
+        w.recoil = 1; w.t = W.int[lv];
       } else if(w.key === 'ge'){
         const back = Math.atan2(-player.lastDir.y, -player.lastDir.x);
         const cand = [];
@@ -1303,9 +1419,8 @@ const Game = (function(){
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'slash', x:player.x, y:player.y, ang:back, r:W.reach[lv]-8, t:0.18});
-        w.recoil = 1;
-        w.t = W.int[lv];
-      } else if(w.key === 'mao'){                     // 矛: jab down the lane you're running
+        w.recoil = 1; w.t = W.int[lv];
+      } else if(w.key === 'mao'){
         const fwd = Math.atan2(player.lastDir.y, player.lastDir.x);
         const ux = Math.cos(fwd), uy = Math.sin(fwd), cand = [];
         for(const s of spirits){
@@ -1318,9 +1433,8 @@ const Game = (function(){
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'lance', x:player.x, y:player.y, ang:fwd, r:W.reach[lv], t:0.16});
-        w.recoil = 1;
-        w.t = W.int[lv];
-      } else if(w.key === 'jin'){                     // 斤: the axe falls where they bunch
+        w.recoil = 1; w.t = W.int[lv];
+      } else if(w.key === 'jin'){
         const chop = nearestSpirit(210);
         if(!chop){ w.t = 0.12; continue; }
         const sr = W.splash[lv];
@@ -1328,9 +1442,8 @@ const Game = (function(){
           if(!s.dead && Math.hypot(s.x-chop.x, s.y-chop.y) <= sr) hurtSpirit(s, 2);
         }
         addFx({kind:'ringatk', x:chop.x, y:chop.y, r:sr, t:0.2});
-        w.recoil = 1;
-        w.t = W.int[lv];
-      } else if(w.key === 'dao'){                     // 刀: the circling cut
+        w.recoil = 1; w.t = W.int[lv];
+      } else if(w.key === 'dao'){
         const cand = [];
         for(const s of spirits){
           if(s.dead) continue;
@@ -1341,9 +1454,8 @@ const Game = (function(){
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
         addFx({kind:'ringatk', x:player.x, y:player.y, r:W.reach[lv], t:0.16});
-        w.recoil = 1;
-        w.t = W.int[lv];
-      } else { // 網: cast at the nearest knot of spirits
+        w.recoil = 1; w.t = W.int[lv];
+      } else { // 網
         const tgt = nearestSpirit(320);
         if(!tgt){ w.t = 0.15; continue; }
         const nr = W.reach[lv];
@@ -1351,8 +1463,7 @@ const Game = (function(){
           if(!s.dead && Math.hypot(s.x-tgt.x, s.y-tgt.y) <= nr) s.rootT = W.root[lv];
         }
         addFx({kind:'net', x:tgt.x, y:tgt.y, r:nr, t:1.4});
-        w.recoil = 1;
-        w.t = W.int[lv];
+        w.recoil = 1; w.t = W.int[lv];
       }
     }
     // arrows in flight
@@ -1376,7 +1487,6 @@ const Game = (function(){
         spirits = [];
         gate = {x:CW/2, y:CH*0.5};
       } else {
-        // spawner, quickening as the wave ages
         const prog = 1 - waveT/wave.len;
         spawnT -= dt;
         if(spawnT <= 0 && spirits.filter(s=>!s.dead).length < wave.cap){
@@ -1385,7 +1495,7 @@ const Game = (function(){
             const side = (Math.random()*4)|0;
             const px = side===0? WALL+8 : side===1? CW-WALL-8 : WALL+20+Math.random()*(CW-WALL*2-40);
             const py = side===2? WALL+14 : side===3? CH-WALL-8 : WALL+20+Math.random()*(CH-WALL*2-40);
-            if(Math.hypot(px-player.x, py-player.y) > 130 || tries===5){   // never on top of the player
+            if(Math.hypot(px-player.x, py-player.y) > 130 || tries===5){
               const roll = Math.random();
               let type = 'gui', hp = 1, cr = 29;
               if(stageIdx >= 1 && roll < [0,0.18,0.2,0.2][stageIdx]){ type = 'shi'; hp = 2; cr = 30; }
@@ -1398,6 +1508,25 @@ const Game = (function(){
             }
           }
         }
+        // the vessel bosses stir at the midpoint of their nights
+        if(!bossDone && (stageIdx===1 || stageIdx===2) && waveT <= wave.len*0.5){
+          bossDone = true;
+          const gu = stageIdx===2;
+          spirits.push({x:CW-WALL-30, y:CH*0.5, phase:0, dead:false, boss:true,
+                        type: gu?'gu':'meng', bossCh: gu?'蠱':'皿',
+                        hp: gu?16:10, maxHp: gu?16:10, cr:40, spd: gu?60:55,
+                        st:0, stT:1.2, face:-1, dirn:1});
+          addFx({kind:'levelup', x:CW-WALL-60, y:CH*0.5, t:1.0, r:90, ch: gu?'蠱':'皿'});
+        }
+        // 龍 coils in from the east, halfway through the last night
+        if(stageIdx === 3 && !dragonDone && waveT <= wave.len*0.55){
+          dragonDone = true;
+          for(let i=0; i<9; i++){
+            spirits.push({x:CW-WALL-10, y:WALL+70+i*28, phase:Math.random()*6, dead:false,
+                          type:'long', order:i, hp: i===0?3:2, cr:26, st:0, stT:0, face:-1, dirn:1, spd:95});
+          }
+          addFx({kind:'levelup', x:CW-WALL-40, y:WALL+90, t:0.9, r:80, ch:'龍'});
+        }
         // fire blooms
         if(wave.fireInt > 0){
           fireT -= dt;
@@ -1408,15 +1537,6 @@ const Game = (function(){
               if(Math.hypot(fxp-player.x, fyp-player.y) > 140){ fires.push({x:fxp, y:fyp, r:32, t:5.5}); break; }
             }
           }
-        }
-        // 龍 coils in from the east, halfway through the last night
-        if(stageIdx === 3 && !dragonDone && waveT <= wave.len*0.55){
-          dragonDone = true;
-          for(let i=0; i<9; i++){
-            spirits.push({x:CW-WALL-10, y:WALL+70+i*28, phase:Math.random()*6, dead:false,
-                          type:'long', order:i, hp: i===0?3:2, cr:26, st:0, stT:0, face:-1, dirn:1, spd:95});
-          }
-          addFx({kind:'levelup', x:CW-WALL-40, y:WALL+90, t:0.9, r:80, ch:'龍'});
         }
         // a weapon surfaces from the dust
         if(wTimes.length && waveT <= wTimes[0]){
@@ -1442,29 +1562,29 @@ const Game = (function(){
       if(s.dead) continue;
       s.phase += dt*8;
       if((s.iT||0) > 0) s.iT -= dt;
+      if((s.slowT||0) > 0) s.slowT -= dt;
       if((s.rootT||0) > 0){ s.rootT -= dt; }
       else {
-        let sf = (slowAllT>0 ? 0.45 : 1);
-        for(const cl of clouds){ if(Math.hypot(s.x-cl.x, s.y-cl.y) < cl.r){ sf *= 0.45; break; } }
+        let sf = (slowAllT>0 ? 0.45 : 1) * ((s.slowT||0)>0 ? 0.5 : 1);
         const ddx = player.x-s.x, ddy = player.y-s.y, d = Math.hypot(ddx,ddy)||1;
-        if(s.type==='shi'){
-          // 豕: line up, shiver, then a straight battering charge
+        if(s.type==='shi' || s.type==='meng'){
+          // 豕 and 皿: line up, shiver, then a straight battering charge
+          const cspd = s.type==='meng' ? 300 : 310, wind = s.type==='meng' ? 0.6 : 0.55;
           if(s.st===1){
             s.stT -= dt; s.x += Math.sin(s.phase*4)*1.2;
-            if(s.stT<=0){ s.st=2; s.stT=1.1; }
+            if(s.stT<=0){ s.st=2; s.stT= s.type==='meng'?0.55:1.1; }
           } else if(s.st===2){
             s.stT -= dt;
-            s.x += s.cdx*310*sf*dt; s.y += s.cdy*310*sf*dt;
+            s.x += s.cdx*cspd*sf*dt; s.y += s.cdy*cspd*sf*dt;
             s.face = s.cdx>=0?1:-1;
-            if(s.stT<=0 || s.x<=WALL+7 || s.x>=CW-WALL-7 || s.y<=WALL+13 || s.y>=CH-WALL-7){ s.st=3; s.stT=0.8; }
+            if(s.stT<=0 || s.x<=WALL+7 || s.x>=CW-WALL-7 || s.y<=WALL+13 || s.y>=CH-WALL-7){ s.st=3; s.stT=0.9; }
           } else if(s.st===3){ s.stT -= dt; if(s.stT<=0) s.st=0; }
           else {
-            s.x += (ddx/d)*s.spd*0.6*sf*dt; s.y += (ddy/d)*s.spd*0.6*sf*dt;
+            s.x += (ddx/d)*(s.spd*0.6)*sf*dt; s.y += (ddy/d)*(s.spd*0.6)*sf*dt;
             s.face = ddx>=0?1:-1;
-            if(d < 260){ s.st=1; s.stT=0.55; s.cdx=ddx/d; s.cdy=ddy/d; }
+            if(d < (s.type==='meng'?320:260)){ s.st=1; s.stT=wind; s.cdx=ddx/d; s.cdy=ddy/d; }
           }
         } else if(s.type==='hu'){
-          // 虎: stalk a circle just out of reach, then pounce
           if(s.st===1){ s.stT-=dt; if(s.stT<=0){ s.st=2; s.stT=0.38; s.cdx=ddx/d; s.cdy=ddy/d; } }
           else if(s.st===2){ s.stT-=dt; s.x+=s.cdx*390*sf*dt; s.y+=s.cdy*390*sf*dt; s.face=s.cdx>=0?1:-1; if(s.stT<=0){ s.st=3; s.stT=0.7; } }
           else if(s.st===3){ s.stT-=dt; if(s.stT<=0){ s.st=0; s.stT=1.6+Math.random(); } }
@@ -1475,12 +1595,29 @@ const Game = (function(){
             s.face = ddx>=0?1:-1;
             s.stT -= dt; if(s.stT<=0){ s.st=1; s.stT=0.45; }
           }
+        } else if(s.type==='gu'){
+          // 蠱: keeps its distance and brews worm-spirits
+          const tx=-ddy/d, ty=ddx/d, err=(d-220)/220;
+          s.x += (tx*s.dirn + (ddx/d)*err)*60*sf*dt;
+          s.y += (ty*s.dirn + (ddy/d)*err)*60*sf*dt;
+          s.face = ddx>=0?1:-1;
+          s.stT -= dt;
+          if(s.stT <= 0){
+            s.stT = 4.2;
+            if(spirits.filter(o=>!o.dead).length < wave.cap+4){
+              for(const off of [-30, 30]){
+                spirits.push({x:s.x+off, y:s.y+18, phase:Math.random()*6, dead:false, type:'gui', hp:1, cr:29,
+                              st:0, stT:1, face:1, dirn:1, spd:wave.spd*1.1});
+                addFx({kind:'poof', x:s.x+off, y:s.y+18, t:0.3, r:16});
+              }
+            }
+          }
         } else if(s.type==='long'){
-          if(!s._prev){                              // the head weaves toward you
+          if(!s._prev){
             const wob = Math.sin(s.phase*1.2)*0.7, ux=ddx/d, uy=ddy/d;
             s.x += (ux - uy*wob)*95*sf*dt; s.y += (uy + ux*wob)*95*sf*dt;
             s.face = ddx>=0?1:-1;
-          } else {                                   // the body follows the body
+          } else {
             const px=s._prev.x-s.x, py=s._prev.y-s.y, pd=Math.hypot(px,py)||1;
             if(pd>24){ const v=Math.min(260,(pd-24)*9); s.x += px/pd*v*dt; s.y += py/pd*v*dt; }
           }
@@ -1491,17 +1628,29 @@ const Game = (function(){
       }
       // light separation so the pack doesn't stack into one 鬼
       for(const o of spirits){
-        if(o===s || o.dead || s.type==='long' || o.type==='long') continue;
+        if(o===s || o.dead || s.type==='long' || o.type==='long' || s.boss || o.boss) continue;
         const ox = s.x-o.x, oy = s.y-o.y, od = Math.hypot(ox,oy);
         if(od > 0.01 && od < 26){ s.x += ox/od*30*dt; s.y += oy/od*30*dt; }
       }
       s.x = clamp(s.x, WALL+6, CW-WALL-6); s.y = clamp(s.y, WALL+12, CH-WALL-6);
       // touch
       if(Math.hypot(s.x-player.x, s.y-player.y) < (s.cr||29)){
-        if(player.dashT > 0 && (selChar==='niu' || (selChar==='ren' && level >= c.killTier))){
-          hurtSpirit(s, 2);         // the ram / the cutting step
+        if(player.phasedT > 0){                          // 魂游: you pass through them
+          if(selChar==='gui' && level >= CHARS.gui.slowTier) s.slowT = 1.5;
+          if(selChar==='gui' && level >= CHARS.gui.dmgTier) hurtSpirit(s, 1);
+        } else if(selChar==='niu' && mag > 0.01 && !s.boss && s.type!=='long' && !(s.type==='shi' && s.st===2)
+                  && ((s.x-player.x)*dx + (s.y-player.y)*dy) > 0){
+          // 蛮牛之肩: what you walk into, you shove away
+          const bd = Math.hypot(s.x-player.x, s.y-player.y)||1;
+          if(level >= CHARS.niu.bumpDmgTier) hurtSpirit(s, 1);
+          if(!s.dead){
+            s.x += (s.x-player.x)/bd * (level>=3 ? 110 : 85);
+            s.y += (s.y-player.y)/bd * (level>=3 ? 110 : 85);
+            s.iT = Math.max(s.iT||0, 0.3);
+          }
+          addFx({kind:'poof', x:(s.x+player.x)/2, y:(s.y+player.y)/2, t:0.2, r:14});
         } else {
-          hurtPlayer();
+          hurtPlayer(s);
           if(lives <= 0) return;
         }
       }
@@ -1512,7 +1661,8 @@ const Game = (function(){
     for(const f of fires){
       f.t -= dt;
       if(Math.hypot(f.x-player.x, f.y-player.y) < f.r+10){
-        if(!(selChar==='niu' && player.dashT > 0 && tier >= c.firesafeTier)) hurtPlayer();   // 牧: driven through the flames
+        const herded = selChar==='niu' && level >= CHARS.niu.firesafeTier && mag > 0.01;  // 牧: driven through the flames
+        if(!herded && player.phasedT <= 0) hurtPlayer(null);
         if(lives <= 0) return;
       }
     }
@@ -1534,21 +1684,18 @@ const Game = (function(){
         b.hit = true;
         shakeT = Math.max(shakeT, 0.18);
         for(const sp of spirits){ if(!sp.dead && Math.hypot(sp.x-b.tx, sp.y-b.ty) <= 48) hurtSpirit(sp, 3); }
-        if(Math.hypot(player.x-b.tx, player.y-b.ty) <= 52) hurtPlayer();
+        if(Math.hypot(player.x-b.tx, player.y-b.ty) <= 52) hurtPlayer(null);
       }
     }
     bolts = bolts.filter(b=>b.t < 1.85);
     if(lives <= 0) return;
 
-    // --- clouds thin out ---
-    for(const cl of clouds) cl.t -= dt;
-    clouds = clouds.filter(cl=>cl.t > 0);
-
     // --- fallen glyphs ---
+    const mr = hatOn ? 150 : 95;                       // 圣: the great ear hears them further
     for(const p of pickups){
       p.t -= dt; p.bob += dt*3;
       const d = Math.hypot(p.x-player.x, p.y-player.y);
-      if(d < 95 && d > 1){ p.x += (player.x-p.x)/d*170*dt; p.y += (player.y-p.y)/d*170*dt; }
+      if(d < mr && d > 1){ p.x += (player.x-p.x)/d*(hatOn?210:170)*dt; p.y += (player.y-p.y)/d*(hatOn?210:170)*dt; }
       if(d < 28){
         p.t = 0; coins++; popToast(p.ch);
         if(coins >= nextHeart){
@@ -1583,16 +1730,37 @@ const Game = (function(){
     }
     pedestals = pedestals.filter(pd=>!pd.done);
 
+    // --- the 圣 crest waits on its plinth ---
+    if(shengPed){
+      shengPed.bob += dt*2.2;
+      if(Math.hypot(shengPed.x-player.x, shengPed.y-player.y) < 32){
+        hatOn = true;
+        addFx({kind:'levelup', x:shengPed.x, y:shengPed.y, t:0.8, r:70, ch:'圣'});
+        popToastEx('圣', 'shèng · 甲骨', t('the great listening ear — your ink and reach grow', '圣——倾听之大耳：及远更甚'));
+        shengPed = null;
+      }
+    }
+
     // --- fx decay ---
     for(const e of fx) e.t -= dt;
     fx = fx.filter(e=>e.t > 0);
 
-    // --- live skill HUD ---
-    let txt;
-    if(selChar==='ren') txt = 'LV'+(level+1)+' · ⚡×'+Math.floor(player.charges);
-    else txt = 'LV'+(level+1)+' · '+(player.cd > 0 ? player.cd.toFixed(1) : '⚡');
+    // --- live gift HUD ---
+    let txt = 'LV'+(level+1);
+    if(selChar==='ren') txt += player.slipT > 0 ? ' · '+player.slipT.toFixed(1) : ' · ⚡';
+    else if(selChar==='gui') txt += player.phasedT > 0 ? ' · 魂' : ' · '+Math.max(0,player.phaseCdT).toFixed(1);
     if(txt !== lastSkillTxt){ $('hudSkill').textContent = txt; lastSkillTxt = txt; }
-    $('btnS').classList.toggle('cd', selChar==='ren' ? player.charges < 1 : player.cd > 0);
+  }
+
+  function maybeLevelUp(){
+    while(level < 3 && coins >= LV_XP[level+1]){
+      level++;
+      const c = C(), nf = c.forms[level];
+      player.inv = Math.max(player.inv, 1.0);              // a breath to admire the new form
+      addFx({kind:'levelup', x:player.x, y:player.y, t:0.9, r:96, ch:nf.ch});
+      popToastEx(nf.ch, `${nf.py} · LV${level+1}`, t(nf.tier_en, nf.tier_zh));
+      syncHud();
+    }
   }
 
   /* ---------- render ---------- */
@@ -1604,7 +1772,6 @@ const Game = (function(){
     ctx.save();
     if(shakeT > 0) ctx.translate(Math.sin(tGlobal*82)*7*shakeT, Math.cos(tGlobal*90)*5*shakeT);
 
-    // arena floor: a rammed-earth slab with incised marks
     ctx.fillStyle = era.hill;
     ctx.fillRect(WALL, WALL, CW-WALL*2, CH-WALL*2);
     ctx.strokeStyle = era.accent; ctx.globalAlpha = 0.45; ctx.lineWidth = 2;
@@ -1614,18 +1781,6 @@ const Game = (function(){
     for(let i=0; i<26; i++){
       const mx = WALL+30+((i*137)%(CW-WALL*2-60)), my = WALL+26+((i*211)%(CH-WALL*2-60));
       ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx+((i%3)-1)*6, my+14+(i*7)%12); ctx.stroke();
-    }
-
-    // wool clouds
-    for(const cl of clouds){
-      ctx.save(); ctx.globalAlpha = Math.min(0.35, cl.t*0.3);
-      ctx.fillStyle = era.ink;
-      ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, Math.PI*2); ctx.fill();
-      ctx.globalAlpha = Math.min(0.7, cl.t*0.5); ctx.strokeStyle = era.ink; ctx.lineWidth = 2;
-      for(const [ox,rr] of [[-cl.r*0.4,cl.r*0.22],[0,cl.r*0.3],[cl.r*0.4,cl.r*0.22]]){
-        ctx.beginPath(); ctx.arc(cl.x+ox, cl.y-cl.r*0.15, rr, 0, Math.PI*2); ctx.stroke();
-      }
-      ctx.restore();
     }
 
     // fires
@@ -1639,13 +1794,13 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // 電 lightning: the glyph hovers, then its tail stretches to the ground
+    // 電 lightning: the bronze glyph hovers, then its tail stretches to the ground
     for(const b of bolts){
       const skyY = WALL + 46;
       if(b.t < 1.1){
         ctx.save();
         ctx.globalAlpha = 0.45 + 0.4*Math.sin(b.t*26);
-        drawDianBox(ctx, b.tx, skyY, 34, BOLTC);
+        drawDianBox(ctx, b.tx, skyY, 38, BOLTC);
         ctx.globalAlpha = 0.35 + 0.3*Math.sin(b.t*12);
         ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 2; ctx.setLineDash([6,6]);
         ctx.beginPath(); ctx.arc(b.tx, b.ty, 46, 0, Math.PI*2); ctx.stroke();
@@ -1655,16 +1810,15 @@ const Game = (function(){
         const k = Math.max(0, (1.85 - b.t)/0.75);
         ctx.save();
         ctx.globalAlpha = Math.min(1, k*1.6);
-        drawDianBox(ctx, b.tx, skyY, 34, BOLTC);
+        drawDianBox(ctx, b.tx, skyY, 38, BOLTC);
         ctx.strokeStyle = BOLTC; ctx.shadowColor = BOLTC; ctx.shadowBlur = 16;
         ctx.lineWidth = 3.5; ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.moveTo(b.tx, skyY + 14);
+        ctx.moveTo(b.tx+0.18*38, skyY + 14);
         const segs = 6;
         for(let i=1; i<=segs; i++){
           const yy = skyY + 14 + (b.ty - skyY - 14) * i/segs;
-          const xx = i===segs ? b.tx : b.tx + Math.sin(i*2.7 + b.seed)*16;
-          ctx.lineTo(xx, yy);
+          ctx.lineTo(i===segs ? b.tx : b.tx + Math.sin(i*2.7 + b.seed)*16, yy);
         }
         ctx.lineTo(b.tx + 14, b.ty - 2);              // the 乚 hook lands
         ctx.stroke();
@@ -1681,6 +1835,12 @@ const Game = (function(){
       ctx.save(); ctx.globalAlpha = 0.35; ctx.strokeStyle = era.accent; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(pd.x, pd.y+16, 22, 8, 0, 0, Math.PI*2); ctx.stroke(); ctx.restore();
       drawWeaponIcon(ctx, pd.key, nlv, pd.x, pd.y + Math.sin(pd.bob)*3 - 2, 34, era.ink);
+    }
+    // the 圣 crest on its plinth
+    if(shengPed){
+      ctx.save(); ctx.globalAlpha = 0.35; ctx.strokeStyle = era.accent; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(shengPed.x, shengPed.y+16, 22, 8, 0, 0, Math.PI*2); ctx.stroke(); ctx.restore();
+      drawShengHat(ctx, shengPed.x, shengPed.y + Math.sin(shengPed.bob)*3 + 8, 30, era.ink);
     }
 
     // fallen glyphs
@@ -1707,21 +1867,17 @@ const Game = (function(){
       if(s.type==='shi') drawBoar(ctx, s.x, s.y, 38, s.phase, col, s.face||1);
       else if(s.type==='hu') drawTiger(ctx, s.x, s.y, 48, s.phase, col, s.face||1, s.st===1);
       else if(s.type==='long') drawDragonSeg(ctx, s, col);
+      else if(s.type==='meng' || s.type==='gu') drawVesselBoss(ctx, s.x, s.y, 64, s.phase, col, s.type==='gu');
       else drawSpirit(ctx, s.x, s.y, 34, s.phase, col);
-      if((s.hp||1) > 1 && s.type!=='long'){
+      if(s.boss){
+        ctx.save();
+        ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.fillRect(s.x-26, s.y-52, 52, 6);
+        ctx.globalAlpha = 0.95; ctx.fillStyle = '#f0674a';
+        ctx.fillRect(s.x-25, s.y-51, 50*Math.max(0,s.hp)/s.maxHp, 4);
+        ctx.restore();
+      } else if((s.hp||1) > 1 && s.type!=='long'){
         ctx.save(); ctx.fillStyle = '#f0674a';
         for(let h=0; h<s.hp; h++) ctx.fillRect(s.x-7+h*6, s.y-36, 4, 4);
-        ctx.restore();
-      }
-    }
-
-    // the flock orbiters 羴
-    if(selChar==='yang' && level >= CHARS.yang.orbTier){
-      for(const k of [0, Math.PI]){
-        const ox = player.x + Math.cos(player.orbA+k)*58, oy = player.y + Math.sin(player.orbA+k)*58;
-        ctx.save(); ctx.strokeStyle = era.ink; ctx.fillStyle = era.ink;
-        ctx.shadowColor = era.ink; ctx.shadowBlur = 4;
-        sheepHead(ctx, 20, ox, oy+9, 1, 2.4);
         ctx.restore();
       }
     }
@@ -1743,29 +1899,17 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // player (ghost trail while dashing)
+    // player — translucent while phased
     const footY = player.y + 22;
-    if(player.dashT > 0){
-      for(const [off, al] of [[16,0.3],[32,0.15]]){
-        const gx = player.x - player.dashVec.x*off, gy = footY - player.dashVec.y*off;
-        ctx.save(); ctx.globalAlpha = al;
-        if(player.face < 0){ ctx.translate(gx*2, 0); ctx.scale(-1,1); }
-        drawGlyphChar(ctx, selChar, level, gx, gy, 46, player.runPhase, 0, era.ink);
-        ctx.restore();
-      }
-    }
     ctx.save();
-    if(player.inv > 0) ctx.globalAlpha = Math.sin(tGlobal*30) > 0 ? 0.35 : 0.85;
+    if(player.phasedT > 0) ctx.globalAlpha = 0.4 + 0.1*Math.sin(tGlobal*20);
+    else if(player.inv > 0) ctx.globalAlpha = Math.sin(tGlobal*30) > 0 ? 0.35 : 0.85;
     if(player.face < 0){ ctx.translate(player.x*2, 0); ctx.scale(-1,1); }
     drawGlyphChar(ctx, selChar, level, player.x, footY, 46, player.runPhase, player.sq, era.ink);
     ctx.restore();
-    if(player.shieldT > 0){                        // 牢: the pen arch lingers
-      ctx.save(); ctx.globalAlpha = Math.min(1, player.shieldT*2) * 0.7;
-      ctx.strokeStyle = era.accent; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(player.x, footY-20, 34, Math.PI, Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(player.x-34, footY-18); ctx.lineTo(player.x-34, footY); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(player.x+34, footY-18); ctx.lineTo(player.x+34, footY); ctx.stroke();
-      ctx.restore();
+    if(hatOn) drawShengHat(ctx, player.x, player.y - 34, 22, era.accent);       // 圣 worn as a crown
+    if(buffT > 0 && Math.sin(tGlobal*(buffT<2?18:7)) > -0.2){                    // 光 blinks overhead
+      drawGuang(ctx, player.x, player.y - (hatOn ? 62 : 46), 20, BOLTC);
     }
 
     // held weapons — carried at the hand, aimed, recoiling on the shot
@@ -1777,9 +1921,9 @@ const Game = (function(){
       ctx.rotate(w.aim);
       if(Math.cos(w.aim) < 0) ctx.scale(1, -1);          // keep the glyph upright when facing left
       if(w.key === 'gong') ctx.translate(-w.recoil*6, 0);                 // the string snaps back
-      else if(w.key === 'ge' || w.key === 'jin') ctx.rotate(Math.sin(w.recoil*Math.PI)*0.9); // the blade swings through
+      else if(w.key === 'ge' || w.key === 'jin' || w.key === 'jian') ctx.rotate(Math.sin(w.recoil*Math.PI)*0.9);
       else if(w.key === 'mao') ctx.translate(w.recoil*9, 0);              // the point drives forward
-      else if(w.key === 'wang') ctx.scale(1+w.recoil*0.25, 1+w.recoil*0.25); // the net billows
+      else if(w.key === 'wang') ctx.scale(1+w.recoil*0.25, 1+w.recoil*0.25);
       drawWeaponIcon(ctx, w.key, w.lv, 0, 0, 22, era.accent);
       ctx.restore();
     }
@@ -1801,7 +1945,7 @@ const Game = (function(){
         ctx.lineWidth = 5;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1.15-k*0.3), 0, Math.PI*2); ctx.stroke();
       } else if(e.kind==='quake'){
-        ctx.strokeStyle = era.accent; ctx.lineWidth = 6;
+        ctx.lineWidth = 6;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1-k), 0, Math.PI*2); ctx.stroke();
         ctx.lineWidth = 3; ctx.globalAlpha = 0.4*k;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1-k)*0.6, 0, Math.PI*2); ctx.stroke();
@@ -1812,10 +1956,10 @@ const Game = (function(){
         ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1.4-k), 0, Math.PI*2); ctx.stroke();
       } else if(e.kind==='shieldpop'){
-        ctx.strokeStyle = era.accent; ctx.lineWidth = 4;
+        ctx.lineWidth = 4;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1.5-k), 0, Math.PI*2); ctx.stroke();
       } else if(e.kind==='net'){
-        ctx.strokeStyle = era.accent; ctx.lineWidth = 2; ctx.globalAlpha = 0.55*k;
+        ctx.lineWidth = 2; ctx.globalAlpha = 0.55*k;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.stroke();
         ctx.globalAlpha = 0.3*k;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.clip();
@@ -1827,7 +1971,7 @@ const Game = (function(){
         ctx.fillStyle = '#f0674a'; ctx.globalAlpha = 0.2*k;
         ctx.fillRect(0, 0, CW, CH);
       } else if(e.kind==='levelup'){
-        ctx.strokeStyle = era.accent; ctx.lineWidth = 5; ctx.globalAlpha = 0.8*k;
+        ctx.lineWidth = 5; ctx.globalAlpha = 0.8*k;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1-k)+18, 0, Math.PI*2); ctx.stroke();
         ctx.fillStyle = era.accent; ctx.globalAlpha = k;
         ctx.font = 'bold 26px Consolas'; ctx.textAlign = 'center';
@@ -1840,7 +1984,7 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // xp strip along the top, hp segments under it
+    // xp strip along the top, hp segments under it, carried arms below
     ctx.save();
     const bw = CW-WALL*2-8;
     ctx.globalAlpha = 0.25; ctx.fillStyle = '#000';
@@ -1907,7 +2051,7 @@ const Game = (function(){
     render();
   }
 
-  /* ---------- input ---------- */
+  /* ---------- input: steer only — everything else is automatic ---------- */
   function bindInput(){
     window.addEventListener('keydown', (e)=>{
       const k = e.key.toLowerCase();
@@ -1915,13 +2059,12 @@ const Game = (function(){
       if(['arrowright','d'].includes(k)){ keys.right=true; e.preventDefault(); }
       if(['arrowup','w'].includes(k)){ keys.up=true; e.preventDefault(); }
       if(['arrowdown','s'].includes(k)){ keys.down=true; e.preventDefault(); }
-      if([' ','shift','k','x'].includes(k)){
+      if(k===' '){
         e.preventDefault();
-        if(k===' ' && !running){
+        if(!running){
           if($('ovStart').classList.contains('show')){ start(); return; }
           if($('ovClear').classList.contains('show')){ nextStage(); return; }
         }
-        if(!e.repeat) bufSkill = 0.18;
       }
     });
     window.addEventListener('keyup', (e)=>{
@@ -1951,15 +2094,9 @@ const Game = (function(){
     joyEl.addEventListener('pointerup', joyUp);
     joyEl.addEventListener('pointercancel', joyUp);
     joyEl.addEventListener('lostpointercapture', joyUp);
-    // skill button
-    const sb = $('btnS');
-    sb.addEventListener('pointerdown', (e)=>{ e.preventDefault(); bufSkill = 0.2; sb.classList.add('on'); });
-    const sbUp = ()=>sb.classList.remove('on');
-    sb.addEventListener('pointerup', sbUp);
-    sb.addEventListener('pointercancel', sbUp);
   }
 
-  /* ---------- character select ---------- */
+  /* ---------- character + starting-arm select ---------- */
   function buildCharSelect(){
     const row = $('charRow'); row.innerHTML = '';
     for(const key of Object.keys(CHARS)){
@@ -1979,13 +2116,28 @@ const Game = (function(){
       drawCharPortrait(cc, key, 0, '#e8dfc8');
     }
   }
+  function buildArmSelect(){
+    const row = $('armRow'); if(!row) return;
+    row.innerHTML = '';
+    for(const key of STARTER_ARMS){
+      const W = WEAPONS[key];
+      const card = document.createElement('div');
+      card.className = 'char-card arm' + (key === selArm ? ' sel' : '');
+      const cc = document.createElement('canvas'); cc.width = 36; cc.height = 42;
+      const nm = document.createElement('div'); nm.className = 'cname';
+      nm.textContent = `${W.chs[0]} ${W.pys[0]}`;
+      card.append(cc, nm);
+      card.onclick = () => { selArm = key; buildArmSelect(); };
+      row.appendChild(card);
+      const cctx = cc.getContext('2d');
+      cctx.clearRect(0,0,36,42);
+      drawWeaponIcon(cctx, key, 1, 18, 22, 30, '#e8dfc8');
+    }
+  }
   function syncSkillLine(){
     const c = CHARS[selChar];
     $('skillLine').innerHTML =
       `<span style="color:#e8b04a">${c.forms[0].ch} ${t(c.skill_en, c.skill_zh)}</span> — ${t(c.forms[0].tier_en, c.forms[0].tier_zh)} · <span style="color:#8bc34a">${t('gather glyphs to level up & evolve', '集字升级、进化字形')}</span>`;
-    const sb = $('btnS');
-    sb.dataset.en = c.btn_en; sb.dataset.zh = c.btn_zh;
-    sb.textContent = t(c.btn_en, c.btn_zh);
   }
   function selectChar(key){
     selChar = key;
@@ -1996,15 +2148,17 @@ const Game = (function(){
     running = false; hideAll(); overlay('ovStart', true);
     loadStage(0);
   }
-  function onLang(){ syncHud(); buildCharSelect(); syncSkillLine(); }
+  function onLang(){ syncHud(); buildCharSelect(); buildArmSelect(); syncSkillLine(); }
 
   bindInput();
-  buildCharSelect(); syncSkillLine();
+  buildCharSelect(); buildArmSelect(); syncSkillLine();
   // idle attract render so the start screen isn't blank
   loadStage(0); running = false; render();
 
   return { start, restart, nextStage, syncHud, onLang, chooseChar,
-           dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, stageIdx, selChar, waveT, gate, hp: lives, level, coins }) };
+           dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts,
+                         stageIdx, selChar, selArm, waveT, gate, hp: lives, level, coins,
+                         hat: hatOn, sheng: shengPed, buffT }) };
 })();
 
 </script>
