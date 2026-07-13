@@ -111,7 +111,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b19</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b20</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -904,19 +904,35 @@ function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
     ctx.restore(); return;
   }
   if(key==='jian'){
-    ctx.save(); ctx.translate(cx, cy);                    // the sword: blade, guard, grip
+    ctx.save(); ctx.translate(cx, cy);                    // the sword grows ornate toward the bronze totem
     ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*(0.12+lv*0.05);
     stroke(ctx, Math.max(2, s*0.09));
     const r = s*0.42;
-    ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(0,r*0.42); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-r*0.1,-r*0.78); ctx.lineTo(0,-r); ctx.lineTo(r*0.1,-r*0.78); ctx.stroke();
-    if(lv>=3){ ctx.beginPath(); ctx.moveTo(-r*0.06,-r*0.6); ctx.lineTo(-r*0.06,r*0.2); ctx.stroke(); }
-    ctx.beginPath();
-    if(lv>=2){ ctx.moveTo(-r*0.34,r*0.32); ctx.quadraticCurveTo(0,r*0.55,r*0.34,r*0.32); }
-    else { ctx.moveTo(-r*0.3,r*0.42); ctx.lineTo(r*0.3,r*0.42); }
-    ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,r*0.45); ctx.lineTo(0,r*0.95); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0,r*1.02,r*0.08,0,Math.PI*2); ctx.fill();
+    if(lv===1){                                           // a plain straight sword
+      ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(0,r*0.42); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.1,-r*0.78); ctx.lineTo(0,-r); ctx.lineTo(r*0.1,-r*0.78); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.3,r*0.42); ctx.lineTo(r*0.3,r*0.42); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,r*0.45); ctx.lineTo(0,r*0.95); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,r*1.02,r*0.08,0,Math.PI*2); ctx.fill();
+    } else if(lv===2){                                    // bronze: broad twin-edged, curled guard
+      ctx.beginPath(); ctx.moveTo(0,-r*1.05); ctx.lineTo(0,r*0.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.16,-r*0.7); ctx.lineTo(0,-r*1.05); ctx.lineTo(r*0.16,-r*0.7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.16,-r*0.7); ctx.lineTo(-r*0.14,r*0.28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r*0.16,-r*0.7); ctx.lineTo(r*0.14,r*0.28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.4,r*0.28); ctx.quadraticCurveTo(0,r*0.6,r*0.4,r*0.28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,r*0.5); ctx.lineTo(0,r*0.95); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,r*1.02,r*0.1,0,Math.PI*2); ctx.fill();
+    } else {                                              // 金文: the ornate totem — diamond crown, loops, forked foot
+      ctx.beginPath(); ctx.moveTo(0,-r*1.15); ctx.lineTo(-r*0.14,-r*0.95); ctx.lineTo(0,-r*0.75);
+      ctx.lineTo(r*0.14,-r*0.95); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.3,-r*0.72); ctx.lineTo(r*0.3,-r*0.72); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-r*0.18,-r*0.45,r*0.16,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(r*0.18,-r*0.45,r*0.16,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-r*0.72); ctx.lineTo(0,r*0.6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.32,-r*0.1); ctx.lineTo(r*0.32,-r*0.1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,r*0.6); ctx.lineTo(-r*0.28,r*0.95); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,r*0.6); ctx.lineTo(r*0.28,r*0.95); ctx.stroke();
+    }
     ctx.restore(); return;
   }
   if(key==='mao'){
@@ -965,14 +981,25 @@ function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
     ctx.restore(); return;
   }
   if(key==='dao'){
-    if(lv>=2){ drawPicto(ctx, '刀', cx, cy, s, color); return; }
-    ctx.save(); ctx.translate(cx, cy);                    // 楷 刀: 横折钩 + 撇
-    ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
+    ctx.save(); ctx.translate(cx, cy);                    // 刀 → 刃: the blade earns its edge-mark
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
     stroke(ctx, Math.max(2, s*0.09));
     const r = s*0.42;
-    ctx.beginPath(); ctx.moveTo(-r*0.45,-r*0.75); ctx.lineTo(r*0.4,-r*0.75); ctx.lineTo(r*0.4,r*0.5);
-    ctx.quadraticCurveTo(r*0.4,r*0.85,r*0.1,r*0.75); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(r*0.02,-r*0.75); ctx.quadraticCurveTo(-r*0.12,0,-r*0.55,r*0.8); ctx.stroke();
+    if(lv===1){                                           // 隸書 刀: 横折钩 + 撇
+      ctx.beginPath(); ctx.moveTo(-r*0.45,-r*0.75); ctx.lineTo(r*0.4,-r*0.75); ctx.lineTo(r*0.4,r*0.5);
+      ctx.quadraticCurveTo(r*0.4,r*0.85,r*0.1,r*0.75); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r*0.02,-r*0.75); ctx.quadraticCurveTo(-r*0.12,0,-r*0.55,r*0.8); ctx.stroke();
+    } else if(lv===2){                                    // 说文 刃: the curved blade, edge dotted
+      ctx.beginPath(); ctx.moveTo(-r*0.15,-r); ctx.quadraticCurveTo(r*0.6,-r*0.3,r*0.2,r*0.72); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.15,-r); ctx.quadraticCurveTo(-r*0.45,-r*0.15,-r*0.12,r*0.45);
+      ctx.quadraticCurveTo(0,r*0.7,r*0.2,r*0.72); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-r*0.42,r*0.15,r*0.1,0,Math.PI*2); ctx.fill();
+    } else {                                              // 甲骨 刃: the deep curve, tick at the edge
+      ctx.beginPath(); ctx.moveTo(r*0.3,-r); ctx.quadraticCurveTo(-r*0.55,-r*0.2,r*0.15,r*0.85); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r*0.42,-r*0.6); ctx.quadraticCurveTo(-r*0.15,-r*0.1,r*0.34,r*0.55); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.5,-r*0.05); ctx.lineTo(-r*0.2,-r*0.12); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.48,r*0.14); ctx.lineTo(-r*0.18,r*0.07); ctx.stroke();
+    }
     ctx.restore(); return;
   }
   if(lv>=2){ drawPicto(ctx, '網', cx, cy, s, color); return; }
@@ -1226,9 +1253,9 @@ const WEAPONS = {
          tier_en:['an axe — it falls on the nearest knot of spirits', 'bronze bit — a wider cleave', 'oracle adze — the whole cluster falls'],
          tier_zh:['「斤」——落斧劈其群', '青铜斧刃——劈得更广', '甲骨之斤——一斧尽没'],
          int:[1.7, 1.3, 0.95], splash:[36,46,58]},
-  dao:  {chs:['刀','刀','刀'], pys:['dāo','dāo','dāo'], eras:['隸書','金文','甲骨'],
-         tier_en:['a blade circling you, nicking the closest', 'bronze edge — quicker, three cuts', 'the oracle whirl — nothing stands beside you'],
-         tier_zh:['「刀」——绕身旋斩', '青铜刀光——更快三斩', '甲骨旋刃——近身皆殒'],
+  dao:  {chs:['刀','刃','刃'], pys:['dāo','rèn','rèn'], eras:['隸書','篆書','甲骨'],
+         tier_en:['a blade circling you, nicking the closest', '刃 — the edge is marked: quicker, three cuts', 'the oracle 刃 — nothing stands beside you'],
+         tier_zh:['「刀」——绕身旋斩', '「刃」——点出锋芒，更快三斩', '甲骨之刃——近身皆殒'],
          int:[0.9, 0.7, 0.5], reach:[58,66,76], hits:[2,3,4]},
   wang: {chs:['網','網','網'], pys:['wǎng','wǎng','wǎng'], eras:['隸書','金文','甲骨'],
          tier_en:['a net — holds the pack fast', 'bronze-weighted — wider, longer', 'the oracle net — the whole hunt stands still'],
