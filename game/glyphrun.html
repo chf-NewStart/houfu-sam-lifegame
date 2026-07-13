@@ -16,8 +16,7 @@
   :root{
     --brush:'Ma Shan Zheng','Kaiti SC','KaiTi','STKaiti','BiauKai','DFKai-SB',cursive,serif;
     --mono:Consolas,'Courier New',monospace;
-    --paper0:#efe3c3; --paper1:#e2d0a4; --paper2:#cdb47f;
-    --pink:#2b2118; --pink2:#5d4b33; --cinnabar:#a3271b; --pgreen:#356b43;
+    --cinnabar:#a3271b;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body,button,a{touch-action:manipulation;}
@@ -116,7 +115,7 @@
   .footer{max-width:960px;margin:22px auto 0;text-align:center;color:#555;font-size:0.68rem;line-height:1.7;}
   @media (pointer:coarse){ body{user-select:none;-webkit-user-select:none;} }
 
-  /* ================= the scholar's overhaul: paper · bone · bamboo · stone ================= */
+  /* ================= the scholar's overhaul: shell · bone · bamboo · stone ================= */
   .hdr .titlebox{display:flex;gap:12px;align-items:center;}
   #sealTitle{width:54px;height:54px;flex-shrink:0;image-rendering:auto;}
   .hdr .title{font-size:1.7rem;letter-spacing:1px;text-transform:none;}
@@ -136,55 +135,40 @@
   #toast .tm{font-size:0.78rem;}
   .buildtag{font-family:var(--mono);}
 
-  /* --- aged paper: the menus are physical sheets, ink and cinnabar on rice paper --- */
-  .overlay.paper{
-    color:var(--pink2);
+  /* --- the plastron: menus are a dark tortoise shell, seams and 卜 diviner's
+     cracks across it, lit with the arcade's green — the actual stone script look --- */
+  .overlay.shell{
+    color:#cfc6ae;
     background:
-      radial-gradient(130% 100% at 50% 0%, rgba(43,33,24,0) 52%, rgba(43,33,24,0.30) 100%),
-      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.18 0 0 0 0 0.09 0 0 0 0.06 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
-      linear-gradient(163deg, var(--paper0), var(--paper1) 55%, var(--paper2));
-    backdrop-filter:none;
+      radial-gradient(130% 100% at 50% 0%, rgba(29,185,84,0.10), rgba(29,185,84,0) 55%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540' viewBox='0 0 960 540'><g fill='none' stroke='%23324230' stroke-width='2' opacity='0.6'><path d='M480 0C474 90 486 180 478 270C472 360 484 450 480 540'/><path d='M0 96L480 118 960 96'/><path d='M0 224L480 244 960 224'/><path d='M0 356L480 372 960 356'/><path d='M0 468L480 480 960 468'/></g><g fill='none' stroke='%23597052' stroke-width='2' opacity='0.45' stroke-linecap='round'><path d='M172 156v64M172 172l40-10'/><path d='M778 210v58M778 224l-38-9'/><path d='M258 396v54M258 410l36-8'/><path d='M700 402v60M700 420l-34-10'/><path d='M92 300v50M92 312l30-8'/><path d='M876 130v52M876 142l-30-8'/></g></svg>") center/cover,
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.45 0 0 0 0 0.30 0 0 0 0.05 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+      linear-gradient(163deg, #101710, #0b110b 55%, #070c08);
   }
-  .overlay.paper h2{color:var(--pink);}
-  .overlay.paper .big{color:var(--pink2);}
-  .overlay.paper .keys{color:#7a6845;}
-  .overlay.paper .keys kbd{background:#f5ecd6;border-color:#b49a68;color:var(--pink);}
-  .overlay.paper a{color:var(--pgreen);}
-  .overlay.paper .btn{border-color:var(--cinnabar);color:var(--cinnabar);border-width:2px;}
-  .overlay.paper .btn:hover{background:var(--cinnabar);color:var(--paper0);}
-  .overlay.paper .btn.alt{border-color:var(--pink2);color:var(--pink2);}
-  .overlay.paper .btn.alt:hover{background:var(--pink2);color:var(--paper0);}
-  .overlay.paper .char-card{background:rgba(255,250,232,0.42);border-color:#b49a68;}
-  .overlay.paper .char-card:hover{border-color:#8a6f3e;}
-  .overlay.paper .char-card.sel{border-color:var(--cinnabar);box-shadow:0 0 0 1px var(--cinnabar), 0 2px 10px -4px rgba(120,40,20,0.55);}
-  .overlay.paper .char-card .cname{color:var(--pink);}
-  .overlay.paper .char-card .cskill{color:var(--cinnabar);}
-  .overlay.paper .char-card .chint{color:#7a6845;}
-  .overlay.paper #prevBox{background:#171310;border-color:#8a6f3e;box-shadow:0 3px 14px -6px rgba(43,33,24,0.8);}
-  .overlay.paper #prevLine{color:#d9cba3;}
-  /* ink-wash hover: the brush touches the paper and the wash spreads */
+  .overlay.shell h2{color:#e8b04a;}
+  .overlay.shell .big{color:#cfc6ae;}
+  .overlay.shell .keys{color:#8a8a8a;}
+  .overlay.shell .char-card{background:rgba(10,14,10,0.72);border-color:#2c362a;}
+  .overlay.shell .char-card:hover{border-color:#4a6350;}
+  .overlay.shell #prevBox{border-color:#2c362a;}
+  /* ink-wash hover: the brush touches the shell and the pale wash spreads */
   .char-card{position:relative;overflow:hidden;}
   .char-card::before{content:'';position:absolute;left:50%;top:55%;width:150%;aspect-ratio:1;
     transform:translate(-50%,-50%) scale(0);opacity:0;pointer-events:none;
     border-radius:46% 54% 52% 48%/49% 51% 44% 56%;
-    background:radial-gradient(closest-side, rgba(43,33,24,0.18), rgba(43,33,24,0.11) 52%, rgba(43,33,24,0.03) 72%, transparent 80%);
+    background:radial-gradient(closest-side, rgba(232,223,200,0.15), rgba(232,223,200,0.08) 52%, rgba(232,223,200,0.02) 72%, transparent 80%);
     transition:transform .55s cubic-bezier(.2,.7,.3,1), opacity .35s;}
   .char-card:hover::before{transform:translate(-50%,-50%) scale(1);opacity:1;}
-  .overlay:not(.paper) .char-card::before{background:radial-gradient(closest-side, rgba(232,223,200,0.14), rgba(232,223,200,0.08) 52%, rgba(232,223,200,0.02) 72%, transparent 80%);}
 
-  /* --- cracked bone: the death screen is the shell the diviners burned --- */
+  /* --- the scorched shell: death is the plastron after the fire, cracks glowing --- */
   .overlay.bone{
-    color:#4a3c2a;
+    color:#cfc6ae;
     background:
-      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540' viewBox='0 0 960 540'><g fill='none' stroke='%23715c40' stroke-width='1.6' opacity='0.55'><path d='M140 0L152 90 128 170 165 262 150 366 178 460 160 540'/><path d='M152 90L220 108M128 170L60 195M165 262L242 250M150 366L83 400M178 460L250 470'/><path d='M810 0L795 120 832 210 800 330 828 440 812 540'/><path d='M795 120L724 140M832 210L905 195M800 330L730 355M828 440L900 452'/><path d='M0 258L90 246 190 268'/><path d='M960 300L870 312 786 292'/></g></svg>") center/cover,
-      radial-gradient(120% 100% at 50% 10%, #efe7d2, #ded1b2 60%, #c8b790);
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540' viewBox='0 0 960 540'><g fill='none' stroke='%23907e58' stroke-width='1.6' opacity='0.5'><path d='M140 0L152 90 128 170 165 262 150 366 178 460 160 540'/><path d='M152 90L220 108M128 170L60 195M165 262L242 250M150 366L83 400M178 460L250 470'/><path d='M810 0L795 120 832 210 800 330 828 440 812 540'/><path d='M795 120L724 140M832 210L905 195M800 330L730 355M828 440L900 452'/><path d='M0 258L90 246 190 268'/><path d='M960 300L870 312 786 292'/></g><g fill='none' stroke='%23f0674a' stroke-width='1.2' opacity='0.35'><path d='M128 170L60 195M832 210L905 195M150 366L83 400'/></g></svg>") center/cover,
+      radial-gradient(120% 100% at 50% 10%, #1c1710, #131009 60%, #0b0906);
   }
-  .overlay.bone .big{color:#4a3c2a;}
-  .overlay.bone .keys{color:#7a6845;}
-  .overlay.bone .btn{border-color:var(--cinnabar);color:var(--cinnabar);border-width:2px;}
-  .overlay.bone .btn:hover{background:var(--cinnabar);color:#efe7d2;}
-  .overlay.bone .btn.alt{border-color:#4a3c2a;color:#4a3c2a;}
-  .overlay.bone .btn.alt:hover{background:#4a3c2a;color:#efe7d2;}
+  .overlay.bone .big{color:#cfc6ae;}
+  .overlay.bone .keys{color:#8a8a8a;}
 
   /* --- the bamboo scroll: between waves, choices are written on the slats --- */
   #ovDesk{justify-content:flex-start;}
@@ -194,37 +178,39 @@
   .scrollWrap{transform-origin:top center;animation:unroll .55s cubic-bezier(.25,.8,.35,1) both;
     width:min(560px,88%);margin:0 auto;padding:18px 10px 22px;position:relative;
     background:
-      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.18 0 0 0 0 0.09 0 0 0 0.05 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
-      linear-gradient(178deg,#e9d9ae,#dcc793 60%,#c9ae72);
-    border-left:1px solid #8a6f3e;border-right:1px solid #8a6f3e;border-bottom:2px solid #6b4a26;border-radius:0 0 10px 10px;
-    box-shadow:0 14px 30px -14px rgba(0,0,0,0.85);}
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.32 0 0 0 0 0.16 0 0 0 0.05 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+      linear-gradient(178deg,#1c1610,#161109 60%,#0f0c07);
+    border-left:1px solid #3a2d16;border-right:1px solid #3a2d16;border-bottom:2px solid #4a3419;border-radius:0 0 10px 10px;
+    box-shadow:0 14px 30px -14px rgba(0,0,0,0.9);}
   .scrollWrap.rollup{animation:rollup .45s cubic-bezier(.6,0,.8,.4) both;}
   @keyframes unroll{from{transform:scaleY(0.05);}to{transform:scaleY(1);}}
   @keyframes rollup{from{transform:scaleY(1);}to{transform:scaleY(0.05);}}
-  .deskTitle{color:var(--pink);font-size:1.25rem;letter-spacing:4px;margin:0 0 4px;}
-  .deskSub{color:#7a6845;font-size:0.8rem;margin-bottom:12px;}
+  .deskTitle{color:#e8b04a;font-size:1.25rem;letter-spacing:4px;margin:0 0 4px;}
+  .deskSub{color:#8a8a8a;font-size:0.8rem;margin-bottom:12px;}
   .slats{display:flex;gap:12px;justify-content:center;align-items:stretch;position:relative;padding:8px 0 4px;}
   .slats::before,.slats::after{content:'';position:absolute;left:4%;right:4%;height:3px;border-radius:2px;
-    background:linear-gradient(90deg,#7c5f2e,#a8874a 30%,#7c5f2e 70%,#5f461f);opacity:0.85;z-index:2;pointer-events:none;}
+    background:linear-gradient(90deg,#55411d,#8a6f3e 30%,#55411d 70%,#3d2d12);opacity:0.9;z-index:2;pointer-events:none;}
   .slats::before{top:34px;} .slats::after{bottom:34px;}
+  /* night-lacquered bamboo: dark slats, bone ink, the 遠 mark in ember */
   .slat{width:172px;min-height:370px;padding:36px 12px 40px;cursor:pointer;position:relative;text-align:center;
-    color:var(--pink);border:1px solid #7c5f2e;border-radius:9px/22px;
-    background:linear-gradient(90deg,#c3a258,#e2ca8c 26%,#d8bd78 55%,#b3924c);
-    box-shadow:inset 0 0 14px rgba(80,55,20,0.25), 0 3px 8px -4px rgba(0,0,0,0.6);
-    transition:transform .16s, box-shadow .16s;overflow:hidden;
+    color:#e8dfc8;border:1px solid #4a3a1c;border-radius:9px/22px;
+    background:linear-gradient(90deg,#231b0d,#3b2f17 26%,#322715 55%,#1c1509);
+    box-shadow:inset 0 0 14px rgba(0,0,0,0.55), 0 3px 8px -4px rgba(0,0,0,0.7);
+    transition:transform .16s, box-shadow .16s, border-color .16s;overflow:hidden;
     display:flex;flex-direction:column;align-items:center;gap:8px;}
-  .slat:hover{transform:translateY(-3px);box-shadow:inset 0 0 14px rgba(80,55,20,0.25), 0 8px 16px -6px rgba(0,0,0,0.7);}
+  .slat:hover{transform:translateY(-3px);border-color:#8a6f3e;
+    box-shadow:inset 0 0 14px rgba(0,0,0,0.55), 0 8px 18px -6px rgba(0,0,0,0.8), 0 0 16px -6px rgba(232,176,74,0.5);}
   .slat::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;
-    background:radial-gradient(closest-side at 50% 42%, rgba(43,33,24,0.20), rgba(43,33,24,0.08) 60%, transparent 78%);}
+    background:radial-gradient(closest-side at 50% 42%, rgba(232,223,200,0.10), rgba(232,223,200,0.04) 60%, transparent 78%);}
   .slat:hover::before{opacity:1;}
   /* the name runs down the slat like a real bamboo column; the working reads flat */
-  .slat .cat{color:#efe3c3;background:var(--pink2);border-radius:5px;padding:2px 9px;font-size:0.9rem;letter-spacing:2px;}
-  .slat .nm{font-size:1.5rem;line-height:1.5;color:var(--pink);min-height:96px;}  /* one glyph per row, a true bamboo column */
-  .slat .ds{font-size:0.76rem;color:#584624;line-height:1.55;}
-  .slat .inv{color:var(--cinnabar);font-size:0.74rem;letter-spacing:1px;}
-  .slat.picked{border-color:var(--cinnabar);}
+  .slat .cat{color:#14100a;background:#c9a04a;border-radius:5px;padding:2px 9px;font-size:0.9rem;letter-spacing:2px;}
+  .slat .nm{font-size:1.5rem;line-height:1.5;color:#f0e6c8;min-height:96px;}  /* one glyph per row, a true bamboo column */
+  .slat .ds{font-size:0.76rem;color:#b0a37c;line-height:1.55;}
+  .slat .inv{color:#f0674a;font-size:0.74rem;letter-spacing:1px;}
+  .slat.picked{border-color:#d4553e;}
   .slat .ring{position:absolute;inset:0;pointer-events:none;}
-  .slat .ring ellipse{fill:none;stroke:var(--cinnabar);stroke-width:5;stroke-linecap:round;opacity:0.9;
+  .slat .ring ellipse{fill:none;stroke:#d4553e;stroke-width:5;stroke-linecap:round;opacity:0.9;
     stroke-dasharray:900;stroke-dashoffset:900;}
   .slat.picked .ring ellipse{animation:brushring .5s ease-out forwards;}
   @keyframes brushring{to{stroke-dashoffset:180;}}
@@ -272,8 +258,6 @@
     font-size:1.05rem;width:42px;height:42px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   #muteBtn:hover{border-color:#e8b04a;color:#e8b04a;}
   #muteBtn.off{color:#5a5a5a;text-decoration:line-through;}
-  .overlay.paper .evo-cell span{color:#6b5a3e;}
-  .overlay.paper .evo-cell.now span{color:var(--cinnabar);}
 </style>
 </head>
 <body>
@@ -284,7 +268,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b26</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b27</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -307,7 +291,7 @@
     <div id="stampFx"><canvas id="stampCvs" width="300" height="300"></canvas></div>
 
     <!-- START -->
-    <div class="overlay paper show" id="ovStart">
+    <div class="overlay shell show" id="ovStart">
       <h2 data-en="字源 · GLYPH RUN" data-zh="字源 · 汉字奔跑">字源 · GLYPH RUN</h2>
       <div class="big" style="margin-bottom:10px" data-en="You ARE the character. Steer — ink, arms and your family's gift fight on their own. Gather fallen glyphs, evolve back to the bones." data-zh="你就是字。只管走位——笔墨、兵器与天赋自动出手。集字升级，一路进化回甲骨。">You ARE the character. Steer — ink, arms and your family's gift fight on their own. Gather fallen glyphs, evolve back to the bones.</div>
       <div class="setup">
@@ -330,7 +314,7 @@
     </div>
 
     <!-- STAGE CLEAR / TRANSFORM -->
-    <div class="overlay paper" id="ovClear">
+    <div class="overlay shell" id="ovClear">
       <h2 id="clearTitle">GATE PASSED</h2>
       <canvas id="clearCanvas" width="240" height="150"></canvas>
       <div class="big" id="clearMsg">Your glyph evolves…</div>
@@ -369,7 +353,7 @@
     </div>
 
     <!-- CODEX -->
-    <div class="overlay paper" id="ovBook">
+    <div class="overlay shell" id="ovBook">
       <canvas id="bookWen" width="46" height="50" style="display:block;margin:0 auto 2px"></canvas>
       <h2 data-en="卷 · THE SCROLL" data-zh="卷軸 · 圖鑑">卷 · THE SCROLL</h2>
       <div id="bookBody" style="max-width:780px;text-align:left;"></div>
@@ -378,7 +362,7 @@
 
     <!-- GAME OVER -->
     <div class="overlay bone" id="ovOver">
-      <h2 style="color:#a3271b" data-en="LOST TO TIME" data-zh="湮没于时光">LOST TO TIME</h2>
+      <h2 style="color:#f0674a" data-en="LOST TO TIME" data-zh="湮没于时光">LOST TO TIME</h2>
       <canvas id="wangCanvas" width="110" height="120" style="display:block;margin:2px auto 8px;width:82px;height:auto"></canvas>
       <div class="keys" style="margin-bottom:8px" data-en="亡 wáng — the broken blade: “to perish”" data-zh="「亡」——刃之折者，是为消亡">亡 wáng — the broken blade: “to perish”</div>
       <div class="big" id="overMsg">The character faded before reaching the bones.</div>
@@ -387,7 +371,7 @@
     </div>
 
     <!-- WIN -->
-    <div class="overlay paper" id="ovWin">
+    <div class="overlay shell" id="ovWin">
       <h2 id="winTitle">TRACED TO THE ROOT</h2>
       <div class="evo-row" id="evoRow"></div>
       <div class="big" id="winMsg">You grew the glyph across 3,000 years of script.</div>
@@ -1982,7 +1966,7 @@ const NUMCH = ['一','二','三','亖'];
 
 /* ============================== game ============================== */
 const CW = 960, CH = 540, WALL = 22;
-const zdicLink = (c)=>`<a href="https://zdic.net/hans/${encodeURIComponent(c)}" target="_blank" rel="noopener" style="color:#2e7d4f;font-size:0.78em;text-decoration:none">字源字形 ↗</a>`;
+const zdicLink = (c)=>`<a href="https://zdic.net/hans/${encodeURIComponent(c)}" target="_blank" rel="noopener" style="color:#1db954;font-size:0.78em;text-decoration:none">字源字形 ↗</a>`;
 
 const Game = (function(){
   const cvs = document.getElementById('cvs');
@@ -2196,10 +2180,10 @@ const Game = (function(){
       const threat = toIdx===1 ? t(' — wild 豕 boars charge, and 皿 the living vessel stirs','——野「豕」直线冲撞，活器「皿」蠢蠢欲动')
                    : toIdx===2 ? t(' — 虎 stalks, 蠱 brews its worms, and the storm gathers: 電 strikes from the sky (rain over 申, the bolt itself)','——「虎」环伺，「蠱」养其虫；风雨将至，「電」自天而击（雨在「申」上，申即闪电）')
                    : toIdx===3 ? t(' — and 龍 coils through the last night: carve it apart segment by segment','——「龍」盘旋于最后的长夜：须逐节斩落') : '';
-      msg = `<b style="color:#a3271b">${fe.sub} → ${te.sub}</b>`
+      msg = `<b style="color:#e8b04a">${fe.sub} → ${te.sub}</b>`
           + `<br>${cf.ch} ${cf.py} · ${t(cf.mean_en, cf.mean_zh)} ${zdicLink(cf.ch)}`
-          + `<br><span style="color:#356b43;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${threat}</span>`
-          + (level < 3 ? `<br><span style="font-size:0.8em;color:#7a6845">${t('gather glyphs to evolve','集字以进化')} · ${coins}/${LV_XP[level+1]}</span>` : '');
+          + `<br><span style="color:#8bc34a;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${threat}</span>`
+          + (level < 3 ? `<br><span style="font-size:0.8em;color:#8a8a8a">${t('gather glyphs to evolve','集字以进化')} · ${coins}/${LV_XP[level+1]}</span>` : '');
     } else {
       msg = t(`${cs.forms[level].ch} · the oldest gate is behind you`, `${cs.forms[level].ch} · 最古老的门已在身后`);
     }
@@ -2210,8 +2194,7 @@ const Game = (function(){
   }
   function animateMorph(fromEraI, toEraI){
     const c = $('clearCanvas'); const cx2 = c.getContext('2d');
-    /* ink on paper now: the old form in faded ink, the new one struck in cinnabar */
-    const colFrom = '#5d4b33', colTo = '#a3271b';
+    const colFrom = ERAS[ERA_ORDER[fromEraI]].ink, colTo = ERAS[ERA_ORDER[toEraI]].ink;
     let tt = 0;
     (function step(){
       tt += 0.028;
@@ -2238,7 +2221,7 @@ const Game = (function(){
     if(wc && wc.getContext){
       const c2 = wc.getContext('2d');
       c2.clearRect(0, 0, wc.width, wc.height);
-      drawWang(c2, wc.width/2, wc.height*0.92, 92, '#a3271b');
+      drawWang(c2, wc.width/2, wc.height*0.92, 92, '#f0674a');
     }
     const earned = bankSealPts(stageIdx);
     $('overMsg').textContent = t(
@@ -2258,7 +2241,7 @@ const Game = (function(){
       const lab = document.createElement('span');
       lab.innerHTML = `<a href="https://zdic.net/hans/${encodeURIComponent(f.ch)}" target="_blank" rel="noopener" style="color:inherit">${f.ch}</a> · ${ERAS[ERA_ORDER[i]].sub}`;
       cell.appendChild(cc); cell.appendChild(lab); row.appendChild(cell);
-      drawCharPortrait(cc, selChar, i, i === level ? '#a3271b' : '#2b2118');   // ink on paper, the final form in cinnabar
+      drawCharPortrait(cc, selChar, i, ERAS[ERA_ORDER[i]].ink);
     });
     const first = cs.forms[0], last = cs.forms[level];
     const earned = bankSealPts(WAVES.length);
@@ -3594,7 +3577,7 @@ const Game = (function(){
       card.append(cc, nm);
       card.onclick = () => selectChar(key);
       row.appendChild(card);
-      drawCharPortrait(cc, key, 0, '#2b2118');       // ink on the paper menu
+      drawCharPortrait(cc, key, 0, '#e8dfc8');
     }
   }
   function buildArmSelect(){
@@ -3612,7 +3595,7 @@ const Game = (function(){
       row.appendChild(card);
       const cctx = cc.getContext('2d');
       cctx.clearRect(0,0,36,42);
-      drawWeaponIcon(cctx, key, 1, 18, 22, 30, '#2b2118');
+      drawWeaponIcon(cctx, key, 1, 18, 22, 30, '#e8dfc8');
     }
   }
   /* ---------- 篆刻: the stone between runs ---------- */
@@ -3669,8 +3652,8 @@ const Game = (function(){
   }
   function buildBook(){
     const B = $('bookBody'); B.innerHTML = '';
-    /* ink-on-paper palette for the scroll */
-    const INK = '#2b2118', INK2 = '#6b5a3e', RED = '#a3271b', GRN = '#356b43', DIM = '#8d7c58';
+    /* bone ink on the dark shell */
+    const INK = '#e8dfc8', INK2 = '#9a9a9a', RED = '#e8b04a', GRN = '#8bc34a', DIM = '#7a7466', EMBER = '#f0674a';
     const sec = (title, drawFn)=>{
       const h = document.createElement('div');
       h.style.cssText = `color:${RED};margin:16px 0 7px;font-size:0.95rem;letter-spacing:1.5px;display:flex;align-items:center;gap:8px;`;
@@ -3690,7 +3673,7 @@ const Game = (function(){
     };
     const card = (gd, cv, html, wpx, locked)=>{
       const d = document.createElement('div');
-      d.style.cssText = `width:${wpx||170}px;background:rgba(255,250,232,0.5);border:1px solid #b49a68;border-radius:8px;padding:8px;font-size:0.7rem;color:${INK2};line-height:1.55;`
+      d.style.cssText = `width:${wpx||170}px;background:rgba(10,14,10,0.72);border:1px solid #2c362a;border-radius:8px;padding:8px;font-size:0.7rem;color:${INK2};line-height:1.55;`
                       + (locked ? 'opacity:0.55;' : '');
       if(cv){ cv.style.display='block'; cv.style.margin='0 auto 5px'; d.appendChild(cv); }
       const tx = document.createElement('div'); tx.innerHTML = html; d.appendChild(tx);
@@ -3752,7 +3735,7 @@ const Game = (function(){
     // bestiary — only what has come at you in the dark
     sec(t('怪 · THE BESTIARY — every monster is a character', '怪 · 妖物志——每只怪都是一个字'), drawGuai);
     gd = grid();
-    const INKGHOST = '#41584f';
+    const INKGHOST = GHOST;
     const foeArt = {
       gui:  ()=>bookCanvas(48,42,(bc)=>drawSpirit(bc,24,23,27,0,INKGHOST)),
       shi:  ()=>bookCanvas(48,42,(bc)=>drawBoar(bc,24,23,28,0,INKGHOST,1)),
@@ -3769,7 +3752,7 @@ const Game = (function(){
     for(const key of Object.keys(FOE_INFO)){
       const F = FOE_INFO[key];
       if(seen.foes[key])
-        card(gd, foeArt[key](), `<b style="color:${INK}">${F.ch}</b> ${F.py} ${zdicLink(F.ch)}<br>${t(F.en,F.zh)}<br><span style="color:${RED}">${foeNote[key]}</span>`, 170);
+        card(gd, foeArt[key](), `<b style="color:${INK}">${F.ch}</b> ${F.py} ${zdicLink(F.ch)}<br>${t(F.en,F.zh)}<br><span style="color:${EMBER}">${foeNote[key]}</span>`, 170);
       else
         unknown(gd, 170, t('something still waits in the dark','暗处仍有未见之物'));
     }
@@ -3805,13 +3788,13 @@ const Game = (function(){
     // wonders & hazards
     sec(t('物 · WONDERS, WEARABLES & HAZARDS', '物 · 天象与奇物'), drawWu);
     gd = grid();
-    card(gd, bookCanvas(44,40,(bc)=>drawDianBox(bc,22,21,30,'#8a6f3e')),
+    card(gd, bookCanvas(44,40,(bc)=>drawDianBox(bc,22,21,30,BOLTC)),
       `<b style="color:${INK}">電</b> diàn ${zdicLink('電')}<br>${t('bronze form: rain over 申, the bolt itself. Its tail lashes to earth — dodge the ring.','金文：雨在「申」上，申即闪电。尾笔劈落——避开预警圈。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawGate(bc,22,37,30,RED,0.6)),
       `<b style="color:${INK}">安</b> ān ${zdicLink('安')}<br>${t('“safety” — survive the wave and step beneath the safe roof; the era rewinds.','「安」——撑过一波，步入安檐——时代倒退。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawShengHat(bc,22,31,23,RED)),
       `<b style="color:${INK}">圣</b> shèng ${zdicLink('圣')}<br>${t('the great listening ear, worn as a crown: longer reach, far magnet.','倾听之大耳，戴之为冠：及远更甚。')}`, 210);
-    card(gd, bookCanvas(44,40,(bc)=>drawGuang(bc,22,26,20,'#8a6f3e')),
+    card(gd, bookCanvas(44,40,(bc)=>drawGuang(bc,22,26,20,BOLTC)),
       `<b style="color:${INK}">光</b> guāng ${zdicLink('光')}<br>${t('the torch-bearer blinks overhead after a boss falls: swifter, sharper (8s).','斩落头目后，火炬加身：更快更利（8秒）。')}`, 210);
     card(gd, bookCanvas(72,36,(bc)=>drawOracleNum(bc,47,36,19,14,INK)),
       `<b style="color:${INK}">一二三亖</b>…${zdicLink('五')}<br>${t('the clock counts in oracle numerals: bars to four, X five, ∧ six, cross seven, 八 eight, hook nine — tens are bound tally strokes (shown: 47).','时钟以甲骨数字计数：一至亖为横，X为五，∧为六，十字为七，八为八，钩为九——十位为束起的竖记（图为47）。')}`, 260);
@@ -3819,7 +3802,7 @@ const Game = (function(){
       `<b style="color:${INK}">果</b> guǒ ${zdicLink('果')}<br>${t('the fruit tree — strike it thrice and it yields a heart and glyphs.','果树——三击而落，予心予字。')}`, 210);
     card(gd, bookCanvas(44,44,(bc)=>{ if(ORACLE['亭'] && typeof Path2D!=='undefined') drawOraclePath(bc, ORACLE['亭'], 22, 22, 38, RED); }),
       `<b style="color:${INK}">亭</b> tíng ${zdicLink('亭')}<br>${t('the pavilion — enter it and nothing may harm you for three breaths.','「亭」——入此亭者，三息之内诸邪莫近。')}`, 210);
-    card(gd, bookCanvas(44,40,(bc)=>drawWang(bc,22,37,30,RED)),
+    card(gd, bookCanvas(44,40,(bc)=>drawWang(bc,22,37,30,EMBER)),
       `<b style="color:${INK}">亡</b> wáng ${zdicLink('亡')}<br>${t('the broken blade — “to perish”. It marks your end; do not meet it.','刃之折者——「亡」。它标记你的终局，愿你不遇。')}`, 210);
   }
   function openBook(){ buildBook(); overlay('ovBook', true); }
@@ -3837,9 +3820,9 @@ const Game = (function(){
       const wlv = Math.min(2, lv), Wp = WEAPONS[selArm];
       const pl = $('prevLine');
       if(pl) pl.innerHTML =
-        `<b style="color:#e8c15a">${fm.ch}</b> ${fm.py} · ${t(fm.mean_en, fm.mean_zh)}<br>` +
-        `<span style="color:#a4c98a">${t(fm.tier_en, fm.tier_zh)}</span><br>` +
-        `<span style="color:#a2937a">${Wp.chs[wlv]} · ${Wp.eras[wlv]} — ${t(Wp.tier_en[wlv], Wp.tier_zh[wlv])}</span>`;
+        `<b style="color:#e8b04a">${fm.ch}</b> ${fm.py} · ${t(fm.mean_en, fm.mean_zh)}<br>` +
+        `<span style="color:#8bc34a">${t(fm.tier_en, fm.tier_zh)}</span><br>` +
+        `<span style="color:#8a8a8a">${Wp.chs[wlv]} · ${Wp.eras[wlv]} — ${t(Wp.tier_en[wlv], Wp.tier_zh[wlv])}</span>`;
     }
     function kill(m){
       efx.push({k:'poof', x:m.x, y:m.y, r:16, t:0.3, max:0.3});
@@ -3942,22 +3925,22 @@ const Game = (function(){
   })();
 
   bindInput();
-  /* chrome icons pick their ink by the sheet they sit on: paper takes dark ink */
+  /* chrome icons in the arcade's green and gold */
   document.querySelectorAll('.wenIcon').forEach(cv=>{
-    if(cv.getContext) drawWen(cv.getContext('2d'), 10, 21, 16, cv.closest('.paper') ? '#5d4b33' : '#1db954');
+    if(cv.getContext) drawWen(cv.getContext('2d'), 10, 21, 16, '#1db954');
   });
   document.querySelectorAll('.zhanIcon').forEach(cv=>{
-    if(cv.getContext) drawZhan(cv.getContext('2d'), 12, 21, 15, cv.closest('.paper') ? '#a3271b' : '#e8b04a');
+    if(cv.getContext) drawZhan(cv.getContext('2d'), 12, 21, 15, '#e8b04a');
   });
   document.querySelectorAll('.yinIcon').forEach(cv=>{
-    if(cv.getContext) drawPicto(cv.getContext('2d'), '印', 10, 11, 17, cv.closest('.paper') ? '#5d4b33' : '#1db954');
+    if(cv.getContext) drawPicto(cv.getContext('2d'), '印', 10, 11, 17, '#1db954');
   });
   const pz = $('pauseZhi');
   if(pz && pz.getContext) drawZhi(pz.getContext('2d'), 12, 23, 17, '#bbbbbb');
   const tq = $('toastQi');
   if(tq && tq.getContext) drawQi(tq.getContext('2d'), 13, 13, 18, '#e8b04a');
   const bookWenCv = $('bookWen');
-  if(bookWenCv && bookWenCv.getContext) drawWen(bookWenCv.getContext('2d'), 23, 47, 36, '#a3271b');
+  if(bookWenCv && bookWenCv.getContext) drawWen(bookWenCv.getContext('2d'), 23, 47, 36, '#e8b04a');
   const st = $('sealTitle');
   if(st && st.getContext) drawSealStamp(st);        // the 字源 stamp in the masthead
   buildCharSelect(); buildArmSelect(); PV.reset();
