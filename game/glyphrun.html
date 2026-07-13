@@ -100,7 +100,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从楷书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b5</span>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b6</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -575,6 +575,19 @@ function drawPicto(ctx, ch, cx, cy, s, color){
   ctx.restore();
 }
 
+/* 电 the lightning glyph — the boxy body rides the sky; its lower stroke
+   is the bolt itself, and when it strikes, that tail stretches to earth */
+function drawDianBox(ctx, cx, cy, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.3;
+  stroke(ctx, Math.max(2, s*0.1));
+  const w = s*0.3, h = s*0.26;
+  ctx.beginPath(); ctx.rect(cx-w, cy-h, w*2, h*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-w, cy); ctx.lineTo(cx+w, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-h-s*0.12); ctx.lineTo(cx, cy+h); ctx.stroke();
+  ctx.restore();
+}
+
 /* weapon glyphs age with their tier: modern 楷 strokes, then the pictographs */
 function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
   if(key==='gong'){
@@ -855,11 +868,13 @@ const GHOST = '#9fe0cf';
 
 /* per-era wave tuning: survive the timer and the gate opens */
 const WAVES = [
-  {len:35, spawn:1.35, cap:10, spd:55, fireInt:0},
-  {len:45, spawn:1.15, cap:14, spd:65, fireInt:7.0},
-  {len:55, spawn:0.95, cap:18, spd:76, fireInt:5.5},
-  {len:65, spawn:0.78, cap:22, spd:88, fireInt:4.2}
+  {len:35, spawn:1.35, cap:10, spd:55, fireInt:0,   bolt:0},
+  {len:45, spawn:1.15, cap:14, spd:65, fireInt:7.0, bolt:0},
+  {len:55, spawn:0.95, cap:18, spd:76, fireInt:5.5, bolt:6.0},
+  {len:65, spawn:0.78, cap:22, spd:88, fireInt:4.2, bolt:4.2}
 ];
+/* 電 lightning burns white-hot — neither your gold nor the spirits' teal */
+const BOLTC = '#fff0b8';
 
 /* ============================== game ============================== */
 const CW = 960, CH = 540, WALL = 22;
@@ -875,7 +890,8 @@ const Game = (function(){
   let era, wave, tGlobal = 0, waveT = 0, spawnT = 1, fireT = 3, gate = null, gateGlow = 0;
   let selChar = 'ren', lastSkillTxt = '', bufSkill = 0, shakeT = 0, slowAllT = 0;
   let player, keys = {}, joy = {x:0, y:0, on:false};
-  let spirits = [], pickups = [], fires = [], clouds = [], fx = [], pedestals = [], projectiles = [];
+  let spirits = [], pickups = [], fires = [], clouds = [], fx = [], pedestals = [], projectiles = [], bolts = [];
+  let boltT = 5;
   let weapons = [], wTimes = [];
 
   function overlay(id, show){ $(id).classList.toggle('show', show); }
@@ -887,7 +903,8 @@ const Game = (function(){
     stageIdx = i;
     era = ERAS[ERA_ORDER[i]];
     wave = WAVES[i];
-    spirits = []; pickups = []; fires = []; clouds = []; fx = []; pedestals = []; projectiles = [];
+    spirits = []; pickups = []; fires = []; clouds = []; fx = []; pedestals = []; projectiles = []; bolts = [];
+    boltT = 5;
     wTimes = [wave.len*0.6, wave.len*0.28];
     waveT = wave.len; spawnT = 1.2; fireT = 3.5; gate = null; slowAllT = 0;
     const c = C();
@@ -940,7 +957,7 @@ const Game = (function(){
       const cf = cs.forms[level], fe = ERAS[ERA_ORDER[fi]], te = ERAS[ERA_ORDER[toIdx]];
       msg = `<b style="color:#e8b04a">${fe.sub} → ${te.sub}</b>`
           + `<br>${cf.ch} ${cf.py} · ${t(cf.mean_en, cf.mean_zh)} ${zdicLink(cf.ch)}`
-          + `<br><span style="color:#8bc34a;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}</span>`
+          + `<br><span style="color:#8bc34a;font-size:0.86em">${t('the night deepens — spirits come faster; a heart is mended','夜更深了——群鬼更急；补上一颗心')}${toIdx >= 2 ? t(' — and the storm gathers: 電 strikes from the sky (rain over 申, the bolt itself)','——风雨将至：「電」自天而击（雨在「申」上，申即闪电）') : ''}</span>`
           + (level < 3 ? `<br><span style="font-size:0.8em;color:#8a8a8a">${t('gather glyphs to evolve','集字以进化')} · ${coins}/${LV_XP[level+1]}</span>` : '');
     } else {
       msg = t(`${cs.forms[level].ch} · the oldest gate is behind you`, `${cs.forms[level].ch} · 最古老的门已在身后`);
@@ -1374,6 +1391,28 @@ const Game = (function(){
     }
     fires = fires.filter(f=>f.t > 0);
 
+    // --- 電 lightning: warn, then the tail lashes down ---
+    if(wave.bolt > 0 && !gate){
+      boltT -= dt;
+      if(boltT <= 0){
+        boltT = wave.bolt * (0.75 + Math.random()*0.5);
+        bolts.push({tx: WALL+70+Math.random()*(CW-WALL*2-140),
+                    ty: WALL+130+Math.random()*(CH-WALL*2-160),
+                    t:0, seed: Math.random()*6, hit:false});
+      }
+    }
+    for(const b of bolts){
+      b.t += dt;
+      if(!b.hit && b.t >= 1.1){
+        b.hit = true;
+        shakeT = Math.max(shakeT, 0.18);
+        for(const sp of spirits){ if(!sp.dead && Math.hypot(sp.x-b.tx, sp.y-b.ty) <= 48) killSpirit(sp); }
+        if(Math.hypot(player.x-b.tx, player.y-b.ty) <= 52) hurtPlayer();
+      }
+    }
+    bolts = bolts.filter(b=>b.t < 1.85);
+    if(lives <= 0) return;
+
     // --- clouds thin out ---
     for(const cl of clouds) cl.t -= dt;
     clouds = clouds.filter(cl=>cl.t > 0);
@@ -1471,6 +1510,41 @@ const Game = (function(){
       ctx.save(); ctx.translate(f.x, f.y); ctx.scale(flick, flick);
       drawPicto(ctx, '火', 0, 0, f.r*1.3, '#f0674a');
       ctx.restore();
+    }
+
+    // 電 lightning: the glyph hovers, then its tail stretches to the ground
+    for(const b of bolts){
+      const skyY = WALL + 46;
+      if(b.t < 1.1){
+        ctx.save();
+        ctx.globalAlpha = 0.45 + 0.4*Math.sin(b.t*26);
+        drawDianBox(ctx, b.tx, skyY, 34, BOLTC);
+        ctx.globalAlpha = 0.35 + 0.3*Math.sin(b.t*12);
+        ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 2; ctx.setLineDash([6,6]);
+        ctx.beginPath(); ctx.arc(b.tx, b.ty, 46, 0, Math.PI*2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      } else {
+        const k = Math.max(0, (1.85 - b.t)/0.75);
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, k*1.6);
+        drawDianBox(ctx, b.tx, skyY, 34, BOLTC);
+        ctx.strokeStyle = BOLTC; ctx.shadowColor = BOLTC; ctx.shadowBlur = 16;
+        ctx.lineWidth = 3.5; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(b.tx, skyY + 14);
+        const segs = 6;
+        for(let i=1; i<=segs; i++){
+          const yy = skyY + 14 + (b.ty - skyY - 14) * i/segs;
+          const xx = i===segs ? b.tx : b.tx + Math.sin(i*2.7 + b.seed)*16;
+          ctx.lineTo(xx, yy);
+        }
+        ctx.lineTo(b.tx + 14, b.ty - 2);              // the 乚 hook lands
+        ctx.stroke();
+        ctx.globalAlpha = 0.8*k; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(b.tx, b.ty, 46*(1.2-k*0.2), 0, Math.PI*2); ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // weapon pedestals — each shows the form you'd walk away with
@@ -1791,7 +1865,7 @@ const Game = (function(){
   loadStage(0); running = false; render();
 
   return { start, restart, nextStage, syncHud, onLang, chooseChar,
-           dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, stageIdx, selChar, waveT, gate, hp: lives, level, coins }) };
+           dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, stageIdx, selChar, waveT, gate, hp: lives, level, coins }) };
 })();
 
 </script>
