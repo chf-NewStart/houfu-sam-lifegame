@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>字源 · Glyph Run // houfu.xyz</title>
 <meta name="description" content="A top-down arena survivor where you ARE a Chinese character. Spirits swarm, your ink fights back, and every survived wave rewinds the script an era — 楷書 → 篆書 → 金文 → 甲骨文 — your glyph evolving toward its oracle-bone root.">
-<link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
+<link rel="icon" type="image/png" href="/game/thumbs/glyphrun-icon.png?v=1">
+<link rel="apple-touch-icon" href="/game/thumbs/glyphrun-icon.png?v=1">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body,button,a{touch-action:manipulation;}
@@ -39,6 +40,10 @@
     background:rgba(6,10,8,0.86);border:1px solid #1db954;border-radius:8px;padding:8px 16px 10px;text-align:center;
     opacity:0;transition:opacity .18s, transform .18s;box-shadow:0 0 18px rgba(29,185,84,0.35);}
   #toast.show{opacity:1;transform:translate(-50%,0);}
+  #pauseBtn{position:absolute;top:10px;right:10px;z-index:8;background:rgba(6,10,8,0.7);border:1px solid #3a3a3a;color:#bbb;
+    font-family:inherit;font-size:1rem;width:42px;height:42px;border-radius:8px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;}
+  #pauseBtn:hover{border-color:#e8b04a;color:#e8b04a;}
   #toast .tg{font-size:1.7rem;color:#e8dfc8;line-height:1;}
   #toast .tp{font-size:0.7rem;color:#e8b04a;margin-top:3px;}
   #toast .tm{font-size:0.66rem;color:#9a9a9a;margin-top:1px;}
@@ -98,7 +103,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从楷书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 楷書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b8</span>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b9</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -116,6 +121,8 @@
 
     <div id="toast"><div class="tg" id="toastG">日</div><div class="tp" id="toastP">rì</div><div class="tm" id="toastM">sun</div></div>
 
+    <button id="pauseBtn" aria-label="pause">⏸</button>
+
     <!-- START -->
     <div class="overlay show" id="ovStart">
       <h2 data-en="字源 · GLYPH RUN" data-zh="字源 · 汉字奔跑">字源 · GLYPH RUN</h2>
@@ -129,6 +136,7 @@
         <span data-en="everything else fights on its own" data-zh="其余一切自动出手">everything else fights on its own</span>
       </div>
       <button class="btn" id="startBtn" onclick="Game.start()" data-en="▶ INSERT COIN" data-zh="▶ 投币开始">▶ INSERT COIN</button>
+      <button class="btn alt" onclick="Game.openBook()" data-en="📖 the codex — characters, arms, beasts" data-zh="📖 字典图鉴——字族·兵器·妖物">📖 the codex — characters, arms, beasts</button>
     </div>
 
     <!-- STAGE CLEAR / TRANSFORM -->
@@ -137,6 +145,23 @@
       <canvas id="clearCanvas" width="240" height="150"></canvas>
       <div class="big" id="clearMsg">Your glyph evolves…</div>
       <button class="btn" id="clearBtn" onclick="Game.nextStage()" data-en="▶ Deeper into the past" data-zh="▶ 更向古代">▶ Deeper into the past</button>
+    </div>
+
+    <!-- PAUSE -->
+    <div class="overlay" id="ovPause">
+      <h2 data-en="PAUSED" data-zh="暂停">PAUSED</h2>
+      <div class="big" data-en="The night holds its breath." data-zh="长夜屏息以待。">The night holds its breath.</div>
+      <button class="btn" onclick="Game.resume()" data-en="▶ resume" data-zh="▶ 继续">▶ resume</button>
+      <button class="btn alt" onclick="Game.openBook()" data-en="📖 the codex" data-zh="📖 字典图鉴">📖 the codex</button>
+      <button class="btn alt" onclick="Game.restart()" data-en="↻ restart the run" data-zh="↻ 重新开始">↻ restart the run</button>
+      <button class="btn alt" onclick="Game.chooseChar()" data-en="⇄ back to the choosing" data-zh="⇄ 返回选字">⇄ back to the choosing</button>
+    </div>
+
+    <!-- CODEX -->
+    <div class="overlay" id="ovBook">
+      <h2 data-en="字典 · THE CODEX" data-zh="字典 · 图鉴">字典 · THE CODEX</h2>
+      <div id="bookBody" style="max-width:780px;text-align:left;"></div>
+      <button class="btn" style="margin-top:14px" onclick="Game.closeBook()" data-en="✕ close the book" data-zh="✕ 合上字典">✕ close the book</button>
     </div>
 
     <!-- GAME OVER -->
@@ -888,21 +913,22 @@ function drawGate(ctx, x, groundY, h, color, glow){
 }
 
 /* ============================== glyph data ============================== */
+/* every fallen glyph is XP — and each one also DOES its meaning */
 const GLYPHS = {
-  '日': {py:'rì',   en:'sun',      zh:'太阳'},
-  '月': {py:'yuè',  en:'moon',     zh:'月亮'},
-  '山': {py:'shān', en:'mountain', zh:'山'},
-  '水': {py:'shuǐ', en:'water',    zh:'水'},
-  '木': {py:'mù',   en:'tree',     zh:'树木'},
-  '火': {py:'huǒ',  en:'fire',     zh:'火'},
-  '目': {py:'mù',   en:'eye',      zh:'眼睛'},
-  '魚': {py:'yú',   en:'fish',     zh:'鱼'},
-  '雨': {py:'yǔ',   en:'rain',     zh:'雨'},
-  '鳥': {py:'niǎo', en:'bird',     zh:'鸟'},
-  '馬': {py:'mǎ',   en:'horse',    zh:'马'},
-  '龜': {py:'guī',  en:'turtle',   zh:'龟'},
-  '舟': {py:'zhōu', en:'boat',     zh:'小舟'},
-  '貝': {py:'bèi',  en:'cowrie',   zh:'贝'}
+  '日': {py:'rì',   en:'sun',      zh:'太阳', eff_en:'a flash of 光 (3s)',            eff_zh:'「光」佑三秒'},
+  '月': {py:'yuè',  en:'moon',     zh:'月亮', eff_en:'moonveil — phased 1.2s',        eff_zh:'月隐——化虚1.2秒'},
+  '山': {py:'shān', en:'mountain', zh:'山',   eff_en:'the ground heaves around you',   eff_zh:'大地隆起，震退群鬼'},
+  '水': {py:'shuǐ', en:'water',    zh:'水',   eff_en:'quenches every 火',              eff_zh:'浇灭全场之火'},
+  '木': {py:'mù',   en:'tree',     zh:'树木', eff_en:'roots the nearby pack',          eff_zh:'枝根缠足'},
+  '火': {py:'huǒ',  en:'fire',     zh:'火',   eff_en:'burning ink — +1 damage (6s)',   eff_zh:'焚墨——伤害+1（6秒）'},
+  '目': {py:'mù',   en:'eye',      zh:'眼睛', eff_en:'far sight — great magnet (6s)',  eff_zh:'明目——远距吸取（6秒）'},
+  '魚': {py:'yú',   en:'fish',     zh:'鱼',   eff_en:'a meal — +1 heart',              eff_zh:'食鱼——回复一心'},
+  '雨': {py:'yǔ',   en:'rain',     zh:'雨',   eff_en:'downpour — all slowed (2.5s)',   eff_zh:'大雨倾盆——全场迟缓'},
+  '鳥': {py:'niǎo', en:'bird',     zh:'鸟',   eff_en:'a bird dives the nearest three', eff_zh:'飞鸟俯袭三敌'},
+  '馬': {py:'mǎ',   en:'horse',    zh:'马',   eff_en:'gallop — swifter (3s)',          eff_zh:'策马——疾行三秒'},
+  '龜': {py:'guī',  en:'turtle',   zh:'龟',   eff_en:'shell — blocks the next hit',    eff_zh:'龟甲——挡下一击'},
+  '舟': {py:'zhōu', en:'boat',     zh:'小舟', eff_en:'safe passage — 火 spares you (5s)', eff_zh:'舟渡——五秒火不能伤'},
+  '貝': {py:'bèi',  en:'cowrie',   zh:'贝',   eff_en:'riches — +3 extra glyphs',       eff_zh:'得贝——额外+3字'}
 };
 const GLYPH_KEYS = Object.keys(GLYPHS);
 
@@ -1033,6 +1059,15 @@ const ERAS = {
 const ERA_ORDER = ['kai','seal','bronze','oracle'];
 /* spirits get their own spectral tint — foes must never share your ink */
 const GHOST = '#9fe0cf';
+/* the bestiary: every monster IS a character — named on first sight */
+const FOE_INFO = {
+  gui: {ch:'鬼', py:'guǐ',  en:'ghost — the big-headed shade',        zh:'鬼——巨首之影'},
+  shi: {ch:'豕', py:'shǐ',  en:'wild boar — it charges in lines',     zh:'豕——直线冲撞的野猪'},
+  hu:  {ch:'虎', py:'hǔ',   en:'tiger — it stalks, then pounces',     zh:'虎——环伺而后扑'},
+  meng:{ch:'皿', py:'mǐn',  en:'the vessel, walking',                 zh:'皿——活起来的礼器'},
+  gu:  {ch:'蠱', py:'gǔ',   en:'poison vessel — worms in the 皿',     zh:'蠱——皿中生虫'},
+  long:{ch:'龍', py:'lóng', en:'dragon — carve it segment by segment', zh:'龍——须逐节斩落'}
+};
 
 /* per-era wave tuning: survive the timer and the gate opens */
 const WAVES = [
@@ -1060,10 +1095,10 @@ const Game = (function(){
   let player, keys = {}, joy = {x:0, y:0, on:false};
   let spirits = [], pickups = [], fires = [], fx = [], pedestals = [], projectiles = [], bolts = [];
   let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
-  let hatOn = false, shengPed = null;
+  let hatOn = false, shengPed = null, paused = false, foesSeen = {}, banner = null;
 
   function overlay(id, show){ $(id).classList.toggle('show', show); }
-  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin'].forEach(i=>overlay(i,false)); }
+  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin','ovPause'].forEach(i=>overlay(i,false)); }
   function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
   const C = ()=>CHARS[selChar];
 
@@ -1078,7 +1113,8 @@ const Game = (function(){
     shengPed = (i === 1 && !hatOn) ? {x:CW*0.3, y:CH*0.35, bob:0} : null;
     player = { x:CW/2, y:CH*0.62, vx:0, vy:0, face:1, runPhase:0, sq:0, inv:1.0,
                atkT:0.5, lastDir:{x:1,y:0},
-               slipT:0, penT:0, phaseCdT:2.5, phasedT:0, pulseT:1 };
+               slipT:0, penT:0, phaseCdT:2.5, phasedT:0, pulseT:1,
+               speedT:0, fireInkT:0, magnetT:0, boatT:0, shellOn:false };
     syncHud();
   }
 
@@ -1095,7 +1131,7 @@ const Game = (function(){
 
   /* ---------- lifecycle ---------- */
   function start(){
-    stageIdx = 0; lives = MAXHP; coins = 0; nextHeart = 12; level = 0; buffT = 0; hatOn = false;
+    stageIdx = 0; lives = MAXHP; coins = 0; nextHeart = 12; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
     weapons = [{key:selArm, lv:1, t:0.8}];
     hideAll();
     loadStage(0);
@@ -1204,6 +1240,18 @@ const Game = (function(){
       pickups.push({x:s.x, y:s.y, ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:9, bob:Math.random()*6});
     }
   }
+  function announceFoe(type){
+    if(foesSeen[type]) return;
+    foesSeen[type] = true;
+    const F = FOE_INFO[type];
+    if(F) popToastEx(F.ch, F.py, t(F.en, F.zh));
+  }
+  function showBanner(type){
+    foesSeen[type] = true;
+    const F = FOE_INFO[type];
+    banner = {ch:F.ch, py:F.py, line:t(F.en, F.zh), t:0, dur:2.8};
+    shakeT = Math.max(shakeT, 0.25);
+  }
   function nearestSpirit(range){
     let best = null, bd = range*range;
     for(const s of spirits){
@@ -1226,6 +1274,11 @@ const Game = (function(){
   }
   function hurtPlayer(src){
     if(player.inv > 0 || player.phasedT > 0) return;
+    if(player.shellOn){                              // 龜: the shell takes it
+      player.shellOn = false; player.inv = 0.4;
+      addFx({kind:'shieldpop', x:player.x, y:player.y, t:0.3, r:36});
+      return;
+    }
     if(selChar==='ren' && player.slipT <= 0){        // 祖灵借步: the ancestors lend a step
       const c = CHARS.ren;
       player.slipT = c.slipCd[level];
@@ -1250,6 +1303,11 @@ const Game = (function(){
 
   /* ---------- update ---------- */
   function update(dt){
+    if(banner){                                   // a boss arrives: the world holds its breath
+      banner.t += dt;
+      if(banner.t >= banner.dur) banner = null;
+      else dt *= 0.3;
+    }
     tGlobal += dt;
     gateGlow = (Math.sin(tGlobal*4)+1)/2;
     const c = C(), tier = level;
@@ -1259,6 +1317,11 @@ const Game = (function(){
     if(shakeT > 0) shakeT -= dt;
     if(slowAllT > 0) slowAllT -= dt;
     if(buffT > 0) buffT -= dt;
+    if(player.speedT > 0) player.speedT -= dt;
+    if(player.fireInkT > 0) player.fireInkT -= dt;
+    if(player.magnetT > 0) player.magnetT -= dt;
+    if(player.boatT > 0) player.boatT -= dt;
+    if(player.phasedT > 0 && selChar!=='gui') player.phasedT -= dt;   // 月's veil ticks for everyone else
 
     // --- steering: keyboard + joystick; the ghost drifts on momentum ---
     let dx = (keys.left?-1:0)+(keys.right?1:0), dy = (keys.up?-1:0)+(keys.down?1:0);
@@ -1269,7 +1332,7 @@ const Game = (function(){
       player.lastDir = {x:dx, y:dy};
       if(Math.abs(dx) > 0.25) player.face = dx>0?1:-1;
     }
-    const spd = 200 * c.spd * (buffT>0 ? 1.3 : 1);
+    const spd = 200 * c.spd * (buffT>0 ? 1.3 : 1) * (player.speedT>0 ? 1.45 : 1);
     if(c.drift){
       const ax = mag>0.01 ? dx*spd*Math.min(1,mag) : 0;
       const ay = mag>0.01 ? dy*spd*Math.min(1,mag) : 0;
@@ -1355,7 +1418,7 @@ const Game = (function(){
           addFx({kind:'ringatk', x:player.x, y:player.y, r:range, t:0.22});
         }
         cand.sort((a,b)=>a[0]-b[0]);
-        for(const [,s] of cand.slice(0, c.atk.hits)) hurtSpirit(s, 1);
+        for(const [,s] of cand.slice(0, c.atk.hits)) hurtSpirit(s, 1 + (player.fireInkT>0 ? 1 : 0));   // 火: the ink burns
         player.atkT = c.atk.int * ATK_INT[tier] * (buffT>0 ? 0.72 : 1);
       } else {
         player.atkT = 0.06;
@@ -1503,6 +1566,7 @@ const Game = (function(){
               spirits.push({x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
                             st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
                             spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)});
+              announceFoe(type);
               addFx({kind:'poof', x:px, y:py, t:0.3, r:18});
               break;
             }
@@ -1516,6 +1580,7 @@ const Game = (function(){
                         type: gu?'gu':'meng', bossCh: gu?'蠱':'皿',
                         hp: gu?16:10, maxHp: gu?16:10, cr:40, spd: gu?60:55,
                         st:0, stT:1.2, face:-1, dirn:1});
+          showBanner(gu?'gu':'meng');
           addFx({kind:'levelup', x:CW-WALL-60, y:CH*0.5, t:1.0, r:90, ch: gu?'蠱':'皿'});
         }
         // 龍 coils in from the east, halfway through the last night
@@ -1525,6 +1590,7 @@ const Game = (function(){
             spirits.push({x:CW-WALL-10, y:WALL+70+i*28, phase:Math.random()*6, dead:false,
                           type:'long', order:i, hp: i===0?3:2, cr:26, st:0, stT:0, face:-1, dirn:1, spd:95});
           }
+          showBanner('long');
           addFx({kind:'levelup', x:CW-WALL-40, y:WALL+90, t:0.9, r:80, ch:'龍'});
         }
         // fire blooms
@@ -1662,7 +1728,7 @@ const Game = (function(){
       f.t -= dt;
       if(Math.hypot(f.x-player.x, f.y-player.y) < f.r+10){
         const herded = selChar==='niu' && level >= CHARS.niu.firesafeTier && mag > 0.01;  // 牧: driven through the flames
-        if(!herded && player.phasedT <= 0) hurtPlayer(null);
+        if(!herded && player.phasedT <= 0 && player.boatT <= 0) hurtPlayer(null);
         if(lives <= 0) return;
       }
     }
@@ -1691,13 +1757,16 @@ const Game = (function(){
     if(lives <= 0) return;
 
     // --- fallen glyphs ---
-    const mr = hatOn ? 150 : 95;                       // 圣: the great ear hears them further
+    const mr = player.magnetT>0 ? 280 : (hatOn ? 150 : 95);   // 圣 hears far; 目 sees farther
     for(const p of pickups){
       p.t -= dt; p.bob += dt*3;
       const d = Math.hypot(p.x-player.x, p.y-player.y);
       if(d < mr && d > 1){ p.x += (player.x-p.x)/d*(hatOn?210:170)*dt; p.y += (player.y-p.y)/d*(hatOn?210:170)*dt; }
       if(d < 28){
-        p.t = 0; coins++; popToast(p.ch);
+        p.t = 0; coins++;
+        const info = GLYPHS[p.ch] || {py:'',en:'',zh:'',eff_en:'',eff_zh:''};
+        popToastEx(p.ch, info.py, `${t(info.en, info.zh)} · ${t(info.eff_en, info.eff_zh)}`);
+        applyGlyphEffect(p.ch);
         if(coins >= nextHeart){
           nextHeart += 12;
           if(lives < MAXHP){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
@@ -1752,6 +1821,42 @@ const Game = (function(){
     if(txt !== lastSkillTxt){ $('hudSkill').textContent = txt; lastSkillTxt = txt; }
   }
 
+  function applyGlyphEffect(ch){
+    switch(ch){
+      case '日': buffT = Math.max(buffT, 3); break;
+      case '月': player.phasedT = Math.max(player.phasedT, 1.2); break;
+      case '山': {
+        addFx({kind:'quake', x:player.x, y:player.y, t:0.4, r:110});
+        shakeT = Math.max(shakeT, 0.12);
+        for(const s of spirits){
+          if(s.dead) continue;
+          const d = Math.hypot(s.x-player.x, s.y-player.y);
+          if(d <= 110){ hurtSpirit(s, 1); if(!s.dead && !s.boss){ s.x += (s.x-player.x)/(d||1)*70; s.y += (s.y-player.y)/(d||1)*70; } }
+        }
+        break;
+      }
+      case '水': for(const f of fires) addFx({kind:'poof', x:f.x, y:f.y, t:0.3, r:24}); fires = []; break;
+      case '木': for(const s of spirits){ if(!s.dead && Math.hypot(s.x-player.x, s.y-player.y) <= 130) s.rootT = Math.max(s.rootT||0, 1.2); } break;
+      case '火': player.fireInkT = 6; break;
+      case '目': player.magnetT = 6; break;
+      case '魚': if(lives < MAXHP){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); } break;
+      case '雨': slowAllT = Math.max(slowAllT, 2.5); break;
+      case '鳥': {
+        addFx({kind:'levelup', x:player.x, y:player.y-10, t:0.5, r:36, ch:'鳥'});
+        const near = spirits.filter(sp2=>!sp2.dead).map(sp2=>[Math.hypot(sp2.x-player.x, sp2.y-player.y), sp2])
+                            .sort((a,b)=>a[0]-b[0]).slice(0,3);
+        for(const [,sp2] of near){
+          addFx({kind:'lance', x:sp2.x-34, y:sp2.y-80, ang:Math.atan2(80,34), r:88, t:0.25});
+          hurtSpirit(sp2, 1);
+        }
+        break;
+      }
+      case '馬': player.speedT = 3; break;
+      case '龜': player.shellOn = true; break;
+      case '舟': player.boatT = 5; break;
+      case '貝': coins += 3; break;
+    }
+  }
   function maybeLevelUp(){
     while(level < 3 && coins >= LV_XP[level+1]){
       level++;
@@ -1874,7 +1979,13 @@ const Game = (function(){
         ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.fillRect(s.x-26, s.y-52, 52, 6);
         ctx.globalAlpha = 0.95; ctx.fillStyle = '#f0674a';
         ctx.fillRect(s.x-25, s.y-51, 50*Math.max(0,s.hp)/s.maxHp, 4);
+        ctx.fillStyle = GHOST; ctx.font = 'bold 15px Consolas'; ctx.textAlign = 'center';
+        ctx.fillText(s.bossCh, s.x, s.y-58);
         ctx.restore();
+      } else if(s.type==='long' && !s._prev){
+        ctx.save(); ctx.fillStyle = GHOST; ctx.globalAlpha = 0.85;
+        ctx.font = 'bold 14px Consolas'; ctx.textAlign = 'center';
+        ctx.fillText('龍', s.x, s.y-40); ctx.restore();
       } else if((s.hp||1) > 1 && s.type!=='long'){
         ctx.save(); ctx.fillStyle = '#f0674a';
         for(let h=0; h<s.hp; h++) ctx.fillRect(s.x-7+h*6, s.y-36, 4, 4);
@@ -1908,6 +2019,12 @@ const Game = (function(){
     drawGlyphChar(ctx, selChar, level, player.x, footY, 46, player.runPhase, player.sq, era.ink);
     ctx.restore();
     if(hatOn) drawShengHat(ctx, player.x, player.y - 34, 22, era.accent);       // 圣 worn as a crown
+    if(player.shellOn){                                                          // 龜 shell standing by
+      ctx.save(); ctx.strokeStyle = era.accent; ctx.globalAlpha = 0.5; ctx.lineWidth = 2;
+      ctx.setLineDash([5,5]);
+      ctx.beginPath(); ctx.arc(player.x, player.y, 27, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+    }
     if(buffT > 0 && Math.sin(tGlobal*(buffT<2?18:7)) > -0.2){                    // 光 blinks overhead
       drawGuang(ctx, player.x, player.y - (hatOn ? 62 : 46), 20, BOLTC);
     }
@@ -2016,6 +2133,24 @@ const Game = (function(){
       ctx.restore();
     }
 
+    // boss arrival banner
+    if(banner){
+      const a = Math.min(1, banner.t*3, (banner.dur-banner.t)*1.6);
+      ctx.save();
+      ctx.globalAlpha = 0.8*a; ctx.fillStyle = '#050505';
+      ctx.fillRect(WALL, CH*0.32, CW-WALL*2, 96);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = GHOST; ctx.shadowColor = GHOST; ctx.shadowBlur = 18;
+      ctx.font = 'bold 58px Consolas'; ctx.textAlign = 'left';
+      ctx.fillText(banner.ch, CW*0.3, CH*0.32+72);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = era.accent; ctx.font = 'bold 16px Consolas';
+      ctx.fillText(banner.py + ' — ' + t('IT COMES', '大敌当前'), CW*0.3+82, CH*0.32+40);
+      ctx.fillStyle = '#cfc6ae'; ctx.font = '13px Consolas';
+      ctx.fillText(banner.line, CW*0.3+82, CH*0.32+64);
+      ctx.restore();
+    }
+
     // wave clock
     if(!gate && running){
       ctx.save(); ctx.fillStyle = era.ink; ctx.globalAlpha = 0.85;
@@ -2061,10 +2196,15 @@ const Game = (function(){
       if(['arrowdown','s'].includes(k)){ keys.down=true; e.preventDefault(); }
       if(k===' '){
         e.preventDefault();
+        if(paused){ resume(); return; }
         if(!running){
           if($('ovStart').classList.contains('show')){ start(); return; }
           if($('ovClear').classList.contains('show')){ nextStage(); return; }
         }
+      }
+      if(k==='escape' || k==='p'){
+        e.preventDefault();
+        if(paused) resume(); else pause();
       }
     });
     window.addEventListener('keyup', (e)=>{
@@ -2094,6 +2234,7 @@ const Game = (function(){
     joyEl.addEventListener('pointerup', joyUp);
     joyEl.addEventListener('pointercancel', joyUp);
     joyEl.addEventListener('lostpointercapture', joyUp);
+    $('pauseBtn').addEventListener('click', ()=>{ paused ? resume() : pause(); });
   }
 
   /* ---------- character + starting-arm select ---------- */
@@ -2144,21 +2285,121 @@ const Game = (function(){
     buildCharSelect(); syncSkillLine();
     if(!running){ loadStage(0); render(); }
   }
+  function pause(){
+    if(!running || paused) return;
+    running = false; paused = true;
+    overlay('ovPause', true);
+  }
+  function resume(){
+    if(!paused) return;
+    paused = false; overlay('ovPause', false);
+    running = true; lastTs = performance.now();
+  }
   function chooseChar(){
-    running = false; hideAll(); overlay('ovStart', true);
+    running = false; paused = false; hideAll(); overlay('ovStart', true);
     loadStage(0);
   }
   function onLang(){ syncHud(); buildCharSelect(); buildArmSelect(); syncSkillLine(); }
+  function bookCanvas(w, h, draw){
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), c);
+    return c;
+  }
+  function buildBook(){
+    const B = $('bookBody'); B.innerHTML = '';
+    const sec = (title)=>{
+      const h = document.createElement('div');
+      h.style.cssText = 'color:#e8b04a;margin:16px 0 7px;font-size:0.82rem;letter-spacing:1.5px;';
+      h.textContent = title; B.appendChild(h);
+    };
+    const grid = ()=>{
+      const gd = document.createElement('div');
+      gd.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;';
+      B.appendChild(gd); return gd;
+    };
+    const card = (gd, cv, html, wpx)=>{
+      const d = document.createElement('div');
+      d.style.cssText = `width:${wpx||170}px;background:#0d0d0d;border:1px solid #242424;border-radius:8px;padding:8px;font-size:0.62rem;color:#9a9a9a;line-height:1.55;`;
+      if(cv){ cv.style.display='block'; cv.style.margin='0 auto 5px'; d.appendChild(cv); }
+      const tx = document.createElement('div'); tx.innerHTML = html; d.appendChild(tx);
+      gd.appendChild(d);
+    };
+    // families
+    sec(t('THE FAMILIES — you are the character', '字族——你就是字'));
+    let gd = grid();
+    for(const key of Object.keys(CHARS)){
+      const c = CHARS[key];
+      const cv = document.createElement('canvas'); cv.width = 52; cv.height = 60;
+      let html = `<b style="color:#e8dfc8">${c.forms.map(x=>x.ch).join('→')}</b> · ${t(c.title_en,c.title_zh)}`
+               + `<br><span style="color:#e8b04a">${t(c.skill_en,c.skill_zh)}</span> — ${t(c.hint_en,c.hint_zh)}`;
+      for(const fm of c.forms){
+        html += `<br><b style="color:#cfc6ae">${fm.ch}</b> ${fm.py} · ${t(fm.mean_en,fm.mean_zh)} ${zdicLink(fm.ch)}<br><span style="color:#6a6a6a">${t(fm.tier_en,fm.tier_zh)}</span>`;
+      }
+      card(gd, cv, html, 350);
+      drawCharPortrait(cv, key, 0, '#e8dfc8');
+    }
+    // weapons
+    sec(t('THE ARMOURY — duplicates recast them in older script', '武库——重复拾取，以更古字体重铸'));
+    gd = grid();
+    for(const key of Object.keys(WEAPONS)){
+      const W = WEAPONS[key];
+      const cv = bookCanvas(44, 48, (bc)=>drawWeaponIcon(bc, key, 1, 22, 26, 34, '#e8dfc8'));
+      let html = `<b style="color:#e8dfc8">${W.chs[0]}</b> ${W.pys[0]} ${zdicLink(W.chs[0])}`;
+      for(let i=0;i<3;i++) html += `<br><span style="color:#8a8a8a">${W.eras[i]}${W.chs[i]!==W.chs[0]?' · '+W.chs[i]:''}</span> — <span style="color:#6a6a6a">${t(W.tier_en[i],W.tier_zh[i])}</span>`;
+      card(gd, cv, html, 230);
+    }
+    // bestiary
+    sec(t('THE BESTIARY — every monster is a character', '妖物志——每只怪都是一个字'));
+    gd = grid();
+    const foeArt = {
+      gui:  bookCanvas(64,56,(bc)=>drawSpirit(bc,32,30,36,0,GHOST)),
+      shi:  bookCanvas(64,56,(bc)=>drawBoar(bc,32,30,38,0,GHOST,1)),
+      hu:   bookCanvas(72,56,(bc)=>drawTiger(bc,38,30,46,0,GHOST,1,false)),
+      meng: bookCanvas(72,72,(bc)=>drawVesselBoss(bc,36,40,56,0,GHOST,false)),
+      gu:   bookCanvas(72,72,(bc)=>drawVesselBoss(bc,36,40,56,0,GHOST,true)),
+      long: bookCanvas(72,60,(bc)=>drawDragonSeg(bc,{x:36,y:34,_prev:null},GHOST))
+    };
+    const foeNote = {
+      gui: t('1 hp · the swarm','1血 · 群袭'), shi: t('2 hp · wave 2+','2血 · 第2波起'),
+      hu: t('3 hp · wave 3+','3血 · 第3波起'), meng: t('BOSS · wave 2','头目 · 第2波'),
+      gu: t('BOSS · wave 3','头目 · 第3波'), long: t('BOSS · the last night','头目 · 最后一夜')
+    };
+    for(const key of Object.keys(FOE_INFO)){
+      const F = FOE_INFO[key];
+      card(gd, foeArt[key], `<b style="color:#e8dfc8">${F.ch}</b> ${F.py} ${zdicLink(F.ch)}<br>${t(F.en,F.zh)}<br><span style="color:#f0674a">${foeNote[key]}</span>`, 170);
+    }
+    // fallen glyphs
+    sec(t('THE FALLEN GLYPHS — each one does its meaning', '集字——每个字都会做它的意思'));
+    gd = grid();
+    for(const ch of GLYPH_KEYS){
+      const info = GLYPHS[ch];
+      const cv = bookCanvas(40, 44, (bc)=>drawPicto(bc, ch, 20, 22, 26, '#e8b04a'));
+      card(gd, cv, `<b style="color:#e8dfc8">${ch}</b> ${info.py} · ${t(info.en,info.zh)}<br><span style="color:#8bc34a">${t(info.eff_en,info.eff_zh)}</span>`, 150);
+    }
+    // wonders & hazards
+    sec(t('WONDERS & HAZARDS', '天象与奇物'));
+    gd = grid();
+    card(gd, bookCanvas(56,52,(bc)=>drawDianBox(bc,28,28,40,BOLTC)),
+      `<b style="color:#e8dfc8">電</b> diàn ${zdicLink('電')}<br>${t('bronze form: rain over 申, the bolt itself. Its tail lashes to earth — dodge the ring.','金文：雨在「申」上，申即闪电。尾笔劈落——避开预警圈。')}`, 210);
+    card(gd, bookCanvas(56,52,(bc)=>drawGate(bc,28,48,38,'#e8b04a',0.6)),
+      `<b style="color:#e8dfc8">門</b> mén ${zdicLink('門')}<br>${t('the oracle gate: survive the wave and walk through — the era rewinds.','甲骨之门：撑过一波，穿门而过——时代倒退。')}`, 210);
+    card(gd, bookCanvas(56,52,(bc)=>drawShengHat(bc,28,40,30,'#e8b04a')),
+      `<b style="color:#e8dfc8">圣</b> shèng ${zdicLink('圣')}<br>${t('the great listening ear, worn as a crown: longer reach, far magnet.','倾听之大耳，戴之为冠：及远更甚。')}`, 210);
+    card(gd, bookCanvas(56,52,(bc)=>drawGuang(bc,28,34,26,BOLTC)),
+      `<b style="color:#e8dfc8">光</b> guāng ${zdicLink('光')}<br>${t('the torch-bearer blinks overhead after a boss falls: swifter, sharper (8s).','斩落头目后，火炬加身：更快更利（8秒）。')}`, 210);
+  }
+  function openBook(){ buildBook(); overlay('ovBook', true); }
+  function closeBook(){ overlay('ovBook', false); }
 
   bindInput();
   buildCharSelect(); buildArmSelect(); syncSkillLine();
   // idle attract render so the start screen isn't blank
   loadStage(0); running = false; render();
 
-  return { start, restart, nextStage, syncHud, onLang, chooseChar,
+  return { start, restart, nextStage, syncHud, onLang, chooseChar, pause, resume, openBook, closeBook,
            dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts,
                          stageIdx, selChar, selArm, waveT, gate, hp: lives, level, coins,
-                         hat: hatOn, sheng: shengPed, buffT }) };
+                         hat: hatOn, sheng: shengPed, buffT, paused, banner }) };
 })();
 
 </script>
