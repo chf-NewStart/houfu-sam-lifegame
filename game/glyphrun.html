@@ -111,7 +111,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b13</span>
+    <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a> <span style="color:#3a3a3a;font-size:0.62rem">b14</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -2265,7 +2265,7 @@ const Game = (function(){
     ctx.fillRect(WALL+4, WALL+4, bw*Math.max(0,Math.min(1,xf)), 5);
     ctx.font = 'bold 12px Consolas'; ctx.textAlign = 'right';
     ctx.fillStyle = level>=3 ? era.accent : '#8bc34a';
-    ctx.fillText(level>=3 ? 'LV MAX' : `LV${NUMCH[level]} ${coins}/${LV_XP[level+1]}`, CW-WALL-6, WALL+24);
+    ctx.fillText(level>=3 ? 'LV MAX' : `LV${NUMCH[level]} ${coins}/${LV_XP[level+1]}`, CW-WALL-76, WALL+24);   // clear of the 止 button
     const lowPulse = lives<=2 ? 0.55+0.45*Math.sin(tGlobal*8) : 1;
     for(let i=0;i<MAXHP;i++){
       const sx = WALL+22+i*24;
