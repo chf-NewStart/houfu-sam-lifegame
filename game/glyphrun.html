@@ -111,7 +111,7 @@
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b20</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span style="color:#3a3a3a;font-size:0.62rem">b21</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -127,7 +127,7 @@
   <div id="cvsBox">
     <canvas id="cvs" width="960" height="540"></canvas>
 
-    <div id="toast"><div class="tg" id="toastG">日</div><div class="tp" id="toastP">rì</div><div class="tm" id="toastM">sun</div></div>
+    <div id="toast"><canvas id="toastQi" width="26" height="26" style="display:none;margin:0 auto 2px;width:18px;height:18px"></canvas><div class="tg" id="toastG">日</div><div class="tp" id="toastP">rì</div><div class="tm" id="toastM">sun</div></div>
 
     <button id="pauseBtn" aria-label="pause"><canvas id="pauseZhi" width="24" height="26"></canvas></button>
 
@@ -139,7 +139,7 @@
         <div class="setup-left">
           <div class="keys" style="margin:0" data-en="the character" data-zh="选字">the character</div>
           <div class="char-row" id="charRow" style="margin:0"></div>
-          <div class="keys" style="margin:6px 0 0" data-en="the starting arm" data-zh="初始兵器">the starting arm</div>
+          <div class="keys" style="margin:6px 0 0" data-en="the starting 器" data-zh="初始之器">the starting 器</div>
           <div class="char-row" id="armRow" style="margin:0"></div>
         </div>
         <div id="prevBox">
@@ -513,6 +513,25 @@ function drawZhi(ctx, cx, footY, s, color){
   ctx.beginPath(); ctx.moveTo(cx+0.05*s, footY); ctx.lineTo(cx+0.05*s, footY-1.05*s); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(cx+0.05*s, footY-0.42*s); ctx.quadraticCurveTo(cx-0.26*s, footY-0.5*s, cx-0.32*s, footY-0.92*s); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(cx+0.05*s, footY-0.3*s); ctx.lineTo(cx+0.36*s, footY-0.62*s); ctx.stroke();
+  ctx.restore();
+}
+
+/* 器 the implement glyph — four vessels with the dog between (说文 form) */
+function drawQi(ctx, cx, cy, s, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.12;
+  stroke(ctx, Math.max(1.5, s*0.09));
+  const q = s*0.26, o = s*0.42;
+  for(const [dx,dy] of [[-o,-o],[o,-o],[-o,o],[o,o]]){
+    ctx.beginPath(); ctx.rect(cx+dx-q/2, cy+dy-q/2, q, q); ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(cx-0.24*s, cy-0.3*s);
+  ctx.quadraticCurveTo(cx+0.1*s, cy-0.1*s, cx+0.02*s, cy+0.12*s);
+  ctx.quadraticCurveTo(cx-0.04*s, cy+0.3*s, cx+0.24*s, cy+0.34*s);
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-0.24*s, cy-0.3*s); ctx.lineTo(cx-0.05*s, cy-0.38*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-0.02*s, cy+0.02*s); ctx.lineTo(cx+0.24*s, cy-0.12*s); ctx.stroke();
   ctx.restore();
 }
 
@@ -914,15 +933,7 @@ function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
       ctx.beginPath(); ctx.moveTo(-r*0.3,r*0.42); ctx.lineTo(r*0.3,r*0.42); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0,r*0.45); ctx.lineTo(0,r*0.95); ctx.stroke();
       ctx.beginPath(); ctx.arc(0,r*1.02,r*0.08,0,Math.PI*2); ctx.fill();
-    } else if(lv===2){                                    // bronze: broad twin-edged, curled guard
-      ctx.beginPath(); ctx.moveTo(0,-r*1.05); ctx.lineTo(0,r*0.4); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-r*0.16,-r*0.7); ctx.lineTo(0,-r*1.05); ctx.lineTo(r*0.16,-r*0.7); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-r*0.16,-r*0.7); ctx.lineTo(-r*0.14,r*0.28); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(r*0.16,-r*0.7); ctx.lineTo(r*0.14,r*0.28); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-r*0.4,r*0.28); ctx.quadraticCurveTo(0,r*0.6,r*0.4,r*0.28); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0,r*0.5); ctx.lineTo(0,r*0.95); ctx.stroke();
-      ctx.beginPath(); ctx.arc(0,r*1.02,r*0.1,0,Math.PI*2); ctx.fill();
-    } else {                                              // 金文: the ornate totem — diamond crown, loops, forked foot
+    } else if(lv===2){                                    // 金文: the ornate totem — diamond crown, loops, forked foot
       ctx.beginPath(); ctx.moveTo(0,-r*1.15); ctx.lineTo(-r*0.14,-r*0.95); ctx.lineTo(0,-r*0.75);
       ctx.lineTo(r*0.14,-r*0.95); ctx.closePath(); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-r*0.3,-r*0.72); ctx.lineTo(r*0.3,-r*0.72); ctx.stroke();
@@ -932,6 +943,15 @@ function drawWeaponIcon(ctx, key, lv, cx, cy, s, color){
       ctx.beginPath(); ctx.moveTo(-r*0.32,-r*0.1); ctx.lineTo(r*0.32,-r*0.1); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0,r*0.6); ctx.lineTo(-r*0.28,r*0.95); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0,r*0.6); ctx.lineTo(r*0.28,r*0.95); ctx.stroke();
+    } else {                                              // 甲骨 兵: two hands raise the blade aloft
+      ctx.beginPath(); ctx.moveTo(r*0.14,-r*1.05); ctx.lineTo(r*0.08,-r*0.1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r*0.13,-r*0.82); ctx.lineTo(-r*0.36,-r*1.02); ctx.lineTo(-r*0.52,-r*0.6); ctx.stroke();
+      for(const sg of [-1, 1]){
+        const hx = sg*r*0.34;
+        ctx.beginPath(); ctx.moveTo(hx, r*0.95); ctx.quadraticCurveTo(hx+sg*r*0.06, r*0.42, hx-sg*r*0.04, r*0.08); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hx-sg*r*0.04, r*0.08); ctx.lineTo(hx-sg*r*0.24, -r*0.12); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hx-sg*r*0.04, r*0.08); ctx.lineTo(hx+sg*r*0.08, -r*0.18); ctx.stroke();
+      }
     }
     ctx.restore(); return;
   }
@@ -1237,9 +1257,9 @@ const WEAPONS = {
          tier_en:['a bow — arrows seek the pack', 'recast in bronze — twin arrows, quicker', '“to shoot” — the arrow on the string: three arrows, oracle-swift'],
          tier_zh:['「弓」——放矢逐鬼', '金文重铸——双箭更疾', '「射」——弦上之矢，三箭齐发'],
          int:[1.5, 1.05, 0.7]},
-  jian: {chs:['劍','劍','劍'], pys:['jiàn','jiàn','jiàn'], eras:['隸書','金文','甲骨'],
-         tier_en:['a sword — quick arcs at whatever comes', 'bronze blade — wider, faster', "the king's sword — a great sweeping arc"],
-         tier_zh:['「劍」——近身快斩', '青铜剑——更快更阔', '王者之剑——大开大阖'],
+  jian: {chs:['劍','劍','兵'], pys:['jiàn','jiàn','bīng'], eras:['隸書','金文','甲骨'],
+         tier_en:['a sword — quick arcs at whatever comes', 'the ornate bronze blade — wider, faster', '兵 — the weapon raised in both hands: a great sweeping arc'],
+         tier_zh:['「劍」——近身快斩', '青铜华剑——更快更阔', '「兵」——双手奉斤，大开大阖'],
          int:[0.75, 0.6, 0.45], reach:[85, 96, 110], hits:[2,3,4]},
   ge:   {chs:['戈','戈','戈'], pys:['gē','gē','gē'], eras:['隸書','金文','甲骨'],
          tier_en:['dagger-axe — it guards your back', 'bronze edge — wider, quicker', 'oracle blade — a full reaping sweep'],
@@ -2015,13 +2035,13 @@ const Game = (function(){
         if(owned && owned.lv < 3){
           owned.lv++;
           const l = owned.lv-1;
-          popToastEx(W.chs[l], `${W.pys[l]} · ${W.eras[l]}`, t(W.tier_en[l], W.tier_zh[l]));
+          popToastEx(W.chs[l], `${W.pys[l]} · ${W.eras[l]}`, t(W.tier_en[l], W.tier_zh[l]), true);
         } else if(!owned){
           if(weapons.length >= 3) weapons.shift();          // the oldest is set down
           weapons.push({key:pd.key, lv:1, t:0.4});
-          popToastEx(W.chs[0], `${W.pys[0]} · ${W.eras[0]}`, t(W.tier_en[0], W.tier_zh[0]));
+          popToastEx(W.chs[0], `${W.pys[0]} · ${W.eras[0]}`, t(W.tier_en[0], W.tier_zh[0]), true);
         } else {
-          popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'));
+          popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'), true);
         }
         addFx({kind:'levelup', x:pd.x, y:pd.y, t:0.6, r:50, ch:''});
       }
@@ -2396,7 +2416,9 @@ const Game = (function(){
     const info = GLYPHS[ch] || {py:'', en:'', zh:''};
     popToastEx(ch, info.py, t(info.en, info.zh));
   }
-  function popToastEx(ch, py, mean){
+  function popToastEx(ch, py, mean, isQi){
+    const badge = $('toastQi');
+    if(badge) badge.style.display = isQi ? 'block' : 'none';
     $('toastG').textContent = ch;
     $('toastP').textContent = py;
     $('toastM').textContent = mean;
@@ -2526,10 +2548,17 @@ const Game = (function(){
   }
   function buildBook(){
     const B = $('bookBody'); B.innerHTML = '';
-    const sec = (title)=>{
+    const sec = (title, withQi)=>{
       const h = document.createElement('div');
-      h.style.cssText = 'color:#e8b04a;margin:16px 0 7px;font-size:0.82rem;letter-spacing:1.5px;';
-      h.textContent = title; B.appendChild(h);
+      h.style.cssText = 'color:#e8b04a;margin:16px 0 7px;font-size:0.82rem;letter-spacing:1.5px;display:flex;align-items:center;gap:8px;';
+      if(withQi){
+        const cv = document.createElement('canvas'); cv.width = 26; cv.height = 26;
+        cv.style.cssText = 'width:20px;height:20px;flex-shrink:0;';
+        drawQi(cv.getContext('2d'), 13, 13, 18, '#e8b04a');
+        h.appendChild(cv);
+      }
+      const tx = document.createElement('span'); tx.textContent = title; h.appendChild(tx);
+      B.appendChild(h);
     };
     const grid = ()=>{
       const gd = document.createElement('div');
@@ -2558,7 +2587,7 @@ const Game = (function(){
       drawCharPortrait(cv, key, 0, '#e8dfc8');
     }
     // weapons
-    sec(t('THE ARMOURY — duplicates recast them in older script', '武库——重复拾取，以更古字体重铸'));
+    sec(t('器 · THE ARMOURY — duplicates recast them in older script', '器 · 武库——重复拾取，以更古字体重铸'), true);
     gd = grid();
     for(const key of Object.keys(WEAPONS)){
       const W = WEAPONS[key];
@@ -2735,6 +2764,8 @@ const Game = (function(){
   document.querySelectorAll('.zhanIcon').forEach(cv=>{ if(cv.getContext) drawZhan(cv.getContext('2d'), 12, 21, 15, '#e8b04a'); });
   const pz = $('pauseZhi');
   if(pz && pz.getContext) drawZhi(pz.getContext('2d'), 12, 23, 17, '#bbbbbb');
+  const tq = $('toastQi');
+  if(tq && tq.getContext) drawQi(tq.getContext('2d'), 13, 13, 18, '#e8b04a');
   const bookWenCv = $('bookWen');
   if(bookWenCv && bookWenCv.getContext) drawWen(bookWenCv.getContext('2d'), 23, 47, 36, '#e8b04a');
   buildCharSelect(); buildArmSelect(); PV.reset();
