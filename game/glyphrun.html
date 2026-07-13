@@ -44,8 +44,10 @@
   #toast .tm{font-size:0.66rem;color:#9a9a9a;margin-top:1px;}
 
   /* full-screen overlays */
-  .overlay{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:22px;background:rgba(4,6,8,0.9);backdrop-filter:blur(2px);}
+  .overlay{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:flex-start;
+    text-align:center;padding:14px 22px;background:rgba(4,6,8,0.9);backdrop-filter:blur(2px);overflow-y:auto;}
+  /* spacer pseudo-children: centred when it fits, scrollable when it doesn't */
+  .overlay::before,.overlay::after{content:'';flex:1 0 0;min-height:2px;}
   .overlay.show{display:flex;}
   .overlay h2{color:#e8b04a;font-size:1.5rem;letter-spacing:-0.5px;margin-bottom:8px;}
   .overlay .big{font-size:0.86rem;color:#cfc6ae;line-height:1.7;max-width:520px;margin-bottom:14px;}
@@ -55,12 +57,22 @@
   .btn:hover{background:#e8b04a;color:#1a1205;}
   .btn.alt{border-color:#1db954;color:#1db954;margin-top:10px;}
   .btn.alt:hover{background:#1db954;color:#07120b;}
-  #clearCanvas{margin:6px auto 14px;display:block;}
+  #clearCanvas{margin:6px auto 14px;display:block;width:min(240px,55vw);height:auto;}
   .evo-row{display:flex;gap:14px;align-items:flex-end;justify-content:center;flex-wrap:wrap;margin:8px 0 16px;}
   .evo-cell{display:flex;flex-direction:column;align-items:center;gap:6px;}
   .evo-cell canvas{width:66px;height:78px;background:transparent;border:none;}
   .evo-cell span{font-size:0.62rem;color:#9a9a9a;letter-spacing:1px;}
   .evo-cell.now span{color:#e8b04a;}
+
+  /* character select */
+  .char-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:2px 0 10px;}
+  .char-card{width:122px;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:9px 6px;cursor:pointer;transition:border-color .15s, box-shadow .15s, transform .12s;}
+  .char-card:hover{border-color:#555;transform:translateY(-1px);}
+  .char-card.sel{border-color:#e8b04a;box-shadow:0 0 16px -5px rgba(232,176,74,0.65);}
+  .char-card canvas{width:52px;height:60px;display:block;margin:0 auto 5px;}
+  .char-card .cname{color:#e8dfc8;font-size:0.78rem;}
+  .char-card .cskill{color:#e8b04a;font-size:0.6rem;margin-top:3px;}
+  .char-card .chint{color:#8a8a8a;font-size:0.56rem;margin-top:2px;line-height:1.45;}
 
   /* on-screen controls (mobile) */
   .pad{max-width:960px;margin:12px auto 0;display:flex;justify-content:space-between;align-items:center;gap:12px;user-select:none;}
@@ -69,8 +81,10 @@
     color:#e8dfc8;font-size:1.5rem;font-weight:bold;background:linear-gradient(#2a2a2a,#141414);
     box-shadow:0 5px 0 #0a0a0a, inset 0 2px 3px rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;}
   .arc-btn.jump{width:104px;background:linear-gradient(#274a2c,#12220f);color:#8ff0a8;box-shadow:0 5px 0 #08130a, inset 0 2px 3px rgba(255,255,255,0.1);}
+  .arc-btn.skill{width:92px;background:linear-gradient(#4a3416,#201406);color:#f0c070;box-shadow:0 5px 0 #120b03, inset 0 2px 3px rgba(255,255,255,0.1);font-size:0.9rem;display:none;}
+  .arc-btn.skill.cd{opacity:0.4;}
   .arc-btn.on{transform:translateY(4px);box-shadow:0 1px 0 #0a0a0a, inset 0 2px 4px rgba(0,0,0,0.5);}
-  @media (max-width:520px){ .arc-btn{width:72px;height:72px;} .arc-btn.jump{width:92px;} }
+  @media (max-width:520px){ .arc-btn{width:72px;height:72px;} .arc-btn.jump{width:92px;} .arc-btn.skill{width:80px;} }
   .pad-hint{text-align:center;color:#5a5a5a;font-size:0.66rem;margin-top:8px;max-width:960px;margin-left:auto;margin-right:auto;}
 
   .footer{max-width:960px;margin:22px auto 0;text-align:center;color:#555;font-size:0.68rem;line-height:1.7;}
@@ -81,7 +95,7 @@
 <div class="hdr">
   <div>
     <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
-    <div class="sub" data-en="Run right and you'll travel back in time. You ARE a character — and each stage rewinds it to an older form, ending in 甲骨文 oracle-bone script. The deeper the past, the harder the run." data-zh="向右奔跑，就是逆流时光。你就是一个「字」——每一关都把它倒回更古老的形态，直到甲骨文。越往古代，路越难走。">Run right and you'll travel back in time. You ARE a character — and each stage rewinds it to an older form, ending in 甲骨文 oracle-bone script. The deeper the past, the harder the run.</div>
+    <div class="sub" data-en="Run right and you'll travel back in time. You ARE a character — and at every gate you evolve into a related glyph with a new twist on your skill, ending in 甲骨文 oracle-bone script. The deeper the past, the harder the run." data-zh="向右奔跑，就是逆流时光。你就是一个「字」——每过一门就进化成同族新字，技能随之升级，直到甲骨文。越往古代，路越难走。">Run right and you'll travel back in time. You ARE a character — and at every gate you evolve into a related glyph with a new twist on your skill, ending in 甲骨文 oracle-bone script. The deeper the past, the harder the run.</div>
     <a class="back" href="/wip.html" data-en="← back to the wip lab" data-zh="← 返回实验室">← back to the wip lab</a>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
@@ -89,9 +103,10 @@
 
 <div class="stage-wrap">
   <div class="hud">
-    <div class="era" data-en="STAGE 1/4 · Regular Script" data-zh="第 1/4 关 · 楷书" id="hudEra"><b id="hudGlyph">人</b> <span id="hudEraName">STAGE 1/4 · Regular Script</span></div>
-    <div class="stat" data-en="glyphs" data-zh="集字"><span data-en="glyphs" data-zh="集字">glyphs</span> <b id="hudCoins">0</b></div>
-    <div class="stat lives" data-en="lives" data-zh="生命"><span data-en="lives" data-zh="生命">lives</span> <b id="hudLives">♥♥♥</b></div>
+    <div class="era" id="hudEra"><b id="hudGlyph">人</b> <span id="hudEraName">STAGE 1/4 · Regular Script</span></div>
+    <div class="stat"><span data-en="skill" data-zh="技能">skill</span> <b id="hudSkill" style="color:#8bc34a">LV1</b></div>
+    <div class="stat"><span data-en="glyphs" data-zh="集字">glyphs</span> <b id="hudCoins">0</b></div>
+    <div class="stat lives"><span data-en="lives" data-zh="生命">lives</span> <b id="hudLives">♥♥♥</b></div>
   </div>
 
   <div id="cvsBox">
@@ -102,36 +117,40 @@
     <!-- START -->
     <div class="overlay show" id="ovStart">
       <h2 data-en="字源 · GLYPH RUN" data-zh="字源 · 汉字奔跑">字源 · GLYPH RUN</h2>
-      <div class="big" data-en="You are 人 — the character for &quot;person.&quot; Run to the ancient gate at the end of each stage. Every gate you pass rewinds your glyph one era further into the past, all the way to the oracle bones. Collect glyphs, dodge the 鬼 spirits and 火 fire." data-zh="你是「人」——表示「人」的那个字。跑到每关尽头的古门。每穿过一道门，你的字形就倒退一个时代，一路回到甲骨文。沿途集字，躲开「鬼」与「火」。">You are 人 — the character for "person." Run to the ancient gate at the end of each stage. Every gate you pass rewinds your glyph one era further into the past, all the way to the oracle bones. Collect glyphs, dodge the 鬼 spirits and 火 fire.</div>
+      <div class="big" data-en="Pick a glyph — you play as the character itself. Every gate you pass EVOLVES you into a related character with a stronger twist on your skill, while the script rewinds an era: 楷書 → 篆書 → 金文 → 甲骨文. Collect glyphs, dodge 鬼 spirits and 火 fire." data-zh="选一个字——你扮演的就是字形本身。每穿过一道门，你就进化成同族的新字，技能更上一层；字体则倒退一个时代：楷书 → 篆书 → 金文 → 甲骨文。沿途集字，躲开「鬼」与「火」。">Pick a glyph — you play as the character itself. Every gate you pass EVOLVES you into a related character with a stronger twist on your skill, while the script rewinds an era: 楷書 → 篆書 → 金文 → 甲骨文. Collect glyphs, dodge 鬼 spirits and 火 fire.</div>
+      <div class="char-row" id="charRow"></div>
+      <div class="keys" id="skillLine"></div>
       <div class="keys">
         <span data-en="move" data-zh="移动">move</span> <kbd>←</kbd> <kbd>→</kbd> &nbsp;·&nbsp;
         <span data-en="jump" data-zh="跳跃">jump</span> <kbd>Space</kbd> / <kbd>↑</kbd> &nbsp;·&nbsp;
-        <span data-en="stomp a spirit by landing on it" data-zh="踩在鬼头上可击退它">stomp a spirit by landing on it</span>
+        <span data-en="stomp spirits by landing on them" data-zh="踩在鬼头上可击退它">stomp spirits by landing on them</span>
       </div>
       <button class="btn" id="startBtn" onclick="Game.start()" data-en="▶ INSERT COIN" data-zh="▶ 投币开始">▶ INSERT COIN</button>
     </div>
 
     <!-- STAGE CLEAR / TRANSFORM -->
     <div class="overlay" id="ovClear">
-      <h2 data-en="GATE PASSED" data-zh="穿门而过" id="clearTitle">GATE PASSED</h2>
+      <h2 id="clearTitle">GATE PASSED</h2>
       <canvas id="clearCanvas" width="240" height="150"></canvas>
-      <div class="big" id="clearMsg" data-en="Your glyph rewinds…" data-zh="你的字形正在倒退……">Your glyph rewinds…</div>
+      <div class="big" id="clearMsg">Your glyph evolves…</div>
       <button class="btn" id="clearBtn" onclick="Game.nextStage()" data-en="▶ Deeper into the past" data-zh="▶ 更向古代">▶ Deeper into the past</button>
     </div>
 
     <!-- GAME OVER -->
     <div class="overlay" id="ovOver">
       <h2 style="color:#f0674a" data-en="LOST TO TIME" data-zh="湮没于时光">LOST TO TIME</h2>
-      <div class="big" id="overMsg" data-en="The character faded before reaching the bones." data-zh="这个字还没走到甲骨，就已消散。">The character faded before reaching the bones.</div>
+      <div class="big" id="overMsg">The character faded before reaching the bones.</div>
       <button class="btn" onclick="Game.restart()" data-en="↻ Try again" data-zh="↻ 再来一次">↻ Try again</button>
+      <button class="btn alt" onclick="Game.chooseChar()" data-en="⇄ pick another glyph" data-zh="⇄ 换一个字">⇄ pick another glyph</button>
     </div>
 
     <!-- WIN -->
     <div class="overlay" id="ovWin">
-      <h2 data-en="人 · TRACED TO THE ROOT" data-zh="人 · 溯至本源">人 · TRACED TO THE ROOT</h2>
+      <h2 id="winTitle">TRACED TO THE ROOT</h2>
       <div class="evo-row" id="evoRow"></div>
-      <div class="big" id="winMsg" data-en="You rewound 人 across 3,000 years — from today's brush strokes back to the mark a diviner carved into an ox bone." data-zh="你把「人」倒回了三千年——从今天的笔画，回到贞人刻在牛骨上的那道痕迹。">You rewound 人 across 3,000 years — from today's brush strokes back to the mark a diviner carved into an ox bone.</div>
+      <div class="big" id="winMsg">You grew the glyph across 3,000 years of script.</div>
       <button class="btn" onclick="Game.restart()" data-en="↻ Run it again" data-zh="↻ 再跑一次">↻ Run it again</button>
+      <button class="btn alt" onclick="Game.chooseChar()" data-en="⇄ pick another glyph" data-zh="⇄ 换一个字">⇄ pick another glyph</button>
       <a class="btn alt" href="/wip.html" style="text-decoration:none" data-en="← more games" data-zh="← 更多游戏">← more games</a>
     </div>
   </div>
@@ -141,13 +160,16 @@
       <button class="arc-btn" id="btnL" aria-label="left">◀</button>
       <button class="arc-btn" id="btnR" aria-label="right">▶</button>
     </div>
-    <button class="arc-btn jump" id="btnJ" aria-label="jump" data-en="JUMP" data-zh="跳" style="font-size:0.9rem;">JUMP</button>
+    <div class="pad-left">
+      <button class="arc-btn skill" id="btnS" aria-label="skill" data-en="CHARGE" data-zh="冲">CHARGE</button>
+      <button class="arc-btn jump" id="btnJ" aria-label="jump" data-en="JUMP" data-zh="跳" style="font-size:0.9rem;">JUMP</button>
+    </div>
   </div>
-  <div class="pad-hint" data-en="Keyboard ← → to run, Space / ↑ to jump — or use the pads above on touch." data-zh="键盘 ← → 奔跑，空格 / ↑ 跳跃——触屏可用上方按键。">Keyboard ← → to run, Space / ↑ to jump — or use the pads above on touch.</div>
+  <div class="pad-hint" data-en="Keyboard ← → to run, Space / ↑ to jump, K / Shift for the ox charge — or use the pads above on touch." data-zh="键盘 ← → 奔跑，空格 / ↑ 跳跃，K / Shift 冲撞——触屏可用上方按键。">Keyboard ← → to run, Space / ↑ to jump, K / Shift for the ox charge — or use the pads above on touch.</div>
 </div>
 
 <div class="footer">
-  <div data-en="A tiny lesson in disguise: the four scripts you run through — 楷書 (regular), 篆書 (seal), 金文 (bronze), 甲骨文 (oracle) — are the real stages Chinese writing passed through, newest to oldest." data-zh="一堂藏起来的小课：你跑过的四种字体——楷书、篆书、金文、甲骨文——正是汉字真实走过的阶段，由今及古。">A tiny lesson in disguise: the four scripts you run through — 楷書 (regular), 篆書 (seal), 金文 (bronze), 甲骨文 (oracle) — are the real stages Chinese writing passed through, newest to oldest.</div>
+  <div data-en="A tiny lesson in disguise: the script eras (楷書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock of sheep." data-zh="一堂藏起来的小课：字体时代（楷书 → 篆书 → 金文 → 甲骨文）是真实的，字族也是——「大」是张臂之人，「舞」是执羽起舞，「牢」是圈中之牛，「犇」是三牛奔逐，「美」是戴羊角的舞者，「羴」是一整群羊。">A tiny lesson in disguise: the script eras (楷書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock of sheep.</div>
 </div>
 
 <script>
@@ -160,7 +182,7 @@ function toggleLang(){
   document.querySelectorAll('[data-en]').forEach((el)=>{ el.innerHTML = zh ? el.dataset.zh : el.dataset.en; });
   document.getElementById('langBtn').textContent = zh ? 'EN' : '中文';
   try{ localStorage.setItem('arcade_lang', zh ? 'zh' : 'en'); }catch(e){}
-  Game.syncHud();
+  try{ Game.onLang(); }catch(e){} // Game isn't built yet on the initial auto-toggle
 }
 try{ if(localStorage.getItem('arcade_lang') === 'zh') toggleLang(); }catch(e){}
 
@@ -171,85 +193,155 @@ try{ if(localStorage.getItem('arcade_lang') === 'zh') toggleLang(); }catch(e){}
 
 function stroke(ctx, w, cap){ ctx.lineWidth = w; ctx.lineCap = cap||'round'; ctx.lineJoin='round'; }
 
-/* --- the player: 人 (person) drawn in four historical scripts --- */
-/* phase drives a little running gait; sq is a squash/stretch factor.     */
-function drawPerson(ctx, era, cx, footY, s, phase, sq, color){
-  ctx.save();
-  ctx.translate(cx, footY);
-  ctx.scale(1/(1+sq*0.0), 1); // keep x
-  ctx.transform(1+ -sq*0.25, 0, 0, 1+sq, 0, 0); // squash: sq>0 stretch tall, sq<0 squash
-  ctx.strokeStyle = color; ctx.fillStyle = color;
-  ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
-  const swing = Math.sin(phase) * 0.16 * s;      // legs alternate
-  if(era==='kai'){
-    // modern 人: a 撇 and a 捺 meeting near the top
+/* --- the player families: at every gate the glyph EVOLVES into a related
+   character (real etymology!), drawn in that stage's script style —
+   人→大→夫→舞 · 牛→牢→牧→犇 · 羊→羔→美→羴
+   Coordinates are local: feet/baseline at y=0, head ≈ -1×size.
+   phase drives a little running gait; sq is a squash/stretch factor.  --- */
+
+/* reusable animal heads (per the oracle-bone forms: 牛 horns curve UP,
+   羊 horns curl DOWN — that's how the diviners told them apart)         */
+function oxHead(ctx, s, cx, cy, sc, w){
+  stroke(ctx, w);
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.72*sc*s); ctx.lineTo(cx, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.72*sc*s); ctx.lineTo(cx-0.16*sc*s, cy-0.8*sc*s); ctx.lineTo(cx-0.36*sc*s, cy-1.04*sc*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.72*sc*s); ctx.lineTo(cx+0.16*sc*s, cy-0.8*sc*s); ctx.lineTo(cx+0.36*sc*s, cy-1.04*sc*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.4*sc*s); ctx.lineTo(cx-0.24*sc*s, cy-0.54*sc*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.4*sc*s); ctx.lineTo(cx+0.24*sc*s, cy-0.54*sc*s); ctx.stroke();
+}
+function sheepHead(ctx, s, cx, cy, sc, w){
+  stroke(ctx, w);
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.7*sc*s); ctx.lineTo(cx, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.7*sc*s); ctx.lineTo(cx-0.2*sc*s, cy-0.96*sc*s); ctx.lineTo(cx-0.4*sc*s, cy-0.8*sc*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.7*sc*s); ctx.lineTo(cx+0.2*sc*s, cy-0.96*sc*s); ctx.lineTo(cx+0.4*sc*s, cy-0.8*sc*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-0.22*sc*s, cy-0.4*sc*s); ctx.lineTo(cx+0.22*sc*s, cy-0.4*sc*s); ctx.stroke();
+}
+
+/* the walker family 人→大→夫→舞 — always legged, so the gait swings */
+function renForm(ctx, fi, s, swing){
+  if(fi===0){ // 人 kai: a 撇 and a 捺 meeting near the top
     stroke(ctx, s*0.14);
     ctx.beginPath();
     ctx.moveTo(0, -s*1.02);
-    ctx.quadraticCurveTo(-s*0.14, -s*0.5, -s*0.42 + swing, 0);   // left leg
+    ctx.quadraticCurveTo(-s*0.14, -s*0.5, -s*0.42 + swing, 0);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(-s*0.03, -s*0.72);
-    ctx.quadraticCurveTo(s*0.2, -s*0.42, s*0.44 - swing, 0);     // right leg
+    ctx.quadraticCurveTo(s*0.2, -s*0.42, s*0.44 - swing, 0);
     ctx.stroke();
-  } else if(era==='seal'){
-    // 篆書: even-weight, rounded, upright and calligraphic
-    stroke(ctx, s*0.13);
-    ctx.beginPath();                                   // head/shoulder arc
-    ctx.moveTo(-s*0.16, -s*0.86);
-    ctx.quadraticCurveTo(0, -s*1.12, s*0.16, -s*0.86);
-    ctx.stroke();
-    ctx.beginPath();                                   // left leg, S-curve
-    ctx.moveTo(-s*0.05, -s*0.9);
-    ctx.bezierCurveTo(-s*0.34, -s*0.6, -s*0.16, -s*0.25, -s*0.4 + swing, 0);
-    ctx.stroke();
-    ctx.beginPath();                                   // right leg, S-curve
-    ctx.moveTo(s*0.05, -s*0.9);
-    ctx.bezierCurveTo(s*0.34, -s*0.6, s*0.16, -s*0.25, s*0.4 - swing, 0);
-    ctx.stroke();
-  } else if(era==='bronze'){
-    // 金文: a bolder side-profile figure, back bent, arm hanging forward
-    stroke(ctx, s*0.17);
-    ctx.beginPath();                                   // bent spine, head to back foot
-    ctx.moveTo(s*0.1, -s*1.04);
-    ctx.bezierCurveTo(-s*0.1, -s*0.8, -s*0.3, -s*0.5, -s*0.34 + swing, 0);
-    ctx.stroke();
-    ctx.beginPath();                                   // front leg
-    ctx.moveTo(-s*0.12, -s*0.52);
-    ctx.quadraticCurveTo(s*0.16, -s*0.28, s*0.3 - swing, 0);
-    ctx.stroke();
-    ctx.beginPath();                                   // arm reaching forward
-    ctx.moveTo(-s*0.02, -s*0.82);
-    ctx.quadraticCurveTo(s*0.28, -s*0.72, s*0.4, -s*0.5);
-    ctx.stroke();
-  } else { // oracle 甲骨文: thin, incised, angular side-profile person
-    stroke(ctx, s*0.1, 'round');
-    ctx.beginPath();                                   // body: head, bent back, back leg
-    ctx.moveTo(s*0.04, -s*1.06);
-    ctx.lineTo(-s*0.02, -s*0.66);
-    ctx.lineTo(-s*0.2, -s*0.34);
-    ctx.lineTo(-s*0.34 + swing, 0);
-    ctx.stroke();
-    ctx.beginPath();                                   // front leg
-    ctx.moveTo(-s*0.14, -s*0.44);
-    ctx.lineTo(s*0.06, -s*0.24);
-    ctx.lineTo(s*0.28 - swing, 0);
-    ctx.stroke();
-    ctx.beginPath();                                   // arm, angular, forward
-    ctx.moveTo(-s*0.01, -s*0.78);
-    ctx.lineTo(s*0.24, -s*0.7);
-    ctx.lineTo(s*0.36, -s*0.48);
-    ctx.stroke();
+  } else if(fi===1){ // 大 seal: a person with arms spread wide
+    stroke(ctx, s*0.12);
+    ctx.beginPath(); ctx.moveTo(-0.46*s,-0.58*s); ctx.quadraticCurveTo(0,-0.94*s,0.46*s,-0.58*s); ctx.stroke(); // arms
+    ctx.beginPath(); ctx.moveTo(0,-1.08*s); ctx.lineTo(0,-0.5*s); ctx.stroke();                                  // body
+    ctx.beginPath(); ctx.moveTo(0,-0.5*s); ctx.quadraticCurveTo(-0.18*s,-0.26*s,-0.38*s+swing,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-0.5*s); ctx.quadraticCurveTo(0.18*s,-0.26*s,0.38*s-swing,0); ctx.stroke();
+  } else if(fi===2){ // 夫 bronze: 大 wearing a hairpin
+    stroke(ctx, s*0.15);
+    ctx.beginPath(); ctx.moveTo(-0.28*s,-1.02*s); ctx.lineTo(0.28*s,-1.02*s); ctx.stroke();                      // hairpin
+    ctx.beginPath(); ctx.moveTo(-0.44*s,-0.62*s); ctx.quadraticCurveTo(0,-0.82*s,0.44*s,-0.62*s); ctx.stroke();  // arms
+    ctx.beginPath(); ctx.moveTo(0,-1.16*s); ctx.lineTo(0,-0.48*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-0.48*s); ctx.quadraticCurveTo(-0.2*s,-0.24*s,-0.4*s+swing,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-0.48*s); ctx.quadraticCurveTo(0.2*s,-0.24*s,0.4*s-swing,0); ctx.stroke();
+  } else { // 舞 oracle: a dancer, a plume swaying from each hand
+    stroke(ctx, s*0.09);
+    ctx.beginPath(); ctx.moveTo(0,-1.06*s); ctx.lineTo(0,-0.42*s); ctx.stroke();                                 // body
+    ctx.beginPath(); ctx.moveTo(0,-0.42*s); ctx.lineTo(-0.3*s+swing,0); ctx.stroke();                            // legs
+    ctx.beginPath(); ctx.moveTo(0,-0.42*s); ctx.lineTo(0.3*s-swing,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.46*s,-0.84*s); ctx.lineTo(0.46*s,-0.84*s); ctx.stroke();                      // arms out
+    const sway = swing*0.5;
+    for(const sgn of [-1,1]){                                                                                    // plumes
+      ctx.beginPath(); ctx.moveTo(sgn*0.46*s,-0.84*s);
+      ctx.quadraticCurveTo(sgn*0.58*s,-0.62*s, sgn*0.48*s+sway,-0.36*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sgn*0.46*s,-0.84*s);
+      ctx.quadraticCurveTo(sgn*0.34*s,-0.6*s, sgn*0.4*s+sway,-0.3*s); ctx.stroke();
+    }
   }
+}
+
+/* the charger family 牛→牢→牧→犇 */
+function niuForm(ctx, fi, s){
+  if(fi===0){ // 牛 kai: tick, two horizontals, vertical through
+    stroke(ctx, s*0.13);
+    ctx.beginPath(); ctx.moveTo(-0.06*s,-1.04*s); ctx.quadraticCurveTo(-0.22*s,-0.84*s,-0.34*s,-0.76*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.28*s,-0.72*s); ctx.lineTo(0.26*s,-0.72*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.46*s,-0.4*s); ctx.lineTo(0.46*s,-0.4*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0.02*s,-1.0*s); ctx.lineTo(0.02*s,0); ctx.stroke();
+  } else if(fi===1){ // 牢 seal: an ox safe inside its pen
+    stroke(ctx, s*0.11);
+    ctx.beginPath();
+    ctx.moveTo(-0.44*s,-0.02*s); ctx.lineTo(-0.44*s,-0.78*s);
+    ctx.quadraticCurveTo(-0.44*s,-1.14*s, 0,-1.14*s);
+    ctx.quadraticCurveTo(0.44*s,-1.14*s, 0.44*s,-0.78*s);
+    ctx.lineTo(0.44*s,-0.02*s);
+    ctx.stroke();
+    oxHead(ctx, s, 0, 0, 0.75, s*0.11);
+  } else if(fi===2){ // 牧 bronze: a hand with a whip drives the ox
+    oxHead(ctx, s, -0.14*s, 0, 1.0, s*0.15);
+    stroke(ctx, s*0.15);
+    ctx.beginPath(); ctx.moveTo(0.16*s,-0.06*s); ctx.lineTo(0.5*s,-0.92*s); ctx.stroke();   // whip stick
+    ctx.beginPath(); ctx.moveTo(0.3*s,-0.42*s); ctx.lineTo(0.54*s,-0.36*s); ctx.stroke();   // hand prongs
+    ctx.beginPath(); ctx.moveTo(0.26*s,-0.28*s); ctx.lineTo(0.5*s,-0.18*s); ctx.stroke();
+  } else { // 犇 oracle: three oxen — the stampede
+    const w = s*0.08;
+    oxHead(ctx, s, 0, -0.6*s, 0.52, w);
+    oxHead(ctx, s, -0.3*s, 0, 0.52, w);
+    oxHead(ctx, s, 0.3*s, 0, 0.52, w);
+  }
+}
+
+/* the drifter family 羊→羔→美→羴 */
+function yangForm(ctx, fi, s, swing){
+  if(fi===0){ // 羊 kai: two dots, three horizontals, vertical
+    stroke(ctx, s*0.13);
+    ctx.beginPath(); ctx.moveTo(-0.2*s,-1.08*s); ctx.lineTo(-0.09*s,-0.9*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0.2*s,-1.08*s); ctx.lineTo(0.09*s,-0.9*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.26*s,-0.76*s); ctx.lineTo(0.26*s,-0.76*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.3*s,-0.52*s); ctx.lineTo(0.3*s,-0.52*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.42*s,-0.28*s); ctx.lineTo(0.42*s,-0.28*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-0.76*s); ctx.lineTo(0,0); ctx.stroke();
+  } else if(fi===1){ // 羔 seal: the lamb — a small sheep over ember ticks
+    sheepHead(ctx, s, 0, -0.3*s, 0.92, s*0.11);
+    stroke(ctx, s*0.1);
+    for(const [x1,y1,x2,y2] of [[-0.34,-0.16,-0.42,0],[-0.12,-0.14,-0.16,0],[0.12,-0.14,0.16,0],[0.34,-0.16,0.42,0]]){
+      ctx.beginPath(); ctx.moveTo(x1*s,y1*s); ctx.lineTo(x2*s,y2*s); ctx.stroke();
+    }
+  } else if(fi===2){ // 美 bronze: a dancer crowned with ram horns
+    stroke(ctx, s*0.15);
+    ctx.beginPath(); ctx.moveTo(0,-1.0*s); ctx.quadraticCurveTo(-0.3*s,-1.24*s,-0.42*s,-0.98*s); ctx.stroke();  // horns
+    ctx.beginPath(); ctx.moveTo(0,-1.0*s); ctx.quadraticCurveTo(0.3*s,-1.24*s,0.42*s,-0.98*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-1.0*s); ctx.lineTo(0,-0.46*s); ctx.stroke();                                  // a 大 beneath
+    ctx.beginPath(); ctx.moveTo(-0.4*s,-0.6*s); ctx.quadraticCurveTo(0,-0.78*s,0.4*s,-0.6*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-0.46*s); ctx.quadraticCurveTo(-0.18*s,-0.24*s,-0.36*s+swing,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-0.46*s); ctx.quadraticCurveTo(0.18*s,-0.24*s,0.36*s-swing,0); ctx.stroke();
+  } else { // 羴 oracle: the whole flock
+    const w = s*0.08;
+    sheepHead(ctx, s, 0, -0.6*s, 0.52, w);
+    sheepHead(ctx, s, -0.3*s, 0, 0.52, w);
+    sheepHead(ctx, s, 0.3*s, 0, 0.52, w);
+  }
+}
+
+function drawGlyphChar(ctx, charKey, fi, cx, footY, s, phase, sq, color){
+  ctx.save();
+  ctx.translate(cx, footY);
+  ctx.transform(1 - sq*0.25, 0, 0, 1+sq, 0, 0); // squash: sq>0 stretch tall, sq<0 squash
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
+  const swing = Math.sin(phase) * 0.16 * s;      // legs alternate
+  const legged = charKey==='ren' || (charKey==='yang' && fi===2);
+  if(!legged) ctx.rotate(Math.sin(phase)*0.05);  // head-glyphs waddle instead
+  if(charKey==='ren') renForm(ctx, fi, s, swing);
+  else if(charKey==='niu') niuForm(ctx, fi, s);
+  else yangForm(ctx, fi, s, swing);
   ctx.restore();
 }
 
-/* the four eras of 人 as a static portrait (used in overlays) */
-function drawPersonPortrait(canvas, era, color){
+/* any form of any family as a static portrait (used in overlays) */
+function drawCharPortrait(canvas, charKey, fi, color){
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
   const s = Math.min(canvas.width, canvas.height) * 0.62;
-  drawPerson(ctx, era, canvas.width/2, canvas.height*0.86, s, 0, 0, color);
+  drawGlyphChar(ctx, charKey, fi, canvas.width/2, canvas.height*0.86, s, 0, 0, color);
 }
 
 /* --- collectible pictographs, oracle-bone line style --- */
@@ -376,6 +468,61 @@ const GLYPHS = {
   '魚': {py:'yú',   en:'fish',     zh:'鱼'}
 };
 
+/* ============================== characters ============================== */
+/* Three playable glyph families. At every gate you EVOLVE into a related
+   character (real etymology) and your skill gains a new twist.           */
+const CHARS = {
+  ren: {
+    title_en:'the Walker', title_zh:'行者',
+    skill_en:"Ancestor's Leap", skill_zh:'祖灵之跃',
+    hint_en:'tap jump again in mid-air', hint_zh:'空中再按一次跳跃',
+    forms:[
+      {ch:'人', py:'rén', mean_en:'a person in profile', mean_zh:'侧立之人',
+       tier_en:'LV1 · a soft second jump', tier_zh:'LV1 · 轻盈的二段跳'},
+      {ch:'大', py:'dà', mean_en:'“big” — a person, arms spread wide', mean_zh:'「大」——张开双臂的人',
+       tier_en:'LV2 · full-power double jump', tier_zh:'LV2 · 全力二段跳'},
+      {ch:'夫', py:'fū', mean_en:'a grown man — 大 wearing a hairpin', mean_zh:'「夫」——束发加簪的大人',
+       tier_en:'LV3 · TRIPLE jump', tier_zh:'LV3 · 三段跳'},
+      {ch:'舞', py:'wǔ', mean_en:'“to dance” — plumes swaying in both hands', mean_zh:'「舞」——双手执羽而舞',
+       tier_en:'LV4 · air-dance — stomping a spirit recharges your jumps', tier_zh:'LV4 · 凌空之舞——踩鬼回充跳跃'}
+    ],
+    airMax:[1,1,2,2], airPow:[0.8,1,1,1]
+  },
+  niu: {
+    title_en:'the Charger', title_zh:'冲撞者',
+    skill_en:'Ox Charge', skill_zh:'蛮牛冲撞',
+    hint_en:'K / Shift (or the CHARGE pad) to ram', hint_zh:'按 K / Shift（或「冲」键）冲撞',
+    forms:[
+      {ch:'牛', py:'niú', mean_en:'an ox — horns curving UP', mean_zh:'「牛」——牛角向上',
+       tier_en:'LV1 · a short ram that scatters 鬼', tier_zh:'LV1 · 短距冲撞，撞飞「鬼」'},
+      {ch:'牢', py:'láo', mean_en:'“pen” — an ox safe inside its fold', mean_zh:'「牢」——圈中之牛',
+       tier_en:'LV2 · the pen lingers: a brief shield after each charge', tier_zh:'LV2 · 圈栏余护：冲撞后短暂护盾'},
+      {ch:'牧', py:'mù', mean_en:'“to herd” — a hand drives the ox', mean_zh:'「牧」——执鞭驱牛',
+       tier_en:'LV3 · driven hard: charge straight through 火', tier_zh:'LV3 · 鞭策疾驰：可径直冲过「火」'},
+      {ch:'犇', py:'bēn', mean_en:'“stampede” — three oxen at full run', mean_zh:'「犇」——三牛奔逐',
+       tier_en:'LV4 · stampede — longer charge, near-instant recharge', tier_zh:'LV4 · 万牛奔腾——冲得更远，几乎无冷却'}
+    ],
+    spd:[10,11.5,13,15], cd:[2.8,2.4,1.9,1.1], dur:[0.26,0.26,0.3,0.36],
+    shieldTier:1, firesafeTier:2
+  },
+  yang: {
+    title_en:'the Drifter', title_zh:'云游者',
+    skill_en:'Wool-Cloud Glide', skill_zh:'云羊滑翔',
+    hint_en:'hold jump while falling to glide', hint_zh:'下落时按住跳跃即可滑翔',
+    forms:[
+      {ch:'羊', py:'yáng', mean_en:'a sheep — horns curling DOWN', mean_zh:'「羊」——羊角下卷',
+       tier_en:'LV1 · hold jump to drift down slowly', tier_zh:'LV1 · 按住跳跃，缓缓飘落'},
+      {ch:'羔', py:'gāo', mean_en:'“lamb” — light as new wool', mean_zh:'「羔」——羔羊轻如新绒',
+       tier_en:'LV2 · floatier wool', tier_zh:'LV2 · 羊毛更蓬松'},
+      {ch:'美', py:'měi', mean_en:'“beautiful” — a dancer crowned with ram horns', mean_zh:'「美」——头戴羊角的舞者',
+       tier_en:'LV3 · graceful: gliding drifts you swiftly forward', tier_zh:'LV3 · 曼妙之姿：滑翔时向前疾飘'},
+      {ch:'羴', py:'shān', mean_en:'a whole flock of sheep', mean_zh:'「羴」——一整群羊',
+       tier_en:'LV4 · the flock bears you — a near-hover', tier_zh:'LV4 · 群羊托举——近乎悬浮'}
+    ],
+    fall:[2.6,2.0,1.5,1.0], boost:[1,1.05,1.2,1.25]
+  }
+};
+
 /* ============================== stages ============================== */
 const GY = 470;          // ground surface (top of the ground strip)
 const GH = 70;           // ground thickness
@@ -438,6 +585,8 @@ const Game = (function(){
 
   let stageIdx = 0, lives = 3, coins = 0, running = false, raf = 0, lastTs = 0;
   let stage, era, camX = 0, tGlobal = 0;
+  let selChar = 'ren', lastSkillTxt = '';
+  let bufJump = 0, bufSkill = 0;   // input buffers: a tap counts even between frames
   let player, keys = {}, btn = {};
   let coinList = [], spiritList = [], gateGlow = 0;
 
@@ -453,7 +602,10 @@ const Game = (function(){
     coinList = stage.coins.map(c=>({...c, got:false, bob: c.x*0.01}));
     spiritList = stage.spirits.map(s=>({...s, x:s.x, dir:1, dead:false, phase:s.x*0.02, y:GY}));
     player = { x:60, y:GY-46, w:28, h:46, vx:0, vy:0, onGround:true,
-               face:1, runPhase:0, sq:0, dead:false };
+               face:1, runPhase:0, sq:0, dead:false,
+               jumpPrev:true, skillPrev:false, airUsed:0,
+               dashT:0, dashCd:0, shieldT:0, gliding:false,
+               poofT:0, poofX:0, poofY:0 };
     gateGlow = 0;
     syncHud();
   }
@@ -461,7 +613,9 @@ const Game = (function(){
   function platformsAt(){ return stage.ground.concat(stage.plats); }
 
   function syncHud(){
-    $('hudGlyph').textContent = '人';
+    $('hudGlyph').textContent = CHARS[selChar].forms[stageIdx].ch;
+    $('hudSkill').textContent = 'LV' + (stageIdx+1);
+    lastSkillTxt = '';
     $('hudEraName').textContent = t(`STAGE ${stageIdx+1}/4 · ${era.name_en}`, `第 ${stageIdx+1}/4 关 · ${era.name_zh}`);
     $('hudEra').style.color = era.ink;
     $('hudEra').querySelector('b').style.color = era.accent;
@@ -487,37 +641,39 @@ const Game = (function(){
   }
   function stageClear(){
     running = false;
-    const fromEra = stage.era;
-    const toIdx = stageIdx+1;
-    if(toIdx >= STAGES.length){
-      // final gate → win screen
-      $('clearBtn').textContent = t('▶ See what you traced','▶ 看看你溯到了什么');
+    const fi = stageIdx, toIdx = stageIdx+1;
+    const cs = CHARS[selChar];
+    $('clearBtn').textContent = toIdx >= STAGES.length
+      ? t('▶ See what you became','▶ 看看你成了什么')
+      : t('▶ Deeper into the past','▶ 更向古代');
+    $('clearTitle').textContent = t('THE GLYPH EVOLVES','字形进化');
+    let msg;
+    if(toIdx < STAGES.length){
+      const nf = cs.forms[toIdx], fe = ERAS[STAGES[fi].era], te = ERAS[STAGES[toIdx].era];
+      msg = `${cs.forms[fi].ch} → <b style="color:#e8b04a">${nf.ch}</b> ${nf.py} · ${t(nf.mean_en, nf.mean_zh)}`
+          + `<br><span style="font-size:0.8em;color:#8a8a8a">${fe.sub} → ${te.sub}</span>`
+          + `<br><span style="color:#8bc34a;font-size:0.86em">⬆ ${t(cs.skill_en, cs.skill_zh)} — ${t(nf.tier_en, nf.tier_zh)}</span>`;
     } else {
-      $('clearBtn').textContent = t('▶ Deeper into the past','▶ 更向古代');
+      msg = t(`${cs.forms[fi].ch} · the oldest gate is behind you`, `${cs.forms[fi].ch} · 最古老的门已在身后`);
     }
-    // animate the morph from this era to the next (or itself if last)
-    const toEra = toIdx < STAGES.length ? STAGES[toIdx].era : stage.era;
-    $('clearTitle').textContent = t('GATE PASSED','穿门而过');
-    const fe = ERAS[fromEra], te = ERAS[toEra];
-    $('clearMsg').innerHTML = toIdx < STAGES.length
-      ? t(`人 · ${fe.sub} &nbsp;→&nbsp; ${te.sub}`, `人 · ${fe.sub} &nbsp;→&nbsp; ${te.sub}`)
-      : t('人 · the oldest form there is','人 · 已是最古老的形态');
+    $('clearMsg').innerHTML = msg;
     overlay('ovClear', true);
-    animateMorph(fromEra, toEra, ERAS[toEra].ink);
+    animateMorph(fi, Math.min(toIdx, STAGES.length-1));
   }
-  function animateMorph(fromEra, toEra, color){
+  function animateMorph(fromFi, toFi){
     const c = $('clearCanvas'); const cx2 = c.getContext('2d');
+    const colFrom = ERAS[STAGES[fromFi].era].ink, colTo = ERAS[STAGES[toFi].era].ink;
     let tt = 0;
     (function step(){
       tt += 0.028;
       const k = Math.min(1, tt);
       cx2.clearRect(0,0,c.width,c.height);
       const s = Math.min(c.width, c.height)*0.62;
-      // crossfade old → new
+      // crossfade old character → its evolved kin
       cx2.globalAlpha = 1-k;
-      drawPerson(cx2, fromEra, c.width/2, c.height*0.9, s, 0, 0, color);
+      drawGlyphChar(cx2, selChar, fromFi, c.width/2, c.height*0.9, s, 0, 0, colFrom);
       cx2.globalAlpha = k;
-      drawPerson(cx2, toEra, c.width/2, c.height*0.9, s, 0, 0, color);
+      drawGlyphChar(cx2, selChar, toFi, c.width/2, c.height*0.9, s, 0, 0, colTo);
       cx2.globalAlpha = 1;
       if(k < 1 && $('ovClear').classList.contains('show')) requestAnimationFrame(step);
     })();
@@ -539,30 +695,36 @@ const Game = (function(){
   }
   function win(){
     running = false;
+    const cs = CHARS[selChar];
     // build the full evolution row, oldest on the right — the way we ran it
     const row = $('evoRow'); row.innerHTML='';
-    ERA_ORDER.forEach((e, i)=>{
+    cs.forms.forEach((f, i)=>{
       const cell = document.createElement('div');
-      cell.className = 'evo-cell' + (e==='oracle'?' now':'');
+      cell.className = 'evo-cell' + (i===3?' now':'');
       const cc = document.createElement('canvas'); cc.width=66; cc.height=78;
-      const lab = document.createElement('span'); lab.textContent = ERAS[e].sub;
+      const lab = document.createElement('span'); lab.textContent = `${f.ch} · ${ERAS[STAGES[i].era].sub}`;
       cell.appendChild(cc); cell.appendChild(lab); row.appendChild(cell);
-      drawPersonPortrait(cc, e, ERAS[e].ink);
+      drawCharPortrait(cc, selChar, i, ERAS[STAGES[i].era].ink);
     });
+    const first = cs.forms[0], last = cs.forms[3];
+    $('winTitle').textContent = `${first.ch} → ${last.ch} · ` + t('GROWN TO THE ROOT','长成于本源');
     $('winMsg').textContent = t(
-      `人 traced from today's brush all the way back to the oracle bones — with ${coins} glyphs gathered along the way.`,
-      `「人」从今日的笔画一路溯回甲骨——沿途集得 ${coins} 个字。`);
+      `You grew ${first.ch} into ${last.ch} (${last.py} — ${last.mean_en}) across 3,000 years of script — with ${coins} glyphs gathered along the way.`,
+      `你让「${first.ch}」在三千年的字体长河中长成了「${last.ch}」（${last.py}）——沿途集得 ${coins} 个字。`);
     overlay('ovWin', true);
   }
 
   /* ---------- physics + update ---------- */
   function moveDir(){ return (keys.left||btn.left?-1:0) + (keys.right||btn.right?1:0); }
   function jumpHeld(){ return !!(keys.jump || btn.jump); }
+  function skillHeld(){ return !!(keys.skill || btn.skill); }
 
   function update(dt){
     tGlobal += dt;
     gateGlow = (Math.sin(tGlobal*4)+1)/2;
-    const spd = era.speed;
+    const C = CHARS[selChar], tier = stageIdx;
+    // 美/羴: gliding drifts you forward (uses last frame's glide state)
+    const spd = era.speed * (player.gliding && C.boost ? C.boost[tier] : 1);
     const dir = moveDir();
     if(dir!==0){ player.face = dir; }
     // horizontal
@@ -572,6 +734,36 @@ const Game = (function(){
     // gravity
     player.vy += 0.72;
     if(player.vy > 16) player.vy = 16;
+
+    // --- skill: 牛 family charge ---
+    if(player.dashCd > 0) player.dashCd -= dt;
+    if(player.shieldT > 0) player.shieldT -= dt;
+    if(bufJump > 0) bufJump -= dt;
+    if(bufSkill > 0) bufSkill -= dt;
+    const sk = skillHeld(), skEdge = (sk && !player.skillPrev) || bufSkill > 0;
+    player.skillPrev = sk;
+    if(selChar==='niu' && skEdge && player.dashCd <= 0 && player.dashT <= 0){
+      player.dashT = C.dur[tier]; player.dashCd = C.cd[tier]; player.sq = 0.12; bufSkill = 0;
+    }
+    if(player.dashT > 0){
+      player.dashT -= dt;
+      player.vx = C.spd[tier] * player.face;
+      if(player.vy > 2) player.vy = 2;
+      if(player.dashT <= 0 && tier >= C.shieldTier) player.shieldT = 0.45; // 牢: the pen lingers
+    }
+    // --- skill: 羊 family glide ---
+    player.gliding = false;
+    if(selChar==='yang' && !player.onGround && jumpHeld() && player.vy > 0.5){
+      const cap = C.fall[tier];
+      if(player.vy > cap) player.vy = cap;
+      player.gliding = true;
+    }
+    // 牛 HUD: show the charge cooldown live
+    if(selChar === 'niu'){
+      const txt = 'LV' + (stageIdx+1) + (player.dashCd > 0 ? ' · ' + player.dashCd.toFixed(1) : ' · ⚡');
+      if(txt !== lastSkillTxt){ $('hudSkill').textContent = txt; lastSkillTxt = txt; }
+      $('btnS').classList.toggle('cd', player.dashCd > 0);
+    }
 
     // --- x axis ---
     player.x += player.vx;
@@ -598,8 +790,21 @@ const Game = (function(){
     if(player.onGround && wasAir){ player.sq = -0.22; }
     player.sq += (0 - player.sq) * 0.2;
 
-    // jump
-    if(jumpHeld() && player.onGround){ player.vy = era.jump; player.onGround = false; player.sq = 0.18; btn._jumpConsumed = true; }
+    // jump — edge-triggered; the 人 family gets air jumps
+    if(player.onGround) player.airUsed = 0;
+    const jh = jumpHeld(), jEdge = (jh && !player.jumpPrev) || bufJump > 0;
+    player.jumpPrev = jh;
+    if(jEdge){
+      if(player.onGround){
+        player.vy = era.jump; player.onGround = false; player.sq = 0.18; bufJump = 0;
+      } else if(selChar==='ren' && player.airUsed < C.airMax[tier]){
+        player.airUsed++;
+        player.vy = era.jump * C.airPow[tier];
+        player.sq = 0.18; bufJump = 0;
+        player.poofT = 0.3; player.poofX = player.x + player.w/2; player.poofY = player.y + player.h;
+      }
+    }
+    if(player.poofT > 0) player.poofT -= dt;
 
     // run gait
     if(player.onGround && Math.abs(player.vx) > 0.3) player.runPhase += Math.abs(player.vx) * 0.09;
@@ -630,9 +835,16 @@ const Game = (function(){
       // collision with player
       const pcx = player.x+player.w/2, pcy = player.y+player.h/2;
       if(Math.abs(pcx - s.x) < 26 && Math.abs(pcy - (s.y-18)) < 30){
-        if(player.vy > 1 && (player.y+player.h) < s.y - 6){
+        if(player.dashT > 0){
+          // ox charge scatters it
+          s.dead = true;
+        } else if(player.vy > 1 && (player.y+player.h) < s.y - 6){
           // stomp
           s.dead = true; player.vy = -9; player.sq = 0.16;
+          if(selChar==='ren' && stageIdx >= 3) player.airUsed = 0; // 舞: the dance recharges
+        } else if(player.shieldT > 0){
+          // 牢: the pen holds — shove the spirit back
+          s.dir = pcx < s.x ? 1 : -1;
         } else {
           loseLife(); return;
         }
@@ -643,6 +855,7 @@ const Game = (function(){
     for(const f of stage.fires){
       const fx = f.x, fw = f.w;
       if(player.x+player.w > fx && player.x < fx+fw && player.y+player.h > GY-18){
+        if(selChar==='niu' && player.dashT > 0 && tier >= C.firesafeTier) continue; // 牧: driven through the flames
         loseLife(); return;
       }
     }
@@ -700,10 +913,40 @@ const Game = (function(){
 
     // player (flip to face direction)
     const cx = player.x + player.w/2, footY = player.y + player.h;
+    if(player.dashT > 0){                          // 牛: charge ghost trail
+      for(const [off, al] of [[14,0.3],[28,0.15]]){
+        const gx = cx - player.face*off;
+        ctx.save(); ctx.globalAlpha = al;
+        if(player.face < 0){ ctx.translate(gx*2, 0); ctx.scale(-1,1); }
+        drawGlyphChar(ctx, selChar, stageIdx, gx, footY, 46, player.runPhase, 0, era.ink);
+        ctx.restore();
+      }
+    }
     ctx.save();
     if(player.face < 0){ ctx.translate(cx*2, 0); ctx.scale(-1,1); }
-    drawPerson(ctx, stage.era, cx, footY, 46, player.runPhase, player.sq, era.ink);
+    drawGlyphChar(ctx, selChar, stageIdx, cx, footY, 46, player.runPhase, player.sq, era.ink);
     ctx.restore();
+    if(player.gliding){                            // 羊: wool puffs overhead
+      ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = era.ink; ctx.lineWidth = 2;
+      for(const [ox,r] of [[-9,5],[1,7],[11,5]]){
+        ctx.beginPath(); ctx.arc(cx+ox, player.y - 10 - r*0.4, r, 0, Math.PI*2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    if(player.poofT > 0){                          // 人: air-jump ring
+      const k = 1 - player.poofT/0.3;
+      ctx.save(); ctx.globalAlpha = 0.6*(1-k); ctx.strokeStyle = era.ink; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(player.poofX, player.poofY, 6 + k*16, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+    if(player.shieldT > 0){                        // 牢: the pen arch lingers
+      ctx.save(); ctx.globalAlpha = Math.min(1, player.shieldT*3) * 0.7;
+      ctx.strokeStyle = era.accent; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, footY-20, 34, Math.PI, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-34, footY-18); ctx.lineTo(cx-34, footY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+34, footY-18); ctx.lineTo(cx+34, footY); ctx.stroke();
+      ctx.restore();
+    }
 
     ctx.restore();
   }
@@ -771,17 +1014,19 @@ const Game = (function(){
       const k = e.key.toLowerCase();
       if(['arrowleft','a'].includes(k)){ keys.left=true; e.preventDefault(); }
       if(['arrowright','d'].includes(k)){ keys.right=true; e.preventDefault(); }
-      if([' ','arrowup','w'].includes(k)){ keys.jump=true; e.preventDefault();
+      if([' ','arrowup','w'].includes(k)){ keys.jump=true; if(!e.repeat) bufJump = 0.15; e.preventDefault();
         if(!running && $('ovStart').classList.contains('show')) start();
       }
+      if(['shift','k','x'].includes(k)){ keys.skill=true; if(!e.repeat) bufSkill = 0.15; e.preventDefault(); }
     });
     window.addEventListener('keyup', (e)=>{
       const k = e.key.toLowerCase();
       if(['arrowleft','a'].includes(k)) keys.left=false;
       if(['arrowright','d'].includes(k)) keys.right=false;
       if([' ','arrowup','w'].includes(k)) keys.jump=false;
+      if(['shift','k','x'].includes(k)) keys.skill=false;
     });
-    hold('btnL','left'); hold('btnR','right'); hold('btnJ','jump');
+    hold('btnL','left'); hold('btnR','right'); hold('btnJ','jump'); hold('btnS','skill');
   }
   function hold(id, prop){
     const el = $(id);
@@ -793,11 +1038,50 @@ const Game = (function(){
     el.addEventListener('lostpointercapture', up);
   }
 
+  /* ---------- character select ---------- */
+  function buildCharSelect(){
+    const row = $('charRow'); row.innerHTML = '';
+    for(const key of Object.keys(CHARS)){
+      const c = CHARS[key];
+      const card = document.createElement('div');
+      card.className = 'char-card' + (key === selChar ? ' sel' : '');
+      const cc = document.createElement('canvas'); cc.width = 52; cc.height = 60;
+      const nm = document.createElement('div'); nm.className = 'cname';
+      nm.textContent = `${c.forms[0].ch} ${c.forms[0].py} · ${t(c.title_en, c.title_zh)}`;
+      const sk = document.createElement('div'); sk.className = 'cskill';
+      sk.textContent = t(c.skill_en, c.skill_zh);
+      const hint = document.createElement('div'); hint.className = 'chint';
+      hint.innerHTML = c.forms.map(f=>f.ch).join(' → ') + '<br>' + t(c.hint_en, c.hint_zh);
+      card.append(cc, nm, sk, hint);
+      card.onclick = () => selectChar(key);
+      row.appendChild(card);
+      drawCharPortrait(cc, key, 0, '#e8dfc8');
+    }
+  }
+  function syncSkillLine(){
+    const c = CHARS[selChar];
+    $('skillLine').innerHTML =
+      `<span style="color:#e8b04a">${c.forms[0].ch} ${t(c.skill_en, c.skill_zh)}</span> — ${t(c.forms[0].tier_en, c.forms[0].tier_zh)} · <span style="color:#8bc34a">${t('evolves at every gate', '每过一门进化一次')}</span>`;
+    $('btnS').style.display = selChar === 'niu' ? 'flex' : 'none';
+  }
+  function selectChar(key){
+    selChar = key;
+    buildCharSelect(); syncSkillLine();
+    if(!running){ loadStage(0); render(); }
+  }
+  function chooseChar(){
+    running = false; hideAll(); overlay('ovStart', true);
+    loadStage(0);
+  }
+  function onLang(){ syncHud(); buildCharSelect(); syncSkillLine(); }
+
   bindInput();
+  buildCharSelect(); syncSkillLine();
   // idle attract render so the start screen isn't blank
   loadStage(0); running=false; render();
 
-  return { start, restart, nextStage, syncHud };
+  return { start, restart, nextStage, syncHud, onLang, chooseChar,
+           dbg: () => ({ player, spiritList, stage, stageIdx, selChar }) };
 })();
 </script>
 </body>
