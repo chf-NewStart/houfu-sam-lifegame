@@ -1369,11 +1369,11 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
       ctx.save(); ctx.strokeStyle = VERM; ctx.globalAlpha = (1 - seg / 0.16) * 0.6; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(hx, hy - 42, 20 + seg * 260, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
+    drawOG('戈', hx + 24, hy - 8, 30, VERM, 4);                 // 戈 rides the back — behind the hero, so it carries it
     ctx.save(); ctx.translate(0, -bob);
     drawOG(FORMS[fi], hx, hy, 96, HERO, 10);                    // brighter & bolder than anything on the sheet
     ctx.restore();
-    drawOG('戈', hx - 42, hy - 40, 40, VERM, 4);                // 戈 guards the back, 弓 rides the left
-    drawOG('弓', hx + 40, hy - 34, 34, VERM, 4);
+    drawOG('弓', hx - 26, hy + 2, 28, VERM, 4);                 // 弓 rides at the left hand, as in 引
     // the evolution caption — 人 → 舞, the whole arc named
     ctx.save(); ctx.globalAlpha = 0.9; ctx.fillStyle = 'rgba(242,236,216,0.9)';
     ctx.font = '12px Consolas,ui-monospace,monospace'; ctx.textAlign = 'center';
