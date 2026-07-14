@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>字源 · Glyph Run // houfu.xyz</title>
 <meta name="description" content="A top-down arena survivor where you ARE a Chinese character. Spirits swarm, your ink fights back, and every survived wave rewinds the script an era — 隸書 → 篆書 → 金文 → 甲骨文 — your glyph evolving toward its oracle-bone root.">
 <link rel="icon" type="image/png" href="/game/thumbs/glyphrun-icon.png?v=4">
@@ -257,6 +257,24 @@
     font-size:1.05rem;width:42px;height:42px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   #muteBtn:hover{border-color:#e8b04a;color:#e8b04a;}
   #muteBtn.off{color:#5a5a5a;text-decoration:line-through;}
+
+  /* ================= app play: fullscreen landscape, thumb on the canvas ================= */
+  #rotateHint{display:none;}
+  body.appfs{padding:0;overflow:hidden;}
+  body.appfs .hdr, body.appfs .hud, body.appfs #elemRow, body.appfs .pad,
+  body.appfs .pad-hint, body.appfs .footer{display:none;}
+  body.appfs .stage-wrap{max-width:none;margin:0;}
+  body.appfs #cvsBox{position:fixed;inset:0;z-index:40;border:none;border-radius:0;background:#000;
+    display:flex;align-items:center;justify-content:center;touch-action:none;box-shadow:none;}
+  body.appfs #cvs{width:min(100vw, calc(100vh * 16 / 9));height:auto;}
+  body.appfs #pauseBtn{top:calc(8px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));}
+  body.appfs #muteBtn{top:calc(8px + env(safe-area-inset-top));right:calc(56px + env(safe-area-inset-right));}
+  body.appfs .overlay{padding-left:calc(22px + env(safe-area-inset-left));padding-right:calc(22px + env(safe-area-inset-right));}
+  body.appfs #rotateHint{position:fixed;inset:0;z-index:80;background:rgba(4,6,5,0.97);color:#cfc6ae;
+    text-align:center;font-size:1.05rem;line-height:1.8;display:none;}
+  @media (orientation: portrait){
+    body.appfs #rotateHint{display:flex;align-items:center;justify-content:center;}
+  }
 </style>
 </head>
 <body>
@@ -267,10 +285,12 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b32</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b33</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
+
+<div id="rotateHint"><div><div style="font-size:2.4rem;margin-bottom:8px">⟳</div><div data-en="Turn your phone sideways — the night is wide" data-zh="请横屏——长夜很宽">Turn your phone sideways — the night is wide</div></div></div>
 
 <div class="stage-wrap">
   <div class="hud">
@@ -309,6 +329,7 @@
         <button class="btn" id="startBtn" onclick="Game.start()"><canvas class="zhanIcon" width="24" height="22"></canvas><span data-en="GO TO BATTLE" data-zh="出戰">GO TO BATTLE</span></button>
         <button class="btn alt" style="margin-top:0" onclick="Game.openBook()"><canvas class="wenIcon" width="20" height="22"></canvas><span data-en="the scroll" data-zh="卷軸">the scroll</span></button>
         <button class="btn alt" style="margin-top:0" onclick="Game.openSeal()"><canvas class="yinIcon" width="20" height="22"></canvas><span data-en="the seal" data-zh="篆刻">the seal</span></button>
+        <button class="btn alt" style="margin-top:0" onclick="toggleLang()">中文 / EN</button>
       </div>
     </div>
 
@@ -405,6 +426,10 @@ function toggleLang(){
   try{ Game.onLang(); }catch(e){} // Game isn't built yet on the initial auto-toggle
 }
 try{ if(localStorage.getItem('arcade_lang') === 'zh') toggleLang(); }catch(e){}
+
+/* app play: coarse pointers get the fullscreen landscape cabinet */
+const APPFS = (()=>{ try{ return matchMedia('(pointer: coarse)').matches; }catch(e){ return false; } })();
+if(APPFS) document.body.classList.add('appfs');   // the script runs at the end of <body>
 
 /* ============================== glyph art ============================== */
 /* Every glyph is hand-drawn with rounded strokes so it scales crisply and
@@ -2205,6 +2230,7 @@ const Game = (function(){
   let elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
   let synOn = {}, shengT = 18, duanT = 12, oppSeen = false;
   let pools = [], embers = [], waveGuard = false, strokeN = 0, matT = 0.6, stainFade = 0, runGlyphs = 0, composeT = 1;
+  const touch = {on:false, ox:0, oy:0, kx:0, ky:0};   // the thumb-stick, drawn where the thumb lands
   const inkCvs = document.createElement('canvas'); inkCvs.width = CW; inkCvs.height = CH;
   const inkCtx = inkCvs.getContext('2d');
 
@@ -3831,7 +3857,33 @@ const Game = (function(){
       ctx.restore();
     }
 
+    // app play: the element tallies live on the canvas (the page chrome is gone)
+    if(APPFS){
+      ctx.save(); ctx.textAlign = 'left'; ctx.font = 'bold 13px Consolas,"Ma Shan Zheng",KaiTi,serif';
+      let ex = WALL + 8; const ey = CH - WALL + 12;
+      for(const el of ['金','木','水','火','土']){
+        if(!elems[el]) continue;
+        ctx.fillStyle = ELEM_COLOR[el]; ctx.globalAlpha = 0.9;
+        ctx.fillText(el + elems[el], ex, ey); ex += 36;
+      }
+      for(const id of Object.keys(SYNERGIES)){
+        if(!synOn[id]) continue;
+        ctx.fillStyle = '#e86a50'; ctx.fillText(SYNERGIES[id].ch, ex, ey); ex += 22;
+      }
+      ctx.restore();
+    }
+
     ctx.restore();
+
+    // the thumb-stick blooms where the thumb landed (drawn last, above the shake)
+    if(touch.on){
+      ctx.save();
+      ctx.strokeStyle = era.ink; ctx.globalAlpha = 0.25; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(touch.ox, touch.oy, 46, 0, Math.PI*2); ctx.stroke();
+      ctx.globalAlpha = 0.45; ctx.fillStyle = era.ink;
+      ctx.beginPath(); ctx.arc(touch.kx, touch.ky, 16, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
   }
 
   /* ---------- toast ---------- */
@@ -3917,6 +3969,45 @@ const Game = (function(){
     joyEl.addEventListener('pointercancel', joyUp);
     joyEl.addEventListener('lostpointercapture', joyUp);
     $('pauseBtn').addEventListener('click', ()=>{ paused ? resume() : pause(); });
+    /* touch steering: press anywhere on the night and the stick blooms under
+       your thumb — drag to steer, lift to stop. Buttons and menus still work. */
+    const box = document.getElementById('cvsBox');
+    const toCanvas = (e)=>{
+      const r = cvs.getBoundingClientRect();
+      return [(e.clientX - r.left) * (CW / r.width), (e.clientY - r.top) * (CH / r.height)];
+    };
+    let steerId = null, sx = 0, sy = 0;
+    const STEER_R = 60;                                // css px of full deflection
+    box.addEventListener('pointerdown', (e)=>{
+      if(e.pointerType === 'mouse') return;            // desktop keeps keys + the pad
+      if(e.target.closest('button') || e.target.closest('.overlay') || e.target.closest('a')) return;
+      steerId = e.pointerId; sx = e.clientX; sy = e.clientY;
+      joy.on = true; joy.x = 0; joy.y = 0;
+      [touch.ox, touch.oy] = toCanvas(e); touch.kx = touch.ox; touch.ky = touch.oy; touch.on = true;
+      try{ box.setPointerCapture(steerId); }catch(_){}
+      e.preventDefault();
+    });
+    box.addEventListener('pointermove', (e)=>{
+      if(e.pointerId !== steerId) return;
+      let dx = (e.clientX - sx) / STEER_R, dy = (e.clientY - sy) / STEER_R;
+      const m = Math.hypot(dx, dy);
+      if(m > 1){ dx /= m; dy /= m; }
+      joy.x = dx; joy.y = dy;
+      touch.kx = touch.ox + dx * 46; touch.ky = touch.oy + dy * 46;
+    });
+    const steerUp = (e)=>{
+      if(e.pointerId !== steerId) return;
+      steerId = null; touch.on = false;
+      joy.on = false; joy.x = joy.y = 0;
+    };
+    box.addEventListener('pointerup', steerUp);
+    box.addEventListener('pointercancel', steerUp);
+    // turning the phone upright holds the night still
+    try{
+      matchMedia('(orientation: portrait)').addEventListener('change', (e)=>{
+        if(e.matches && running && APPFS) pause();
+      });
+    }catch(e){}
     // 音/默: the sound toggle
     const mb = $('muteBtn');
     const syncMute = ()=>{ mb.textContent = SFX.isOn() ? '音' : '默'; mb.classList.toggle('off', !SFX.isOn()); };
