@@ -238,6 +238,10 @@
   .carve.poor{opacity:0.55;cursor:default;}
   #sealPts{color:#f5d98a;font-size:0.95rem;letter-spacing:2px;}
 
+  /* the scroll's escape hatch rides the top-left corner and stays put while you read */
+  .bookClose{position:sticky;top:10px;align-self:flex-start;margin:4px 0 -38px 10px;z-index:3;padding:7px 12px;font-size:0.72rem;
+    background:#0d130d;border:1px solid #3a4634;box-shadow:0 2px 10px rgba(0,0,0,0.55);}
+
   /* short landscape phones: the clear screen must fit — the button stays in reach */
   @media (max-height:560px){
     .overlay{overflow-y:auto;}
@@ -297,7 +301,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b37</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b38</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -390,6 +394,7 @@
 
     <!-- CODEX -->
     <div class="overlay shell" id="ovBook">
+      <button class="btn alt bookClose" onclick="Game.closeBook()" data-en="✕ roll it up" data-zh="✕ 收卷">✕ roll it up</button>
       <canvas id="bookWen" width="46" height="50" style="display:block;margin:0 auto 2px"></canvas>
       <h2 data-en="卷 · THE SCROLL" data-zh="卷軸 · 圖鑑">卷 · THE SCROLL</h2>
       <div id="bookBody" style="max-width:780px;text-align:left;"></div>
@@ -4582,7 +4587,11 @@ const Game = (function(){
     card(gd, bookCanvas(44,40,(bc)=>drawWang(bc,22,37,30,EMBER)),
       `<b style="color:${INK}">亡</b> wáng ${zdicLink('亡')}<br>${t('the broken blade — “to perish”. It marks your end; do not meet it.','刃之折者——「亡」。它标记你的终局，愿你不遇。')}`, 210);
   }
-  function openBook(){ buildBook(); overlay('ovBook', true); }
+  function openBook(){
+    buildBook(); overlay('ovBook', true);
+    const ov = $('ovBook'); ov.scrollTop = 0;                       // phone: back to the scroll's head
+    try{ ov.scrollIntoView({block:'start'}); }catch(e){}            // desktop: bring the head into view
+  }
   function closeBook(){ overlay('ovBook', false); }
 
   const PV = (function(){
