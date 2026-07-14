@@ -301,7 +301,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b43</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b44</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -1487,7 +1487,8 @@ const SFX = (function(){
     }
   }
   return {
-    guzheng(i){ pluck(PENTA[((i%PENTA.length)+PENTA.length)%PENTA.length], 0.09); },   // a step in the melody
+    guzheng(i, g){ pluck(PENTA[((i%PENTA.length)+PENTA.length)%PENTA.length], g == null ? 0.09 : g); },   // 古筝: play one note (softer if g given)
+    musicGain(v){ const a = actx(); if(a) musicBus(a).gain.setTargetAtTime(Math.max(0, Math.min(0.7, v)), a.currentTime, 0.08); },   // duck/lift the whole bed smoothly
     melody(gain){                                              // 古筝: the next note of the walk's tune, rate-limited
       const now = performance.now(); if(now-lastPluck < 85) return; lastPluck = now;
       pluck(nextNote(), gain || 0.08);
@@ -2435,7 +2436,15 @@ const Game = (function(){
   let weather = null, wDrops = [], wFlash = 0, wBoltT = 8;   // the sky has moods from the first night
   let marks = [], eshots = [], shocks = [];                  // 生 spawn omens; archers' arrows; the drum's rings
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
-  let musicT = 0;                                            // sparse ambient-pluck cadence while moving
+  /* the 古筝 bed: a flowing pentatonic phrase, played continuously — it SLOWS
+     while you're landing blows, and FAINTS then recovers when you take one.
+     (degree into the scale, note length in seconds) */
+  const PHRASE = [
+    [7,0.34],[9,0.34],[11,0.26],[12,0.46],[11,0.26],[9,0.34],[10,0.5],[8,0.6],
+    [9,0.34],[11,0.34],[12,0.26],[14,0.46],[12,0.3],[11,0.34],[9,0.5],[7,0.72],
+    [9,0.3],[10,0.3],[11,0.44],[9,0.3],[7,0.44],[6,0.3],[8,0.5],[7,0.8]
+  ];
+  let phraseI = 0, noteT = 0.4, tempo = 1, hurtDuck = 1;      // tempo<1 = slower; hurtDuck<1 = fainter
   let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
   let pav = null, treeDone = false, pavDone = false;
   let hatOn = false, shengPed = null, paused = false, foesSeen = {}, banner = null;
@@ -2750,6 +2759,7 @@ const Game = (function(){
     if(s.dead || (s.iT||0) > 0) return;
     s.hp = (s.hp||1) - dmg;
     s.iT = 0.22;
+    tempo = Math.min(tempo, 0.5);                     // 古筝 slows while you're landing blows
     if(s.hp <= 0){ killSpirit(s); return; }           // the kill tolls its own deep bell (killSpirit)
     SFX.strike();                                     // 编钟: every landed hit rings a bright bell
     addFx({kind:'poof', x:s.x, y:s.y, t:0.15, r:10});
@@ -2827,6 +2837,7 @@ const Game = (function(){
   }
   function hit(){
     lives--; player.inv = 1.0; shakeT = 0.3;
+    hurtDuck = 0.16;                                           // the 古筝 faints when you're struck, then recovers
     inkSplat(inkCtx, player.x, player.y, 14, '#7e1f12');       // your own ink runs cinnabar
     SFX.crack();
     addFx({kind:'hurt', x:player.x, y:player.y, t:0.35, r:34});
@@ -2961,12 +2972,17 @@ const Game = (function(){
     player.y = clamp(player.y, WALL+34, CH-WALL-10);
     player.sq += (0-player.sq)*0.2;
 
-    // --- 古筝: the melody is driven by combat (see hurtSpirit); while just moving,
-    //     a sparse soft pluck keeps traversal alive without plodding ---
-    musicT -= dt;
-    if(mag > 0.12 && !gate && musicT <= 0){
-      musicT = 0.9;                                   // sparse ambient step (combat fills the rest in)
-      SFX.melody(0.045);
+    // --- 古筝: a continuous flowing bed. Landing hits slows it (bullet-time
+    //     guzheng); taking a hit faints it, then it recovers. ---
+    tempo += (1 - tempo) * Math.min(1, dt * 1.4);     // eases back to full speed
+    hurtDuck += (1 - hurtDuck) * Math.min(1, dt * 1.1); // the faint recovers
+    SFX.musicGain((gate ? 0.24 : 0.5) * hurtDuck);    // softer at the gate; ducked when hurt
+    noteT -= dt * tempo;                              // slower tempo → longer real gaps
+    if(noteT <= 0){
+      const step = PHRASE[phraseI];
+      SFX.guzheng(step[0], 0.058);                    // soft, it sits under the 编钟
+      phraseI = (phraseI + 1) % PHRASE.length;
+      noteT += step[1];
     }
 
     // --- family gifts, woven into the walk ---
