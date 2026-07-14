@@ -74,6 +74,9 @@
   .btn{background:transparent;border:1px solid #e8b04a;color:#e8b04a;font-family:inherit;font-size:0.86rem;padding:10px 26px;cursor:pointer;transition:background .12s,color .12s;border-radius:5px;}
   .btn:hover{background:#e8b04a;color:#1a1205;}
   .btn.alt{border-color:#1db954;color:#1db954;margin-top:10px;}
+  .echip.elabel{color:#8a7a4a;border-color:#3a3426;letter-spacing:2px;}
+  .esep{color:#4a4a4a;align-self:center;font-size:0.8rem;}
+  .echip.dimsyn{opacity:0.75;}
   /* the pause menu: one even row of equal buttons resting on the bottom */
   #ovPause .btn-row{margin-top:auto;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;width:min(680px,94%);padding-bottom:12px;}
   #ovPause .btn-row .btn{flex:1 1 130px;max-width:200px;margin-top:0;padding:11px 6px;font-size:0.78rem;white-space:nowrap;
@@ -305,7 +308,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b54</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b55</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -1047,6 +1050,8 @@ function drawFoeGlyph(ctx, type, x, y, phase, col, face){
   else if(type==='she'){ if(ORACLE['射'] && typeof Path2D !== 'undefined'){ ctx.save(); ctx.translate(x, y); if(face<0) ctx.scale(-1,1); drawOraclePath(ctx, ORACLE['射'], 0, -2, 42, col); ctx.restore(); } }
   else if(type==='yan'){ if(ORACLE['燕'] && typeof Path2D !== 'undefined'){ ctx.save(); ctx.translate(x, y); if(face<0) ctx.scale(-1,1); drawOraclePath(ctx, ORACLE['燕'], 0, -2, 36, col); ctx.restore(); } }
   else if(type==='drum'){ if(ORACLE['壴'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['壴'], x, y-2, 46, col); }
+  else if(type==='xue'){ if(ORACLE['血'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['血'], x, y-2, 42, col); }
+  else if(type==='yoke'){ if(ORACLE['央'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['央'], x, y-2, 44, col); }
   else if(type==='forge'){ if(ORACLE['铸'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['铸'], x, y, 62, col); }
   else if(type==='guo'){ if(ORACLE['果'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['果'], x, y, 54, '#b9dd9a'); }
   else if(type==='meng' || type==='gu') drawVesselBoss(ctx, x, y, 64, phase, col, type==='gu');
@@ -1264,6 +1269,8 @@ const ORACLE = {
   '燕': {p:'M43.5 0.0L45.7 15.2 43.5 16.5 36.5 8.7 32.6 10.9 39.6 18.7 40.4 31.7 47.4 39.6 18.3 54.8 11.7 61.3 10.9 73.5 14.3 74.3 15.2 63.9 20.9 59.1 18.7 76.1 21.7 76.5 25.7 55.2 47.0 44.3 47.4 63.0 37.8 88.3 42.2 87.4 52.2 62.6 56.1 75.2 54.8 100.0 58.7 90.9 59.6 73.5 51.7 54.3 51.7 45.7 55.7 42.6 77.0 54.3 75.7 70.4 79.6 69.1 80.4 59.6 83.5 59.1 85.2 77.4 88.3 75.2 89.1 62.2 82.6 53.0 51.7 37.8 58.7 24.8 49.1 14.3 48.3 5.7 43.5 0.0ZM46.5 20.4L50.4 20.0 54.3 25.7 49.6 33.0 43.9 30.0 46.5 20.4Z'},
   '壴': {p:'M50.2 0.0L47.6 22.4 33.8 8.6 30.8 9.1 48.1 33.2 30.8 39.2 30.0 63.4 33.8 67.2 41.2 68.5 40.3 80.6 34.7 95.7 21.3 97.8 23.5 100.0 78.7 100.0 78.7 95.7 64.0 95.7 62.7 93.5 60.1 71.1 62.3 66.4 72.2 63.4 70.5 37.5 51.5 32.3 67.9 7.3 65.7 6.0 52.8 20.7 52.4 1.3 50.2 0.0ZM48.1 38.4L63.1 38.8 67.0 41.8 65.7 62.1 37.3 62.9 34.3 60.8 35.1 41.8 48.1 38.4ZM44.2 48.3L41.2 49.6 42.5 53.4 60.1 52.2 58.8 49.1 44.2 48.3ZM50.6 66.8L55.8 66.8 59.3 91.8 57.1 95.7 43.3 95.7 41.2 90.1 44.6 75.4 46.3 69.4 50.6 66.8Z'},
   '铸': {p:'M71.9 0.0L68.0 5.7 68.0 18.9 62.7 27.6 65.4 27.6 69.3 20.2 68.9 29.4 73.2 30.3 74.6 36.0 75.9 22.4 71.5 12.7 70.6 5.7 74.1 1.3 71.9 0.0ZM28.9 0.9L24.1 29.4 25.9 39.0 30.7 44.7 28.5 24.1 31.1 24.1 34.2 30.7 36.4 27.6 31.1 17.1 32.0 3.9 28.9 0.9ZM50.0 0.9L37.3 3.1 43.4 9.2 43.4 21.5 38.2 32.9 42.5 48.7 37.7 49.1 37.7 52.6 46.9 48.7 42.5 34.6 45.6 25.4 53.1 26.8 52.2 47.8 59.2 50.4 54.8 45.2 54.8 37.3 58.3 32.0 54.8 22.4 55.7 8.3 59.2 2.2 50.0 0.9ZM47.8 5.7L50.9 5.3 52.2 8.3 51.8 21.9 46.9 19.7 47.8 5.7ZM71.9 36.8L68.4 43.9 73.2 39.9 71.9 36.8ZM45.6 57.9L42.5 66.2 48.2 73.7 51.8 73.7 53.1 70.6 47.8 67.1 45.6 57.9ZM29.8 58.8L28.5 61.0 33.3 64.9 39.0 64.5 29.8 58.8ZM53.5 60.5L52.6 68.4 61.8 63.6 53.5 60.5ZM25.4 65.8L28.5 72.4 24.1 80.3 33.3 73.7 39.0 82.0 38.2 94.3 31.6 99.1 66.7 100.0 70.6 97.8 57.5 94.3 57.0 75.4 50.9 80.7 45.6 80.7 33.3 67.5 25.4 65.8ZM64.0 67.5L58.3 74.1 61.4 73.7 67.5 81.6 68.9 78.5 64.0 67.5ZM45.2 83.8L51.3 84.6 52.6 95.6 41.7 95.2 42.5 85.5 45.2 83.8Z'},
+  '血': {p:'M80.5 0.0L69.5 9.2 62.5 23.2 59.0 55.7 46.3 65.8 36.6 62.3 29.2 53.9 26.5 20.6 18.6 8.3 13.8 3.5 9.9 3.9 16.9 16.2 3.7 35.5 6.8 36.8 19.1 21.9 22.1 23.2 23.0 51.3 30.9 67.1 22.1 90.8 16.4 94.7 3.3 93.9 4.2 100.0 92.8 96.5 96.7 94.3 94.5 91.2 71.7 92.1 59.9 66.2 65.1 55.7 68.6 22.4 71.7 21.1 82.2 32.5 86.2 30.3 73.9 15.4 84.4 3.9 80.5 0.0ZM43.6 7.9L36.2 15.4 36.2 26.8 42.8 32.5 47.6 30.3 51.1 20.6 49.3 10.1 43.6 7.9ZM42.3 15.4L45.4 14.9 46.7 19.7 43.6 27.2 40.6 25.0 42.3 15.4ZM37.1 68.0L41.9 71.1 55.9 69.3 65.1 90.8 53.3 93.9 27.9 93.0 26.5 89.9 37.1 68.0Z'},
+  '央': {p:'M43.5 0.0L37.9 2.2 37.1 14.2 39.2 20.7 46.6 22.0 46.6 31.5 28.0 31.9 25.9 29.7 24.6 8.6 20.7 9.1 20.7 30.6 24.6 35.3 41.8 36.2 46.6 39.2 19.8 57.3 24.6 58.6 43.5 48.3 47.4 51.3 46.6 61.6 36.2 72.8 31.0 85.8 32.3 100.0 36.2 98.7 37.1 81.5 48.7 65.5 54.7 66.4 61.2 74.6 66.4 88.4 66.4 97.8 69.4 99.1 70.7 90.1 67.2 78.9 60.3 66.8 52.6 60.8 51.7 48.7 74.6 56.0 80.2 53.9 59.1 46.6 50.9 37.5 77.6 33.2 78.4 8.2 76.3 5.2 73.3 7.3 73.3 28.9 71.1 31.0 52.2 31.9 51.7 22.0 59.5 18.5 60.3 5.6 57.3 0.9 43.5 0.0ZM44.0 4.7L53.9 5.2 55.2 14.2 42.7 15.5 41.4 7.3 44.0 4.7Z'},
   /* player families — the exact traced forms (犇/羴 compose from 牛/羊, 燚 from 炎, 為 from 又+象) */
   '人': {p:'M50.9 0.0L49.6 6.6 53.1 15.4 30.3 45.2 35.1 47.4 55.3 21.1 57.9 20.2 61.8 25.0 65.4 43.4 48.7 75.0 45.2 90.8 46.5 100.0 50.4 96.9 51.3 80.3 69.7 45.2 69.7 32.9 54.8 11.0 53.9 0.4 50.9 0.0Z'},
   '大': {p:'M45.7 0.0L43.5 17.7 14.2 38.4 14.7 41.4 18.1 40.5 36.2 26.7 43.1 23.3 44.4 25.4 43.5 43.5 34.1 50.4 28.0 59.9 29.7 80.6 28.0 89.2 22.0 97.8 28.9 94.4 34.1 84.1 31.5 61.6 41.4 50.0 47.4 47.4 51.3 48.7 59.1 60.8 59.1 90.1 69.8 100.0 72.0 97.8 65.1 92.7 60.8 84.1 62.5 59.9 55.6 48.7 47.8 42.7 47.8 23.7 82.8 37.1 85.8 34.9 48.3 18.1 48.7 2.2 45.7 0.0Z'},
@@ -2421,6 +2428,8 @@ const FOE_INFO = {
   hu:  {ch:'虎', py:'hǔ',   en:'tiger — it stalks, then pounces',     zh:'虎——环伺而后扑'},
   she: {ch:'射', py:'shè',  en:'archer — it looses bone arrows from afar', zh:'射——远处引弓放矢'},
   yan: {ch:'燕', py:'yàn',  en:'swallow — fast, weaving swoops',      zh:'燕——迅捷穿花的燕子'},
+  xue: {ch:'血', py:'xuè',  en:'blood in the vessel — it FEEDS the horde; fell it first', zh:'血——皿中之血，滋养群鬼，先斩为上'},
+  yoke:{ch:'央', py:'yāng', en:'the yoke — its ring drags your steps', zh:'央——颈枷之环，拖你脚步'},
   drum:{ch:'壴', py:'zhù',  en:'war-drum — it beats out shockwave rings', zh:'壴——擂鼓震出冲击波'},
   forge:{ch:'铸', py:'zhù', en:'the Caster — a forge that pours molten fire; broken, it yields bronze', zh:'铸——熔炉泼火，破之得青铜'},
   meng:{ch:'皿', py:'mǐn',  en:'the vessel, walking',                 zh:'皿——活起来的礼器'},
@@ -2431,9 +2440,9 @@ const FOE_INFO = {
 /* per-era wave tuning: survive the timer and the gate opens */
 const WAVES = [
   {len:35, spawn:1.35, cap:10, spd:55, fireInt:0,   bolt:0},
-  {len:45, spawn:1.15, cap:14, spd:65, fireInt:7.0, bolt:0},
-  {len:55, spawn:0.95, cap:18, spd:76, fireInt:5.5, bolt:6.0},
-  {len:65, spawn:0.78, cap:22, spd:88, fireInt:4.2, bolt:4.2}
+  {len:45, spawn:1.05, cap:15, spd:68, fireInt:7.0, bolt:0},
+  {len:55, spawn:0.85, cap:20, spd:80, fireInt:5.0, bolt:6.0},
+  {len:65, spawn:0.70, cap:25, spd:92, fireInt:3.8, bolt:3.8}
 ];
 /* 電 lightning burns white-hot — neither your gold nor the spirits' teal */
 const BOLTC = '#fff0b8';
@@ -2461,6 +2470,7 @@ const Game = (function(){
   let stopT = 0;                                             // hitstop — the brush pauses at the end of a stroke
   let exhaleT = null, calmT = 0;                             // the night's exhale before the gate; the reward for stillness
   let endless = false, endlessN = 0;                         // 永夜 — the endless night beyond the last gate
+  let elemHintShown = false;                                 // the 五行 lesson, taught once per run
   let bestNight = 0; try{ bestNight = +(localStorage.getItem('glyphrun_endless')||0); }catch(e){}
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
   /* the 古筝 bed: a real guzheng field recording from a Lunar New Year event
@@ -2606,13 +2616,24 @@ const Game = (function(){
   /* the five phases, counted under the arena; woken synergies glow cinnabar */
   function syncElems(){
     const row = $('elemRow'); if(!row) return;
-    let html = '';
+    let html = `<span class="echip elabel" title="${t('every glyph you catch carries one of the five phases','拾起的每个字都带着五行之一')}">${t('五行','五行')}</span>`;
     for(const el of ['金','木','水','火','土']){
       const n = elems[el];
       html += `<span class="echip${n>0?' lit':''}" style="${n>0?`border-color:${ELEM_COLOR[el]}55;`:''}"><b style="color:${n>0?ELEM_COLOR[el]:'#555'}">${el}</b> ${n}</span>`;
     }
+    html += `<span class="esep">⇢</span>`;
+    // every bond shown from the start, with live progress — the build is visible
     for(const id of Object.keys(SYNERGIES)){
-      if(synOn[id]) html += `<span class="echip syn" title="${t(SYNERGIES[id].en, SYNERGIES[id].zh)}">${SYNERGIES[id].ch} · ${t(SYNERGIES[id].name_en, SYNERGIES[id].name_zh)}</span>`;
+      const S = SYNERGIES[id];
+      if(synOn[id]){
+        html += `<span class="echip syn" title="${t(S.en, S.zh)}">${S.ch} ${t(S.name_zh, S.name_zh)} ✓</span>`;
+      } else {
+        const parts = Object.keys(S.need).map(el=>{
+          const have = Math.min(elems[el], S.need[el]);
+          return `<b style="color:${have>=S.need[el]?ELEM_COLOR[el]:'#5a5a5a'}">${el}${have}/${S.need[el]}</b>`;
+        }).join(' ');
+        html += `<span class="echip dimsyn" title="${t(S.en, S.zh)}">${S.ch} ${parts}</span>`;
+      }
     }
     row.innerHTML = html;
   }
@@ -2635,14 +2656,18 @@ const Game = (function(){
   function gainElem(el, n){
     if(!el) return;
     elems[el] += (n||1) * (desk.wuxing ? 2 : 1);
+    if(!elemHintShown){
+      elemHintShown = true;
+      popToastEx('五行', 'wǔ xíng', t('every glyph carries a phase — fill a bond below to wake its power', '字含五行——集齐下方相生之数，唤醒其力'), 'qi');
+    }
     checkSynergies();
   }
 
   /* ---------- lifecycle ---------- */
   function start(){
     maxHp = HP_BASE + (seal.carved.xin ? 1 : 0);
-    stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 12; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
-    endless = false; endlessN = 0; exhaleT = null; calmT = 0;
+    stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 14; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
+    endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = false;
     desk = freshDesk();
     elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
     synOn = {}; shengT = 18; duanT = 12; oppSeen = false; strokeN = 0; runGlyphs = 0;
@@ -3070,8 +3095,9 @@ const Game = (function(){
       if(Math.abs(dx) > 0.25) player.face = dx>0?1:-1;
     }
     const inInk = pools.some(pl=>Math.hypot(pl.x-player.x, pl.y-player.y) < pl.r);  // your own ink carries you
+    const yoked = spirits.some(s=>!s.dead && s.type==='yoke' && Math.hypot(s.x-player.x, s.y-player.y) < 130);
     const spd = 200 * c.spd * (buffT>0 ? 1.3 : 1) * (player.speedT>0 ? 1.45 : 1)
-              * (seal.carved.zhi ? 1.06 : 1) * (inInk ? 1.1 : 1);
+              * (seal.carved.zhi ? 1.06 : 1) * (inInk ? 1.1 : 1) * (yoked ? 0.7 : 1);
     if(c.drift){
       const ax = mag>0.01 ? dx*spd*Math.min(1,mag) : 0;
       const ay = mag>0.01 ? dy*spd*Math.min(1,mag) : 0;
@@ -3456,6 +3482,8 @@ const Game = (function(){
               else if(stageIdx >= 1 && roll >= 0.5 && roll < 0.5 + [0,0.12,0.14,0.16][stageIdx]){ type = 'she'; hp = 2; cr = 30; }
               else if(stageIdx >= 1 && roll >= 0.30 && roll < 0.30 + [0,0.12,0.13,0.13][stageIdx]){ type = 'yan'; hp = 1; cr = 24; }   // 燕 the swallow
               else if(stageIdx >= 2 && roll >= 0.66 && roll < 0.66 + [0,0,0.10,0.12][stageIdx]){ type = 'drum'; hp = 3; cr = 32; }       // 壴 the war-drum
+              else if(stageIdx >= 2 && roll >= 0.44 && roll < 0.44 + [0,0,0.05,0.06][stageIdx]){ type = 'xue'; hp = 3; cr = 30; }        // 血 the blood-priest
+              else if(stageIdx >= 1 && roll >= 0.20 && roll < 0.20 + [0,0.05,0.06,0.07][stageIdx]){ type = 'yoke'; hp = 4; cr = 32; }    // 央 the yoke
               const sp = {x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
                           st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
                           spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)};
@@ -3694,6 +3722,26 @@ const Game = (function(){
             for(const off of [-0.42, 0, 0.42])
               fires.push({x:s.x+Math.cos(ang+off)*54, y:s.y+Math.sin(ang+off)*54, r:28, t:4.5, warm:1.3});
           }
+        } else if(s.type==='xue'){
+          // 血: the blood-priest hangs back and FEEDS the horde — fell it first
+          const tx=-ddy/d, ty=ddx/d, err=(d-230)/230;
+          s.x += (tx*s.dirn*0.5 + (ddx/d)*err)*s.spd*0.8*sf*dt;
+          s.y += (ty*s.dirn*0.5 + (ddy/d)*err)*s.spd*0.8*sf*dt;
+          s.face = ddx>=0?1:-1;
+          s.healT = (s.healT===undefined ? 2.2 : s.healT) - dt;
+          if(s.healT <= 0){
+            s.healT = 3.2;
+            let fed = false;
+            for(const o of spirits){
+              if(o===s || o.dead || o.boss || o.type==='guo' || o.type==='xue') continue;
+              if(Math.hypot(o.x-s.x, o.y-s.y) < 160 && (o.hp||1) < 4){ o.hp = (o.hp||1) + 1; fed = true; }
+            }
+            if(fed){ addFx({kind:'healring', x:s.x, y:s.y, t:0.5, r:160}); SFX.splat(); }
+          }
+        } else if(s.type==='yoke'){
+          // 央: the yoke trudges close — inside its ring your steps drag
+          s.x += (ddx/d)*s.spd*0.42*sf*dt; s.y += (ddy/d)*s.spd*0.42*sf*dt;
+          s.face = ddx>=0?1:-1;
         } else if(s.type==='guo'){
           // the tree stands
         } else {
@@ -3817,7 +3865,7 @@ const Game = (function(){
           SFX.tick();
         }
         if(coins >= nextHeart){
-          nextHeart += 12;
+          nextHeart += 14;
           if(lives < maxHp){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
         }
         maybeLevelUp();
@@ -4196,6 +4244,28 @@ const Game = (function(){
         if(ORACLE['燕'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['燕'], 0, -2, 36, col);
         ctx.restore();
       }
+      else if(s.type==='xue'){
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(Math.sin(s.phase*2)*0.04);
+        if(ORACLE['血'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['血'], 0, -2, 42, col);
+        ctx.restore();
+        ctx.save(); ctx.fillStyle = '#f0674a'; ctx.shadowColor = '#f0674a'; ctx.shadowBlur = 4;
+        ctx.beginPath(); ctx.arc(s.x, s.y - 14, 2.4, 0, Math.PI*2); ctx.fill(); ctx.restore();
+      }
+      else if(s.type==='yoke'){
+        ctx.save(); ctx.globalAlpha = 0.16 + 0.05*Math.sin(tGlobal*3);
+        ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 1.5; ctx.setLineDash([8,8]);
+        ctx.beginPath(); ctx.arc(s.x, s.y, 130, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+        const pd = Math.hypot(player.x-s.x, player.y-s.y);
+        if(pd < 130){                                       // the tether: your steps drag
+          ctx.globalAlpha = 0.35; ctx.setLineDash([4,6]);
+          ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(player.x, player.y); ctx.stroke(); ctx.setLineDash([]);
+        }
+        ctx.restore();
+        ctx.save(); ctx.translate(s.x, s.y); if((s.face||1)<0) ctx.scale(-1,1);
+        ctx.rotate(Math.sin(s.phase)*0.04);
+        if(ORACLE['央'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['央'], 0, -2, 44, col);
+        ctx.restore();
+      }
       else if(s.type==='drum'){
         ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(Math.sin(s.phase*2)*0.03);
         if(ORACLE['壴'] && typeof Path2D !== 'undefined') drawOraclePath(ctx, ORACLE['壴'], 0, -2, 46, col);
@@ -4383,6 +4453,10 @@ const Game = (function(){
         ctx.globalAlpha = 0.95*k; ctx.lineWidth = 3.4;       // brighter core right at the impact
         ctx.beginPath(); ctx.moveTo(e.x - Math.cos(e.ang)*e.r*0.25, e.y - Math.sin(e.ang)*e.r*0.25);
         ctx.lineTo(e.x + Math.cos(e.ang)*e.r*0.45, e.y + Math.sin(e.ang)*e.r*0.45); ctx.stroke();
+      } else if(e.kind==='healring'){
+        ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.4*k;
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1.05-k), 0, Math.PI*2); ctx.stroke();
       } else if(e.kind==='ripple'){
         /* a drop in still water — thin, slow, in the era's ink */
         ctx.strokeStyle = era.ink; ctx.lineWidth = 1.5;
@@ -4925,7 +4999,9 @@ const Game = (function(){
       she:  ()=>bookCanvas(48,44,(bc)=>{ if(ORACLE['射'] && typeof Path2D !== 'undefined') drawOraclePath(bc, ORACLE['射'], 24, 22, 36, INKGHOST); }),
       yan:  ()=>bookCanvas(48,44,(bc)=>{ if(ORACLE['燕'] && typeof Path2D !== 'undefined') drawOraclePath(bc, ORACLE['燕'], 24, 22, 34, INKGHOST); }),
       drum: ()=>bookCanvas(48,46,(bc)=>{ if(ORACLE['壴'] && typeof Path2D !== 'undefined') drawOraclePath(bc, ORACLE['壴'], 24, 23, 40, INKGHOST); }),
-      forge:()=>bookCanvas(52,50,(bc)=>{ if(ORACLE['铸'] && typeof Path2D !== 'undefined') drawOraclePath(bc, ORACLE['铸'], 26, 25, 44, INKGHOST); })
+      forge:()=>bookCanvas(52,50,(bc)=>{ if(ORACLE['铸'] && typeof Path2D !== 'undefined') drawOraclePath(bc, ORACLE['铸'], 26, 25, 44, INKGHOST); }),
+      xue:  ()=>bookCanvas(48,44,(bc)=>{ if(ORACLE['血'] && typeof Path2D !== 'undefined') drawOraclePath(bc, ORACLE['血'], 24, 22, 36, INKGHOST); }),
+      yoke: ()=>bookCanvas(48,44,(bc)=>{ if(ORACLE['央'] && typeof Path2D !== 'undefined') drawOraclePath(bc, ORACLE['央'], 24, 22, 38, INKGHOST); })
     };
     const foeNote = {
       gui: t('1 hp · the swarm','1血 · 群袭'), shi: t('2 hp · wave 2+','2血 · 第2波起'),
@@ -4934,7 +5010,9 @@ const Game = (function(){
       she: t('2 hp · wave 2+ · it shoots','2血 · 第2波起 · 放矢'),
       yan: t('1 hp · wave 2+ · fast','1血 · 第2波起 · 迅捷'),
       drum: t('3 hp · wave 3+ · shockwaves','3血 · 第3波起 · 震波'),
-      forge: t('BOSS · wave 1 · drops 鼎','头目 · 第1波 · 落鼎')
+      forge: t('BOSS · wave 1 · drops 鼎','头目 · 第1波 · 落鼎'),
+      xue: t('3 hp · wave 3+ · heals the horde','3血 · 第3波起 · 滋养群鬼'),
+      yoke: t('4 hp · wave 2+ · slows you near it','4血 · 第2波起 · 近身迟缓')
     };
     for(const key of Object.keys(FOE_INFO)){
       const F = FOE_INFO[key];
