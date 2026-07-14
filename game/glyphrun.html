@@ -301,7 +301,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b38</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b39</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -4524,15 +4524,18 @@ const Game = (function(){
       hu:   ()=>bookCanvas(54,42,(bc)=>drawTiger(bc,28,23,34,0,INKGHOST,1,false)),
       meng: ()=>bookCanvas(54,54,(bc)=>drawVesselBoss(bc,27,30,42,0,INKGHOST,false)),
       gu:   ()=>bookCanvas(54,54,(bc)=>drawVesselBoss(bc,27,30,42,0,INKGHOST,true)),
-      long: ()=>bookCanvas(54,44,(bc)=>drawDragonSeg(bc,{x:27,y:26,_prev:null},INKGHOST))
+      long: ()=>bookCanvas(54,44,(bc)=>drawDragonSeg(bc,{x:27,y:26,_prev:null},INKGHOST)),
+      she:  ()=>bookCanvas(48,44,(bc)=>{ if(ORACLE['射'] && typeof Path2D !== 'undefined') drawOraclePath(bc, ORACLE['射'], 24, 22, 36, INKGHOST); })
     };
     const foeNote = {
       gui: t('1 hp · the swarm','1血 · 群袭'), shi: t('2 hp · wave 2+','2血 · 第2波起'),
       hu: t('3 hp · wave 3+','3血 · 第3波起'), meng: t('BOSS · wave 2','头目 · 第2波'),
-      gu: t('BOSS · wave 3','头目 · 第3波'), long: t('BOSS · the last night','头目 · 最后一夜')
+      gu: t('BOSS · wave 3','头目 · 第3波'), long: t('BOSS · the last night','头目 · 最后一夜'),
+      she: t('2 hp · wave 2+ · it shoots','2血 · 第2波起 · 放矢')
     };
     for(const key of Object.keys(FOE_INFO)){
       const F = FOE_INFO[key];
+      if(typeof foeArt[key] !== 'function'){ continue; }   // never let a foe without a portrait kill the whole scroll
       if(seen.foes[key])
         card(gd, foeArt[key](), `<b style="color:${INK}">${F.ch}</b> ${F.py} ${zdicLink(F.ch)}<br>${t(F.en,F.zh)}<br><span style="color:${EMBER}">${foeNote[key]}</span>`, 170);
       else
@@ -4588,7 +4591,9 @@ const Game = (function(){
       `<b style="color:${INK}">亡</b> wáng ${zdicLink('亡')}<br>${t('the broken blade — “to perish”. It marks your end; do not meet it.','刃之折者——「亡」。它标记你的终局，愿你不遇。')}`, 210);
   }
   function openBook(){
-    buildBook(); overlay('ovBook', true);
+    try{ buildBook(); }
+    catch(e){ $('bookBody').innerHTML = `<div style="color:#8a8a8a">${t('the scroll jammed — tell the scribe:','卷轴卡住了——请告知书吏：')} ${e.message}</div>`; }
+    overlay('ovBook', true);
     const ov = $('ovBook'); ov.scrollTop = 0;                       // phone: back to the scroll's head
     try{ ov.scrollIntoView({block:'start'}); }catch(e){}            // desktop: bring the head into view
   }
