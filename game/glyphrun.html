@@ -11,10 +11,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <style>
-  /* the whole chrome is written with a brush, not typed — 楷书毛笔 first,
-     system kai faces as the fallback, monospace only for the build tag */
+  /* terminal Latin, brushed hanzi: the monospace face leads the stack and owns
+     every Latin glyph; CJK falls through to 楷书毛笔, so 汉字 stay hand-written */
   :root{
-    --brush:'Ma Shan Zheng','Kaiti SC','KaiTi','STKaiti','BiauKai','DFKai-SB',cursive,serif;
+    --brush:Consolas,'Courier New','Ma Shan Zheng','Kaiti SC','KaiTi','STKaiti','BiauKai','DFKai-SB',monospace;
     --mono:Consolas,'Courier New',monospace;
     --cinnabar:#a3271b;
   }
@@ -118,21 +118,21 @@
   /* ================= the scholar's overhaul: shell · bone · bamboo · stone ================= */
   .hdr .titlebox{display:flex;gap:12px;align-items:center;}
   #sealTitle{width:54px;height:54px;flex-shrink:0;image-rendering:auto;}
-  .hdr .title{font-size:1.7rem;letter-spacing:1px;text-transform:none;}
-  .hdr .title .cn{font-size:1.5rem;letter-spacing:6px;}
-  .hdr .sub{font-size:0.86rem;}
+  .hdr .title{font-size:1.4rem;letter-spacing:0;text-transform:none;}
+  .hdr .title .cn{font-size:1.3rem;letter-spacing:4px;}
+  .hdr .sub{font-size:0.78rem;}
   .lang-btn,#muteBtn{font-family:var(--brush);}
-  .btn{font-size:1.05rem;letter-spacing:1px;}
-  .overlay h2{font-weight:normal;letter-spacing:3px;font-size:1.7rem;}
-  .overlay .big{font-size:1.0rem;}
-  .overlay .keys{font-size:0.85rem;}
-  .char-card .cname{font-size:0.95rem;}
-  .char-card .cskill{font-size:0.74rem;}
-  .char-card .chint{font-size:0.68rem;}
-  .pad-hint{font-size:0.8rem;color:#6b6b6b;}
-  .hud{font-size:0.85rem;}
-  #toast .tp{font-size:0.82rem;}
-  #toast .tm{font-size:0.78rem;}
+  .btn{font-size:0.92rem;letter-spacing:0.5px;}
+  .overlay h2{font-weight:normal;letter-spacing:2px;font-size:1.55rem;}
+  .overlay .big{font-size:0.9rem;}
+  .overlay .keys{font-size:0.76rem;}
+  .char-card .cname{font-size:0.84rem;}
+  .char-card .cskill{font-size:0.64rem;}
+  .char-card .chint{font-size:0.58rem;}
+  .pad-hint{font-size:0.7rem;color:#6b6b6b;}
+  .hud{font-size:0.76rem;}
+  #toast .tp{font-size:0.72rem;}
+  #toast .tm{font-size:0.68rem;}
   .buildtag{font-family:var(--mono);}
 
   /* --- the night: menus sit on clean near-black — a breath of the arcade's
@@ -267,7 +267,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b29</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b30</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -1444,7 +1444,7 @@ function drawPicto(ctx, ch, cx, cy, s, color){
       ctx.beginPath(); ctx.arc(r*0.22,-r*0.08,r*0.09,0,Math.PI*2); ctx.fill();
       break;
     default:
-      ctx.font = `${s}px "Ma Shan Zheng",KaiTi,serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font = `${s}px Consolas,"Ma Shan Zheng",KaiTi,serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(ch, 0, 0);
   }
   ctx.restore();
@@ -3429,7 +3429,7 @@ const Game = (function(){
     if(gate){
       drawGate(ctx, gate.x, gate.y+55, 110, era.accent, gateGlow);
       ctx.save(); ctx.globalAlpha = 0.5+gateGlow*0.5; ctx.fillStyle = era.ink;
-      ctx.font = '13px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
+      ctx.font = '13px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
       ctx.fillText(t('step into 安','入「安」'), gate.x, gate.y+80);
       ctx.restore();
     }
@@ -3459,12 +3459,12 @@ const Game = (function(){
         ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.fillRect(s.x-26, s.y-52, 52, 6);
         ctx.globalAlpha = 0.95; ctx.fillStyle = '#f0674a';
         ctx.fillRect(s.x-25, s.y-51, 50*Math.max(0,s.hp)/s.maxHp, 4);
-        ctx.fillStyle = GHOST; ctx.font = 'bold 15px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = GHOST; ctx.font = 'bold 15px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
         ctx.fillText(s.bossCh, s.x, s.y-58);
         ctx.restore();
       } else if(s.type==='long' && !s._prev){
         ctx.save(); ctx.fillStyle = GHOST; ctx.globalAlpha = 0.85;
-        ctx.font = 'bold 14px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
+        ctx.font = 'bold 14px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
         ctx.fillText('龍', s.x, s.y-40); ctx.restore();
       } else if((s.hp||1) > 1 && s.type!=='long'){
         ctx.save(); ctx.fillStyle = '#f0674a';
@@ -3581,11 +3581,11 @@ const Game = (function(){
         ctx.lineWidth = 5; ctx.globalAlpha = 0.8*k;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1-k)+18, 0, Math.PI*2); ctx.stroke();
         ctx.fillStyle = era.accent; ctx.globalAlpha = k;
-        ctx.font = 'bold 26px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
+        ctx.font = 'bold 26px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
         ctx.fillText(e.ch, e.x, e.y - 46 - (1-k)*26);
       } else if(e.kind==='heal'){
         ctx.fillStyle = '#f0674a'; ctx.globalAlpha = k;
-        ctx.font = 'bold 20px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
+        ctx.font = 'bold 20px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
         ctx.fillText('♥', e.x, e.y - (1-k)*24);
       }
       ctx.restore();
@@ -3599,7 +3599,7 @@ const Game = (function(){
     ctx.globalAlpha = 0.9; ctx.fillStyle = level>=3 ? era.accent : '#8bc34a';
     const xf = level>=3 ? 1 : (coins-LV_XP[level])/(LV_XP[level+1]-LV_XP[level]);
     ctx.fillRect(WALL+4, WALL+4, bw*Math.max(0,Math.min(1,xf)), 5);
-    ctx.font = 'bold 12px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'right';
+    ctx.font = 'bold 12px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'right';
     ctx.fillStyle = level>=3 ? era.accent : '#8bc34a';
     ctx.fillText(level>=3 ? 'LV MAX' : `LV${NUMCH[level]} ${coins}/${LV_XP[level+1]}`, CW-WALL-76, WALL+24);   // clear of the 止 button
     const lowPulse = lives<=2 ? 0.55+0.45*Math.sin(tGlobal*8) : 1;
@@ -3612,7 +3612,7 @@ const Game = (function(){
       ctx.strokeRect(sx+0.5, WALL+14.5, 20, 9);
     }
     ctx.globalAlpha = 0.9; ctx.fillStyle = '#f0674a';
-    ctx.font = 'bold 13px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
+    ctx.font = 'bold 13px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
     ctx.fillText('♥', WALL+6, WALL+23);
     ctx.restore();
     for(let i=0; i<weapons.length; i++){
@@ -3631,12 +3631,12 @@ const Game = (function(){
       ctx.fillRect(WALL, CH*0.32, CW-WALL*2, 96);
       ctx.globalAlpha = a;
       ctx.fillStyle = GHOST; ctx.shadowColor = GHOST; ctx.shadowBlur = 18;
-      ctx.font = 'bold 58px "Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
+      ctx.font = 'bold 58px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
       ctx.fillText(banner.ch, CW*0.3, CH*0.32+72);
       ctx.shadowBlur = 0;
-      ctx.fillStyle = era.accent; ctx.font = 'bold 16px "Ma Shan Zheng",KaiTi,serif';
+      ctx.fillStyle = era.accent; ctx.font = 'bold 16px Consolas,"Ma Shan Zheng",KaiTi,serif';
       ctx.fillText(banner.py + ' — ' + t('IT COMES', '大敌当前'), CW*0.3+82, CH*0.32+40);
-      ctx.fillStyle = '#cfc6ae'; ctx.font = '13px "Ma Shan Zheng",KaiTi,serif';
+      ctx.fillStyle = '#cfc6ae'; ctx.font = '13px Consolas,"Ma Shan Zheng",KaiTi,serif';
       ctx.fillText(banner.line, CW*0.3+82, CH*0.32+64);
       ctx.restore();
     }
@@ -3859,7 +3859,7 @@ const Game = (function(){
     /* a page for what the run hasn't shown you yet */
     const unknown = (gd, wpx, hint)=>{
       const cv = bookCanvas(30, 34, (bc)=>{
-        bc.fillStyle = DIM; bc.font = '26px "Ma Shan Zheng",KaiTi,serif'; bc.textAlign = 'center';
+        bc.fillStyle = DIM; bc.font = '26px Consolas,"Ma Shan Zheng",KaiTi,serif'; bc.textAlign = 'center';
         bc.fillText('？', 15, 27);
       });
       card(gd, cv, `<b style="color:${DIM}">${t('unmet','未識')}</b><br><span style="color:${DIM}">${hint||t('keep running — the scroll fills itself','再跑一局，卷轴自会写满')}</span>`, wpx, true);
@@ -3951,7 +3951,7 @@ const Game = (function(){
       const S = SYNERGIES[id];
       const need = Object.keys(S.need).map(el=>`<span style="color:${ELEM_COLOR[el]}">${el}×${S.need[el]}</span>`).join(' + ');
       const cv = bookCanvas(30, 34, (bc)=>{
-        bc.fillStyle = seen.syn[id] ? RED : DIM; bc.font = '24px "Ma Shan Zheng",KaiTi,serif'; bc.textAlign = 'center';
+        bc.fillStyle = seen.syn[id] ? RED : DIM; bc.font = '24px Consolas,"Ma Shan Zheng",KaiTi,serif'; bc.textAlign = 'center';
         bc.fillText(S.ch, 15, 26);
       });
       card(gd, cv, `<b style="color:${seen.syn[id]?INK:DIM}">${t(S.name_en, S.name_zh)}</b><br>${need}<br><span style="color:${seen.syn[id]?GRN:DIM}">${seen.syn[id] ? t(S.en, S.zh) : t('wake it once to read its working','醒来一次，方知其效')}</span>`, 210, !seen.syn[id]);
@@ -4056,7 +4056,7 @@ const Game = (function(){
       px.fillStyle = era2.hill; px.fillRect(8, 8, W2-16, H2-16);
       px.save(); px.strokeStyle = era2.accent; px.globalAlpha = 0.4; px.lineWidth = 2;
       px.strokeRect(9, 9, W2-18, H2-18); px.restore();
-      px.save(); px.fillStyle = era2.accent; px.font = 'bold 13px "Ma Shan Zheng",KaiTi,serif'; px.textAlign = 'left';
+      px.save(); px.fillStyle = era2.accent; px.font = 'bold 13px Consolas,"Ma Shan Zheng",KaiTi,serif'; px.textAlign = 'left';
       px.fillText(era2.sub, 18, 28); px.restore();
       drawOracleNum(px, lv+1, W2-30, 24, 12, era2.accent);
       px.save();                                   // the world exists only inside the border
