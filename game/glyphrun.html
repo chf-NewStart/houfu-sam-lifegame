@@ -267,7 +267,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b28</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b29</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -297,7 +297,7 @@
         <div class="setup-left">
           <div class="keys" style="margin:0" data-en="the character" data-zh="选字">the character</div>
           <div class="char-row" id="charRow" style="margin:0"></div>
-          <div class="keys" style="margin:6px 0 0" data-en="the starting 器" data-zh="初始之器">the starting 器</div>
+          <div class="keys" style="margin:6px 0 0" data-en="the starting 器 — already cast in bronze" data-zh="初始之器——已铸金文">the starting 器 — already cast in bronze</div>
           <div class="char-row" id="armRow" style="margin:0"></div>
         </div>
         <div id="prevBox">
@@ -543,6 +543,67 @@ function yangForm(ctx, fi, s, swing){
     sheepHead(ctx, s, 0, -0.6*s, 0.52, w);
     sheepHead(ctx, s, -0.3*s, 0, 0.52, w);
     sheepHead(ctx, s, 0.3*s, 0, 0.52, w);
+  }
+}
+
+/* the grove family 木→本→林→森 — branches reaching up, roots gripping down */
+function miniTree(ctx, s, cx, cy, sc, w, sway){
+  stroke(ctx, w);
+  ctx.beginPath(); ctx.moveTo(cx, cy-1.05*sc*s); ctx.lineTo(cx, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.72*sc*s);
+  ctx.quadraticCurveTo(cx-0.3*sc*s, cy-0.9*sc*s, cx-0.38*sc*s+sway, cy-1.02*sc*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.72*sc*s);
+  ctx.quadraticCurveTo(cx+0.3*sc*s, cy-0.9*sc*s, cx+0.38*sc*s+sway, cy-1.02*sc*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.3*sc*s);
+  ctx.quadraticCurveTo(cx-0.26*sc*s, cy-0.14*sc*s, cx-0.34*sc*s, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy-0.3*sc*s);
+  ctx.quadraticCurveTo(cx+0.26*sc*s, cy-0.14*sc*s, cx+0.34*sc*s, cy); ctx.stroke();
+}
+function treeForm(ctx, fi, s, swing){
+  const sway = swing*0.4;
+  if(fi===0) miniTree(ctx, s, 0, 0, 1, s*0.12, sway);                   // 木: the tree itself
+  else if(fi===1){                                                       // 本: the tree, its base marked
+    miniTree(ctx, s, 0, 0, 1, s*0.12, sway);
+    stroke(ctx, s*0.1);
+    ctx.beginPath(); ctx.moveTo(-0.2*s, -0.18*s); ctx.lineTo(0.2*s, -0.18*s); ctx.stroke();
+  } else if(fi===2){                                                     // 林: two trees stand together
+    miniTree(ctx, s, -0.28*s, 0, 0.72, s*0.09, sway);
+    miniTree(ctx, s, 0.28*s, 0, 0.72, s*0.09, -sway);
+  } else {                                                               // 森: the forest, deep and dark
+    miniTree(ctx, s, 0, -0.55*s, 0.5, s*0.08, sway);
+    miniTree(ctx, s, -0.3*s, 0, 0.5, s*0.08, -sway);
+    miniTree(ctx, s, 0.3*s, 0, 0.5, s*0.08, sway);
+  }
+}
+
+/* the blaze family 火→炎→焱→燚 — the central tongue and its side-sparks */
+function miniFlame(ctx, s, cx, cy, sc, w, flick){
+  stroke(ctx, w);
+  ctx.beginPath();
+  ctx.moveTo(cx-0.3*sc*s, cy);
+  ctx.quadraticCurveTo(cx-0.16*sc*s, cy-0.5*sc*s, cx+flick*0.08*sc*s, cy-0.95*sc*s);
+  ctx.quadraticCurveTo(cx+0.16*sc*s, cy-0.5*sc*s, cx+0.3*sc*s, cy);
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-0.42*sc*s, cy);
+  ctx.quadraticCurveTo(cx-0.46*sc*s, cy-0.22*sc*s, cx-0.36*sc*s - flick*0.05*sc*s, cy-0.4*sc*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+0.42*sc*s, cy);
+  ctx.quadraticCurveTo(cx+0.46*sc*s, cy-0.22*sc*s, cx+0.36*sc*s + flick*0.05*sc*s, cy-0.4*sc*s); ctx.stroke();
+}
+function huoForm(ctx, fi, s, phase){
+  const flick = Math.sin(phase*1.7);
+  if(fi===0) miniFlame(ctx, s, 0, 0, 1.05, s*0.12, flick);               // 火: the dancing flame
+  else if(fi===1){                                                       // 炎: fire upon fire
+    miniFlame(ctx, s, 0, -0.58*s, 0.62, s*0.1, flick);
+    miniFlame(ctx, s, 0, 0, 0.66, s*0.1, -flick);
+  } else if(fi===2){                                                     // 焱: three fires raging
+    miniFlame(ctx, s, 0, -0.6*s, 0.52, s*0.09, flick);
+    miniFlame(ctx, s, -0.3*s, 0, 0.52, s*0.09, -flick);
+    miniFlame(ctx, s, 0.3*s, 0, 0.52, s*0.09, flick);
+  } else {                                                               // 燚: four fires — the inferno
+    miniFlame(ctx, s, -0.26*s, -0.58*s, 0.46, s*0.08, flick);
+    miniFlame(ctx, s, 0.26*s, -0.58*s, 0.46, s*0.08, -flick);
+    miniFlame(ctx, s, -0.26*s, 0, 0.46, s*0.08, -flick);
+    miniFlame(ctx, s, 0.26*s, 0, 0.46, s*0.08, flick);
   }
 }
 
@@ -969,6 +1030,8 @@ function drawGlyphChar(ctx, charKey, fi, cx, footY, s, phase, sq, color){
   else if(charKey==='xiang') xiangForm(ctx, fi, s, swing);
   else if(charKey==='gui') guiForm(ctx, fi, s, swing);
   else if(charKey==='niao') niaoForm(ctx, fi, s);
+  else if(charKey==='lin') treeForm(ctx, fi, s, swing);
+  else if(charKey==='yan') huoForm(ctx, fi, s, phase);
   else yangForm(ctx, fi, s, swing);
   ctx.restore();
 }
@@ -1787,7 +1850,7 @@ const DESK_POOL = [
 const CARVES = {
   xin: {ch:'心', cost:2, en:'+1 heart to every run',              zh:'每局初始+1心'},
   zhi: {ch:'止', cost:2, en:'surer feet — +6% stride',            zh:'步履更疾——+6%'},
-  you: {ch:'又', cost:3, en:'the starting arm comes recast (LV2)', zh:'初始之器已经重铸(LV2)'},
+  you: {ch:'又', cost:3, en:'the starting arm comes oracle-cast (LV3)', zh:'初始之器直铸甲骨(LV3)'},
   mu:  {ch:'目', cost:3, en:'far sight — +25% glyph magnet',      zh:'明目——吸字+25%'},
   huo: {ch:'火', cost:4, en:'fire in the wrist — ink 8% faster',  zh:'腕底生火——出手快8%'},
   bei: {ch:'貝', cost:4, en:'the spirits drop glyphs more often', zh:'得贝——掉字更频'}
@@ -1882,6 +1945,57 @@ const CHARS = {
        tier_en:'LV4 · the phoenix wind wounds and hurls the pack', tier_zh:'LV4 · 凤起风生，伤而掷之'}
     ],
     gustInt:[4.2, 3.4, 3.4, 2.7], gustR:[70, 82, 96, 112], slowTier:2, dmgTier:3, spd:1.16
+  },
+  yang: {
+    title_en:'the Flock', title_zh:'羊群',
+    skill_en:'Herd Panic', skill_zh:'惊群',
+    hint_en:'every few seconds a bleat scatters the pack around you', hint_zh:'每隔数秒，一声咩叫惊散近敌',
+    atk:{int:0.75, range:110, kind:'arc', hits:2},
+    forms:[
+      {ch:'羊', py:'yáng', mean_en:'the sheep — horns curling DOWN', mean_zh:'「羊」——羊角向下卷',
+       tier_en:'LV1 · the bleat scatters what is near (7s)', tier_zh:'LV1 · 咩声惊散近敌（每7秒）'},
+      {ch:'羔', py:'gāo', mean_en:'“lamb” — the young sheep over the fire', mean_zh:'「羔」——火上幼羊',
+       tier_en:'LV2 · sooner — and the scattered stumble slow', tier_zh:'LV2 · 更频——受惊者踉跄迟缓'},
+      {ch:'美', py:'měi', mean_en:'“beautiful” — a dancer crowned with ram horns', mean_zh:'「美」——戴羊角的舞者',
+       tier_en:'LV3 · the panic reaches further', tier_zh:'LV3 · 惊散更远'},
+      {ch:'羴', py:'shān', mean_en:'“the flock” — three sheep together', mean_zh:'「羴」——三羊成群',
+       tier_en:'LV4 · the stampede wounds as it scatters', tier_zh:'LV4 · 惊群踩踏，伤敌四散'}
+    ],
+    fleeInt:[7, 5.5, 5, 4], fleeR:[95, 105, 125, 140], slowTier:1, dmgTier:3, spd:1.08
+  },
+  lin: {
+    title_en:'the Grove', title_zh:'林木',
+    skill_en:'Deep Roots', skill_zh:'盘根',
+    hint_en:'roots burst from underfoot on their own, holding the pack fast', hint_zh:'根须自足下迸发，缠住群鬼',
+    atk:{int:0.9, range:120, kind:'arc', hits:2},
+    forms:[
+      {ch:'木', py:'mù', mean_en:'the tree — branches up, roots down', mean_zh:'「木」——上为枝，下为根',
+       tier_en:'LV1 · roots grip the nearby pack every 6s', tier_zh:'LV1 · 每6秒根缠近敌'},
+      {ch:'本', py:'běn', mean_en:'“the root” — the tree, its base marked', mean_zh:'「本」——木下一点，是为根本',
+       tier_en:'LV2 · the grip holds longer', tier_zh:'LV2 · 缠得更久'},
+      {ch:'林', py:'lín', mean_en:'“the grove” — two trees standing together', mean_zh:'「林」——双木成林',
+       tier_en:'LV3 · roots reach further; the rooted take +1 from your ink', tier_zh:'LV3 · 根及更远；被缠者受墨+1伤'},
+      {ch:'森', py:'sēn', mean_en:'“the forest” — three trees, deep and dark', mean_zh:'「森」——三木成森',
+       tier_en:'LV4 · the whole thicket — wider, quicker, harder', tier_zh:'LV4 · 满地盘根——更广更频更狠'}
+    ],
+    rootInt:[6, 5.5, 5, 4], rootR:[100, 110, 130, 150], rootLen:[1.2, 1.8, 1.8, 2.2], vulnTier:2, spd:0.94
+  },
+  yan: {
+    title_en:'the Blaze', title_zh:'烈焰',
+    skill_en:'Cinder Trail', skill_zh:'余烬之径',
+    hint_en:'you leave burning cinders in your wake; wild 火 cannot touch you', hint_zh:'足迹燃作余烬；野火不能伤你',
+    atk:{int:0.8, range:105, kind:'arc', hits:2},
+    forms:[
+      {ch:'火', py:'huǒ', mean_en:'fire — the dancing flame', mean_zh:'「火」——跳动的火舌',
+       tier_en:'LV1 · cinders smoulder where you run', tier_zh:'LV1 · 所过之处，余烬灼敌'},
+      {ch:'炎', py:'yán', mean_en:'“blaze” — fire upon fire', mean_zh:'「炎」——火上加火',
+       tier_en:'LV2 · the cinders burn hotter and linger', tier_zh:'LV2 · 烬火更烈更久'},
+      {ch:'焱', py:'yàn', mean_en:'“flames” — three fires raging', mean_zh:'「焱」——三火竞燃',
+       tier_en:'LV3 · a wider trail — and the burning stumble slow', tier_zh:'LV3 · 火径更宽——灼者迟缓'},
+      {ch:'燚', py:'yì', mean_en:'four fires — the inferno itself', mean_zh:'「燚」——四火燎原',
+       tier_en:'LV4 · whatever strikes you is scorched in return', tier_zh:'LV4 · 犯我者，反受其灼'}
+    ],
+    emberInt:[0.32, 0.3, 0.26, 0.22], emberLife:[1.6, 2.2, 2.6, 3.0], emberR:[26, 30, 38, 44], slowTier:2, retalTier:3, spd:1.1
   }
 };
 const ATK_INT = [1, 0.88, 0.76, 0.62];   // auto-attack quickens per tier
@@ -1989,7 +2103,7 @@ const Game = (function(){
   let desk = freshDesk();
   let elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
   let synOn = {}, shengT = 18, duanT = 12, oppSeen = false;
-  let pools = [], waveGuard = false, strokeN = 0, matT = 0.6, stainFade = 0, runGlyphs = 0;
+  let pools = [], embers = [], waveGuard = false, strokeN = 0, matT = 0.6, stainFade = 0, runGlyphs = 0;
   const inkCvs = document.createElement('canvas'); inkCvs.width = CW; inkCvs.height = CH;
   const inkCtx = inkCvs.getContext('2d');
 
@@ -2019,7 +2133,7 @@ const Game = (function(){
     dragonDone = false; bossDone = false;
     shengPed = (i === 1 && !hatOn) ? {x:CW*0.3, y:CH*0.35, bob:0} : null;
     pav = null; treeDone = false; pavDone = false;
-    pools = []; waveGuard = desk.firstGuard; matT = 0.6;
+    pools = []; embers = []; waveGuard = desk.firstGuard; matT = 0.6;
     inkCtx.clearRect(0, 0, CW, CH);                       // a fresh sheet for each era
     player = { x:CW/2, y:CH*0.62, vx:0, vy:0, face:1, runPhase:0, sq:0, inv:1.0,
                atkT:0.5, lastDir:{x:1,y:0},
@@ -2081,7 +2195,7 @@ const Game = (function(){
     desk = freshDesk();
     elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
     synOn = {}; shengT = 18; duanT = 12; oppSeen = false; strokeN = 0; runGlyphs = 0;
-    weapons = [{key:selArm, lv: seal.carved.you ? 2 : 1, t:0.8}];
+    weapons = [{key:selArm, lv: seal.carved.you ? 3 : 2, t:0.8}];   // the starting arm is bronze-cast; the carved 又 makes it oracle
     mark('arms', selArm, weapons[0].lv);
     mark('forms', selChar, 0);
     hideAll();
@@ -2346,6 +2460,8 @@ const Game = (function(){
       if(level >= c.slipCutTier && src && src.hp !== undefined) hurtSpirit(src, 1);  // 舞: the slip cuts
       return;
     }
+    if(selChar==='yan' && level >= CHARS.yan.retalTier && src && src.hp !== undefined)
+      hurtSpirit(src, 1);                            // 燚: it burns its hand on you (the blow still lands)
     if(selChar==='niu' && level >= CHARS.niu.penTier && player.penT <= 0){  // 牢: the pen holds once
       player.penT = CHARS.niu.penCd * desk.giftCd;
       addFx({kind:'shieldpop', x:player.x, y:player.y, t:0.3, r:38});
@@ -2486,6 +2602,60 @@ const Game = (function(){
       }
     }
 
+    if(selChar==='yang'){                             // 惊群: the bleat scatters the pack
+      player.pulseT -= dt;
+      if(player.pulseT <= 0){
+        player.pulseT = c.fleeInt[tier] * desk.giftCd;
+        const fr = c.fleeR[tier];
+        addFx({kind:'ringatk', x:player.x, y:player.y, r:fr, t:0.3});
+        for(const s of spirits){
+          if(s.dead || s.boss || s.type==='guo' || s.type==='long') continue;
+          if(Math.hypot(s.x-player.x, s.y-player.y) <= fr){
+            s.fleeT = Math.max(s.fleeT||0, 1.6);
+            if(tier >= c.slowTier) s.slowT = Math.max(s.slowT||0, 1.5*(synOn.ni?1.5:1));
+            if(tier >= c.dmgTier) hurtSpirit(s, 1);
+          }
+        }
+      }
+    }
+    if(selChar==='lin'){                              // 盘根: roots burst from underfoot
+      player.pulseT -= dt;
+      if(player.pulseT <= 0){
+        player.pulseT = c.rootInt[tier] * desk.giftCd;
+        const rr = c.rootR[tier];
+        addFx({kind:'quake', x:player.x, y:player.y, t:0.4, r:rr});
+        for(const s of spirits){
+          if(s.dead || s.boss) continue;
+          if(Math.hypot(s.x-player.x, s.y-player.y) <= rr)
+            s.rootT = Math.max(s.rootT||0, c.rootLen[tier]*(synOn.ni?1.5:1));
+        }
+      }
+    }
+    if(selChar==='yan'){                              // 余烬之径: cinders in your wake
+      player.emberT = (player.emberT||0) - dt;
+      if(mag > 0.01 && player.emberT <= 0){
+        player.emberT = c.emberInt[tier];
+        embers.push({x:player.x, y:player.y+14, r:c.emberR[tier], t:c.emberLife[tier], max:c.emberLife[tier]});
+        if(embers.length > 26) embers.shift();
+      }
+    }
+    for(const em of embers) em.t -= dt;
+    embers = embers.filter(em=>em.t > 0);
+    if(embers.length){                                // the cinders do their slow work
+      for(const s of spirits){
+        if(s.dead || s.type==='guo' || s.opp==='火') continue;   // fire spirits walk their own element
+        if((s.embIT||0) > 0){ s.embIT -= dt; continue; }
+        for(const em of embers){
+          if(Math.hypot(s.x-em.x, s.y-em.y) <= em.r){
+            hurtSpirit(s, 1);
+            if(selChar==='yan' && level >= CHARS.yan.slowTier) s.slowT = Math.max(s.slowT||0, 0.8);
+            s.embIT = 0.55;
+            break;
+          }
+        }
+      }
+    }
+
     // --- auto-attack: the ink strikes the nearest spirit ---
     player.atkT -= dt;
     if(player.atkT <= 0){
@@ -2528,7 +2698,8 @@ const Game = (function(){
         const heavy = desk.dmg3 > 0 && strokeN % 3 === 0 ? desk.dmg3 : 0;                 // 濃墨: the third stroke lands loaded
         const burn = player.fireInkT > 0 ? (desk.jiao ? 2 : 1) : 0;                       // 火: the ink burns; 焦墨 twice over
         for(const [,s] of cand.slice(0, c.atk.hits + desk.hits))
-          hurtSpirit(s, 1 + heavy + (burn && s.opp==='水' ? 0 : burn));                   // water spirits shrug off the flame
+          hurtSpirit(s, 1 + heavy + (burn && s.opp==='水' ? 0 : burn)
+                        + (selChar==='lin' && tier >= c.vulnTier && (s.rootT||0) > 0 ? 1 : 0));  // 林: the rooted take the axe
         SFX.swish();
         player.atkT = c.atk.int * ATK_INT[tier] * (buffT>0 ? 0.72 : 1) * desk.atkInt * (seal.carved.huo ? 0.92 : 1);
       } else {
@@ -2896,7 +3067,7 @@ const Game = (function(){
     for(const f of fires){
       f.t -= dt;
       if(Math.hypot(f.x-player.x, f.y-player.y) < f.r+10){
-        const herded = (selChar==='niu' && level >= CHARS.niu.firesafeTier && mag > 0.01) || selChar==='niao';  // 牧 drives through; 隹 flies over
+        const herded = (selChar==='niu' && level >= CHARS.niu.firesafeTier && mag > 0.01) || selChar==='niao' || selChar==='yan';  // 牧 drives through; 隹 flies over; 火 is fire
         if(!herded && player.phasedT <= 0 && player.boatT <= 0) hurtPlayer(null);
         if(lives <= 0) return;
       }
@@ -3050,7 +3221,7 @@ const Game = (function(){
     let txt = 'LV'+NUMCH[level];
     if(selChar==='ren') txt += player.slipT > 0 ? ' · '+player.slipT.toFixed(1) : ' · ⚡';
     else if(selChar==='gui') txt += player.phasedT > 0 ? ' · 魂' : ' · '+Math.max(0,player.phaseCdT).toFixed(1);
-    else if(selChar==='niao') txt += player.pulseT > 0 ? ' · '+Math.max(0,player.pulseT).toFixed(1) : ' · ⚡';
+    else if(selChar==='niao' || selChar==='yang' || selChar==='lin') txt += player.pulseT > 0 ? ' · '+Math.max(0,player.pulseT).toFixed(1) : ' · ⚡';
     if(txt !== lastSkillTxt){ $('hudSkill').textContent = txt; lastSkillTxt = txt; }
   }
 
@@ -3161,6 +3332,13 @@ const Game = (function(){
     ctx.drawImage(inkCvs, 0, 0);
     ctx.restore();
 
+    // your own cinders glow low on the ground
+    for(const em of embers){
+      const k = em.t/(em.max||1);
+      ctx.save(); ctx.globalAlpha = 0.22 + 0.42*k;
+      drawPicto(ctx, '火', em.x, em.y, em.r*0.85, '#f0884a');
+      ctx.restore();
+    }
     // fires
     for(const f of fires){
       ctx.save(); ctx.globalAlpha = 0.14; ctx.fillStyle = '#f0674a';
@@ -3588,13 +3766,13 @@ const Game = (function(){
       card.className = 'char-card arm' + (key === selArm ? ' sel' : '');
       const cc = document.createElement('canvas'); cc.width = 36; cc.height = 42;
       const nm = document.createElement('div'); nm.className = 'cname';
-      nm.textContent = `${W.chs[0]} ${W.pys[0]}`;
+      nm.textContent = `${W.chs[1]} ${W.pys[1]}`;
       card.append(cc, nm);
       card.onclick = () => { selArm = key; buildArmSelect(); PV.reset(); };
       row.appendChild(card);
       const cctx = cc.getContext('2d');
       cctx.clearRect(0,0,36,42);
-      drawWeaponIcon(cctx, key, 1, 18, 22, 30, '#e8dfc8');
+      drawWeaponIcon(cctx, key, 2, 18, 22, 30, '#e8dfc8');   // shown as it starts: the bronze casting
     }
   }
   /* ---------- 篆刻: the stone between runs ---------- */
@@ -3816,7 +3994,7 @@ const Game = (function(){
     function reset(){ lv = 0; lvT = 0; mobs = []; shots = []; efx = []; refreshLine(); }
     function refreshLine(){
       const cch = CHARS[selChar], fm = cch.forms[lv];
-      const wlv = Math.min(2, lv), Wp = WEAPONS[selArm];
+      const wlv = Math.min(2, lv+1), Wp = WEAPONS[selArm];
       const pl = $('prevLine');
       if(pl) pl.innerHTML =
         `<b style="color:#e8b04a">${fm.ch}</b> ${fm.py} · ${t(fm.mean_en, fm.mean_zh)}<br>` +
@@ -3851,7 +4029,7 @@ const Game = (function(){
       }
       wt -= dt;
       if(wt <= 0 && mobs.length){
-        const wlv = Math.min(2, lv);
+        const wlv = Math.min(2, lv+1);
         wt = WEAPONS[selArm].int[wlv];
         if(selArm === 'gong'){
           const spread = [[0], [-0.09, 0.09], [-0.16, 0, 0.16]][wlv];
@@ -3889,7 +4067,7 @@ const Game = (function(){
         px.beginPath(); px.moveTo(p.x-p.ux*14, p.y-p.uy*14); px.lineTo(p.x, p.y); px.stroke(); px.restore();
       }
       drawGlyphChar(px, selChar, lv, CXp, CYp, 44, run, 0, era2.ink);
-      const wlv = Math.min(2, lv);
+      const wlv = Math.min(2, lv+1);
       px.save();
       px.translate(CXp+Math.cos(aim)*26, CYp-26+Math.sin(aim)*26);
       px.rotate(aim);
