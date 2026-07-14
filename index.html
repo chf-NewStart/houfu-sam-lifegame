@@ -1351,17 +1351,26 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
     if (boltT <= 0 && !reduced) {
       boltT = 3800 + Math.random() * 4200;                     // every ~4–8s
       flash = 1;
-      const bx = CW * (0.26 + Math.random() * 0.48); let yy = -4; const pts = [[bx, yy]];
-      while (yy < groundY) { yy += 16 + Math.random() * 16; pts.push([bx + (Math.random() - 0.5) * 48, Math.min(groundY, yy)]); }
-      bolt = { pts, t: 300 };
+      const bx = CW * (0.12 + Math.random() * 0.22);          // strike the LEFT sky — clear of the hero AND the 1UP badge, so the canopy shows
+      let yy = 26; const pts = [[bx, yy]];                     // starts just under the storm-canopy
+      while (yy < groundY) { yy += 15 + Math.random() * 15; pts.push([bx + (Math.random() - 0.5) * 44, Math.min(groundY, yy)]); }
+      bolt = { pts, x: bx, t: 320 };
     }
     if (flash > 0) flash -= dt / 340;
     if (bolt) {
       bolt.t -= dt;
       if (bolt.t > 0) {
-        ctx.save(); ctx.globalAlpha = Math.min(1, bolt.t / 150);
+        const bx = bolt.x;
+        ctx.save(); ctx.globalAlpha = Math.min(1, bolt.t / 170);
         ctx.strokeStyle = '#eaf2ff'; ctx.shadowColor = '#cfe0ff'; ctx.shadowBlur = 12;
         ctx.lineWidth = 2.4; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        // 電's rain-canopy — the top of the thunder, the storm the bolt drops from
+        ctx.beginPath();
+        ctx.moveTo(bx - 15, 12); ctx.lineTo(bx + 15, 12);
+        ctx.moveTo(bx, 12); ctx.lineTo(bx, 20);
+        for (const ox of [-9, 9]) { ctx.moveTo(bx + ox, 14); ctx.lineTo(bx + ox - 1.5, 21); }
+        ctx.stroke();
+        // the tail lashing to earth
         ctx.beginPath(); ctx.moveTo(bolt.pts[0][0], bolt.pts[0][1]);
         for (let i = 1; i < bolt.pts.length; i++) ctx.lineTo(bolt.pts[i][0], bolt.pts[i][1]);
         ctx.stroke(); ctx.restore();
