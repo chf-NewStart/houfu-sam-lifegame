@@ -77,6 +77,7 @@
   .echip.elabel{color:#8a7a4a;border-color:#3a3426;letter-spacing:2px;}
   .esep{color:#4a4a4a;align-self:center;font-size:0.8rem;}
   .echip.dimsyn{opacity:0.75;}
+  .char-card.lockedpg{opacity:0.45;cursor:default;}
   /* the pause menu: one even row of equal buttons resting on the bottom */
   #ovPause .btn-row{margin-top:auto;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;width:min(680px,94%);padding-bottom:12px;}
   #ovPause .btn-row .btn{flex:1 1 130px;max-width:200px;margin-top:0;padding:11px 6px;font-size:0.78rem;white-space:nowrap;
@@ -308,7 +309,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b55</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b56</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -355,9 +356,30 @@
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
         <button class="btn" id="startBtn" onclick="Game.start()"><canvas class="zhanIcon" width="24" height="22"></canvas><span data-en="GO TO BATTLE" data-zh="出戰">GO TO BATTLE</span></button>
+        <button class="btn" onclick="Game.openScroll()" data-en="卷 · STAGES" data-zh="卷 · 关卡">卷 · STAGES</button>
         <button class="btn alt" style="margin-top:0" onclick="Game.openBook()"><canvas class="wenIcon" width="20" height="22"></canvas><span data-en="the scroll" data-zh="卷軸">the scroll</span></button>
         <button class="btn alt" style="margin-top:0" onclick="Game.openSeal()"><canvas class="yinIcon" width="20" height="22"></canvas><span data-en="the seal" data-zh="篆刻">the seal</span></button>
         <button class="btn alt" style="margin-top:0" onclick="toggleLang()">中文 / EN</button>
+      </div>
+    </div>
+
+    <!-- 卷 · THE STAGE SCROLL -->
+    <div class="overlay shell" id="ovScroll">
+      <h2 data-en="卷 · THE STAGE SCROLL" data-zh="卷 · 关卡卷轴">卷 · THE STAGE SCROLL</h2>
+      <div class="big" data-en="Each page is a character. Ink it to open the next. Stars: 一 clear · 二 barely bled · 三 untouched." data-zh="每一页是一个字。写完开启下一页。评星：一 通关 · 二 少伤 · 三 无伤。">Each page is a character. Ink it to open the next.</div>
+      <div class="char-row" id="scrollRow" style="max-width:760px"></div>
+      <button class="btn alt" onclick="Game.closeScroll()" data-en="✕ roll it up" data-zh="✕ 收卷">✕ roll it up</button>
+    </div>
+
+    <!-- 卷 · STAGE END -->
+    <div class="overlay shell" id="ovStage">
+      <h2 id="stTitle">·</h2>
+      <div id="stStars" style="color:#e8b04a;font-size:2rem;letter-spacing:12px;margin:4px 0"></div>
+      <div class="big" id="stMsg">·</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+        <button class="btn" id="stNext" onclick="Game.nextStagePage()" data-en="⟶ next page" data-zh="⟶ 下一页">⟶ next page</button>
+        <button class="btn alt" onclick="Game.retryStage()" data-en="↻ again" data-zh="↻ 再来">↻ again</button>
+        <button class="btn alt" onclick="Game.openScroll()" data-en="卷 the scroll" data-zh="卷 返回卷轴">卷 the scroll</button>
       </div>
     </div>
 
@@ -2124,6 +2146,10 @@ const GLYPHS = {
   '田': {py:'tián', en:'field',    zh:'田地', eff_en:'furrows — the pack nearby wades slow (3s)', eff_zh:'阡陌纵横——近敌迟缓3秒'}
 };
 const GLYPH_KEYS = Object.keys(GLYPHS);
+/* loot has tiers now: POWER glyphs visibly turn the fight (quake, roots, heal,
+   the dive...) and only fall from worthy kills; the rest are quiet XP. */
+const POWER_GLYPHS = ['山','木','鳥','魚','月','雨','龜','泉'].filter(c=>GLYPHS[c]);
+const COMMON_GLYPHS = GLYPH_KEYS.filter(c=>!POWER_GLYPHS.includes(c));
 
 /* ============================== 五行 · the five phases ============================== */
 /* every fallen glyph carries an element by its radical; the war pictographs
@@ -2142,6 +2168,32 @@ const SYNERGIES = {
   liao: {ch:'燎', need:{'木':2,'火':2}, name_en:'木火燎原 · KINDLING', name_zh:'木火燎原',
          en:'wood feeds fire — every glyph you catch sets your ink burning (3s)',      zh:'木助火势——每拾一字，焚墨三秒'}
 };
+
+/* ============================== 卷 · the stage scroll ============================== */
+/* each stage IS a character: a 60-90s bite with one twist, stars 一二三.
+   goal: {survive} or {kill:N} or {boss:[...]} — dur is the clock either way. */
+const STAGES = [
+  {ch:'人', py:'rén',  en:'FIRST STEPS — the shades gather',        zh:'初行——群影渐聚',
+   era:0, dur:45, spawn:1.3, cap:9,  spd:56, mix:[['gui',1]], goal:{survive:1}},
+  {ch:'燕', py:'yàn',  en:'THE FLOCK — swift wings, kill 15',       zh:'燕群——疾翼，斩十五',
+   era:0, dur:75, spawn:0.8, cap:12, spd:60, mix:[['yan',5],['gui',2]], goal:{kill:15}},
+  {ch:'火', py:'huǒ',  en:'THE BURNING FIELD — survive the fires',  zh:'燎原——火中求生',
+   era:1, dur:60, spawn:1.2, cap:10, spd:62, fire:2.6, mix:[['gui',3],['shi',1]], goal:{survive:1}},
+  {ch:'央', py:'yāng', en:'THE YOKES — dragged steps, kill 12',     zh:'颈枷之阵——步履维艰，斩十二',
+   era:1, dur:80, spawn:1.0, cap:12, spd:60, mix:[['yoke',3],['gui',3]], goal:{kill:12}},
+  {ch:'矢', py:'shǐ',  en:'THE VOLLEY — arrows from every dark',    zh:'万矢——暗处放箭',
+   era:1, dur:60, spawn:0.9, cap:12, spd:64, mix:[['she',4],['yan',2]], goal:{survive:1}},
+  {ch:'壴', py:'zhù',  en:'THE DRUMS — cross the rings, kill 10',   zh:'战鼓——穿越震波，斩十',
+   era:2, dur:80, spawn:1.1, cap:11, spd:60, mix:[['drum',3],['gui',2]], goal:{kill:10}},
+  {ch:'血', py:'xuè',  en:'THE FEEDING DARK — fell the priests, kill 18', zh:'血祭——先斩其祭，共斩十八',
+   era:2, dur:90, spawn:0.85, cap:14, spd:66, mix:[['xue',2],['gui',4],['shi',1]], goal:{kill:18}},
+  {ch:'電', py:'diàn', en:'THE STORM — the sky itself strikes',     zh:'雷霆——天怒地击',
+   era:2, dur:70, spawn:1.0, cap:12, spd:68, bolt:2.8, weather:'storm', mix:[['gui',3],['yan',2]], goal:{survive:1}},
+  {ch:'皿', py:'mǐn',  en:'THE VESSELS — slay both before the sand runs', zh:'双皿——沙尽前诛二器',
+   era:3, dur:90, spawn:1.6, cap:8,  spd:66, mix:[['gui',1]], goal:{boss:['meng','gu']}},
+  {ch:'龍', py:'lóng', en:'THE LAST NIGHT — the dragon, alone',     zh:'终夜——独面龙躯',
+   era:3, dur:90, spawn:2.2, cap:6,  spd:70, mix:[['gui',1]], goal:{boss:['long']}}
+];
 
 /* ============================== 文房四宝 · the scholar's desk ============================== */
 /* between waves the scroll unrolls: one refinement, brushed on bamboo.
@@ -2471,6 +2523,9 @@ const Game = (function(){
   let exhaleT = null, calmT = 0;                             // the night's exhale before the gate; the reward for stillness
   let endless = false, endlessN = 0;                         // 永夜 — the endless night beyond the last gate
   let elemHintShown = false;                                 // the 五行 lesson, taught once per run
+  let glyphToasted = {};                                     // each glyph teaches once per run, then stays quiet
+  let stage = null, stageKills = 0, stageHurt = 0, stageWinT = null;   // 卷: the current stage, its count, its wounds
+  let stageStars = {}; try{ stageStars = JSON.parse(localStorage.getItem('glyphrun_stages')||'{}'); }catch(e){}
   let bestNight = 0; try{ bestNight = +(localStorage.getItem('glyphrun_endless')||0); }catch(e){}
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
   /* the 古筝 bed: a real guzheng field recording from a Lunar New Year event
@@ -2529,7 +2584,7 @@ const Game = (function(){
   }
 
   function overlay(id, show){ $(id).classList.toggle('show', show); }
-  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin','ovPause','ovDesk','ovSeal'].forEach(i=>overlay(i,false)); }
+  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin','ovPause','ovDesk','ovSeal','ovScroll','ovStage','ovBook'].forEach(i=>overlay(i,false)); }
   function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
   const C = ()=>CHARS[selChar];
 
@@ -2576,6 +2631,75 @@ const Game = (function(){
     syncHud();
   }
 
+  /* 卷: launch one stage of the scroll */
+  function startStage(i){
+    const def = STAGES[i]; if(!def) return;
+    maxHp = HP_BASE + (seal.carved.xin ? 1 : 0);
+    lives = maxHp; coins = 0; nextHeart = 14; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
+    endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = true; glyphToasted = {};
+    desk = freshDesk();
+    elems = {'金':0,'木':0,'水':0,'火':0,'土':0}; synOn = {}; oppSeen = true; runGlyphs = 0;
+    weapons = [{key:selArm, lv: seal.carved.you ? 3 : 2, t:0.8}];
+    checkCompose();
+    stage = {i, def}; stageKills = 0; stageHurt = 0; stageWinT = null;
+    hideAll();
+    loadStage(def.era);
+    wave = { len: def.dur, spawn: def.spawn, cap: def.cap, spd: def.spd,
+             fireInt: def.fire||0, bolt: def.bolt||0, mix: def.mix };
+    waveT = def.dur;
+    dragonDone = true; bossDone = true; shengPed = null; pav = null; treeDone = true; pavDone = true;
+    wTimes = [];                                       // stages are pure: no pedestals mid-fight
+    if(def.weather !== undefined){
+      weather = def.weather; wDrops = [];
+      if(weather){ const nn = weather==='snow'?64:92;
+        for(let k=0;k<nn;k++) wDrops.push({x:Math.random()*CW, y:Math.random()*CH, v:0.6+Math.random()*0.8, ph:Math.random()*6}); }
+    }
+    if(def.goal.boss){                                 // the named ones arrive at once
+      def.goal.boss.forEach((bt, bi)=>{
+        if(bt === 'long'){
+          for(let k2=0;k2<9;k2++) spirits.push({x:CW-WALL-10, y:WALL+70+k2*28, phase:Math.random()*6, dead:false,
+                        type:'long', order:k2, hp:k2===0?3:2, cr:26, st:0, stT:0, face:-1, dirn:1, spd:95});
+          showBanner('long');
+        } else {
+          spirits.push({x: bi ? WALL+40 : CW-WALL-30, y:CH*0.5, phase:0, dead:false, boss:true,
+                        type:bt, bossCh: bt==='gu'?'蠱':'皿', hp: bt==='gu'?16:10, maxHp: bt==='gu'?16:10,
+                        cr:40, spd: bt==='gu'?60:55, st:0, stT:1.2, face: bi?1:-1, dirn:1});
+          if(bi===0) showBanner(bt);
+        }
+      });
+    }
+    popToastEx(def.ch, def.py, t(def.en, def.zh), 'qi');
+    syncHud();
+    running = true; lastTs = performance.now();
+    tempo = 1; hurtDuck = 1; bgmVol = 0.3; bgm.start();
+    if(!raf) raf = requestAnimationFrame(loop);
+  }
+  function stageGoalMet(){
+    const g = stage.def.goal;
+    if(g.kill) return stageKills >= g.kill;
+    if(g.boss) return foesSeen && !spirits.some(s=>!s.dead && (s.boss || s.type==='long'));
+    return false;                                      // survive: the clock decides
+  }
+  function stageEnd(won){
+    running = false;
+    bgm.stop();
+    const def = stage.def;
+    let stars = 0;
+    if(won) stars = stageHurt === 0 ? 3 : (stageHurt <= 2 ? 2 : 1);
+    if(won && stars > (stageStars[stage.i]||0)){
+      stageStars[stage.i] = stars;
+      try{ localStorage.setItem('glyphrun_stages', JSON.stringify(stageStars)); }catch(e){}
+    }
+    $('stTitle').textContent = `${def.ch} · ` + (won ? t('THE PAGE IS INKED','此页已成') : t('THE PAGE RESISTS','此页未竟'));
+    $('stStars').textContent = won ? ['','一','一二','一二三'][stars] : '';
+    $('stStars').style.display = won ? '' : 'none';
+    $('stMsg').textContent = won
+      ? t(`${def.py} — three thousand years old, and yours now.`, `「${def.ch}」${def.py}——三千岁的字，此刻归你。`)
+      : t('the scroll waits — try the page again.', '卷轴还在等——再试一次。');
+    $('stNext').style.display = (won && stage.i+1 < STAGES.length) ? '' : 'none';
+    overlay('ovStage', true);
+  }
+
   /* 永夜: each night is the oracle era, wound tighter — more, faster, closer */
   function loadEndless(){
     loadStage(3);
@@ -2604,7 +2728,9 @@ const Game = (function(){
     $('hudGlyph').textContent = C().forms[level].ch;
     $('hudSkill').textContent = 'LV' + NUMCH[level];
     lastSkillTxt = '';
-    $('hudEraName').textContent = endless
+    $('hudEraName').textContent = stage
+      ? `卷 ${stage.i+1} · ${stage.def.ch}` + (stage.def.goal.kill ? ` · ${stageKills}/${stage.def.goal.kill}` : '')
+      : endless
       ? t(`永夜 · ENDLESS NIGHT ${endlessN}`, `永夜 · 第${endlessN}夜`)
       : t(`WAVE ${NUMCH[stageIdx]}/亖 · ${era.name_en}`, `第${NUMCH[stageIdx]}/亖波 · ${era.name_zh}`);
     $('hudEra').style.color = era.ink;
@@ -2619,7 +2745,7 @@ const Game = (function(){
     let html = `<span class="echip elabel" title="${t('every glyph you catch carries one of the five phases','拾起的每个字都带着五行之一')}">${t('五行','五行')}</span>`;
     for(const el of ['金','木','水','火','土']){
       const n = elems[el];
-      html += `<span class="echip${n>0?' lit':''}" style="${n>0?`border-color:${ELEM_COLOR[el]}55;`:''}"><b style="color:${n>0?ELEM_COLOR[el]:'#555'}">${el}</b> ${n}</span>`;
+      html += `<span class="echip${n>0?' lit':''}" data-el="${el}" style="${n>0?`border-color:${ELEM_COLOR[el]}55;`:''}"><b style="color:${n>0?ELEM_COLOR[el]:'#555'}">${el}</b> ${n}</span>`;
     }
     html += `<span class="esep">⇢</span>`;
     // every bond shown from the start, with live progress — the build is visible
@@ -2656,6 +2782,11 @@ const Game = (function(){
   function gainElem(el, n){
     if(!el) return;
     elems[el] += (n||1) * (desk.wuxing ? 2 : 1);
+    try{
+      const chip = document.querySelector(`#elemRow [data-el="${el}"]`);
+      if(chip && chip.animate) chip.animate(
+        [{boxShadow:`0 0 10px ${ELEM_COLOR[el]}`, borderColor:ELEM_COLOR[el]}, {boxShadow:'none'}], {duration:550});
+    }catch(e){}
     if(!elemHintShown){
       elemHintShown = true;
       popToastEx('五行', 'wǔ xíng', t('every glyph carries a phase — fill a bond below to wake its power', '字含五行——集齐下方相生之数，唤醒其力'), 'qi');
@@ -2667,7 +2798,8 @@ const Game = (function(){
   function start(){
     maxHp = HP_BASE + (seal.carved.xin ? 1 : 0);
     stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 14; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
-    endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = false;
+    endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = false; glyphToasted = {};
+    stage = null; stageWinT = null;
     desk = freshDesk();
     elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
     synOn = {}; shengT = 18; duanT = 12; oppSeen = false; strokeN = 0; runGlyphs = 0;
@@ -2838,6 +2970,7 @@ const Game = (function(){
     return earned;
   }
   function gameOver(){
+    if(stage){ stageEnd(false); return; }
     running = false;
     bgm.stop();
     const wc = $('wangCanvas');
@@ -2897,6 +3030,7 @@ const Game = (function(){
   }
   function killSpirit(s, ang){
     s.dead = true;
+    if(stage && s.type !== 'guo'){ stageKills++; if(stage.def.goal.kill) syncHud(); }
     stopT = Math.max(stopT, s.boss ? 0.11 : 0.06);    // the brush lifts
     addFx({kind:'ripple', x:s.x, y:s.y, t:0.8, r: s.boss ? 64 : 42});   // a drop in still water
     if(s.type !== 'long')
@@ -2932,8 +3066,13 @@ const Game = (function(){
       if(lives < maxHp){ lives++; syncHud(); }
       addFx({kind:'levelup', x:s.x, y:s.y, t:1.0, r:110, ch:'光'});
       popToastEx('光', 'guāng · 甲骨', t('the torch-bearer lights you: swifter, sharper','火炬加身：更快、更利'));
-    } else if(Math.random() < (s.type==='long' ? 0.6 : 0.35) + (seal.carved.bei ? 0.10 : 0)){
-      pickups.push({x:s.x, y:s.y, ch:GLYPH_KEYS[(Math.random()*GLYPH_KEYS.length)|0], t:9, bob:Math.random()*6});
+    } else if(s.type==='hu' || s.type==='drum' || s.type==='xue' || s.type==='yoke'){
+      // a worthy kill always pays: a POWER glyph, haloed so you want it
+      pickups.push({x:s.x, y:s.y, ch:POWER_GLYPHS[(Math.random()*POWER_GLYPHS.length)|0], t:10, bob:Math.random()*6, pow:true});
+    } else if(Math.random() < (s.type==='long' ? 0.6 : 0.3) + (seal.carved.bei ? 0.10 : 0)){
+      const isPow = Math.random() < 0.15;
+      const pool = isPow ? POWER_GLYPHS : COMMON_GLYPHS;
+      pickups.push({x:s.x, y:s.y, ch:pool[(Math.random()*pool.length)|0], t:9, bob:Math.random()*6, pow:isPow});
     }
   }
   function announceFoe(type){
@@ -2977,6 +3116,7 @@ const Game = (function(){
   }
   function hit(){
     lives--; player.inv = 1.0; shakeT = 0.3;
+    if(stage) stageHurt++;
     hurtDuck = 0.16;                                           // the 古筝 faints when you're struck, then recovers
     inkSplat(inkCtx, player.x, player.y, 14, '#7e1f12');       // your own ink runs cinnabar
     SFX.crack();
@@ -3453,9 +3593,28 @@ const Game = (function(){
     shocks = shocks.filter(k=>k.t > 0);
 
     // --- wave clock / the gate ---
+    if(stage){
+      if(stageWinT !== null){
+        stageWinT -= dt;
+        if(stageWinT <= 0){ stageEnd(true); return; }
+      } else if(stageGoalMet()){
+        stageWinT = 1.2;                                 // one breath of stillness, then the page is inked
+        for(const s of spirits) addFx({kind:'poof', x:s.x, y:s.y, t:0.35, r:22});
+        spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = [];
+        addFx({kind:'ripple', x:player.x, y:player.y, t:1.1, r:110});
+      } else {
+        waveT -= dt;
+        if(waveT <= 0){
+          if(stage.def.goal.survive){ stageWinT = 0.9;
+            for(const s of spirits) addFx({kind:'poof', x:s.x, y:s.y, t:0.35, r:22});
+            spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = [];
+          } else { stageEnd(false); return; }            // the sand ran out
+        }
+      }
+    }
     if(!gate){
-      waveT -= dt;
-      if(waveT <= 0){
+      if(!stage) waveT -= dt;
+      if(!stage && waveT <= 0){
         if(exhaleT === null){                            // the night exhales: a held breath of stillness
           exhaleT = 1.6;
           for(const s of spirits) addFx({kind:'poof', x:s.x, y:s.y, t:0.35, r:22});
@@ -3464,8 +3623,8 @@ const Game = (function(){
         }
         exhaleT -= dt;
         if(exhaleT <= 0){ exhaleT = null; gate = {x:CW/2, y:CH*0.5, born:0}; }
-      } else {
-        const prog = 1 - waveT/wave.len;
+      } else if(!(stage && stageWinT !== null)){         // stages spawn until their final breath
+        const prog = Math.max(0, 1 - waveT/wave.len);
         spawnT -= dt;
         if(spawnT <= 0 && spirits.filter(s=>!s.dead && s.type!=='guo').length + marks.length < wave.cap){
           spawnT = wave.spawn * (1 - 0.35*prog);
@@ -3477,6 +3636,13 @@ const Game = (function(){
             if(Math.hypot(px-player.x, py-player.y) > 130 || tries===5){
               const roll = Math.random();
               let type = 'gui', hp = 1, cr = 29;
+              if(wave.mix){                                            // 卷: the stage decides who comes
+                const tot = wave.mix.reduce((a,m)=>a+m[1],0);
+                let r2 = Math.random()*tot;
+                for(const [ty,w] of wave.mix){ r2 -= w; if(r2 <= 0){ type = ty; break; } }
+                const ST = {gui:[1,29], shi:[2,30], hu:[3,34], she:[2,30], yan:[1,24], drum:[3,32], xue:[3,30], yoke:[4,32]};
+                hp = (ST[type]||[1,29])[0]; cr = (ST[type]||[1,29])[1];
+              } else {
               if(stageIdx >= 1 && roll < [0,0.18,0.2,0.2][stageIdx]){ type = 'shi'; hp = 2; cr = 30; }
               else if(stageIdx >= 2 && roll > 1 - [0,0,0.12,0.18][stageIdx]){ type = 'hu'; hp = 3; cr = 34; }
               else if(stageIdx >= 1 && roll >= 0.5 && roll < 0.5 + [0,0.12,0.14,0.16][stageIdx]){ type = 'she'; hp = 2; cr = 30; }
@@ -3484,6 +3650,7 @@ const Game = (function(){
               else if(stageIdx >= 2 && roll >= 0.66 && roll < 0.66 + [0,0,0.10,0.12][stageIdx]){ type = 'drum'; hp = 3; cr = 32; }       // 壴 the war-drum
               else if(stageIdx >= 2 && roll >= 0.44 && roll < 0.44 + [0,0,0.05,0.06][stageIdx]){ type = 'xue'; hp = 3; cr = 30; }        // 血 the blood-priest
               else if(stageIdx >= 1 && roll >= 0.20 && roll < 0.20 + [0,0.05,0.06,0.07][stageIdx]){ type = 'yoke'; hp = 4; cr = 32; }    // 央 the yoke
+              }
               const sp = {x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
                           st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
                           spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)};
@@ -3857,7 +4024,11 @@ const Game = (function(){
         } else {
           coins += desk.xpPer; runGlyphs++;
           const info = GLYPHS[p.ch] || {py:'',en:'',zh:'',eff_en:'',eff_zh:''};
-          popToastEx(p.ch, info.py, `${t(info.en, info.zh)} · ${t(info.eff_en, info.eff_zh)}`);
+          if(!glyphToasted[p.ch]){                                     // the lesson once; after that, just the feel
+            glyphToasted[p.ch] = 1;
+            popToastEx(p.ch, info.py, `${t(info.en, info.zh)} · ${t(info.eff_en, info.eff_zh)}`);
+          }
+          addFx({kind:'soar', x:p.x, y:p.y, t:0.45});                  // the glyph flies to the strip — that's XP
           applyGlyphEffect(p.ch);
           gainElem(ELEM_OF[p.ch]);
           mark('glyphs', p.ch);
@@ -4187,16 +4358,18 @@ const Game = (function(){
 
     // fallen glyphs
     for(const p of pickups){
-      const fade = p.t < 1.5 ? (Math.sin(tGlobal*16)>0 ? 0.4 : 1) : 1;
-      const py = p.y + Math.sin(p.bob)*4;
-      ctx.save();                                    // a jade halo marks loot apart from your gold strikes
-      ctx.globalAlpha = fade * (0.4 + 0.15*Math.sin(tGlobal*4 + p.x));
-      const hg = ctx.createRadialGradient(p.x, py, 1, p.x, py, 17);
-      hg.addColorStop(0, 'rgba(150,210,110,0.6)'); hg.addColorStop(1, 'rgba(150,210,110,0)');
-      ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(p.x, py, 17, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
-      ctx.save(); ctx.globalAlpha = fade;
-      drawPicto(ctx, p.ch, p.x, py, 26, era.accent);
+      const fade = p.t < 1.5 ? Math.max(0.15, p.t/1.5) : 1;          // it sinks back into the paper — no strobe
+      const py = p.y + Math.sin(p.bob)*4 + (p.t < 1.5 ? (1.5-p.t)*4 : 0);
+      if(p.pow || p.ding){                           // POWER loot wears the jade halo — worth crossing the arena for
+        ctx.save();
+        ctx.globalAlpha = fade * (0.45 + 0.15*Math.sin(tGlobal*4 + p.x));
+        const hg = ctx.createRadialGradient(p.x, py, 1, p.x, py, 20);
+        hg.addColorStop(0, 'rgba(150,210,110,0.65)'); hg.addColorStop(1, 'rgba(150,210,110,0)');
+        ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(p.x, py, 20, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.save(); ctx.globalAlpha = fade * (p.pow || p.ding ? 1 : 0.85);
+      drawPicto(ctx, p.ch, p.x, py, p.pow || p.ding ? 30 : 22, era.accent);
       ctx.restore();
     }
 
@@ -4453,6 +4626,12 @@ const Game = (function(){
         ctx.globalAlpha = 0.95*k; ctx.lineWidth = 3.4;       // brighter core right at the impact
         ctx.beginPath(); ctx.moveTo(e.x - Math.cos(e.ang)*e.r*0.25, e.y - Math.sin(e.ang)*e.r*0.25);
         ctx.lineTo(e.x + Math.cos(e.ang)*e.r*0.45, e.y + Math.sin(e.ang)*e.r*0.45); ctx.stroke();
+      } else if(e.kind==='soar'){
+        const kk = 1-k;                                                // 0→1 along the flight
+        const sx = e.x + (WALL+30 - e.x)*kk*kk, sy = e.y + (WALL+8 - e.y)*kk;
+        ctx.globalAlpha = 0.8*k + 0.1;
+        ctx.fillStyle = era.accent; ctx.shadowColor = era.accent; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.arc(sx, sy, 3, 0, Math.PI*2); ctx.fill();
       } else if(e.kind==='healring'){
         ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 2;
         ctx.globalAlpha = 0.4*k;
@@ -4854,6 +5033,33 @@ const Game = (function(){
     running = true; lastTs = performance.now();
     bgm.resume();
   }
+  function buildScroll(){
+    const row = $('scrollRow'); if(!row) return;
+    row.innerHTML = '';
+    const unlocked = Object.keys(stageStars).length;      // pages open in order
+    STAGES.forEach((def, i)=>{
+      const open = i <= unlocked;
+      const stars = stageStars[i]||0;
+      const card = document.createElement('div');
+      card.className = 'char-card' + (open ? '' : ' lockedpg');
+      const cc = document.createElement('canvas'); cc.width = 40; cc.height = 44;
+      const g2 = cc.getContext('2d');
+      if(ORACLE[def.ch] && typeof Path2D !== 'undefined')
+        drawOraclePath(g2, ORACLE[def.ch], 20, 21, 32, open ? '#e8dfc8' : '#4a463c');
+      const nm = document.createElement('div'); nm.className = 'cname';
+      nm.textContent = open ? `${i+1} ${def.ch} ${def.py}` : `${i+1} ？`;
+      const st2 = document.createElement('div'); st2.className = 'cskill';
+      st2.textContent = open ? (stars ? '一二三'.slice(0, stars) : t('unwritten','未书')) : t('sealed','未启');
+      card.append(cc, nm, st2);
+      if(open) card.onclick = () => startStage(i);
+      row.appendChild(card);
+    });
+  }
+  function openScroll(){ buildScroll(); hideAll(); overlay('ovScroll', true); }
+  function closeScroll(){ overlay('ovScroll', false); overlay('ovStart', true); }
+  function retryStage(){ if(stage) startStage(stage.i); }
+  function nextStagePage(){ if(stage && stage.i+1 < STAGES.length) startStage(stage.i+1); }
+
   function updateNightBest(){
     const nb = $('nightBest'); if(!nb) return;
     if(bestNight > 0){ nb.style.display = ''; nb.textContent = t(`永夜 deepest night: ${bestNight}`, `永夜最深：第 ${bestNight} 夜`); }
@@ -5220,6 +5426,7 @@ const Game = (function(){
   loadStage(0); running = false; render();
 
   return { start, restart, nextStage, toDesk, syncHud, onLang, chooseChar, pause, resume, goEndless,
+           openScroll, closeScroll, startStage, retryStage, nextStagePage,
            openBook, closeBook, openSeal, closeSeal,
            dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, pav, endless, endlessN, exhaleT,
                          stageIdx, selChar, selArm, waveT, gate, hp: lives, maxHp, level, coins,
