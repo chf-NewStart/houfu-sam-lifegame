@@ -10,18 +10,23 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else 'glyphs.json'
 doc = fitz.open(PDF)
 pairs = []  # (char, PIL image)
 
-for page in doc:
-    words = page.get_text('words')  # x0,y0,x1,y1,text,...
-    labels = [w for w in words if len(w[4]) == 1 and '一' <= w[4] <= '鿿']
-    seen = set()
-    img_rects = []
+def page_rects(page):
+    seen, out = set(), []
     for xref, *_ in page.get_images(full=True):
         if xref in seen: continue
         seen.add(xref)
         for rect in page.get_image_rects(xref):
-            img_rects.append((xref, rect))
+            if rect.width >= 8 and rect.height >= 8:
+                out.append((xref, rect))
+    return out
+
+prev_rects = []           # images from the previous page (for rows split by a page break)
+for page in doc:
+    words = page.get_text('words')  # x0,y0,x1,y1,text,...
+    labels = [w for w in words if len(w[4]) == 1 and '一' <= w[4] <= '鿿']
+    img_rects = page_rects(page)
+    matched = set()
     for xref, rect in img_rects:
-        if rect.width < 8 or rect.height < 8: continue
         # label: nearest hanzi word whose top edge is below the image bottom,
         # horizontally overlapping the image column
         best, bd = None, 1e9
@@ -33,12 +38,32 @@ for page in doc:
             if 0 <= d < bd and d < 65:
                 bd, best = d, w
         if not best: continue
+        matched.add(id(best))
         try:
             pix = doc.extract_image(xref)
             img = Image.open(io.BytesIO(pix['image'])).convert('L')
         except Exception:
             continue
         pairs.append((best[4], img))
+    # a table row can break across pages: its glyphs end the previous page and
+    # its labels open this one — pair each orphaned top-row label with the
+    # bottom-most previous-page image in the same column
+    for w in labels:
+        if id(w) in matched or w[1] > 110: continue
+        wx = (w[0] + w[2]) / 2
+        best, by = None, -1
+        for xref, rect in prev_rects:
+            cx = (rect.x0 + rect.x1) / 2
+            if abs(cx - wx) > 28: continue
+            if rect.y1 > by: by, best = rect.y1, (xref, rect)
+        if not best or by < doc[0].rect.height * 0.55: continue
+        try:
+            pix = doc.extract_image(best[0])
+            img = Image.open(io.BytesIO(pix['image'])).convert('L')
+        except Exception:
+            continue
+        pairs.append((w[4], img))
+    prev_rects = img_rects
 
 print(f'paired {len(pairs)} glyph images', file=sys.stderr)
 

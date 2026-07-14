@@ -241,9 +241,9 @@
   #stampFx canvas{width:150px;height:150px;animation:stamp .8s cubic-bezier(.15,.9,.2,1) both;}
   @keyframes stamp{
     0%{transform:scale(2.6) rotate(-9deg);opacity:0;}
-    45%{transform:scale(1.0) rotate(2deg);opacity:1;}
-    62%{transform:scale(1.12) rotate(2deg);opacity:0.95;}
-    100%{transform:scale(1.06) rotate(2deg);opacity:0;}
+    45%{transform:scale(1.0) rotate(0deg);opacity:1;}
+    62%{transform:scale(1.12) rotate(0deg);opacity:0.95;}
+    100%{transform:scale(1.06) rotate(0deg);opacity:0;}
   }
 
   /* --- element chips: the five phases counted under the hud --- */
@@ -285,7 +285,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b33</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b34</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -464,6 +464,11 @@ function sheepHead(ctx, s, cx, cy, sc, w){
 
 /* the walker family 人→大→夫→舞 — always legged, so the gait swings */
 function renForm(ctx, fi, s, swing){
+  const og = ORACLE[['人','大','夫','舞'][fi]];
+  if(og && typeof Path2D !== 'undefined'){                  // the exact traced forms
+    drawOraclePath(ctx, og, 0, -0.55*s, s*1.25, ctx.strokeStyle);
+    return;
+  }
   if(fi===0){ // 人 per the oracle form: a side-profile figure — bowed spine, hanging arm
     stroke(ctx, s*0.13);
     ctx.beginPath();
@@ -510,6 +515,20 @@ function renForm(ctx, fi, s, swing){
 
 /* the charger family 牛→牢→牧→犇 */
 function niuForm(ctx, fi, s){
+  if(typeof Path2D !== 'undefined'){
+    if(fi===3){                                             // 犇: three exact oxen — the stampede
+      const og = ORACLE['牛'];
+      if(og){
+        drawOraclePath(ctx, og, 0, -0.92*s, s*0.62, ctx.strokeStyle);
+        drawOraclePath(ctx, og, -0.33*s, -0.32*s, s*0.62, ctx.strokeStyle);
+        drawOraclePath(ctx, og, 0.33*s, -0.32*s, s*0.62, ctx.strokeStyle);
+        return;
+      }
+    } else {
+      const og = ORACLE[['牛','牢','牧'][fi]];              // the exact traced forms
+      if(og){ drawOraclePath(ctx, og, 0, -0.55*s, s*1.25, ctx.strokeStyle); return; }
+    }
+  }
   if(fi===0){ // 牛 kai: tick, two horizontals, vertical through
     stroke(ctx, s*0.13);
     ctx.beginPath(); ctx.moveTo(-0.06*s,-1.04*s); ctx.quadraticCurveTo(-0.22*s,-0.84*s,-0.34*s,-0.76*s); ctx.stroke();
@@ -541,6 +560,25 @@ function niuForm(ctx, fi, s){
 
 /* the drifter family 羊→羔→美→羴 */
 function yangForm(ctx, fi, s, swing){
+  if(typeof Path2D !== 'undefined'){
+    const ogY = ORACLE['羊'], ogM = ORACLE['美'];
+    if(fi===0 && ogY){ drawOraclePath(ctx, ogY, 0, -0.55*s, s*1.25, ctx.strokeStyle); return; }
+    if(fi===1 && ogY){                                      // 羔: the exact lamb over ember ticks
+      drawOraclePath(ctx, ogY, 0, -0.62*s, s*1.05, ctx.strokeStyle);
+      stroke(ctx, s*0.1);
+      for(const [x1,y1,x2,y2] of [[-0.34,-0.16,-0.42,0],[-0.12,-0.14,-0.16,0],[0.12,-0.14,0.16,0],[0.34,-0.16,0.42,0]]){
+        ctx.beginPath(); ctx.moveTo(x1*s,y1*s); ctx.lineTo(x2*s,y2*s); ctx.stroke();
+      }
+      return;
+    }
+    if(fi===2 && ogM){ drawOraclePath(ctx, ogM, 0, -0.55*s, s*1.25, ctx.strokeStyle); return; }
+    if(fi===3 && ogY){                                      // 羴: the whole flock, exact
+      drawOraclePath(ctx, ogY, 0, -0.92*s, s*0.62, ctx.strokeStyle);
+      drawOraclePath(ctx, ogY, -0.33*s, -0.32*s, s*0.62, ctx.strokeStyle);
+      drawOraclePath(ctx, ogY, 0.33*s, -0.32*s, s*0.62, ctx.strokeStyle);
+      return;
+    }
+  }
   if(fi===0){ // 羊 kai: two dots, three horizontals, vertical
     stroke(ctx, s*0.13);
     ctx.beginPath(); ctx.moveTo(-0.2*s,-1.08*s); ctx.lineTo(-0.09*s,-0.9*s); ctx.stroke();
@@ -585,6 +623,17 @@ function miniTree(ctx, s, cx, cy, sc, w, sway){
   ctx.quadraticCurveTo(cx+0.26*sc*s, cy-0.14*sc*s, cx+0.34*sc*s, cy); ctx.stroke();
 }
 function treeForm(ctx, fi, s, swing){
+  if(typeof Path2D !== 'undefined'){
+    const og = ORACLE[['木','木','林','森'][fi]];            // 本 = the exact 木, its base marked
+    if(og){
+      drawOraclePath(ctx, og, 0, -0.55*s, s*1.25, ctx.strokeStyle);
+      if(fi===1){
+        stroke(ctx, s*0.1);
+        ctx.beginPath(); ctx.moveTo(-0.2*s, -0.16*s); ctx.lineTo(0.2*s, -0.16*s); ctx.stroke();
+      }
+      return;
+    }
+  }
   const sway = swing*0.4;
   if(fi===0) miniTree(ctx, s, 0, 0, 1, s*0.12, sway);                   // 木: the tree itself
   else if(fi===1){                                                       // 本: the tree, its base marked
@@ -616,6 +665,18 @@ function miniFlame(ctx, s, cx, cy, sc, w, flick){
 }
 function huoForm(ctx, fi, s, phase){
   const flick = Math.sin(phase*1.7);
+  if(typeof Path2D !== 'undefined'){
+    const og = ORACLE[['火','炎','焱','火'][fi]];
+    if(og){
+      if(fi===3){                                            // 燚: four exact fires — the inferno
+        for(const [ox,oy] of [[-0.28,-0.88],[0.28,-0.88],[-0.28,-0.3],[0.28,-0.3]])
+          drawOraclePath(ctx, og, ox*s, oy*s, s*0.58, ctx.strokeStyle);
+      } else {
+        drawOraclePath(ctx, og, 0, -0.55*s, s*1.25, ctx.strokeStyle);
+      }
+      return;
+    }
+  }
   if(fi===0) miniFlame(ctx, s, 0, 0, 1.05, s*0.12, flick);               // 火: the dancing flame
   else if(fi===1){                                                       // 炎: fire upon fire
     miniFlame(ctx, s, 0, -0.58*s, 0.62, s*0.1, flick);
@@ -635,6 +696,10 @@ function huoForm(ctx, fi, s, phase){
 /* the drifter family 鬼→魂→魅→魔 — you play the ghost itself */
 function guiForm(ctx, fi, s, swing){
   stroke(ctx, s*0.1);
+  const og = ORACLE['鬼'];
+  if(og && typeof Path2D !== 'undefined'){                                  // the exact ghost at every tier
+    drawOraclePath(ctx, og, 0, -0.6*s, s*1.3, ctx.strokeStyle);
+  } else {
   const r = 0.32*s;
   ctx.beginPath(); ctx.ellipse(0, -0.92*s, r, 0.3*s, 0, 0, Math.PI*2); ctx.stroke();  // the crossed oracle head
   ctx.beginPath(); ctx.moveTo(-r, -0.92*s); ctx.lineTo(r, -0.92*s); ctx.stroke();
@@ -643,6 +708,7 @@ function guiForm(ctx, fi, s, swing){
   ctx.moveTo(0, -0.62*s); ctx.quadraticCurveTo(0.05*s, -0.35*s, -0.05*s, -0.2*s);
   ctx.quadraticCurveTo(-0.16*s, -0.05*s, 0.12*s + swing*0.5, 0); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(-0.02*s, -0.45*s); ctx.lineTo(0.3*s, -0.56*s); ctx.stroke();
+  }
   if(fi>=1){                                                                // 魂: the 云 cloud at its shoulder
     ctx.beginPath(); ctx.moveTo(0.28*s, -1.2*s); ctx.lineTo(0.56*s, -1.22*s); ctx.stroke();
     ctx.beginPath();
@@ -870,6 +936,8 @@ function drawJiang(ctx, cx, cy, s, color){
 
 /* 光 the status glyph — fire carried high over a kneeling bearer */
 function drawGuang(ctx, cx, cy, s, color){
+  const og = ORACLE['光'];
+  if(og && typeof Path2D !== 'undefined'){ drawOraclePath(ctx, og, cx, cy, s*1.1, color); return; }
   ctx.save();
   ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s*0.35;
   stroke(ctx, Math.max(2, s*0.11));
@@ -979,6 +1047,33 @@ function elephantSide(ctx, s, cx, cy, sc, w, legKick){
 }
 function xiangForm(ctx, fi, s, swing){
   const kick = swing*0.5/s || 0;
+  const ogX = ORACLE['象'];
+  if(ogX && typeof Path2D !== 'undefined'){                  // the exact elephant carries every tier
+    if(fi===0){ drawOraclePath(ctx, ogX, 0, -0.55*s, s*1.3, ctx.strokeStyle); return; }
+    if(fi===1){                                              // 像: the person beside the exact elephant
+      stroke(ctx, s*0.1);
+      ctx.beginPath(); ctx.moveTo(-0.48*s,-1.04*s); ctx.quadraticCurveTo(-0.56*s,-0.6*s,-0.48*s,0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.48*s,-0.78*s); ctx.quadraticCurveTo(-0.32*s,-0.62*s,-0.28*s,-0.4*s); ctx.stroke();
+      drawOraclePath(ctx, ogX, 0.18*s, -0.5*s, s*1.05, ctx.strokeStyle);
+      return;
+    }
+    if(fi===2){                                              // 豫: 予 beside the exact elephant
+      stroke(ctx, s*0.11);
+      ctx.beginPath();
+      ctx.moveTo(-0.66*s,-1.0*s); ctx.lineTo(-0.34*s,-1.0*s); ctx.lineTo(-0.6*s,-0.78*s); ctx.lineTo(-0.3*s,-0.78*s);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.3*s,-0.78*s); ctx.quadraticCurveTo(-0.34*s,-0.4*s,-0.48*s,-0.34*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.48*s,-0.62*s); ctx.lineTo(-0.64*s,-0.44*s); ctx.stroke();
+      drawOraclePath(ctx, ogX, 0.2*s, -0.5*s, s*1.05, ctx.strokeStyle);
+      return;
+    }
+    const ogY = ORACLE['又'];                                // 為: the exact hand takes the exact elephant
+    if(ogY){
+      drawOraclePath(ctx, ogY, -0.04*s, -1.18*s, s*0.5, ctx.strokeStyle);
+      drawOraclePath(ctx, ogX, 0.06*s, -0.48*s, s*1.05, ctx.strokeStyle);
+      return;
+    }
+  }
   if(fi===0){ // 象 per 说文: the sinuous seal elephant — trunk coiled high
     stroke(ctx, s*0.11);
     ctx.beginPath();                                                   // the trunk coil
@@ -1048,7 +1143,7 @@ function drawGlyphChar(ctx, charKey, fi, cx, footY, s, phase, sq, color){
   ctx.strokeStyle = color; ctx.fillStyle = color;
   ctx.shadowColor = color; ctx.shadowBlur = s*0.14;
   const swing = Math.sin(phase) * 0.16 * s;      // legs alternate
-  const legged = charKey==='ren';
+  const legged = charKey==='ren' && typeof Path2D === 'undefined';   // exact forms waddle; drawn legs only in the sim
   if(!legged) ctx.rotate(Math.sin(phase)*0.05);  // head-glyphs waddle instead
   if(charKey==='ren') renForm(ctx, fi, s, swing);
   else if(charKey==='niu') niuForm(ctx, fi, s);
@@ -1115,7 +1210,27 @@ const ORACLE = {
   '鼎': {p:'M30.6 0.0L26.7 14.2 27.6 30.6 31.0 38.4 41.4 47.0 41.4 51.3 37.5 59.5 23.3 57.3 24.6 60.3 34.9 62.9 37.1 66.8 34.1 72.4 19.4 75.0 18.1 78.0 32.8 77.2 27.6 93.5 27.6 98.7 30.6 99.1 44.8 52.2 47.8 47.4 55.6 47.4 67.2 94.4 72.0 100.0 73.3 96.1 67.2 77.2 68.5 75.0 81.5 75.9 81.9 73.7 65.5 69.4 64.7 61.6 75.4 55.2 76.7 51.3 63.4 56.9 61.2 47.8 67.7 44.8 73.3 37.5 75.9 2.2 70.3 0.9 59.1 15.5 46.1 16.4 37.1 3.9 30.6 0.0ZM31.9 4.7L37.9 10.8 37.5 16.4 31.0 14.2 31.9 4.7ZM69.8 8.2L71.6 12.5 66.8 15.5 65.5 12.5 69.8 8.2ZM41.4 19.4L69.4 19.0 71.6 22.8 53.9 26.7 31.0 24.6 32.3 19.8 41.4 19.4ZM38.8 29.7L67.7 29.3 69.8 33.2 64.2 42.2 47.8 44.0 34.5 35.8 33.6 30.6 38.8 29.7Z'},
   '印': {p:'M29.6 0.0L33.5 9.1 33.5 18.7 23.0 41.3 24.3 61.7 27.4 59.6 26.5 43.9 30.4 33.9 34.3 46.5 37.8 45.7 35.2 23.0 38.3 20.0 42.2 31.7 44.8 32.6 39.6 13.5 29.6 0.0ZM57.4 13.9L59.6 29.1 54.3 48.3 54.3 60.4 41.3 73.5 42.2 93.5 45.2 100.0 70.4 73.9 72.6 77.8 70.0 92.6 74.3 91.7 74.8 67.8 63.5 75.7 48.7 93.0 44.8 92.6 45.7 73.5 77.0 43.9 60.4 14.3 57.4 13.9ZM63.0 30.0L72.6 43.0 59.1 55.7 57.8 50.0 63.0 30.0Z'},
   '心': {p:'M82.5 0.0L59.2 19.7 63.2 22.8 78.1 10.5 82.9 11.8 80.3 55.7 76.3 57.0 61.4 42.1 58.3 44.3 76.8 66.2 55.3 94.7 34.2 83.3 23.2 69.7 22.4 64.5 38.2 48.7 33.3 47.4 20.2 57.0 18.0 47.8 18.9 11.8 22.8 11.4 39.5 21.1 43.0 21.1 45.2 17.1 21.1 2.6 13.6 3.9 11.8 37.3 18.9 72.4 34.2 89.5 56.1 100.0 61.4 100.0 70.6 88.2 80.3 73.2 85.5 57.5 88.2 7.5 86.4 1.3 82.5 0.0Z'},
-  '又': {p:'M48.3 0.0L45.3 3.0 57.3 13.4 59.1 25.4 51.7 36.2 37.9 25.9 28.9 24.6 51.3 43.5 24.6 69.4 28.4 71.6 34.5 68.1 56.0 47.4 64.2 60.8 70.3 94.4 74.1 100.0 75.4 92.7 68.5 59.1 57.3 41.8 62.5 31.5 63.4 15.1 48.3 0.0Z'}
+  '又': {p:'M48.3 0.0L45.3 3.0 57.3 13.4 59.1 25.4 51.7 36.2 37.9 25.9 28.9 24.6 51.3 43.5 24.6 69.4 28.4 71.6 34.5 68.1 56.0 47.4 64.2 60.8 70.3 94.4 74.1 100.0 75.4 92.7 68.5 59.1 57.3 41.8 62.5 31.5 63.4 15.1 48.3 0.0Z'},
+  '火': {p:'M47.5 0.0L44.1 1.5 44.1 39.1 18.8 86.1 9.4 73.8 8.4 32.2 5.0 29.7 1.5 32.2 5.4 81.7 15.8 93.1 32.7 99.0 65.3 100.0 83.2 96.0 89.6 91.6 93.6 82.7 98.5 26.2 93.6 25.2 87.6 80.7 81.2 87.1 50.0 39.1 51.0 2.5 47.5 0.0ZM20.8 8.9L17.3 11.4 17.3 27.2 21.8 29.7 24.3 11.4 20.8 8.9ZM71.3 8.9L69.8 26.2 74.3 27.7 76.7 18.3 74.8 10.4 71.3 8.9ZM45.0 50.0L48.5 49.5 57.9 62.9 73.8 88.6 72.3 92.1 49.5 95.0 26.2 88.6 45.0 50.0Z'},
+  '龜': {p:'M51.3 0.0L42.2 10.8 43.5 26.7 30.6 19.8 22.8 7.8 19.8 9.9 20.3 13.8 15.5 14.2 17.7 22.4 27.2 22.4 45.7 33.2 30.6 55.2 19.0 48.7 15.9 39.7 12.9 40.1 12.5 44.8 5.2 43.5 10.3 48.7 9.9 55.2 18.5 53.4 28.4 59.1 31.9 76.3 40.5 87.5 22.8 86.2 14.2 78.4 15.5 84.9 8.6 86.6 12.9 90.1 10.3 93.5 14.2 94.8 28.9 90.5 54.7 96.6 79.7 94.0 87.5 100.0 89.7 97.0 86.2 92.7 94.8 90.1 89.7 87.5 90.1 80.2 81.5 88.8 65.9 91.4 62.1 89.2 73.3 73.7 74.1 63.4 82.3 53.4 89.7 50.4 89.7 46.1 94.8 40.1 90.1 39.7 86.6 32.8 82.8 46.1 73.7 55.2 62.1 31.5 72.0 24.1 82.3 26.7 78.4 19.4 82.8 15.1 77.2 15.5 74.6 8.6 70.7 19.4 61.6 25.9 60.3 6.5 51.3 0.0ZM48.3 7.3L50.9 7.3 51.7 11.6 51.3 27.6 45.7 18.5 48.3 7.3ZM56.0 34.9L67.2 46.1 69.4 59.5 56.0 59.1 56.0 34.9ZM48.3 37.5L51.7 37.5 51.7 59.1 35.8 59.5 37.9 48.7 48.3 37.5ZM35.3 64.2L50.9 65.9 50.4 90.5 38.8 79.7 35.3 64.2ZM56.0 64.2L69.8 65.9 67.2 77.2 56.5 90.5 56.0 64.2Z'},
+  '光': {p:'M51.3 0.0L49.1 2.2 50.4 16.1 53.6 8.5 51.3 0.0ZM70.1 2.7L58.0 18.3 59.4 25.0 67.4 11.6 65.2 24.6 62.1 28.6 57.6 26.8 54.9 33.9 59.4 33.9 68.8 23.7 72.3 11.2 70.1 2.7ZM31.7 3.6L27.7 11.2 28.6 21.9 31.2 28.1 39.3 34.4 32.1 47.8 35.3 48.2 45.1 37.5 50.0 42.4 51.8 54.0 47.3 77.2 32.6 78.6 30.4 81.7 46.0 83.0 48.7 100.0 51.3 83.9 68.8 80.8 50.9 78.1 55.4 45.1 50.9 38.8 53.6 33.5 47.3 30.8 50.0 18.3 43.3 30.4 40.2 27.2 39.3 11.2 31.7 3.6ZM33.0 11.2L35.7 12.1 38.4 21.9 35.3 26.8 32.1 19.2 33.0 11.2Z'},
+  '弓': {p:'M41.8 0.0L44.0 9.9 36.2 22.0 39.2 22.4 47.8 12.1 51.7 17.7 37.1 32.3 43.1 59.1 35.3 74.6 41.4 91.8 49.6 100.0 62.1 70.3 64.7 37.5 62.9 28.9 51.7 8.2 41.8 0.0ZM52.6 22.8L56.0 23.7 59.5 31.5 62.1 55.6 56.0 77.2 47.8 92.2 38.8 76.3 46.6 60.8 41.4 32.3 52.6 22.8Z'},
+  '雷': {p:'M41.8 0.0L41.4 3.0 49.1 10.8 51.7 22.0 49.6 24.1 34.9 12.1 31.5 11.2 31.0 13.4 49.1 29.7 41.4 52.2 40.5 70.3 44.0 87.5 52.2 100.0 54.3 97.8 46.6 78.9 49.6 78.4 59.9 87.1 62.1 84.1 44.8 70.3 44.8 58.2 55.2 29.7 56.0 18.5 51.7 6.5 41.8 0.0ZM17.7 30.2L12.9 32.3 12.1 59.1 14.2 61.2 33.2 60.3 34.5 33.2 17.7 30.2ZM18.1 34.9L22.4 35.8 22.0 44.0 17.2 43.5 18.1 34.9ZM26.7 35.8L31.0 37.5 29.7 44.8 26.7 43.5 26.7 35.8ZM65.1 47.4L63.8 74.6 84.9 75.9 87.9 50.4 84.9 47.4 65.1 47.4ZM17.2 48.7L22.4 49.6 21.1 56.9 16.4 55.6 17.2 48.7ZM26.7 48.7L31.0 49.6 28.9 57.8 25.9 55.6 26.7 48.7ZM70.7 51.3L73.3 53.0 73.3 59.1 68.5 61.2 68.1 53.0 70.7 51.3ZM80.2 51.3L84.5 54.7 81.5 62.1 77.6 59.9 77.6 53.0 80.2 51.3ZM68.1 65.9L73.3 67.7 71.1 72.4 67.2 69.4 68.1 65.9ZM78.4 65.9L82.8 66.8 79.7 72.4 78.4 65.9Z'},
+  /* player families — the exact traced forms (犇/羴 compose from 牛/羊, 燚 from 炎, 為 from 又+象) */
+  '人': {p:'M50.9 0.0L49.6 6.6 53.1 15.4 30.3 45.2 35.1 47.4 55.3 21.1 57.9 20.2 61.8 25.0 65.4 43.4 48.7 75.0 45.2 90.8 46.5 100.0 50.4 96.9 51.3 80.3 69.7 45.2 69.7 32.9 54.8 11.0 53.9 0.4 50.9 0.0Z'},
+  '大': {p:'M45.7 0.0L43.5 17.7 14.2 38.4 14.7 41.4 18.1 40.5 36.2 26.7 43.1 23.3 44.4 25.4 43.5 43.5 34.1 50.4 28.0 59.9 29.7 80.6 28.0 89.2 22.0 97.8 28.9 94.4 34.1 84.1 31.5 61.6 41.4 50.0 47.4 47.4 51.3 48.7 59.1 60.8 59.1 90.1 69.8 100.0 72.0 97.8 65.1 92.7 60.8 84.1 62.5 59.9 55.6 48.7 47.8 42.7 47.8 23.7 82.8 37.1 85.8 34.9 48.3 18.1 48.7 2.2 45.7 0.0Z'},
+  '夫': {p:'M49.6 0.0L46.1 13.9 30.0 15.2 31.3 19.1 46.1 19.1 47.4 23.0 45.7 30.9 25.7 50.0 25.7 53.5 48.3 37.8 48.3 53.5 33.5 83.9 33.9 100.0 37.0 98.7 39.6 77.8 50.4 60.9 61.3 70.0 66.5 83.9 67.4 97.0 72.6 97.0 67.4 73.5 62.2 63.9 51.7 54.3 53.0 36.5 71.3 50.4 74.3 49.1 55.2 31.7 51.7 24.8 51.7 20.4 55.7 17.4 71.7 15.2 69.6 13.0 52.2 13.0 49.6 0.0Z'},
+  '舞': {p:'M53.9 1.8L32.9 3.5 32.0 7.9 45.2 7.0 47.4 16.2 14.5 20.2 12.3 32.9 0.0 44.3 3.9 47.4 11.8 40.4 13.2 58.3 16.2 58.8 18.9 40.4 29.8 46.1 17.5 32.0 19.3 24.1 46.5 21.5 46.5 29.4 34.2 41.7 38.2 43.9 46.1 36.8 47.4 50.4 31.6 73.2 28.1 89.9 30.3 98.2 33.3 96.1 35.1 75.9 49.6 56.1 61.4 63.6 67.5 81.1 69.3 97.8 73.7 96.1 66.7 64.5 52.6 50.4 50.9 40.8 53.9 35.1 63.6 42.1 67.5 39.9 52.6 28.5 53.1 21.1 71.5 21.1 82.5 25.0 83.3 29.4 70.2 39.9 74.1 42.1 83.3 37.3 83.8 57.0 86.8 56.6 88.2 36.8 100.0 43.4 87.7 29.4 86.8 22.4 82.0 17.5 53.9 16.7 52.6 9.2 64.0 5.7 62.7 1.8 53.9 1.8Z'},
+  '牛': {p:'M50.5 0.0L47.4 45.3 35.3 35.3 36.8 2.1 33.2 3.7 30.0 18.4 31.1 36.3 47.9 53.2 46.8 73.2 30.5 58.9 26.8 59.5 46.8 82.6 47.4 100.0 51.1 98.4 51.1 78.4 71.1 60.5 67.4 58.9 52.1 70.0 52.1 54.2 65.8 40.5 53.2 45.8 54.2 3.7 50.5 0.0ZM69.5 2.1L70.5 36.8 73.2 10.0 69.5 2.1ZM86.3 7.4L83.7 11.1 86.3 22.1 88.9 18.4 86.3 7.4ZM15.8 11.6L14.2 20.5 16.8 23.2 19.5 14.2 15.8 11.6ZM12.6 45.3L11.1 59.5 14.7 62.1 16.3 47.9 12.6 45.3ZM85.3 48.4L84.2 63.2 87.9 57.4 87.9 48.9 85.3 48.4Z'},
+  '牢': {p:'M17.8 0.0L13.0 4.8 11.3 51.7 22.6 57.8 23.9 99.1 27.8 97.0 27.8 55.2 25.7 51.3 16.5 48.3 19.1 6.5 73.5 6.1 82.6 9.1 80.9 45.7 67.0 56.1 65.2 97.8 69.1 100.0 72.2 59.6 86.1 50.9 88.7 4.8 86.5 2.6 17.8 0.0ZM35.2 10.4L30.4 36.1 46.1 49.1 46.1 71.7 43.0 72.2 36.1 64.3 32.2 66.5 44.3 81.3 45.2 94.3 49.1 96.5 50.4 78.7 62.6 64.8 57.8 62.6 50.4 67.4 52.2 47.4 70.4 30.0 70.4 12.6 65.2 11.7 65.2 27.4 54.3 39.1 52.2 37.8 53.0 14.3 47.8 14.3 45.7 44.3 34.8 34.3 40.0 12.6 35.2 10.4Z'},
+  '牧': {p:'M73.7 0.0L66.4 28.9 54.3 56.5 59.1 57.8 62.9 47.0 65.9 44.0 68.1 46.1 72.4 57.3 57.8 77.2 60.8 79.3 73.7 63.8 76.7 70.3 79.3 97.8 82.3 100.0 82.8 82.3 77.6 55.6 82.8 45.3 84.5 30.6 82.3 27.6 80.2 28.9 80.2 38.4 75.4 49.1 68.1 34.1 76.3 7.8 87.5 16.4 90.5 15.9 90.5 12.5 73.7 0.0ZM15.9 3.4L9.5 26.3 9.5 40.1 16.8 48.3 30.2 54.7 30.2 72.0 16.8 62.1 14.2 61.2 12.9 65.1 30.2 79.7 32.3 98.3 34.5 96.1 34.5 78.0 50.0 59.9 47.0 56.9 34.9 68.1 34.5 56.5 51.7 37.5 54.3 26.3 50.0 4.7 47.0 3.4 49.1 32.3 35.8 47.4 34.5 15.1 31.5 12.9 31.0 47.0 26.3 49.1 13.8 39.2 12.9 30.6 19.8 7.3 15.9 3.4Z'},
+  '象': {p:'M31.7 0.0L21.8 6.5 20.0 12.5 23.9 13.8 28.2 6.0 36.0 4.3 46.8 20.3 44.6 31.0 36.9 28.4 33.8 30.6 50.2 37.5 50.2 40.9 43.8 46.6 23.5 56.5 33.4 55.2 38.1 68.5 47.6 80.6 47.2 83.6 34.7 90.1 48.1 88.8 69.6 73.3 71.8 82.3 61.4 94.4 69.6 92.2 69.6 100.0 74.8 92.2 80.0 95.7 75.2 87.5 76.1 75.4 73.5 68.5 55.4 46.1 56.2 36.6 72.2 31.9 76.1 28.0 75.2 24.6 66.2 19.0 48.9 17.2 42.5 4.7 31.7 0.0ZM51.1 22.8L56.2 23.7 53.2 31.9 48.5 28.9 51.1 22.8ZM61.4 22.8L68.8 25.0 68.3 28.0 61.9 31.0 61.4 22.8ZM47.6 48.7L51.5 48.3 67.5 66.8 55.8 78.4 49.8 76.7 40.7 64.2 39.9 53.0 47.6 48.7Z'},
+  '林': {p:'M25.7 0.0L23.5 3.9 24.3 34.3 19.1 31.7 10.9 18.3 7.8 19.6 24.3 46.5 24.3 63.0 6.1 90.0 8.3 91.3 20.0 75.2 23.9 73.9 23.5 97.8 27.4 99.1 29.1 75.7 41.3 88.7 45.2 88.3 28.7 65.7 28.7 43.0 46.1 8.3 41.7 8.3 29.1 28.7 28.7 3.9 25.7 0.0ZM71.7 0.0L70.4 37.0 67.4 38.3 54.3 22.6 50.4 23.9 69.6 48.3 67.8 64.8 53.0 84.8 54.3 87.8 57.0 86.1 67.4 73.9 67.0 97.0 69.1 100.0 72.2 97.8 72.6 73.0 88.3 88.7 90.9 90.4 93.9 87.4 72.2 63.9 73.9 42.2 92.2 12.6 87.0 13.5 75.2 31.3 74.8 1.3 71.7 0.0Z'},
+  '森': {p:'M80.7 0.0L80.3 39.0 77.2 41.2 65.8 26.3 62.7 27.6 77.6 53.1 66.7 78.1 52.2 60.1 52.2 38.2 65.4 13.6 60.1 15.4 53.5 27.2 52.2 3.1 48.2 1.8 46.9 33.8 36.0 22.8 31.1 24.1 47.8 46.1 47.8 56.6 34.2 78.1 18.9 60.1 19.7 38.2 33.8 11.0 28.5 12.7 20.2 25.4 19.7 3.9 15.4 1.3 14.5 30.3 6.1 21.1 3.9 22.4 15.4 40.8 15.4 62.7 2.2 82.9 2.6 89.5 14.0 72.8 15.4 96.9 19.3 98.2 18.9 73.2 21.9 71.9 33.3 84.2 36.8 84.2 45.6 68.4 46.9 99.6 50.0 100.0 52.2 71.5 54.8 71.5 61.4 81.6 67.5 81.6 77.2 64.0 78.5 92.5 80.7 93.9 82.9 90.8 83.3 69.3 93.4 85.5 97.8 86.4 83.8 56.6 84.6 38.2 96.9 18.0 93.0 18.4 88.2 26.8 84.6 27.6 84.6 2.2 80.7 0.0Z'},
+  '炎': {p:'M50.0 0.0L43.5 33.2 39.7 36.2 26.7 33.6 24.6 35.8 28.4 39.7 56.9 40.5 73.7 33.2 71.6 31.0 62.1 34.5 58.2 32.3 53.0 14.2 53.9 2.2 50.0 0.0ZM34.5 6.0L31.5 16.8 36.2 19.0 37.5 7.3 34.5 6.0ZM65.5 6.0L65.1 15.1 69.8 16.4 69.4 8.2 65.5 6.0ZM50.9 53.4L44.4 86.6 40.5 93.1 27.6 90.5 26.3 94.4 30.2 97.4 53.4 100.0 75.4 92.7 75.0 88.8 63.8 91.4 58.2 84.9 53.0 70.3 53.9 55.6 50.9 53.4ZM66.4 56.9L63.4 59.1 64.2 65.9 65.1 70.3 69.0 70.7 66.4 56.9ZM31.9 60.3L30.6 74.6 33.6 75.9 36.6 62.5 31.9 60.3Z'},
+  '焱': {p:'M44.5 0.0L31.7 33.0 26.6 28.9 25.7 12.4 20.2 13.3 22.0 33.5 28.9 39.4 60.1 37.6 66.1 28.9 68.8 11.5 66.5 10.1 63.3 13.3 57.3 30.3 49.5 3.2 44.5 0.0ZM45.0 15.1L51.4 28.0 50.0 33.9 37.6 32.6 45.0 15.1ZM73.9 51.4L73.4 65.6 67.9 80.3 61.9 89.0 58.7 76.6 54.6 75.2 54.1 88.5 62.8 97.2 85.8 97.2 93.6 92.2 99.1 73.9 93.6 70.2 89.9 87.6 85.8 89.0 79.8 76.6 78.9 56.4 73.9 51.4ZM25.2 54.1L12.8 89.4 8.3 89.4 5.0 78.0 0.9 79.4 2.8 92.2 10.6 100.0 35.3 100.0 42.2 95.9 45.0 89.4 47.7 75.7 43.1 75.7 37.2 90.8 28.4 74.8 28.4 57.3 25.2 54.1ZM22.9 80.3L26.6 82.1 30.7 93.6 16.5 93.1 22.9 80.3ZM74.3 80.3L78.4 90.8 69.7 89.4 74.3 80.3Z'},
+  '羊': {p:'M38.7 0.0L23.0 18.3 10.0 7.8 5.2 9.1 16.1 20.9 25.7 23.5 42.2 7.0 51.3 21.3 53.9 32.6 52.2 58.7 37.8 47.0 34.8 49.1 52.2 68.3 52.2 98.7 54.3 100.0 56.5 97.8 57.4 63.9 66.5 54.8 77.4 49.1 71.7 47.0 57.4 55.2 57.4 20.4 68.3 7.0 78.3 23.0 83.0 23.5 94.8 9.1 90.9 7.8 80.4 17.4 70.4 2.2 65.7 0.0 52.6 15.7 45.2 3.0 38.7 0.0Z'},
+  '美': {p:'M60.0 0.0L47.8 13.0 33.0 2.6 18.7 16.1 22.6 19.1 36.5 8.7 48.3 20.4 46.1 28.7 33.0 18.3 17.8 35.2 21.7 37.4 33.9 24.3 48.3 34.3 43.5 42.6 26.5 54.3 26.5 57.8 29.6 58.3 47.0 45.2 50.0 46.5 50.0 56.1 35.2 77.0 32.2 100.0 35.2 99.6 38.7 79.6 43.9 69.1 53.0 60.9 63.0 69.1 69.1 82.2 71.7 97.8 77.0 99.6 70.0 72.6 54.3 53.5 54.3 46.5 74.8 55.7 77.0 52.6 59.1 42.6 53.5 35.2 65.2 20.9 78.3 30.4 82.2 28.3 64.3 14.8 53.0 26.1 52.6 17.8 62.6 6.1 77.4 16.5 81.3 15.2 60.0 0.0Z'}
 };
 function drawOraclePath(ctx, g, cx, cy, s, color){
   if(typeof Path2D === 'undefined') return false;   // headless sim fallback
@@ -1192,14 +1307,14 @@ function drawSealZi(g, cx, cy, s){   // 字: the roof 宀 sheltering the child �
   sealStroke(g, s, [[-0.30,-0.14],[-0.32,-0.34,0,-0.40],[0.32,-0.34,0.30,-0.14]]); // the roof
   g.beginPath(); g.arc(0, -0.10*s, 0.085*s, 0, Math.PI*2); g.stroke();         // the head
   sealStroke(g, s, [[-0.26,0.10],[0,0.02,0.26,0.10]]);                         // the arms
-  sealStroke(g, s, [[0,-0.015],[0.02,0.22,0,0.30],[-0.06,0.36,-0.10,0.38]]);   // the swaddled body
+  sealStroke(g, s, [[0,-0.015],[0.025,0.20,0.005,0.30],[-0.02,0.35,-0.045,0.38]]); // the swaddled body, axis held true
   g.restore();
 }
 function drawSealYuan(g, cx, cy, s){ // 源: the water, the cliff, the spring beneath it
   g.save(); g.translate(cx, cy);
   for(const yy of [-0.30, -0.03, 0.24])                                        // 氵
     sealStroke(g, s, [[-0.40,yy-0.07],[-0.30,yy-0.02,-0.34,yy+0.07]]);
-  sealStroke(g, s, [[0.34,-0.42],[-0.10,-0.42],[-0.16,-0.10,-0.18,0.30]]);     // 厂
+  sealStroke(g, s, [[0.34,-0.42],[-0.10,-0.42],[-0.15,-0.10,-0.15,0.30]]);     // 厂, the wall plumb
   g.beginPath(); g.arc(0.10*s, -0.19*s, 0.08*s, 0, Math.PI*2); g.stroke();     // the spring's eye
   sealStroke(g, s, [[0.10,-0.19],[0.10,-0.13]]);
   sealStroke(g, s, [[0.10,-0.08],[0.10,0.30]]);                                // the streams
@@ -2219,6 +2334,7 @@ const Game = (function(){
   let selChar = 'ren', selArm = 'gong', lastSkillTxt = '', shakeT = 0, slowAllT = 0, buffT = 0;
   let player, keys = {}, joy = {x:0, y:0, on:false};
   let spirits = [], pickups = [], fires = [], fx = [], pedestals = [], projectiles = [], bolts = [];
+  let weather = null, wDrops = [], wFlash = 0, wBoltT = 8;   // the sky has moods from the first night
   let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
   let pav = null, treeDone = false, pavDone = false;
   let hatOn = false, shengPed = null, paused = false, foesSeen = {}, banner = null;
@@ -2250,11 +2366,34 @@ const Game = (function(){
   function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
   const C = ()=>CHARS[selChar];
 
+  /* weather — real oracle skies over the arena, rolled fresh each wave.
+     rain/snow are atmosphere; a storm carries true 雷 strikes (warned, dodgeable). */
+  const WEATHERS = {
+    rain:  {ch:'雨', py:'yǔ',  en:'rain — the sky hangs its drops on a bar', zh:'雨——天垂其点'},
+    snow:  {ch:'雪', py:'xuě', en:'snow — the rain that lands without a sound', zh:'雪——落地无声的雨'},
+    storm: {ch:'雷', py:'léi', en:'thunder — drums rolling along the bolt', zh:'雷——闪电上滚动的鼓'}
+  };
+  function rollWeather(i){
+    const r = Math.random();
+    weather = i === 0 ? ['rain','snow','storm'][(Math.random()*3)|0]      // the first night always has a sky
+            : (r < 0.3 ? 'rain' : r < 0.52 ? 'snow' : r < 0.72 ? 'storm' : null);
+    wDrops = []; wFlash = 0; wBoltT = 6 + Math.random()*4;
+    if(weather){
+      const n = weather === 'snow' ? 64 : 92;
+      for(let k=0; k<n; k++)
+        wDrops.push({x:Math.random()*CW, y:Math.random()*CH, v:0.6+Math.random()*0.8, ph:Math.random()*6});
+      const W = WEATHERS[weather];
+      popToastEx(W.ch, W.py, t(W.en, W.zh));
+      mark('glyphs', W.ch);
+    }
+  }
+
   function loadStage(i){
     stageIdx = i;
     era = ERAS[ERA_ORDER[i]];
     wave = WAVES[i];
     spirits = []; pickups = []; fires = []; fx = []; pedestals = []; projectiles = []; bolts = [];
+    rollWeather(i);
     wTimes = [wave.len*0.6, wave.len*0.28];
     waveT = wave.len; spawnT = 1.2; fireT = 3.5; boltT = 5; gate = null; slowAllT = 0;
     dragonDone = false; bossDone = false;
@@ -3251,6 +3390,26 @@ const Game = (function(){
     }
     fires = fires.filter(f=>f.t > 0);
 
+    // --- weather: the drops fall, the storm keeps its own drum ---
+    if(weather){
+      for(const p of wDrops){
+        if(weather === 'snow'){ p.y += 30*p.v*dt; p.x += Math.sin(tGlobal*1.3 + p.ph)*16*dt; }
+        else { p.y += 560*p.v*dt; p.x -= 140*p.v*dt; }
+        if(p.y > CH+8){ p.y = -8; p.x = Math.random()*(CW+40); }
+        if(p.x < -10) p.x += CW+20;
+      }
+      if(weather === 'storm' && !gate){
+        wBoltT -= dt;
+        if(wBoltT <= 0){
+          wBoltT = 7 + Math.random()*5;
+          bolts.push({tx: WALL+70+Math.random()*(CW-WALL*2-140),
+                      ty: WALL+130+Math.random()*(CH-WALL*2-160),
+                      t:0, seed: Math.random()*6, hit:false});
+        }
+      }
+    }
+    if(wFlash > 0) wFlash -= dt;
+
     // --- 電 lightning: warn, then the tail lashes down ---
     if(wave.bolt > 0 && !gate){
       boltT -= dt;
@@ -3265,6 +3424,7 @@ const Game = (function(){
       b.t += dt;
       if(!b.hit && b.t >= 1.1){
         b.hit = true;
+        wFlash = Math.max(wFlash, 0.4);               // the sky answers every strike
         shakeT = Math.max(shakeT, 0.18);
         for(const sp of spirits){ if(!sp.dead && Math.hypot(sp.x-b.tx, sp.y-b.ty) <= 48) hurtSpirit(sp, 3); }
         if(Math.hypot(player.x-b.tx, player.y-b.ty) <= 52) hurtPlayer(null);
@@ -3793,6 +3953,34 @@ const Game = (function(){
         ctx.fillText('♥', e.x, e.y - (1-k)*24);
       }
       ctx.restore();
+    }
+
+    // weather falls over the whole arena (under the chrome, above the fight)
+    if(weather){
+      ctx.save();
+      if(weather === 'snow'){
+        ctx.fillStyle = '#f3efe2';
+        for(const p of wDrops){
+          ctx.globalAlpha = 0.28 + 0.22*Math.abs(Math.sin(p.ph*3));
+          ctx.beginPath(); ctx.arc(p.x, p.y, 1.4 + p.v, 0, Math.PI*2); ctx.fill();
+        }
+      } else {
+        ctx.strokeStyle = weather === 'storm' ? '#c9d4e8' : era.ink;
+        ctx.lineWidth = 1.2; ctx.globalAlpha = 0.26;
+        ctx.beginPath();
+        for(const p of wDrops){ ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + 3.4, p.y - 13); }
+        ctx.stroke();
+      }
+      const wg = ORACLE[weather === 'storm' ? '雷' : '雨'];   // the weather's own glyph rides the sky
+      if(weather !== 'snow' && wg && typeof Path2D !== 'undefined'){   // left of the wave clock's spot
+        ctx.globalAlpha = 0.26 + 0.08*Math.sin(tGlobal*1.7);
+        drawOraclePath(ctx, wg, CW*0.335, WALL+44, 30, weather === 'storm' ? BOLTC : era.ink);
+      }
+      ctx.restore();
+    }
+    if(wFlash > 0){                                   // thunder lights the whole sheet
+      ctx.save(); ctx.globalAlpha = Math.min(0.35, wFlash)*0.55;
+      ctx.fillStyle = '#eef2ff'; ctx.fillRect(0, 0, CW, CH); ctx.restore();
     }
 
     // xp strip along the top, hp segments under it, carried arms below

@@ -84,8 +84,8 @@
 /* The water canvas IS the card background: stones in the top band, dark body
    below. On hover the whole surface ripples — mousemove wakes, click splashes —
    refracting the image with specular glints. rAF auto-stops when flat. */
-.card.glow-glyph:hover{ border-color:#6e5a2a; box-shadow:0 0 22px -8px rgba(232,176,74,.55); }
-.glyphlive{ display:block; background:#0d1220; }
+.card.glow-glyph:hover{ border-color:#7a3a26; box-shadow:0 0 22px -8px rgba(221,92,56,.55); }
+.glyphlive{ display:block; background:#2b1719; }
 .card.glow-gomoku{ transition: box-shadow .3s ease, border-color .3s ease; }
 .card.glow-gomoku:hover{ border-color:#2f6fa0; box-shadow:0 0 22px -8px rgba(58,158,230,.5); }
 .glow-gomoku .gwater{ position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none;
@@ -232,7 +232,7 @@
 
   <div class="card glow-glyph star" data-players="1">
     <div class="ribbon" data-en="1UP · NEW" data-zh="1UP · 新">1UP · NEW</div>
-    <canvas class="card-thumb glyphlive" role="img" aria-label="Glyph Run — one character runs live through four eras of script, evolving 人大夫舞 toward the oracle gate" width="440" height="240"></canvas>
+    <canvas class="card-thumb glyphlive" role="img" aria-label="Glyph Run — the exact oracle-bone 人 walks out of the rain toward the vermillion 安 gate where the 龍 boss coils" width="440" height="240"></canvas>
     <div class="card-icon" style="color:#e8b04a">[字]</div>
     <div class="card-title" data-en="glyph_run.exe" data-zh="字源.exe">glyph_run.exe</div>
     <div class="card-desc" data-en="You ARE a Chinese character, hunted through four nights of script. Steer — your ink fights on its own. Evolve your glyph 3,000 years back to the oracle bones; every monster, weapon and drop is a real ancient character." data-zh="你就是一个汉字，被追猎着穿过四夜字体。只管走位——笔墨自会出手。让你的字逆行三千年回到甲骨；每只妖物、每件兵器、每个掉落，都是真实的古文字。">You ARE a Chinese character, hunted through four nights of script. Steer — your ink fights on its own. Evolve your glyph 3,000 years back to the oracle bones; every monster, weapon and drop is a real ancient character.</div>
@@ -244,7 +244,7 @@
     </div>
     <div class="card-footer">
       <span class="card-meta" data-en="JS · canvas · bilingual" data-zh="JS · canvas · 双语">JS · canvas · bilingual</span>
-      <a class="play-btn" href="/game/glyphrun.html?v=b33" data-en="→ play" data-zh="→ 游玩">→ play</a>
+      <a class="play-btn" href="/game/glyphrun.html?v=b34" data-en="→ play" data-zh="→ 游玩">→ play</a>
     </div>
   </div>
 
@@ -1286,66 +1286,21 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
 </script>
 
 <script>
-/* Glyph Run card — the run plays LIVE on the card. One continuous crossing of
-   all four script eras: the EXACT traced oracle forms of 人→大→夫→舞 evolve
-   band by band, exact 戈/弓 ride the glyph and compose real characters
-   (人+戈=伐, 大+弓=夷), spirits fall to tapered brush strokes and stain the
-   ground with ink, and the oracle 門 waits at the far right — then an ink-wash
-   wipe rolls the scroll back to 隸書. One night sky, one gold accent: era
-   difference is carried by the labels and the glyphs, not by hue. */
+/* Glyph Run card — the poster. A maroon night, the vermillion 安-arch, and
+   the 龍 boss coiled inside it; the little exact-form 人 walks in out of the
+   rain with 戈 and 弓 riding. Two inks only — bone and cinnabar. The rain
+   drifts at rest; hover leans the storm. */
 (() => {
   const card = document.querySelector('.card.glow-glyph');
   const canvas = card && card.querySelector('.glyphlive');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const CW = 440, CH = 240, GY = CH * 0.74;
-  const ERAS = [                                       // one hue, the night deepening toward the bones
-    { sub:'隸書', sky0:'#0e1322', sky1:'#151c30', acc:'#e8b04a' },
-    { sub:'篆書', sky0:'#0d1120', sky1:'#131a2c', acc:'#e8b04a' },
-    { sub:'金文', sky0:'#0c101d', sky1:'#121828', acc:'#e8b04a' },
-    { sub:'甲骨文', sky0:'#0b0e1a', sky1:'#101524', acc:'#e8b04a' }
-  ];
-  const INK = '#ece0c4', GHOST = '#9fe0cf', BRUSH = 'Consolas,"Ma Shan Zheng",KaiTi,serif';
-  const LOOP = 15000, MARGIN = 26;
-  const stains = document.createElement('canvas'); stains.width = CW; stains.height = CH;
-  const sg = stains.getContext('2d');
-  let raf = 0, visible = false, last = 0, T = 0, wipe = 0, hover = false;
-  let spirits = [], drops = [], fxs = [], slashT = 0, spawnT = 0, dpr = 1, reduced = false;
-  try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-
-  function size() {
-    dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = CW * dpr; canvas.height = CH * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  function st(w) { ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
-  function brushLine(g, x0, y0, x1, y1, w) {           // pressure at the heel, a flying tip
-    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-    g.beginPath();
-    g.moveTo(x0 + nx * w * 0.5, y0 + ny * w * 0.5);
-    g.quadraticCurveTo((x0 + x1) / 2 + nx * w * 0.72, (y0 + y1) / 2 + ny * w * 0.72, x1, y1);
-    g.quadraticCurveTo((x0 + x1) / 2 - nx * w * 0.72, (y0 + y1) / 2 - ny * w * 0.72, x0 - nx * w * 0.5, y0 - ny * w * 0.5);
-    g.closePath(); g.fill();
-  }
-  function splat(x, y, r) {                            // ink where they fell, drying into the paper
-    sg.save(); sg.translate(x, y); sg.fillStyle = '#0d0b10'; sg.globalAlpha = 0.75;
-    for (let i = 0; i < 5; i++) {
-      const a = Math.random() * 6.28, d = Math.random() * r * 0.45;
-      sg.beginPath(); sg.arc(Math.cos(a) * d, Math.sin(a) * d * 0.7, r * (0.3 + Math.random() * 0.4), 0, 6.29); sg.fill();
-    }
-    for (let i = 0; i < 4; i++) {
-      const a = Math.random() * 6.28, d = r * (0.9 + Math.random() * 1.3);
-      sg.beginPath(); sg.arc(Math.cos(a) * d, Math.sin(a) * d * 0.7, r * 0.1, 0, 6.29); sg.fill();
-    }
-    sg.restore();
-  }
-  /* EXACT traced oracle-bone forms (tools/oracle-glyphs.json, same pipeline as
-     the game's ORACLE const) — the runner and its radicals are the real thing. */
+  const CW = 440, CH = 240;
+  const BG = '#2b1719', VERM = '#dd5c38', INKW = '#f2e8d8';
   const OG = {
     '人': {p:'M50.9 0.0L49.6 6.6 53.1 15.4 30.3 45.2 35.1 47.4 55.3 21.1 57.9 20.2 61.8 25.0 65.4 43.4 48.7 75.0 45.2 90.8 46.5 100.0 50.4 96.9 51.3 80.3 69.7 45.2 69.7 32.9 54.8 11.0 53.9 0.4 50.9 0.0Z'},
-    '大': {p:'M45.7 0.0L43.5 17.7 14.2 38.4 14.7 41.4 18.1 40.5 36.2 26.7 43.1 23.3 44.4 25.4 43.5 43.5 34.1 50.4 28.0 59.9 29.7 80.6 28.0 89.2 22.0 97.8 28.9 94.4 34.1 84.1 31.5 61.6 41.4 50.0 47.4 47.4 51.3 48.7 59.1 60.8 59.1 90.1 69.8 100.0 72.0 97.8 65.1 92.7 60.8 84.1 62.5 59.9 55.6 48.7 47.8 42.7 47.8 23.7 82.8 37.1 85.8 34.9 48.3 18.1 48.7 2.2 45.7 0.0Z'},
-    '夫': {p:'M49.6 0.0L46.1 13.9 30.0 15.2 31.3 19.1 46.1 19.1 47.4 23.0 45.7 30.9 25.7 50.0 25.7 53.5 48.3 37.8 48.3 53.5 33.5 83.9 33.9 100.0 37.0 98.7 39.6 77.8 50.4 60.9 61.3 70.0 66.5 83.9 67.4 97.0 72.6 97.0 67.4 73.5 62.2 63.9 51.7 54.3 53.0 36.5 71.3 50.4 74.3 49.1 55.2 31.7 51.7 24.8 51.7 20.4 55.7 17.4 71.7 15.2 69.6 13.0 52.2 13.0 49.6 0.0Z'},
-    '舞': {p:'M53.9 1.8L32.9 3.5 32.0 7.9 45.2 7.0 47.4 16.2 14.5 20.2 12.3 32.9 0.0 44.3 3.9 47.4 11.8 40.4 13.2 58.3 16.2 58.8 18.9 40.4 29.8 46.1 17.5 32.0 19.3 24.1 46.5 21.5 46.5 29.4 34.2 41.7 38.2 43.9 46.1 36.8 47.4 50.4 31.6 73.2 28.1 89.9 30.3 98.2 33.3 96.1 35.1 75.9 49.6 56.1 61.4 63.6 67.5 81.1 69.3 97.8 73.7 96.1 66.7 64.5 52.6 50.4 50.9 40.8 53.9 35.1 63.6 42.1 67.5 39.9 52.6 28.5 53.1 21.1 71.5 21.1 82.5 25.0 83.3 29.4 70.2 39.9 74.1 42.1 83.3 37.3 83.8 57.0 86.8 56.6 88.2 36.8 100.0 43.4 87.7 29.4 86.8 22.4 82.0 17.5 53.9 16.7 52.6 9.2 64.0 5.7 62.7 1.8 53.9 1.8Z'},
+    '龍': {p:'M30.6 0.0L28.4 2.2 31.5 6.0 41.4 7.3 41.4 14.2 30.6 15.5 28.4 18.5 38.4 19.0 41.4 22.8 31.0 32.3 31.0 47.8 25.9 54.7 32.8 53.0 36.6 42.2 46.1 40.5 46.6 52.2 51.3 56.0 53.4 54.7 50.9 51.3 51.7 43.5 55.6 42.2 59.5 46.1 59.5 58.2 38.8 83.2 40.5 91.8 46.1 97.4 59.1 100.0 70.7 91.8 74.1 86.6 72.8 82.8 68.1 90.9 59.1 96.6 47.0 93.1 42.2 84.9 47.4 75.4 61.2 62.5 64.7 53.0 62.9 44.4 53.4 36.6 52.6 30.6 44.8 22.8 46.1 19.0 58.6 16.8 58.2 13.8 46.1 13.8 45.7 6.5 60.3 2.2 30.6 0.0ZM39.7 30.6L46.1 30.2 49.1 35.8 36.6 38.8 34.5 35.8 39.7 30.6Z'},
+    '安': {p:'M50.0 0.0L15.4 18.9 12.7 53.1 14.9 94.7 18.9 91.7 16.2 63.6 18.9 23.2 49.1 5.3 72.8 14.0 82.9 22.4 82.9 91.7 85.1 93.9 87.3 91.7 87.3 19.7 50.0 0.0ZM47.4 13.2L47.8 30.3 33.8 39.0 32.9 53.1 22.4 61.8 31.6 60.5 32.9 67.1 36.0 68.4 37.3 56.6 50.4 51.3 50.4 59.2 38.2 73.2 36.4 89.0 43.0 93.9 56.1 79.8 58.8 100.0 60.1 77.6 54.4 76.3 42.1 88.6 41.7 75.9 54.8 61.0 54.8 49.6 66.2 41.7 69.7 32.9 64.0 24.6 53.5 28.1 47.4 13.2ZM57.5 29.4L63.2 28.9 65.4 35.5 61.4 41.2 53.5 43.9 52.2 32.9 57.5 29.4ZM44.3 37.3L48.7 37.3 49.6 46.1 37.7 51.8 37.3 42.5 44.3 37.3Z'},
     '戈': {p:'M48.7 0.0L46.1 21.6 19.4 20.7 19.0 24.6 47.4 26.3 46.6 92.7 34.5 96.1 39.2 99.1 58.2 100.0 60.3 96.1 50.9 92.7 52.6 26.3 80.6 24.1 81.0 21.1 53.9 20.7 52.6 7.3 64.2 7.8 66.4 4.7 48.7 0.0Z'},
     '弓': {p:'M41.8 0.0L44.0 9.9 36.2 22.0 39.2 22.4 47.8 12.1 51.7 17.7 37.1 32.3 43.1 59.1 35.3 74.6 41.4 91.8 49.6 100.0 62.1 70.3 64.7 37.5 62.9 28.9 51.7 8.2 41.8 0.0ZM52.6 22.8L56.0 23.7 59.5 31.5 62.1 55.6 56.0 77.2 47.8 92.2 38.8 76.3 46.6 60.8 41.4 32.3 52.6 22.8Z'}
   };
@@ -1357,175 +1312,79 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
     ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = blur == null ? 4 : blur;
     ctx.fill(g._P, 'evenodd'); ctx.restore();
   }
-  function runner(fi, x, y, s, ph) {                   // the exact form itself walks
-    const bob = -Math.abs(Math.sin(ph)) * s * 0.05;
-    ctx.save(); ctx.translate(x, y + bob); ctx.rotate(Math.sin(ph) * 0.035);
-    drawOG('人大夫舞'[fi], 0, -s * 0.62, s * 1.24, INK, 4);
-    ctx.restore();
+  const drops = Array.from({ length: 46 }, (_, i) => ({
+    x: (i * 97.3) % CW, y: (i * 53.7) % CH, v: 0.55 + ((i * 29) % 50) / 90
+  }));
+  const motes = Array.from({ length: 9 }, (_, i) => ({
+    x: (i * 151.7) % CW, y: (i * 87.3) % CH, r: 6 + (i * 13) % 18
+  }));
+  let raf = 0, visible = false, last = 0, hover = false, T = 4200, dpr = 1, reduced = false;
+  try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  function size() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = CW * dpr; canvas.height = CH * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  function radicalGe(x, y, s, acc) {                   // 戈 guards the back — exact form
-    drawOG('戈', x, y, s * 1.7, acc, 3);
-  }
-  function radicalGong(x, y, s, acc, rec) {            // 弓 at the left, as in 引 — exact form
-    drawOG('弓', x - rec * 4, y, s * 1.6, acc, 3);
-  }
-  function gate(x, gy, h, glow, acc) {                 // the oracle 門
-    ctx.save(); ctx.strokeStyle = acc; ctx.shadowColor = acc; ctx.shadowBlur = 4 + glow * 6; st(Math.max(2.5, h * 0.07));
-    const w = h * 0.8, topY = gy - h;
-    ctx.beginPath(); ctx.moveTo(x - w*0.6, topY); ctx.lineTo(x + w*0.6, topY); ctx.stroke();
-    for (const sgn of [-1, 1]) {
-      const po = x + sgn*w*0.52, pi = x + sgn*w*0.16;
-      ctx.beginPath(); ctx.moveTo(po, topY); ctx.lineTo(po, gy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(pi, topY + h*0.1); ctx.lineTo(pi, gy - h*0.06); ctx.stroke();
-      for (const fy of [0.35, 0.65]) { ctx.beginPath(); ctx.moveTo(po, topY + h*fy); ctx.lineTo(pi, topY + h*fy); ctx.stroke(); }
-    }
-    ctx.restore();
-  }
-  function seal() {                                    // the cinnabar 字源 stamp in the corner
-    ctx.save(); ctx.translate(26, CH - 28); ctx.rotate(-0.04);
-    ctx.fillStyle = '#b23320'; ctx.globalAlpha = 0.92;
-    ctx.beginPath(); ctx.moveTo(-13,-12); ctx.lineTo(12,-13); ctx.lineTo(13,12); ctx.lineTo(-12,13); ctx.closePath(); ctx.fill();
-    ctx.globalAlpha = 1; ctx.fillStyle = '#f3e9d2';
-    ctx.font = '9px ' + BRUSH; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('源', -5.5, -5); ctx.fillText('字', 6, -5);
-    ctx.fillText('之', -5.5, 6.5); ctx.fillText('本', 6, 6.5);
-    ctx.restore();
-  }
-  const zoneOf = (x) => Math.max(0, Math.min(3, (x / (CW / 4)) | 0));
-  function reset() {
-    T = 0; wipe = 0; spirits = []; drops = []; fxs = []; slashT = 0; spawnT = 300;
-    sg.clearRect(0, 0, CW, CH);
-  }
-  function step(dt, ts) {
+  function render(dt) {
     T += dt;
-    const t = Math.min(1, T / LOOP);
-    const rx = MARGIN + (CW - 2 * MARGIN - 30) * t, rs = 30;
-    const zone = zoneOf(rx), acc = ERAS[zone].acc;
-    // spirits drift in from ahead of the runner
-    spawnT -= dt;
-    if (spawnT <= 0 && spirits.length < 7 && t < 0.93) {
-      spawnT = 620 + Math.random() * 700;
-      spirits.push({ x: Math.min(CW - 12, rx + 110 + Math.random() * (CW - rx)), y: GY - 4 - Math.random() * 60,
-                     ph: Math.random() * 6, hp: 1 });
-    }
-    for (const sp of spirits) {
-      sp.ph += dt * 0.008;
-      const d = Math.hypot(rx - sp.x, GY - 8 - sp.y) || 1;
-      sp.x += (rx - sp.x) / d * dt * 0.028;
-      sp.y += (GY - 8 - sp.y) / d * dt * 0.02 + Math.sin(sp.ph) * 0.25;
-    }
-    // the ink slashes on its own — brush strokes, splats, glyph drops
-    slashT -= dt;
-    if (slashT <= 0) {
-      const tgt = spirits.find(sp => Math.hypot(sp.x - rx, sp.y - (GY - 10)) < 62);
-      if (tgt) {
-        slashT = 460;
-        const ang = Math.atan2(tgt.y - (GY - 12), tgt.x - rx);
-        fxs.push({ k: 'slash', x: rx, y: GY - 12, a: ang, r: 54, t: 240, max: 240, acc });
-        splat(tgt.x, tgt.y, 7);
-        fxs.push({ k: 'poof', x: tgt.x, y: tgt.y, t: 260, max: 260 });
-        if (Math.random() < 0.6) drops.push({ x: tgt.x, y: tgt.y, ch: '日木水火田禾'[(Math.random() * 6) | 0], t: 4000 });
-        spirits = spirits.filter(sp => sp !== tgt);
-      } else slashT = 90;
-    }
-    for (const d of drops) {
-      d.t -= dt;
-      const dd = Math.hypot(rx - d.x, GY - 10 - d.y) || 1;
-      if (dd < 70) { d.x += (rx - d.x) / dd * dt * 0.12; d.y += (GY - 10 - d.y) / dd * dt * 0.12; }
-      if (dd < 10) d.t = 0;
-    }
-    drops = drops.filter(d => d.t > 0);
-    for (const f of fxs) f.t -= dt;
-    fxs = fxs.filter(f => f.t > 0);
-    // the wash: ink rolls over the card and the scroll starts again
-    if (t >= 1) { wipe += dt; if (wipe > 900) reset(); }
-    return { t, rx, rs, zone, acc, ts };
-  }
-  function render(st_) {
-    const { t, rx, rs, zone, acc, ts } = st_;
-    // four era bands, their skies meeting at faint seams
-    for (let i = 0; i < 4; i++) {
-      const bx = i * CW / 4;
-      const g = ctx.createLinearGradient(0, 0, 0, CH);
-      g.addColorStop(0, ERAS[i].sky0); g.addColorStop(1, ERAS[i].sky1);
-      ctx.fillStyle = g; ctx.fillRect(bx, 0, CW / 4 + 1, CH);
-      ctx.save(); ctx.globalAlpha = i === zone ? 0.75 : 0.25;
-      ctx.fillStyle = i === zone ? ERAS[i].acc : INK; ctx.font = '10px ' + BRUSH; ctx.textAlign = 'left';
-      ctx.fillText(ERAS[i].sub, bx + 7, 16);
-      ctx.restore();
-      if (i) { ctx.save(); ctx.strokeStyle = 'rgba(232,223,200,0.07)'; st(1);
-        ctx.beginPath(); ctx.moveTo(bx + 0.5, 6); ctx.lineTo(bx + 0.5, CH - 6); ctx.stroke(); ctx.restore(); }
-    }
-    ctx.save(); ctx.strokeStyle = 'rgba(232,223,200,0.14)'; st(1);
-    ctx.beginPath(); ctx.moveTo(8, GY + 12.5); ctx.lineTo(CW - 8, GY + 12.5); ctx.stroke(); ctx.restore();
-    ctx.save(); ctx.globalAlpha = 0.5; ctx.drawImage(stains, 0, 0); ctx.restore();
-    gate(CW - 34, GY + 6, 52, 0.5 + 0.5 * Math.sin(ts / 260), ERAS[3].acc);
-    // fallen glyphs drift to the runner
-    ctx.save(); ctx.font = '12px ' + BRUSH; ctx.textAlign = 'center';
-    for (const d of drops) {
-      ctx.globalAlpha = Math.min(1, d.t / 800);
-      ctx.fillStyle = acc; ctx.shadowColor = acc; ctx.shadowBlur = 3;
-      ctx.fillText(d.ch, d.x, d.y + Math.sin(ts / 300 + d.x) * 2);
-    }
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, CW, CH);
+    ctx.save();                                        // ink clouds sunk in the paper
+    ctx.fillStyle = '#1f0f12';
+    for (const m of motes) { ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore();
-    // spirits
-    for (const sp of spirits) {
-      ctx.save(); ctx.translate(sp.x, sp.y); ctx.strokeStyle = GHOST; ctx.shadowColor = GHOST; ctx.shadowBlur = 3; st(2);
-      ctx.beginPath(); ctx.arc(0, -7, 5.5, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, -1.5); ctx.quadraticCurveTo(Math.sin(sp.ph * 2) * 3, 5, 0, 10); ctx.stroke();
-      ctx.fillStyle = '#f0674a'; ctx.beginPath(); ctx.arc(1.6, -7.5, 1.1, 0, 6.29); ctx.fill();
-      ctx.restore();
+    const vg = ctx.createRadialGradient(CW * 0.55, CH * 0.45, 50, CW * 0.5, CH * 0.5, CW * 0.66);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(10,3,5,0.6)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, CW, CH);
+    const spd = hover ? 2.1 : 1;                       // the rain
+    ctx.save(); ctx.strokeStyle = 'rgba(236,224,216,0.12)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const d of drops) {
+      d.y += dt * 0.085 * d.v * spd; d.x -= dt * 0.014 * d.v * spd;
+      if (d.y > CH + 6) { d.y = -6; d.x = (d.x * 7.13 + 89) % CW; }
+      if (d.x < -6) d.x += CW + 12;
+      ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + 2.2, d.y - 9);
     }
-    // the runner and the radicals riding it
-    const fi = Math.min(3, (t * 4) | 0), seg = t * 4 - fi;
-    runner(fi, rx, GY + 8, rs, ts / 65);
-    if (t > 0.06) radicalGe(rx - 17, GY - 8, 13, acc);                     // 戈 takes the back
-    if (fi >= 1) radicalGong(rx - 24, GY - 14, 11, acc, Math.max(0, 1 - seg * 3)); // 弓 joins at 大
-    // evolution flash at each band's threshold, with the composed character
-    if (seg < 0.28 && (fi > 0 || t > 0.03)) {
-      ctx.save(); ctx.strokeStyle = acc; ctx.globalAlpha = (1 - seg / 0.28) * 0.5; st(1.5);
-      ctx.beginPath(); ctx.arc(rx, GY - rs * 0.5, 8 + seg * 150, 0, Math.PI * 2); ctx.stroke();
-      ctx.restore();
-    }
-    const comp = fi === 0 && t > 0.1 ? '伐' : fi === 1 ? '夷' : null;      // 人+戈=伐 · 大+弓=夷
-    if (comp && seg > 0.35 && seg < 0.95) {
-      ctx.save(); ctx.globalAlpha = Math.min(1, (seg - 0.35) * 6) * (0.6 + 0.2 * Math.sin(ts / 180));
-      ctx.fillStyle = acc; ctx.shadowColor = acc; ctx.shadowBlur = 5;
-      ctx.font = '15px ' + BRUSH; ctx.textAlign = 'center';
-      ctx.fillText(comp, rx + 20, GY - rs - 14);
-      ctx.restore();
-    }
-    // strike fx: tapered brush strokes and poofs
-    for (const f of fxs) {
-      const k = f.t / f.max;
-      ctx.save(); ctx.globalAlpha = 0.8 * k;
-      if (f.k === 'slash') {
-        ctx.fillStyle = f.acc;
-        brushLine(ctx, f.x + Math.cos(f.a - 0.5) * 14, f.y + Math.sin(f.a - 0.5) * 14,
-                       f.x + Math.cos(f.a + 0.22) * f.r, f.y + Math.sin(f.a + 0.22) * f.r, 8);
-      } else {
-        ctx.strokeStyle = GHOST; st(2);
-        ctx.beginPath(); ctx.arc(f.x, f.y, (1.3 - k) * 14, 0, Math.PI * 2); ctx.stroke();
-      }
-      ctx.restore();
-    }
-    seal();
-    if (wipe > 0) {                                    // the ink-wash wipe
-      const k = Math.min(1, wipe / 700);
-      ctx.save(); ctx.fillStyle = '#08070a'; ctx.globalAlpha = k < 0.7 ? k / 0.7 : 1 - (k - 0.7) / 0.3 * 0.15;
-      ctx.beginPath(); ctx.arc(CW - 34, GY - 20, k * CW * 1.2, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
+    ctx.stroke(); ctx.restore();
+    const gx = CW * 0.64, gy = CH * 0.82, gw = 118, gh = 152;   // the 安 arch
+    const br = 0.5 + 0.5 * Math.sin(T / 1100);
+    ctx.save();
+    ctx.strokeStyle = VERM; ctx.shadowColor = VERM;
+    ctx.shadowBlur = (hover ? 12 : 8) + br * 5;
+    ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(gx - gw / 2, gy);
+    ctx.lineTo(gx - gw / 2, gy - gh * 0.58);
+    ctx.lineTo(gx - gw * 0.34, gy - gh * 0.88);
+    ctx.lineTo(gx, gy - gh);
+    ctx.lineTo(gx + gw * 0.34, gy - gh * 0.88);
+    ctx.lineTo(gx + gw / 2, gy - gh * 0.58);
+    ctx.lineTo(gx + gw / 2, gy);
+    ctx.stroke();
+    ctx.restore();
+    drawOG('龍', gx, gy - gh * 0.47, 108, VERM, 6);     // the boss waits inside
+    ctx.save();                                        // step into 安
+    ctx.fillStyle = 'rgba(242,232,216,0.85)';
+    ctx.font = '11px Consolas,ui-monospace,monospace'; ctx.textAlign = 'center';
+    ctx.fillText('step into', gx - 10, gy + 21);
+    ctx.restore();
+    drawOG('安', gx + 33, gy + 16, 20, INKW, 2);
+    const bob = reduced ? 0.4 : Math.abs(Math.sin(T / 300));   // the runner comes out of the rain
+    const rx = CW * 0.30, ry = CH * 0.58 - bob * 2.4;
+    ctx.save(); ctx.translate(rx, ry); ctx.rotate(reduced ? 0 : Math.sin(T / 300) * 0.03); ctx.translate(-rx, -ry);
+    drawOG('人', rx, ry, 52, INKW, 9);
+    ctx.restore();
+    drawOG('戈', rx - 27, ry + 6, 24, VERM, 3);        // the radicals ride
+    drawOG('弓', rx + 27, ry + 9, 22, VERM, 3);
   }
   function loop(ts) {
     if (!visible) { raf = 0; return; }
-    const dt = Math.min(50, ts - (last || ts)) * (hover ? 1.7 : 1); last = ts;
-    render(step(dt, ts));
+    const dt = Math.min(50, ts - (last || ts)); last = ts;
+    render(dt);
     raf = requestAnimationFrame(loop);
   }
   function start() {
-    if (!canvas.width || canvas.width === 440) size();
-    if (reduced) { last = 0; render(step(6500, 6500)); return; }   // one still frame, mid-run
+    size();
+    if (reduced) { render(16); return; }               // one still frame of the scene
     visible = true; last = 0;
     if (!raf) raf = requestAnimationFrame(loop);
   }
@@ -1533,7 +1392,6 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
   card.addEventListener('mouseenter', () => { hover = true; });
   card.addEventListener('mouseleave', () => { hover = false; });
   document.addEventListener('visibilitychange', () => { document.hidden ? stop() : (!reduced && start()); });
-  reset();
   if ('IntersectionObserver' in window) {
     new IntersectionObserver((es) => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0.05 }).observe(card);
   } else start();
