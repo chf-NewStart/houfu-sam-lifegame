@@ -92,6 +92,49 @@ npm run ios        # builds www, syncs, opens Xcode
 
 ---
 
+## Paste-ready for App Store Connect
+
+**Promotional text (170 char, editable without review):**
+```
+New: 字源 Glyph Run — be a Chinese character, fight with real radicals, evolve
+3,000 years back to your oracle-bone form. Plays fullscreen landscape on iPhone.
+```
+
+**Review notes (paste into "Notes" when submitting — heads off Guideline 4.2):**
+```
+All ten games are bundled inside the app and fully playable OFFLINE (airplane
+mode works). No account or login required. Suggested review path: open
+字源 Glyph Run (first card) — it runs fullscreen landscape with touch-anywhere
+steering, original canvas engine, synthesized Web Audio sound, progression that
+persists between runs, and an in-game encyclopedia; then Game of Life (draw on
+the grid, switch to Music Box mode for sound). Online extras (remote co-op
+rooms, optional leaderboard) degrade gracefully when offline. No ads, no
+tracking, no third-party SDKs.
+```
+
+**App Privacy label answers (Data Collection):**
+- "Do you collect data from this app?" → **Yes**, only if you keep the Life
+  leaderboard/gallery; the data is a **display name + score the player types in**.
+  Declare: **User Content** → "Name/score submitted to a public leaderboard" →
+  **Not linked to identity**, **not used for tracking**, **app functionality** only.
+- Everything else (runs, unlocks, settings) stays **on-device** (localStorage) — not collected.
+- Tracking: **No**. Third-party ads: **No**.
+
+**Export compliance:** already answered in the project —
+`ITSAppUsesNonExemptEncryption = false` is set in Info.plist (HTTPS only), so
+App Store Connect won't ask per build.
+
+**Age rating questionnaire:** everything "None" → **4+** (stylized line-art
+combat against ghost glyphs; no realistic violence, no user chat).
+
+**What's New (v1.0):**
+```
+First release — ten hand-coded games, offline-first, bilingual (EN/中文).
+Headliner: 字源 Glyph Run, an arena survivor that teaches oracle-bone script.
+```
+
+---
+
 ## Listing copy
 
 **Name (30 char max):** `Game Life Arcade`
