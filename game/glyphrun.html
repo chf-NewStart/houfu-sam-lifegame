@@ -305,7 +305,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b53</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b54</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -333,6 +333,7 @@
     <div class="overlay shell show" id="ovStart">
       <h2 data-en="字源 · GLYPH RUN" data-zh="字源 · 汉字奔跑">字源 · GLYPH RUN</h2>
       <div class="big" style="margin-bottom:10px" data-en="You ARE the character. Steer — ink, arms and your family's gift fight on their own. Gather fallen glyphs, evolve back to the bones." data-zh="你就是字。只管走位——笔墨、兵器与天赋自动出手。集字升级，一路进化回甲骨。">You ARE the character. Steer — ink, arms and your family's gift fight on their own. Gather fallen glyphs, evolve back to the bones.</div>
+      <div class="keys" id="nightBest" style="display:none;margin:-4px 0 8px;color:#8a7a4a"></div>
       <div class="setup">
         <div class="setup-left">
           <div class="pick-box">
@@ -422,7 +423,8 @@
       <h2 id="winTitle">TRACED TO THE ROOT</h2>
       <div class="evo-row" id="evoRow"></div>
       <div class="big" id="winMsg">You grew the glyph across 3,000 years of script.</div>
-      <button class="btn" onclick="Game.restart()" data-en="↻ Run it again" data-zh="↻ 再跑一次">↻ Run it again</button>
+      <button class="btn" onclick="Game.goEndless()" data-en="⟶ 永夜 · into the endless night" data-zh="⟶ 永夜 · 踏入无尽长夜">⟶ 永夜 · into the endless night</button>
+      <button class="btn alt" onclick="Game.restart()" data-en="↻ Run it again" data-zh="↻ 再跑一次">↻ Run it again</button>
       <button class="btn alt" onclick="Game.chooseChar()" data-en="⇄ pick another glyph" data-zh="⇄ 换一个字">⇄ pick another glyph</button>
       <a class="btn alt" href="/" style="text-decoration:none" data-en="← more games" data-zh="← 更多游戏">← more games</a>
     </div>
@@ -2457,6 +2459,9 @@ const Game = (function(){
   let weather = null, wDrops = [], wFlash = 0, wBoltT = 8;   // the sky has moods from the first night
   let marks = [], eshots = [], shocks = [];                  // 生 spawn omens; archers' arrows; the drum's rings
   let stopT = 0;                                             // hitstop — the brush pauses at the end of a stroke
+  let exhaleT = null, calmT = 0;                             // the night's exhale before the gate; the reward for stillness
+  let endless = false, endlessN = 0;                         // 永夜 — the endless night beyond the last gate
+  let bestNight = 0; try{ bestNight = +(localStorage.getItem('glyphrun_endless')||0); }catch(e){}
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
   /* the 古筝 bed: a real guzheng field recording from a Lunar New Year event
      (kevp888 · freesound 725336, CC BY 4.0), a 65s loop taken from before the
@@ -2561,11 +2566,37 @@ const Game = (function(){
     syncHud();
   }
 
+  /* 永夜: each night is the oracle era, wound tighter — more, faster, closer */
+  function loadEndless(){
+    loadStage(3);
+    const n = endlessN;
+    wave = { len: 40,
+             spawn: Math.max(0.34, 0.78*Math.pow(0.94, n)),
+             cap: Math.min(40, 22 + 2*n),
+             spd: 88*(1 + 0.05*n),
+             fireInt: Math.max(2.4, 4.2 - 0.15*n),
+             bolt: Math.max(2.6, 4.2 - 0.12*n) };
+    waveT = wave.len;
+    dragonDone = (n % 4 !== 0);                        // 龍 coils back every fourth night
+    bossDone = true;                                   // vessel bosses arrive by their own clock below
+    if(n % 4 === 2){
+      const gu = (n % 8) >= 4;
+      spirits.push({x:CW-WALL-30, y:CH*0.5, phase:0, dead:false, boss:true,
+                    type: gu?'gu':'meng', bossCh: gu?'蠱':'皿',
+                    hp: (gu?16:10) + n*2, maxHp: (gu?16:10) + n*2, cr:40, spd: (gu?60:55) + n*2,
+                    st:0, stT:1.2, face:-1, dirn:1});
+      showBanner(gu?'gu':'meng');
+    }
+    syncHud();
+  }
+
   function syncHud(){
     $('hudGlyph').textContent = C().forms[level].ch;
     $('hudSkill').textContent = 'LV' + NUMCH[level];
     lastSkillTxt = '';
-    $('hudEraName').textContent = t(`WAVE ${NUMCH[stageIdx]}/亖 · ${era.name_en}`, `第${NUMCH[stageIdx]}/亖波 · ${era.name_zh}`);
+    $('hudEraName').textContent = endless
+      ? t(`永夜 · ENDLESS NIGHT ${endlessN}`, `永夜 · 第${endlessN}夜`)
+      : t(`WAVE ${NUMCH[stageIdx]}/亖 · ${era.name_en}`, `第${NUMCH[stageIdx]}/亖波 · ${era.name_zh}`);
     $('hudEra').style.color = era.ink;
     $('hudEra').querySelector('b').style.color = era.accent;
     $('hudCoins').textContent = coins;
@@ -2611,6 +2642,7 @@ const Game = (function(){
   function start(){
     maxHp = HP_BASE + (seal.carved.xin ? 1 : 0);
     stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 12; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
+    endless = false; endlessN = 0; exhaleT = null; calmT = 0;
     desk = freshDesk();
     elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
     synOn = {}; shengT = 18; duanT = 12; oppSeen = false; strokeN = 0; runGlyphs = 0;
@@ -2636,6 +2668,14 @@ const Game = (function(){
     setTimeout(()=>fxEl.classList.remove('go'), 900);
   }
   function restart(){ start(); }
+  function goEndless(){                                // past the last gate, the night never ends
+    hideAll();
+    endless = true; endlessN = 1;
+    loadEndless();
+    running = true; paused = false; lastTs = performance.now();
+    tempo = 1; hurtDuck = 1; bgmVol = 0.3; bgm.start();
+    if(!raf) raf = requestAnimationFrame(loop);
+  }
   function nextStage(){
     hideAll();
     if(stageIdx+1 >= WAVES.length){ win(); return; }
@@ -2699,6 +2739,21 @@ const Game = (function(){
     return true;
   }
   function stageClear(){
+    if(endless){                                       // 永夜: no ceremony — the gate heals, gifts, and deepens
+      endlessN++;
+      if(endlessN > bestNight){ bestNight = endlessN; try{ localStorage.setItem('glyphrun_endless', bestNight); }catch(e){} }
+      const pool = DESK_POOL.filter(o => !(o.id === 'hou' && maxHp >= HP_BASE+3));
+      const gift = pool[(Math.random()*pool.length)|0] || null;
+      if(gift){
+        if(gift.ap) gift.ap(desk);
+        if(gift.id === 'hou'){ maxHp++; lives = Math.min(maxHp, lives+1); }
+        popToastEx(gift.nm, t('night '+endlessN, '第'+endlessN+'夜'), t(gift.en, gift.zh), 'qi');
+      }
+      if(lives < maxHp) lives++;
+      loadEndless();
+      syncHud();
+      return;
+    }
     running = false;
     const fi = stageIdx, toIdx = stageIdx+1;
     const cs = C();
@@ -2767,7 +2822,10 @@ const Game = (function(){
       drawWang(c2, wc.width/2, wc.height*0.92, 92, '#f0674a');
     }
     const earned = bankSealPts(stageIdx);
-    $('overMsg').textContent = t(
+    $('overMsg').textContent = (endless
+      ? t(`You carried the ink ${endlessN} night${endlessN>1?'s':''} into the 永夜. Deepest: night ${bestNight}.`,
+          `你把墨迹带入永夜第 ${endlessN} 夜。最深纪录：第 ${bestNight} 夜。`) + ' '
+      : '') + t(
       `You gathered ${coins} glyphs before fading. The bones can wait.`,
       `你在消散前集齐了 ${coins} 个字。甲骨可以再等等。`)
       + (earned > 0 ? ' ' + t(`The carver keeps ${earned} cut${earned>1?'s':''} for the seal.`, `刻印人为你记下${earned}刀。`) : '');
@@ -3372,9 +3430,14 @@ const Game = (function(){
     if(!gate){
       waveT -= dt;
       if(waveT <= 0){
-        for(const s of spirits) addFx({kind:'poof', x:s.x, y:s.y, t:0.35, r:22});
-        spirits = []; marks = []; eshots = []; shocks = [];
-        gate = {x:CW/2, y:CH*0.5};
+        if(exhaleT === null){                            // the night exhales: a held breath of stillness
+          exhaleT = 1.6;
+          for(const s of spirits) addFx({kind:'poof', x:s.x, y:s.y, t:0.35, r:22});
+          spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = [];
+          addFx({kind:'ripple', x:CW/2, y:CH*0.5, t:1.5, r:130});
+        }
+        exhaleT -= dt;
+        if(exhaleT <= 0){ exhaleT = null; gate = {x:CW/2, y:CH*0.5, born:0}; }
       } else {
         const prog = 1 - waveT/wave.len;
         spawnT -= dt;
@@ -3507,6 +3570,21 @@ const Game = (function(){
       }
     } else if(Math.hypot(player.x-gate.x, player.y-gate.y) < 50){
       stageClear(); return;
+    }
+    if(gate) gate.born = (gate.born||0) + dt;
+
+    // --- stillness is rewarded: hold your ground away from every spirit and
+    //     the breath gathers a glyph (息 — one every five quiet seconds) ---
+    if(!gate && exhaleT === null){
+      const near = spirits.some(s=>!s.dead && s.type!=='guo' && Math.hypot(s.x-player.x, s.y-player.y) < 240);
+      if(!near && spirits.some(s=>!s.dead && s.type!=='guo')){
+        calmT += dt;
+        if(calmT >= 5){
+          calmT = 0; coins += desk.xpPer; runGlyphs++;
+          addFx({kind:'ripple', x:player.x, y:player.y, t:0.7, r:30});
+          syncHud();
+        }
+      } else calmT = 0;
     }
 
     // dragon chain bookkeeping: each segment trails the nearest living one ahead
@@ -4074,12 +4152,14 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // the gate
+    // the gate — it rises out of the stillness
     if(gate){
+      ctx.save(); ctx.globalAlpha = Math.min(1, (gate.born||0)/0.8);
       drawGate(ctx, gate.x, gate.y+55, 110, era.accent, gateGlow);
       ctx.save(); ctx.globalAlpha = 0.5+gateGlow*0.5; ctx.fillStyle = era.ink;
       ctx.font = '13px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
       ctx.fillText(t('step into 安','入「安」'), gate.x, gate.y+80);
+      ctx.restore();
       ctx.restore();
     }
 
@@ -4700,7 +4780,12 @@ const Game = (function(){
     running = true; lastTs = performance.now();
     bgm.resume();
   }
+  function updateNightBest(){
+    const nb = $('nightBest'); if(!nb) return;
+    if(bestNight > 0){ nb.style.display = ''; nb.textContent = t(`永夜 deepest night: ${bestNight}`, `永夜最深：第 ${bestNight} 夜`); }
+  }
   function chooseChar(){
+    updateNightBest();
     running = false; paused = false; hideAll(); overlay('ovStart', true);
     loadStage(0);
   }
@@ -5052,13 +5137,13 @@ const Game = (function(){
   if(bookWenCv && bookWenCv.getContext) drawWen(bookWenCv.getContext('2d'), 23, 47, 36, '#e8b04a');
   const st = $('sealTitle');
   if(st && st.getContext) drawSealStamp(st);        // the 字源 stamp in the masthead
-  buildCharSelect(); buildArmSelect(); PV.reset();
+  buildCharSelect(); buildArmSelect(); PV.reset(); updateNightBest();
   // idle attract render so the start screen isn't blank
   loadStage(0); running = false; render();
 
-  return { start, restart, nextStage, toDesk, syncHud, onLang, chooseChar, pause, resume,
+  return { start, restart, nextStage, toDesk, syncHud, onLang, chooseChar, pause, resume, goEndless,
            openBook, closeBook, openSeal, closeSeal,
-           dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, pav,
+           dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, pav, endless, endlessN, exhaleT,
                          stageIdx, selChar, selArm, waveT, gate, hp: lives, maxHp, level, coins,
                          hat: hatOn, sheng: shengPed, buffT, paused, banner,
                          desk, elems, synOn, pools, sealSave: seal, codexSave: seen }) };
