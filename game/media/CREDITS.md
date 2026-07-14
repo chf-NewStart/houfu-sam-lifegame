@@ -2,17 +2,22 @@
 
 ## Background music (古筝 guzheng bed)
 
-- **guzheng-bgm.mp3** — derived from "chinese_music_guzheng02" by **mmiron**
-  - Source: https://freesound.org/s/546978/
-  - License: **Creative Commons Attribution 4.0 (CC BY 4.0)** — https://creativecommons.org/licenses/by/4.0/
-  - Changes: downmixed to mono, normalized, short fades added, encoded to MP3, looped.
-  - Attribution is shown in-game (footer of game/glyphrun.html).
+- **guzheng-bgm.mp3** — a segment of "lovely-chinese-guzheng-bowed" by **pufermufin**
+  - Source: https://freesound.org/s/396903/
+  - License: **Creative Commons 0 (CC0 / public domain)** — no attribution required,
+    but credited here and in-game as good practice.
+  - Changes: trimmed to a clean ~44s loop, downmixed to mono, normalized, faded, MP3.
 
-Other guzheng clips considered but not shipped (kept only in the local, git-ignored
-`guzheng/` source folder) — all Freesound, verify each license before use:
-- 162088 by xserra — CC BY 4.0
-- 396903 by pufermufin
-- 725336 by kevp888
-- 847157 by nanliu_music
+The bed plays from the character-select screen through the run; landing hits slow
+its tempo (pitch held), taking a hit faints it. Each character/weapon pick plays a
+pentatonic guzheng note (synthesized in-code).
 
-All sound effects (编钟 bells, brush strokes, etc.) are synthesized in-code (no license needed).
+### Other guzheng clips in the local (git-ignored) `guzheng/` source folder
+Not shipped. If you ever swap one in, VERIFY its license first:
+- 546978 by mmiron — CC BY 4.0 — **live Suzhou concert, has applause** (why it was dropped)
+- 162088 by xserra — CC BY 4.0 — live recital (likely audience)
+- 725336 by kevp888 — has background chatter ("walla")
+- 847157 by nanliu_music — single note
+
+All sound effects (编钟 bells, brush strokes, seal stamp, etc.) are synthesized
+in-code — no license needed.

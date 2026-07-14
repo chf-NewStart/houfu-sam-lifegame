@@ -301,7 +301,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b46</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b47</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -432,7 +432,7 @@
 
 <div class="footer">
   <div data-en="A tiny lesson in disguise: the script eras (隸書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net." data-zh="一堂藏起来的小课：字体时代（隶书 → 篆书 → 金文 → 甲骨文）是真实的，字族也是——「大」是张臂之人，「舞」是执羽起舞，「牢」是圈中之牛，「犇」是三牛奔逐，「美」是戴羊角的舞者，「羴」是一整群羊，「為」是牵象助劳。韩非子说：世人少见生象，得死象之骨，按图想其生——「想象」原本就是想一头象。每个字的真实历代字形，见 zdic.net 的「字源字形」。">A tiny lesson in disguise: the script eras (隸書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net.</div>
-  <div style="margin-top:6px;font-size:0.82em;opacity:0.7" data-en="Music: 古筝 guzheng by mmiron (freesound.org/s/546978), CC BY 4.0." data-zh="音乐：古筝，作者 mmiron（freesound.org/s/546978），CC BY 4.0 授权。">Music: 古筝 guzheng by mmiron (freesound.org/s/546978), CC BY 4.0.</div>
+  <div style="margin-top:6px;font-size:0.82em;opacity:0.7" data-en="Music: 古筝 guzheng by pufermufin (freesound.org/s/396903), CC0." data-zh="音乐：古筝，作者 pufermufin（freesound.org/s/396903），CC0 公共领域。">Music: 古筝 guzheng by pufermufin (freesound.org/s/396903), CC0.</div>
 </div>
 
 <script>
@@ -2437,8 +2437,9 @@ const Game = (function(){
   let weather = null, wDrops = [], wFlash = 0, wBoltT = 8;   // the sky has moods from the first night
   let marks = [], eshots = [], shocks = [];                  // 生 spawn omens; archers' arrows; the drum's rings
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
-  /* the 古筝 bed: a real CC-BY guzheng recording (mmiron · freesound 546978),
-     looped — it SLOWS, pitch and all, while you land blows, and FAINTS then
+  /* the 古筝 bed: a clean CC0 bowed-guzheng recording (pufermufin · freesound
+     396903), looped — plays under the whole run and from the character screen.
+     It SLOWS (tempo only, pitch held) while you land blows, and FAINTS then
      recovers when you take one. */
   const bgm = (() => {
     let el = null;                                   // null = untried, false = failed, else <audio>
@@ -2452,8 +2453,10 @@ const Game = (function(){
       }catch(e){ el = false; }
       return el;
     }
+    function play(){ const a = ensure(); if(!a) return; a.muted = !SFX.isOn(); a.play().catch(()=>{}); playing = true; }
     return {
-      start(){ const a = ensure(); if(!a) return; a.muted = !SFX.isOn(); try{ a.currentTime = 0; }catch(e){} a.play().catch(()=>{}); playing = true; },
+      menu(){ if(playing) return; const a = ensure(); if(a) a.volume = 0.3; play(); },   // the character screen: quiet, waiting
+      start(){ const a = ensure(); if(!a) return; if(!playing){ try{ a.currentTime = 0; }catch(e){} } play(); },   // the run: keep going if the menu already lit it
       stop(){ if(el){ el.pause(); playing = false; } },
       resume(){ if(el && playing) el.play().catch(()=>{}); },
       set(rate, vol){ if(el){ el.playbackRate = Math.max(0.55, rate); el.volume = Math.max(0, Math.min(1, vol)); } },
@@ -2596,7 +2599,7 @@ const Game = (function(){
     loadStage(0);
     stampRun();
     running = true; lastTs = performance.now();
-    tempo = 1; hurtDuck = 1; bgmVol = 0; bgm.start();          // the guzheng bed fades up
+    tempo = 1; hurtDuck = 1; bgmVol = 0.3; bgm.start();        // the guzheng bed swells up (continues from the menu)
     if(!raf) raf = requestAnimationFrame(loop);
   }
   /* the carved seal strikes the paper as the run begins */
@@ -4563,7 +4566,7 @@ const Game = (function(){
       const nm = document.createElement('div'); nm.className = 'cname';
       nm.textContent = `${W.chs[1]} ${W.pys[1]}`;
       card.append(cc, nm);
-      card.onclick = () => { selArm = key; buildArmSelect(); PV.reset(); };
+      card.onclick = () => { selArm = key; SFX.guzheng((ARM_NOTE[key] ?? 9), 0.11); bgm.menu(); buildArmSelect(); PV.reset(); };
       row.appendChild(card);
       const cctx = cc.getContext('2d');
       cctx.clearRect(0,0,36,42);
@@ -4597,8 +4600,13 @@ const Game = (function(){
       drawPicto(cc.getContext('2d'), cv.ch, 30, 33, 40, done ? '#e86a50' : '#eef2dd');
     }
   }
+  /* the picker is a little instrument: each choice plucks its own pentatonic
+     note, and the first touch lights the guzheng bed on the character screen */
+  const CHAR_NOTE = {ren:8, niu:9, xiang:10, gui:11, niao:12, lin:13, yan:14, yang:15};
+  const ARM_NOTE  = {gong:8, jian:10, mao:11, dao:12, ge:13, jin:14};
   function selectChar(key){
     selChar = key;
+    SFX.guzheng((CHAR_NOTE[key] ?? 10), 0.11); bgm.menu();
     buildCharSelect(); PV.reset();
     if(!running){ loadStage(0); render(); }
   }
