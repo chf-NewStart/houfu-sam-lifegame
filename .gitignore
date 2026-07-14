@@ -36,3 +36,6 @@ INTERVIEW_PREP.md
 # Glyph Run paleography reference books (copyrighted scans; 字源 alone is 137MB
 # > GitHub's 100MB limit) — kept local, never deployed. Index: refs/README.md
 refs/*.pdf
+
+# CC-BY guzheng source WAVs (huge) — only the encoded game/media/*.mp3 ships
+guzheng/

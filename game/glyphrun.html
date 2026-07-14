@@ -301,7 +301,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b44</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b45</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -432,6 +432,7 @@
 
 <div class="footer">
   <div data-en="A tiny lesson in disguise: the script eras (隸書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net." data-zh="一堂藏起来的小课：字体时代（隶书 → 篆书 → 金文 → 甲骨文）是真实的，字族也是——「大」是张臂之人，「舞」是执羽起舞，「牢」是圈中之牛，「犇」是三牛奔逐，「美」是戴羊角的舞者，「羴」是一整群羊，「為」是牵象助劳。韩非子说：世人少见生象，得死象之骨，按图想其生——「想象」原本就是想一头象。每个字的真实历代字形，见 zdic.net 的「字源字形」。">A tiny lesson in disguise: the script eras (隸書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net.</div>
+  <div style="margin-top:6px;font-size:0.82em;opacity:0.7" data-en="Music: 古筝 guzheng by mmiron (freesound.org/s/546978), CC BY 4.0." data-zh="音乐：古筝，作者 mmiron（freesound.org/s/546978），CC BY 4.0 授权。">Music: 古筝 guzheng by mmiron (freesound.org/s/546978), CC BY 4.0.</div>
 </div>
 
 <script>
@@ -2436,15 +2437,30 @@ const Game = (function(){
   let weather = null, wDrops = [], wFlash = 0, wBoltT = 8;   // the sky has moods from the first night
   let marks = [], eshots = [], shocks = [];                  // 生 spawn omens; archers' arrows; the drum's rings
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
-  /* the 古筝 bed: a flowing pentatonic phrase, played continuously — it SLOWS
-     while you're landing blows, and FAINTS then recovers when you take one.
-     (degree into the scale, note length in seconds) */
-  const PHRASE = [
-    [7,0.34],[9,0.34],[11,0.26],[12,0.46],[11,0.26],[9,0.34],[10,0.5],[8,0.6],
-    [9,0.34],[11,0.34],[12,0.26],[14,0.46],[12,0.3],[11,0.34],[9,0.5],[7,0.72],
-    [9,0.3],[10,0.3],[11,0.44],[9,0.3],[7,0.44],[6,0.3],[8,0.5],[7,0.8]
-  ];
-  let phraseI = 0, noteT = 0.4, tempo = 1, hurtDuck = 1;      // tempo<1 = slower; hurtDuck<1 = fainter
+  /* the 古筝 bed: a real CC-BY guzheng recording (mmiron · freesound 546978),
+     looped — it SLOWS, pitch and all, while you land blows, and FAINTS then
+     recovers when you take one. */
+  const bgm = (() => {
+    let el = null;                                   // null = untried, false = failed, else <audio>
+    let playing = false;
+    function ensure(){
+      if(el !== null) return el;
+      try{
+        el = new Audio('/game/media/guzheng-bgm.mp3');
+        el.loop = true; el.preload = 'auto'; el.volume = 0;
+        try{ el.preservesPitch = false; el.mozPreservesPitch = false; el.webkitPreservesPitch = false; }catch(e){}
+      }catch(e){ el = false; }
+      return el;
+    }
+    return {
+      start(){ const a = ensure(); if(!a) return; a.muted = !SFX.isOn(); try{ a.currentTime = 0; }catch(e){} a.play().catch(()=>{}); playing = true; },
+      stop(){ if(el){ el.pause(); playing = false; } },
+      resume(){ if(el && playing) el.play().catch(()=>{}); },
+      set(rate, vol){ if(el){ el.playbackRate = Math.max(0.55, rate); el.volume = Math.max(0, Math.min(1, vol)); } },
+      mute(m){ if(el) el.muted = m; }
+    };
+  })();
+  let tempo = 1, hurtDuck = 1, bgmVol = 0;                    // tempo<1 = slower; hurtDuck<1 = fainter
   let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
   let pav = null, treeDone = false, pavDone = false;
   let hatOn = false, shengPed = null, paused = false, foesSeen = {}, banner = null;
@@ -2580,6 +2596,7 @@ const Game = (function(){
     loadStage(0);
     stampRun();
     running = true; lastTs = performance.now();
+    tempo = 1; hurtDuck = 1; bgmVol = 0; bgm.start();          // the guzheng bed fades up
     if(!raf) raf = requestAnimationFrame(loop);
   }
   /* the carved seal strikes the paper as the run begins */
@@ -2716,6 +2733,7 @@ const Game = (function(){
   }
   function gameOver(){
     running = false;
+    bgm.stop();
     const wc = $('wangCanvas');
     if(wc && wc.getContext){
       const c2 = wc.getContext('2d');
@@ -2731,6 +2749,7 @@ const Game = (function(){
   }
   function win(){
     running = false;
+    bgm.stop();
     const cs = C();
     const row = $('evoRow'); row.innerHTML='';
     cs.forms.forEach((f, i)=>{
@@ -2759,7 +2778,7 @@ const Game = (function(){
     if(s.dead || (s.iT||0) > 0) return;
     s.hp = (s.hp||1) - dmg;
     s.iT = 0.22;
-    tempo = Math.min(tempo, 0.5);                     // 古筝 slows while you're landing blows
+    tempo = Math.min(tempo, 0.72);                    // the bed slows while you're landing blows
     if(s.hp <= 0){ killSpirit(s); return; }           // the kill tolls its own deep bell (killSpirit)
     SFX.strike();                                     // 编钟: every landed hit rings a bright bell
     addFx({kind:'poof', x:s.x, y:s.y, t:0.15, r:10});
@@ -2972,18 +2991,12 @@ const Game = (function(){
     player.y = clamp(player.y, WALL+34, CH-WALL-10);
     player.sq += (0-player.sq)*0.2;
 
-    // --- 古筝: a continuous flowing bed. Landing hits slows it (bullet-time
-    //     guzheng); taking a hit faints it, then it recovers. ---
-    tempo += (1 - tempo) * Math.min(1, dt * 1.4);     // eases back to full speed
+    // --- 古筝 bed: real recording. Landing blows slows it (pitch-dropping
+    //     bullet-time); taking a hit faints it; both ease back. ---
+    tempo += (1 - tempo) * Math.min(1, dt * 1.4);     // playback speed eases back to full
     hurtDuck += (1 - hurtDuck) * Math.min(1, dt * 1.1); // the faint recovers
-    SFX.musicGain((gate ? 0.24 : 0.5) * hurtDuck);    // softer at the gate; ducked when hurt
-    noteT -= dt * tempo;                              // slower tempo → longer real gaps
-    if(noteT <= 0){
-      const step = PHRASE[phraseI];
-      SFX.guzheng(step[0], 0.058);                    // soft, it sits under the 编钟
-      phraseI = (phraseI + 1) % PHRASE.length;
-      noteT += step[1];
-    }
+    bgmVol += (((gate ? 0.45 : 0.82) * hurtDuck) - bgmVol) * Math.min(1, dt * 3);  // softer at the gate, ducked when hurt
+    bgm.set(tempo, bgmVol);
 
     // --- family gifts, woven into the walk ---
     if(selChar==='gui'){                              // 魂游: the periodic phase
@@ -4514,11 +4527,13 @@ const Game = (function(){
         if(e.matches && running && APPFS) pause();
       });
     }catch(e){}
-    // 音/默: the sound toggle
+    // 音/默: the sound toggle — also mutes the guzheng bed
     const mb = $('muteBtn');
-    const syncMute = ()=>{ mb.textContent = SFX.isOn() ? '音' : '默'; mb.classList.toggle('off', !SFX.isOn()); };
+    const syncMute = ()=>{ const on = SFX.isOn(); mb.textContent = on ? '音' : '默'; mb.classList.toggle('off', !on); bgm.mute(!on); };
     mb.addEventListener('click', ()=>{ SFX.toggle(); syncMute(); });
     syncMute();
+    // the bed rests while the tab is hidden
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) bgm.stop(); else if(running) bgm.resume(); });
   }
 
   /* ---------- character + starting-arm select ---------- */
@@ -4590,12 +4605,14 @@ const Game = (function(){
   function pause(){
     if(!running || paused) return;
     running = false; paused = true;
+    bgm.stop();
     overlay('ovPause', true);
   }
   function resume(){
     if(!paused) return;
     paused = false; overlay('ovPause', false);
     running = true; lastTs = performance.now();
+    bgm.resume();
   }
   function chooseChar(){
     running = false; paused = false; hideAll(); overlay('ovStart', true);
