@@ -62,7 +62,7 @@
   #toast .tm{font-size:0.66rem;color:#9a9a9a;margin-top:1px;}
 
   /* full-screen overlays */
-  .overlay{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;
+  .overlay{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:flex-start;
     text-align:center;padding:14px 22px;background:rgba(4,6,8,0.9);backdrop-filter:blur(2px);overflow-y:auto;}
   /* spacer pseudo-children: centred when it fits, scrollable when it doesn't */
   .overlay::before,.overlay::after{content:'';flex:1 0 0;min-height:2px;}
@@ -240,6 +240,7 @@
 
   /* short landscape phones: the clear screen must fit — the button stays in reach */
   @media (max-height:560px){
+    .overlay{overflow-y:auto;}
     .overlay h2{font-size:1.02rem;margin:4px 0 2px;}
     .overlay .big{font-size:0.78rem;margin-bottom:6px;}
     #clearCanvas{width:132px;height:auto;}
@@ -296,7 +297,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b36</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b37</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
