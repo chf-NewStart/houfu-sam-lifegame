@@ -301,7 +301,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b41</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b42</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -1443,22 +1443,35 @@ const SFX = (function(){
   }
   const PENTA = [];                                             // C major pentatonic across 4 octaves
   for(let oct=2; oct<=5; oct++) for(const semi of [0,2,4,7,9]) PENTA.push(261.63/4 * Math.pow(2, oct - 2 + semi/12));
-  let lastBell = 0;
+  let lastBell = 0, lastPluck = 0, mIdx = 12, mDir = 1;
   function pluck(freq, gain){                                   // 古筝: a plucked silk string
     const a = actx(); if(!a) return;
     const t0 = a.currentTime, out = musicBus(a);
-    const o = a.createOscillator(); o.type = 'triangle'; o.frequency.value = freq;
-    const o2 = a.createOscillator(); o2.type = 'sine'; o2.frequency.value = freq*2.004;
-    const flt = a.createBiquadFilter(); flt.type = 'lowpass';
-    flt.frequency.setValueAtTime(freq*7, t0);
-    flt.frequency.exponentialRampToValueAtTime(Math.max(200, freq*1.6), t0+0.45);
+    // a bright body that a fast-closing filter turns into a plucked string
+    const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = freq;
+    const flt = a.createBiquadFilter(); flt.type = 'lowpass'; flt.Q.value = 0.6;
+    flt.frequency.setValueAtTime(freq*9, t0);
+    flt.frequency.exponentialRampToValueAtTime(Math.max(320, freq*2.4), t0+0.10);
+    flt.frequency.exponentialRampToValueAtTime(Math.max(200, freq*1.2), t0+0.5);
     const g = a.createGain();
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(gain, t0+0.006);        // a fast pluck, then a long silk decay
-    g.gain.exponentialRampToValueAtTime(0.0001, t0+0.6);
-    const g2 = a.createGain(); g2.gain.value = 0.28;
-    o.connect(flt); o2.connect(g2); g2.connect(flt); flt.connect(g); g.connect(out);
-    o.start(t0); o.stop(t0+0.65); o2.start(t0); o2.stop(t0+0.65);
+    g.gain.exponentialRampToValueAtTime(gain, t0+0.004);        // a fast pluck, then a silk decay
+    g.gain.exponentialRampToValueAtTime(gain*0.45, t0+0.09);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+0.5);
+    o.connect(flt); flt.connect(g); g.connect(out);
+    o.start(t0); o.stop(t0+0.55);
+    // the pluck itself: a short filtered-noise transient at the onset — the finger on the string
+    const n = noise(a), nf = a.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = freq*3; nf.Q.value = 0.7;
+    const ng = a.createGain(); ng.gain.setValueAtTime(gain*0.5, t0); ng.gain.exponentialRampToValueAtTime(0.0001, t0+0.045);
+    n.connect(nf); nf.connect(ng); ng.connect(out); n.start(t0); n.stop(t0+0.06);
+  }
+  function nextNote(){                                          // walk the pentatonic with a gentle pull home
+    mIdx += mDir;
+    if(mIdx >= 18 || mIdx <= 8){ mDir *= -1; mIdx += mDir; }
+    if(Math.random() < 0.22) mDir *= -1;
+    if(Math.random() < 0.16) mIdx += (mIdx < 12 ? 1 : -1);      // drift back toward the middle register
+    mIdx = Math.max(6, Math.min(19, mIdx));
+    return PENTA[mIdx];
   }
   function bell(freq, gain){                                    // 编钟: struck bronze, inharmonic partials
     const a = actx(); if(!a) return;
@@ -1475,6 +1488,10 @@ const SFX = (function(){
   }
   return {
     guzheng(i){ pluck(PENTA[((i%PENTA.length)+PENTA.length)%PENTA.length], 0.09); },   // a step in the melody
+    melody(gain){                                              // the next note of the run's own tune, rate-limited
+      const now = performance.now(); if(now-lastPluck < 85) return; lastPluck = now;
+      pluck(nextNote(), gain || 0.08);
+    },
     ring(size){                                                 // a bell tuned to what fell: boss deep, swarm bright
       const now = performance.now(); if(now-lastBell < 45) return; lastBell = now;
       const lo = 4, span = 14;                                  // pick a pentatonic degree by size (0 small .. 1 boss)
@@ -2368,6 +2385,8 @@ const ERAS = {
 const ERA_ORDER = ['kai','seal','bronze','oracle'];
 /* spirits get their own spectral tint — foes must never share your ink */
 const GHOST = '#9fe0cf';
+/* the player is the brightest, warmest ink on the sheet — nothing else uses this */
+const HEROINK = '#fff6e2';
 /* the bestiary: every monster IS a character — named on first sight */
 const FOE_INFO = {
   gui: {ch:'鬼', py:'guǐ',  en:'ghost — the big-headed shade',        zh:'鬼——巨首之影'},
@@ -2413,7 +2432,7 @@ const Game = (function(){
   let weather = null, wDrops = [], wFlash = 0, wBoltT = 8;   // the sky has moods from the first night
   let marks = [], eshots = [], shocks = [];                  // 生 spawn omens; archers' arrows; the drum's rings
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
-  let musicT = 0, musicIdx = 11, musicDir = 1;               // the 古筝 melody the walk plays
+  let musicT = 0;                                            // sparse ambient-pluck cadence while moving
   let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
   let pav = null, treeDone = false, pavDone = false;
   let hatOn = false, shengPed = null, paused = false, foesSeen = {}, banner = null;
@@ -2728,6 +2747,7 @@ const Game = (function(){
     if(s.dead || (s.iT||0) > 0) return;
     s.hp = (s.hp||1) - dmg;
     s.iT = 0.22;
+    SFX.melody(0.08);                                 // 古筝: every strike that lands plays the next note
     if(s.hp <= 0){ killSpirit(s); return; }
     addFx({kind:'poof', x:s.x, y:s.y, t:0.15, r:10});
   }
@@ -2938,14 +2958,12 @@ const Game = (function(){
     player.y = clamp(player.y, WALL+34, CH-WALL-10);
     player.sq += (0-player.sq)*0.2;
 
-    // --- 古筝: the walk plucks the pentatonic — a melody that wanders while you move ---
+    // --- 古筝: the melody is driven by combat (see hurtSpirit); while just moving,
+    //     a sparse soft pluck keeps traversal alive without plodding ---
     musicT -= dt;
     if(mag > 0.12 && !gate && musicT <= 0){
-      musicT = 0.3;
-      SFX.guzheng(musicIdx);
-      musicIdx += musicDir;
-      if(musicIdx >= 17 || musicIdx <= 7){ musicDir *= -1; musicIdx += musicDir; }
-      if(Math.random() < 0.22) musicDir *= -1;      // wander, so it never marches a plain scale
+      musicT = 0.9;                                   // sparse ambient step (combat fills the rest in)
+      SFX.melody(0.045);
     }
 
     // --- family gifts, woven into the walk ---
@@ -3967,8 +3985,15 @@ const Game = (function(){
     // fallen glyphs
     for(const p of pickups){
       const fade = p.t < 1.5 ? (Math.sin(tGlobal*16)>0 ? 0.4 : 1) : 1;
+      const py = p.y + Math.sin(p.bob)*4;
+      ctx.save();                                    // a jade halo marks loot apart from your gold strikes
+      ctx.globalAlpha = fade * (0.4 + 0.15*Math.sin(tGlobal*4 + p.x));
+      const hg = ctx.createRadialGradient(p.x, py, 1, p.x, py, 17);
+      hg.addColorStop(0, 'rgba(150,210,110,0.6)'); hg.addColorStop(1, 'rgba(150,210,110,0)');
+      ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(p.x, py, 17, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
       ctx.save(); ctx.globalAlpha = fade;
-      drawPicto(ctx, p.ch, p.x, p.y + Math.sin(p.bob)*4, 26, era.accent);
+      drawPicto(ctx, p.ch, p.x, py, 26, era.accent);
       ctx.restore();
     }
 
@@ -3996,6 +4021,9 @@ const Game = (function(){
       if(s.dead) continue;
       const col = (s.iT||0) > 0.12 ? '#ffffff'
                 : s.opp === '水' ? '#7ec8ff' : s.opp === '火' ? '#ff9a66' : GHOST;
+      // spirits are spectral — a touch translucent so the solid player reads as the one alive thing
+      const spectral = !s.boss && !(s.iT||0);
+      ctx.save(); if(spectral) ctx.globalAlpha = 0.82;
       if(s.type==='shi') drawBoar(ctx, s.x, s.y, 38, s.phase, col, s.face||1);
       else if(s.type==='she'){
         ctx.save(); ctx.translate(s.x, s.y); if((s.face||1)<0) ctx.scale(-1,1);
@@ -4043,6 +4071,7 @@ const Game = (function(){
       }
       else if(s.type==='meng' || s.type==='gu') drawVesselBoss(ctx, s.x, s.y, 64, s.phase, col, s.type==='gu');
       else drawSpirit(ctx, s.x, s.y, 34, s.phase, col, s.face||1);
+      ctx.restore();
       if(s.boss){
         ctx.save();
         ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.fillRect(s.x-26, s.y-52, 52, 6);
@@ -4097,13 +4126,24 @@ const Game = (function(){
       ctx.beginPath(); ctx.arc(k.x, k.y, k.r, 0, Math.PI*2); ctx.stroke(); ctx.restore();
     }
 
-    // player — translucent while phased
+    // player — the hero anchor: it alone casts a shadow and stands in a warm pool of
+    // ink-light, so "which one is me" is never a question, and it reads as living ink
     const footY = player.y + 22;
+    if(player.phasedT <= 0){
+      ctx.save();
+      ctx.globalAlpha = 0.34; ctx.fillStyle = '#05040a';           // the shadow on the paper — only the player has one
+      ctx.beginPath(); ctx.ellipse(player.x, footY + 3, 18, 6.5, 0, 0, Math.PI*2); ctx.fill();
+      const pool = ctx.createRadialGradient(player.x, player.y, 2, player.x, player.y, 46);
+      pool.addColorStop(0, era.ink); pool.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = 0.14; ctx.fillStyle = pool;
+      ctx.beginPath(); ctx.arc(player.x, player.y, 46, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
     ctx.save();
     if(player.phasedT > 0) ctx.globalAlpha = 0.4 + 0.1*Math.sin(tGlobal*20);
     else if(player.inv > 0) ctx.globalAlpha = Math.sin(tGlobal*30) > 0 ? 0.35 : 0.85;
     if(player.face < 0){ ctx.translate(player.x*2, 0); ctx.scale(-1,1); }
-    drawGlyphChar(ctx, selChar, level, player.x, footY, 46, player.runPhase, player.sq, era.ink);
+    drawGlyphChar(ctx, selChar, level, player.x, footY, 50, player.runPhase, player.sq, HEROINK);  // brighter & bolder than the field
     ctx.restore();
     if(hatOn) drawShengHat(ctx, player.x, player.y - 34, 22, era.accent);       // 圣 worn as a crown
     if(player.shellOn){                                                          // 龜 shell standing by
