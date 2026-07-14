@@ -309,7 +309,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b56</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b57</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -2174,25 +2174,45 @@ const SYNERGIES = {
    goal: {survive} or {kill:N} or {boss:[...]} — dur is the clock either way. */
 const STAGES = [
   {ch:'人', py:'rén',  en:'FIRST STEPS — the shades gather',        zh:'初行——群影渐聚',
-   era:0, dur:45, spawn:1.3, cap:9,  spd:56, mix:[['gui',1]], goal:{survive:1}},
+   era:0, dur:45, spawn:1.1, cap:11, spd:60, mix:[['gui',1]], goal:{survive:1},
+   lore_en:'人 is a person seen from the side, bowing into work. Shuowen calls humans 天地之性最贵者 — the dearest thing between heaven and earth.',
+   lore_zh:'「人」是侧身躬身劳作之形。《说文》：天地之性最贵者也。'},
   {ch:'燕', py:'yàn',  en:'THE FLOCK — swift wings, kill 15',       zh:'燕群——疾翼，斩十五',
-   era:0, dur:75, spawn:0.8, cap:12, spd:60, mix:[['yan',5],['gui',2]], goal:{kill:15}},
+   era:0, dur:75, spawn:0.7, cap:14, spd:64, mix:[['yan',5],['gui',2]], goal:{kill:18},
+   lore_en:'Shuowen: 燕燕，玄鳥也 — the dark bird, drawn whole: head, spread wings, forked tail. So loved it was borrowed for 宴, the feast.',
+   lore_zh:'《说文》：燕燕，玄鳥也。——整只燕子：头、张翅、叉尾。古人爱其形，借去写「宴」。'},
   {ch:'火', py:'huǒ',  en:'THE BURNING FIELD — survive the fires',  zh:'燎原——火中求生',
-   era:1, dur:60, spawn:1.2, cap:10, spd:62, fire:2.6, mix:[['gui',3],['shi',1]], goal:{survive:1}},
+   era:1, dur:60, spawn:1.0, cap:13, spd:66, fire:2.2, mix:[['gui',3],['shi',1]], goal:{survive:1},
+   lore_en:'Shuowen: 火，燬也。南方之行，炎而上 — fire, the destroyer; the phase of the South, flaming upward. On the bones it is almost a twin of 山.',
+   lore_zh:'《说文》：火，燬也。南方之行，炎而上。象形。——甲骨上「火」与「山」几乎孪生，全靠文意分辨。'},
   {ch:'央', py:'yāng', en:'THE YOKES — dragged steps, kill 12',     zh:'颈枷之阵——步履维艰，斩十二',
-   era:1, dur:80, spawn:1.0, cap:12, spd:60, mix:[['yoke',3],['gui',3]], goal:{kill:12}},
+   era:1, dur:80, spawn:0.85, cap:14, spd:64, mix:[['yoke',3],['gui',3],['yan',1]], goal:{kill:14},
+   lore_en:'央 is a person with a carrying-beam across the neck — pinned at the very middle. That is why 央 means CENTER, as in 中央.',
+   lore_zh:'「央」是颈上横着扁担的人——正被压在正当中。所以「央」意为正中，如「中央」。'},
   {ch:'矢', py:'shǐ',  en:'THE VOLLEY — arrows from every dark',    zh:'万矢——暗处放箭',
-   era:1, dur:60, spawn:0.9, cap:12, spd:64, mix:[['she',4],['yan',2]], goal:{survive:1}},
+   era:1, dur:60, spawn:0.75, cap:14, spd:68, mix:[['she',4],['yan',2]], goal:{survive:1},
+   lore_en:'矢 is the whole arrow: point, shaft, fletching. Swear on it and you get 誓 — the oath, a word as straight as an arrow.',
+   lore_zh:'「矢」是完整一支箭：镞、杆、羽。指箭为誓，便有了「誓」——如矢之直的一句话。'},
   {ch:'壴', py:'zhù',  en:'THE DRUMS — cross the rings, kill 10',   zh:'战鼓——穿越震波，斩十',
-   era:2, dur:80, spawn:1.1, cap:11, spd:60, mix:[['drum',3],['gui',2]], goal:{kill:10}},
+   era:2, dur:80, spawn:0.9, cap:13, spd:66, mix:[['drum',3],['gui',2],['yan',1]], goal:{kill:12},
+   lore_en:'Shuowen: 壴，陳樂立而上見也 — music set standing, seen from above the stand. Add a hand with a stick and it becomes 鼓, to drum.',
+   lore_zh:'《说文》：壴，陳樂立而上見也。——立在架上的战鼓，顶有羽饰。加一只执槌的手，便是「鼓」。'},
   {ch:'血', py:'xuè',  en:'THE FEEDING DARK — fell the priests, kill 18', zh:'血祭——先斩其祭，共斩十八',
-   era:2, dur:90, spawn:0.85, cap:14, spd:66, mix:[['xue',2],['gui',4],['shi',1]], goal:{kill:18}},
+   era:2, dur:90, spawn:0.7, cap:17, spd:72, mix:[['xue',2],['gui',4],['shi',1]], goal:{kill:22},
+   lore_en:'Shuowen: 血，祭所薦牲血也 — the beast-blood offered in sacrifice, one drop shown falling into the 皿. Oaths were sealed 歃血, lips touched to it.',
+   lore_zh:'《说文》：血，祭所薦牲血也。——皿中那一滴牲血。古人盟誓「歃血」，以唇沾之为信。'},
   {ch:'電', py:'diàn', en:'THE STORM — the sky itself strikes',     zh:'雷霆——天怒地击',
-   era:2, dur:70, spawn:1.0, cap:12, spd:68, bolt:2.8, weather:'storm', mix:[['gui',3],['yan',2]], goal:{survive:1}},
+   era:2, dur:70, spawn:0.85, cap:15, spd:74, bolt:2.4, weather:'storm', mix:[['gui',3],['yan',2]], goal:{survive:1},
+   lore_en:'Shuowen: 電，陰陽激燿也 — yin and yang striking sparks. The bolt 申 under the rain; and 申 alone was so awesome it became 神, the god.',
+   lore_zh:'《说文》：電，陰陽激燿也。——雨下之「申」。而「申」本身太震撼，又成了「神」：闪电即神明。'},
   {ch:'皿', py:'mǐn',  en:'THE VESSELS — slay both before the sand runs', zh:'双皿——沙尽前诛二器',
-   era:3, dur:90, spawn:1.6, cap:8,  spd:66, mix:[['gui',1]], goal:{boss:['meng','gu']}},
+   era:3, dur:90, spawn:1.3, cap:10, spd:72, mix:[['gui',1]], goal:{boss:['meng','gu']},
+   lore_en:'Shuowen: 皿，飯食之用器也 — the eating vessel, drawn in profile. Fill it with blood for 血, breed worms in it for 蠱: half the dark arts stand on this one dish.',
+   lore_zh:'《说文》：皿，飯食之用器也。——礼器侧影。盛血为「血」，养虫为「蠱」——半部巫史立于此一皿。'},
   {ch:'龍', py:'lóng', en:'THE LAST NIGHT — the dragon, alone',     zh:'终夜——独面龙躯',
-   era:3, dur:90, spawn:2.2, cap:6,  spd:70, mix:[['gui',1]], goal:{boss:['long']}}
+   era:3, dur:90, spawn:1.8, cap:8,  spd:76, mix:[['gui',1]], goal:{boss:['long']},
+   lore_en:'Shuowen: 龍，鱗蟲之長。能幽能明，能細能巨；春分而登天，秋分而潛淵 — chief of all scaled things: dark or shining, tiny or vast; it climbs to heaven at spring equinox and sinks into the deep at autumn.',
+   lore_zh:'《说文》：龍，鱗蟲之長。能幽能明，能細能巨，能短能長；春分而登天，秋分而潛淵。'}
 ];
 
 /* ============================== 文房四宝 · the scholar's desk ============================== */
@@ -2491,10 +2511,10 @@ const FOE_INFO = {
 
 /* per-era wave tuning: survive the timer and the gate opens */
 const WAVES = [
-  {len:35, spawn:1.35, cap:10, spd:55, fireInt:0,   bolt:0},
-  {len:45, spawn:1.05, cap:15, spd:68, fireInt:7.0, bolt:0},
-  {len:55, spawn:0.85, cap:20, spd:80, fireInt:5.0, bolt:6.0},
-  {len:65, spawn:0.70, cap:25, spd:92, fireInt:3.8, bolt:3.8}
+  {len:35, spawn:1.20, cap:12, spd:58, fireInt:0,   bolt:0},
+  {len:45, spawn:0.95, cap:17, spd:71, fireInt:6.5, bolt:0},
+  {len:55, spawn:0.76, cap:23, spd:84, fireInt:4.6, bolt:5.4},
+  {len:65, spawn:0.62, cap:28, spd:97, fireInt:3.4, bolt:3.4}
 ];
 /* 電 lightning burns white-hot — neither your gold nor the spirits' teal */
 const BOLTC = '#fff0b8';
@@ -2648,7 +2668,7 @@ const Game = (function(){
              fireInt: def.fire||0, bolt: def.bolt||0, mix: def.mix };
     waveT = def.dur;
     dragonDone = true; bossDone = true; shengPed = null; pav = null; treeDone = true; pavDone = true;
-    wTimes = [];                                       // stages are pure: no pedestals mid-fight
+    wTimes = [def.dur*0.62, def.dur*0.3];              // the radicals still surface — arming up IS the fun
     if(def.weather !== undefined){
       weather = def.weather; wDrops = [];
       if(weather){ const nn = weather==='snow'?64:92;
@@ -2662,8 +2682,8 @@ const Game = (function(){
           showBanner('long');
         } else {
           spirits.push({x: bi ? WALL+40 : CW-WALL-30, y:CH*0.5, phase:0, dead:false, boss:true,
-                        type:bt, bossCh: bt==='gu'?'蠱':'皿', hp: bt==='gu'?16:10, maxHp: bt==='gu'?16:10,
-                        cr:40, spd: bt==='gu'?60:55, st:0, stT:1.2, face: bi?1:-1, dirn:1});
+                        type:bt, bossCh: bt==='gu'?'蠱':'皿', hp: bt==='gu'?20:13, maxHp: bt==='gu'?20:13,
+                        cr:40, spd: bt==='gu'?64:58, st:0, stT:1.2, face: bi?1:-1, dirn:1});
           if(bi===0) showBanner(bt);
         }
       });
@@ -2694,7 +2714,7 @@ const Game = (function(){
     $('stStars').textContent = won ? ['','一','一二','一二三'][stars] : '';
     $('stStars').style.display = won ? '' : 'none';
     $('stMsg').textContent = won
-      ? t(`${def.py} — three thousand years old, and yours now.`, `「${def.ch}」${def.py}——三千岁的字，此刻归你。`)
+      ? (def.lore_en ? t(def.lore_en, def.lore_zh) : t(`${def.py} — the page is yours.`, `「${def.ch}」${def.py}——此页归你。`))
       : t('the scroll waits — try the page again.', '卷轴还在等——再试一次。');
     $('stNext').style.display = (won && stage.i+1 < STAGES.length) ? '' : 'none';
     overlay('ovStage', true);
@@ -2705,11 +2725,11 @@ const Game = (function(){
     loadStage(3);
     const n = endlessN;
     wave = { len: 40,
-             spawn: Math.max(0.34, 0.78*Math.pow(0.94, n)),
-             cap: Math.min(40, 22 + 2*n),
-             spd: 88*(1 + 0.05*n),
-             fireInt: Math.max(2.4, 4.2 - 0.15*n),
-             bolt: Math.max(2.6, 4.2 - 0.12*n) };
+             spawn: Math.max(0.30, 0.70*Math.pow(0.92, n)),
+             cap: Math.min(44, 25 + 2*n),
+             spd: 95*(1 + 0.065*n),
+             fireInt: Math.max(2.1, 3.8 - 0.16*n),
+             bolt: Math.max(2.3, 3.8 - 0.13*n) };
     waveT = wave.len;
     dragonDone = (n % 4 !== 0);                        // 龍 coils back every fourth night
     bossDone = true;                                   // vessel bosses arrive by their own clock below
@@ -2797,7 +2817,7 @@ const Game = (function(){
   /* ---------- lifecycle ---------- */
   function start(){
     maxHp = HP_BASE + (seal.carved.xin ? 1 : 0);
-    stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 14; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
+    stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 16; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
     endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = false; glyphToasted = {};
     stage = null; stageWinT = null;
     desk = freshDesk();
@@ -3583,7 +3603,7 @@ const Game = (function(){
 
     // --- the war-drum's shockwave rings ---
     for(const k of shocks){
-      k.t -= dt; k.r += 165*dt;                          // expands outward through its short life
+      k.t -= dt; k.r += 185*dt;                          // expands outward through its short life
       if(!k.hit && player.phasedT <= 0 && player.boatT <= 0 &&
          Math.abs(Math.hypot(player.x-k.x, player.y-k.y) - k.r) < 17){
         k.hit = true; hurtPlayer(null);
@@ -3654,7 +3674,7 @@ const Game = (function(){
               const sp = {x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
                           st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
                           spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)};
-              if(type === 'yan') sp.spd *= 1.55;            // the swallow is quick
+              if(type === 'yan') sp.spd *= 1.7;             // the swallow is quick
               /* 相剋: stack an element and its opposite rises against you —
                  hoard 火 and river spirits come to quench it (swift, unburnable);
                  hoard 水 and ember spirits come, igniting the ground they die on */
@@ -3694,7 +3714,7 @@ const Game = (function(){
           const gu = stageIdx===2;
           spirits.push({x:CW-WALL-30, y:CH*0.5, phase:0, dead:false, boss:true,
                         type: gu?'gu':'meng', bossCh: gu?'蠱':'皿',
-                        hp: gu?16:10, maxHp: gu?16:10, cr:40, spd: gu?60:55,
+                        hp: gu?20:13, maxHp: gu?20:13, cr:40, spd: gu?64:58,
                         st:0, stT:1.2, face:-1, dirn:1});
           showBanner(gu?'gu':'meng');
           addFx({kind:'levelup', x:CW-WALL-60, y:CH*0.5, t:1.0, r:90, ch: gu?'蠱':'皿'});
@@ -3704,7 +3724,7 @@ const Game = (function(){
         if(stageIdx === 0 && !forgeDone && waveT <= wave.len*0.5){
           forgeDone = true;
           spirits.push({x:CW*0.5, y:CH*0.30, phase:0, dead:false, boss:true, type:'forge', bossCh:'铸',
-                        hp:6, maxHp:6, cr:38, spd:0, st:0, stT:1.4, face:1, dirn:1, castT:2.4});
+                        hp:9, maxHp:9, cr:38, spd:0, st:0, stT:1.4, face:1, dirn:1, castT:2.0});
           showBanner('forge');
           addFx({kind:'levelup', x:CW*0.5, y:CH*0.30, t:1.0, r:90, ch:'铸'});
         }
@@ -3860,7 +3880,7 @@ const Game = (function(){
           s.shotT = (s.shotT===undefined ? 1.6 : s.shotT) - dt;
           if(s.shotT <= 0 && d > 120 && d < 340){
             s.shotT = 2.6 + Math.random()*0.8;
-            eshots.push({x:s.x, y:s.y-6, ux:ddx/d, uy:ddy/d, spd:190, t:2.2});
+            eshots.push({x:s.x, y:s.y-6, ux:ddx/d, uy:ddy/d, spd:215, t:2.2});
             addFx({kind:'ringatk', x:s.x, y:s.y-6, r:10, t:0.16});
           }
         } else if(s.type==='yan'){
@@ -4036,7 +4056,7 @@ const Game = (function(){
           SFX.tick();
         }
         if(coins >= nextHeart){
-          nextHeart += 14;
+          nextHeart += 16;
           if(lives < maxHp){ lives++; addFx({kind:'heal', x:player.x, y:player.y-30, t:0.8, r:0}); }
         }
         maybeLevelUp();
