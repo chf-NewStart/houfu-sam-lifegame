@@ -296,7 +296,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b35</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b36</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -3205,9 +3205,10 @@ const Game = (function(){
         if(spawnT <= 0 && spirits.filter(s=>!s.dead && s.type!=='guo').length + marks.length < wave.cap){
           spawnT = wave.spawn * (1 - 0.35*prog);
           for(let tries=0; tries<6; tries++){
-            const side = (Math.random()*4)|0;
-            const px = side===0? WALL+8 : side===1? CW-WALL-8 : WALL+20+Math.random()*(CW-WALL*2-40);
-            const py = side===2? WALL+14 : side===3? CH-WALL-8 : WALL+20+Math.random()*(CH-WALL*2-40);
+            // anywhere on the sheet — the 生 mark gives fair warning, so the
+            // spirits no longer file in from the edges
+            const px = WALL+30+Math.random()*(CW-WALL*2-60);
+            const py = WALL+30+Math.random()*(CH-WALL*2-60);
             if(Math.hypot(px-player.x, py-player.y) > 130 || tries===5){
               const roll = Math.random();
               let type = 'gui', hp = 1, cr = 29;
