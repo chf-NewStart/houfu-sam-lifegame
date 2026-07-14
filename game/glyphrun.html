@@ -301,7 +301,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b49</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b50</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -432,7 +432,7 @@
 
 <div class="footer">
   <div data-en="A tiny lesson in disguise: the script eras (隸書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net." data-zh="一堂藏起来的小课：字体时代（隶书 → 篆书 → 金文 → 甲骨文）是真实的，字族也是——「大」是张臂之人，「舞」是执羽起舞，「牢」是圈中之牛，「犇」是三牛奔逐，「美」是戴羊角的舞者，「羴」是一整群羊，「為」是牵象助劳。韩非子说：世人少见生象，得死象之骨，按图想其生——「想象」原本就是想一头象。每个字的真实历代字形，见 zdic.net 的「字源字形」。">A tiny lesson in disguise: the script eras (隸書 → 篆書 → 金文 → 甲骨文) are real, and so are the character families — 大 is a person with arms spread, 舞 a dancer with plumes, 牢 an ox in its pen, 犇 a stampede, 美 a dancer crowned with ram horns, 羴 a whole flock, and 為 is a hand leading an elephant to work. Han Fei wrote that people who had never seen a living elephant imagined one from its bones — 想象, “to imagine”, is literally picturing the elephant. Real historic forms for every character: 字源字形 on zdic.net.</div>
-  <div style="margin-top:6px;font-size:0.82em;opacity:0.7" data-en="Music: 古筝 guzheng recital by xserra (freesound.org/s/162088), CC BY 4.0; selection tones by nanliu_music (freesound.org/s/847157), CC0." data-zh="音乐：古筝，作者 xserra（freesound.org/s/162088），CC BY 4.0；选择音效作者 nanliu_music（freesound.org/s/847157），CC0。">Music: 古筝 guzheng recital by xserra (freesound.org/s/162088), CC BY 4.0; selection tones by nanliu_music (freesound.org/s/847157), CC0.</div>
+  <div style="margin-top:6px;font-size:0.82em;opacity:0.7" data-en="Music: 古筝 guzheng field recording by kevp888 (freesound.org/s/725336), CC BY 4.0; selection tones by nanliu_music (freesound.org/s/847157), CC0." data-zh="音乐：古筝实地录音，作者 kevp888（freesound.org/s/725336），CC BY 4.0；选择音效作者 nanliu_music（freesound.org/s/847157），CC0。">Music: 古筝 guzheng field recording by kevp888 (freesound.org/s/725336), CC BY 4.0; selection tones by nanliu_music (freesound.org/s/847157), CC0.</div>
 </div>
 
 <script>
@@ -2437,10 +2437,11 @@ const Game = (function(){
   let weather = null, wDrops = [], wFlash = 0, wBoltT = 8;   // the sky has moods from the first night
   let marks = [], eshots = [], shocks = [];                  // 生 spawn omens; archers' arrows; the drum's rings
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
-  /* the 古筝 bed: a real guzheng recital recording (xserra · freesound 162088,
-     CC BY 4.0), a clean 60s loop — plays under the whole run and from the
-     character screen. It SLOWS (tempo only, pitch held) while you land blows,
-     and FAINTS then recovers when you take one. */
+  /* the 古筝 bed: a real guzheng field recording from a Lunar New Year event
+     (kevp888 · freesound 725336, CC BY 4.0), a 65s loop taken from before the
+     closing applause — plays under the whole run and from the character screen.
+     It SLOWS (tempo only, pitch held) while you land blows, and FAINTS then
+     recovers when you take one. */
   const bgm = (() => {
     let el = null;                                   // null = untried, false = failed, else <audio>
     let playing = false;

@@ -2,13 +2,14 @@
 
 ## Background music (古筝 guzheng bed) — ATTRIBUTION REQUIRED
 
-- **guzheng-bgm.mp3** — a clean 60s loop from **"GuZheng.wav" by xserra**
-  (a graduation recital fragment, Central Conservatory of Music, Beijing)
-  - Source: https://freesound.org/s/162088/
+- **guzheng-bgm.mp3** — a 65s loop from **kevp888's field recording of a guzheng
+  at a Lunar New Year celebration** (Rueil-Malmaison, France, Feb 2024)
+  - Source: https://freesound.org/s/725336/
   - License: **Creative Commons Attribution 4.0 (CC BY 4.0)** —
     https://creativecommons.org/licenses/by/4.0/ — attribution is REQUIRED and
     is shown in the game footer. Keep it.
-  - Changes: trimmed to 60s (24s–84s), downmixed to mono, normalized, faded.
+  - Changes: trimmed to 65s (100s–165s, before the closing applause), mono,
+    normalized, faded. Has light "walla" (crowd ambience) by nature.
 
 ## Selection tones (character / weapon picks)
 
