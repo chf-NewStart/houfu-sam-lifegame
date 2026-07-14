@@ -1297,7 +1297,7 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const CW = 440, CH = 240;
-  const BG0 = '#0c1512', BG1 = '#0a1a14', HERO = '#fff6e2', VERM = '#e8b04a', JADE = '#96d26e';
+  const BG0 = '#0c1512', BG1 = '#0a1a14', HERO = '#fff6e2', ACC = '#8bc34a';   // green like the 金文 arena's radicals
   const OG = {
     '人': {p:'M50.9 0.0L49.6 6.6 53.1 15.4 30.3 45.2 35.1 47.4 55.3 21.1 57.9 20.2 61.8 25.0 65.4 43.4 48.7 75.0 45.2 90.8 46.5 100.0 50.4 96.9 51.3 80.3 69.7 45.2 69.7 32.9 54.8 11.0 53.9 0.4 50.9 0.0Z'},
     '大': {p:'M45.7 0.0L43.5 17.7 14.2 38.4 14.7 41.4 18.1 40.5 36.2 26.7 43.1 23.3 44.4 25.4 43.5 43.5 34.1 50.4 28.0 59.9 29.7 80.6 28.0 89.2 22.0 97.8 28.9 94.4 34.1 84.1 31.5 61.6 41.4 50.0 47.4 47.4 51.3 48.7 59.1 60.8 59.1 90.1 69.8 100.0 72.0 97.8 65.1 92.7 60.8 84.1 62.5 59.9 55.6 48.7 47.8 42.7 47.8 23.7 82.8 37.1 85.8 34.9 48.3 18.1 48.7 2.2 45.7 0.0Z'},
@@ -1320,6 +1320,7 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
     x: (i * 97.3) % CW, y: (i * 53.7) % CH, v: 0.55 + ((i * 29) % 50) / 90
   }));
   let raf = 0, visible = false, last = 0, hover = false, T = 0, dpr = 1, reduced = false;
+  let boltT = 2200, flash = 0, bolt = null;                    // the thunder that cracks the night now and then
   try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   function size() {
     dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1344,17 +1345,31 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
       ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + 2, d.y - 9);
     }
     ctx.stroke(); ctx.restore();
+    const groundY = CH * 0.70;                                  // the hero stands higher on the card now
+    // thunder now and then — a bolt cracks down behind the hero and the night lights up
+    boltT -= dt;
+    if (boltT <= 0 && !reduced) {
+      boltT = 3800 + Math.random() * 4200;                     // every ~4–8s
+      flash = 1;
+      const bx = CW * (0.26 + Math.random() * 0.48); let yy = -4; const pts = [[bx, yy]];
+      while (yy < groundY) { yy += 16 + Math.random() * 16; pts.push([bx + (Math.random() - 0.5) * 48, Math.min(groundY, yy)]); }
+      bolt = { pts, t: 300 };
+    }
+    if (flash > 0) flash -= dt / 340;
+    if (bolt) {
+      bolt.t -= dt;
+      if (bolt.t > 0) {
+        ctx.save(); ctx.globalAlpha = Math.min(1, bolt.t / 150);
+        ctx.strokeStyle = '#eaf2ff'; ctx.shadowColor = '#cfe0ff'; ctx.shadowBlur = 12;
+        ctx.lineWidth = 2.4; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(bolt.pts[0][0], bolt.pts[0][1]);
+        for (let i = 1; i < bolt.pts.length; i++) ctx.lineTo(bolt.pts[i][0], bolt.pts[i][1]);
+        ctx.stroke(); ctx.restore();
+      }
+    }
     // the floor line the hero stands on
-    const groundY = CH * 0.82;
     ctx.save(); ctx.strokeStyle = 'rgba(232,223,200,0.12)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(20, groundY); ctx.lineTo(CW - 20, groundY); ctx.stroke(); ctx.restore();
-    // a jade-haloed glyph drifts near — loot, unmistakable from a strike
-    const lx = CW * 0.20, ly = CH * 0.52 + Math.sin(T / 700) * 5;
-    ctx.save(); ctx.globalAlpha = 0.45 + 0.15 * Math.sin(T / 400);
-    const hg = ctx.createRadialGradient(lx, ly, 1, lx, ly, 22);
-    hg.addColorStop(0, 'rgba(150,210,110,0.6)'); hg.addColorStop(1, 'rgba(150,210,110,0)');
-    ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(lx, ly, 22, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    drawOG('日', lx, ly, 22, JADE, 4);
     // the hero: the exact glyph, lit, with its shadow and warm ink-pool — evolving
     const cyc = (T / 2600) % FORMS.length, fi = cyc | 0, seg = cyc - fi;
     const hx = CW * 0.5, hy = groundY - 6, bob = reduced ? 0 : Math.abs(Math.sin(T / 520)) * 3;
@@ -1366,21 +1381,25 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
     ctx.beginPath(); ctx.arc(hx, hy - 34, 74, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     // the evolution flash, right as the form turns over
     if (seg < 0.16) {
-      ctx.save(); ctx.strokeStyle = VERM; ctx.globalAlpha = (1 - seg / 0.16) * 0.6; ctx.lineWidth = 2;
+      ctx.save(); ctx.strokeStyle = ACC; ctx.globalAlpha = (1 - seg / 0.16) * 0.6; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(hx, hy - 42, 20 + seg * 260, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
     ctx.save(); ctx.translate(0, -bob);
     drawOG(FORMS[fi], hx, hy, 96, HERO, 10);                    // brighter & bolder than anything on the sheet
     ctx.restore();
-    // the radicals sit IN the hands, which move with each form, so they read as held
+    // the radicals sit IN the hands, which move with each form — big enough to read as real weapons
     const HAND = [
-      { l: [-15, 6],  r: [17, 8],  s: 24 },   // 人 — one figure, arm to the side
-      { l: [-33, -8], r: [33, -9], s: 25 },   // 大 — arms spread wide
-      { l: [-25, -14],r: [25, -14],s: 25 },   // 夫 — arms raised
-      { l: [-44, -13],r: [44, -12],s: 24 }    // 舞 — plumes in both hands
+      { l: [-20, 4],  r: [24, 6],  s: 38 },   // 人 — one figure, arm to the side
+      { l: [-40, -8], r: [40, -9], s: 40 },   // 大 — arms spread wide
+      { l: [-31, -16],r: [31, -16],s: 40 },   // 夫 — arms raised
+      { l: [-52, -12],r: [52, -11],s: 38 }    // 舞 — plumes in both hands
     ][fi];
-    drawOG('弓', hx + HAND.l[0], hy - bob + HAND.l[1], HAND.s, VERM, 3);   // 弓 in the left hand, as in 引
-    drawOG('戈', hx + HAND.r[0], hy - bob + HAND.r[1], HAND.s + 4, VERM, 3); // 戈 in the right, as in 伐
+    drawOG('弓', hx + HAND.l[0], hy - bob + HAND.l[1], HAND.s, ACC, 7);   // 弓 in the left hand, as in 引 — glows green
+    drawOG('戈', hx + HAND.r[0], hy - bob + HAND.r[1], HAND.s + 6, ACC, 7); // 戈 in the right, as in 伐
+    if (flash > 0) {                                            // the thunder lights the whole sheet
+      ctx.save(); ctx.globalAlpha = Math.max(0, flash) * 0.22;
+      ctx.fillStyle = '#dfe8ff'; ctx.fillRect(0, 0, CW, CH); ctx.restore();
+    }
     // the evolution caption — 人 → 舞, the whole arc named
     ctx.save(); ctx.globalAlpha = 0.9; ctx.fillStyle = 'rgba(242,236,216,0.9)';
     ctx.font = '12px Consolas,ui-monospace,monospace'; ctx.textAlign = 'center';
