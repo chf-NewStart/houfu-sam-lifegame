@@ -36,6 +36,23 @@ If it's rejected, the PWA install, Google Play, and itch.io routes all still sta
 - **Apple Developer Program** membership — **$99/year** (developer.apple.com/programs)
 - ~2–3 hours of setup + Apple's review time (~1–3 days; longer if rejected)
 
+## Quick path — account already active
+You're enrolled (individual account works fine). On your Mac, this is the whole ship:
+```bash
+cd app && npm install && npm run ios      # builds the offline www, syncs, opens Xcode
+```
+1. Xcode → target **App** → **Signing & Capabilities** → select your **Team** (auto-manage signing). Xcode registers the bundle ID `com.lifegameproject.arcade` for you.
+2. Plug in your iPhone, press ▶ — spend ten minutes actually playing (Glyph Run joystick feel is the thing to check).
+3. **Any iOS Device (arm64)** → **Product → Archive** → **Distribute App → App Store Connect**.
+4. appstoreconnect.apple.com → **New App** → fill the listing from the copy below → attach the processed build → **Submit for review**.
+
+**If Guideline 4.2 bites** (the "web portal" objection), the pivot is cheap and this
+repo is ready for it: change `appId`/`appName` in `app/capacitor.config.json` to a
+standalone **字源 Glyph Run** app, point `index.html` → `game/glyphrun.html` in the
+shell (redirect or swap the start page in `sync-www.js`), new icon from the seal
+stamp, resubmit as a single polished game. One focused game with offline play,
+sound, progression and a codex is the strongest possible 4.2 story.
+
 ## Steps
 
 ### 1. Enroll in the Apple Developer Program
@@ -65,7 +82,7 @@ npm run ios        # builds www, syncs, opens Xcode
 - **Name (must be unique!):** e.g. **"Game Life Arcade"** — confirm availability at creation.
 - **Bundle ID:** the one from step 2.
 - Wait ~15–30 min for the build to process, then select it.
-- **Screenshots (required):** upload `screenshots/phone-1…6.png` (already 6.7" / 1290×2796).
+- **Screenshots (required):** upload `screenshots/phone-7-glyphrun.png` + `phone-8-glyphrun-battle.png` FIRST (the marquee), then `phone-1…6.png` (all 6.7" / 1290×2796).
 - **Description / keywords / category** (copy below). Category: **Games** (+ Puzzle / Arcade).
 - **Privacy policy URL:** `https://lifegameproject.com/privacy`
 - **App Privacy label:** the leaderboard/gallery store a **display name + score you
@@ -78,18 +95,28 @@ npm run ios        # builds www, syncs, opens Xcode
 ## Listing copy
 
 **Name (30 char max):** `Game Life Arcade`
-**Subtitle (30 char max):** `Nine hand-coded games`
-**Keywords (100 char):** `game of life,gomoku,sudoku,minesweeper,maze,arcade,puzzle,cellular automata,offline,co-op`
+**Subtitle (30 char max):** `字源 Glyph Run + 9 more games`
+**Keywords (100 char):** `chinese,hanzi,oracle bone,survivor,game of life,gomoku,sudoku,maze,offline,字源`
 **Support URL:** `https://lifegameproject.com`
 **Privacy Policy:** `https://lifegameproject.com/privacy`
 **Category:** Games · Puzzle / Arcade
 
 **Description:**
 ```
-A little arcade of hand-coded browser games — no engines, no ads, no tracking.
-Nine games in one app, most of them playable offline.
+A little arcade of hand-coded games — no engines, no ads, no tracking.
+Ten games in one app, most of them playable offline.
 
-THE GAMES
+字源 GLYPH RUN — the headliner
+You ARE a Chinese character, hunted through four nights of script. Steer and
+your ink fights back with real brush strokes. Evolve 3,000 years to your
+oracle-bone form (人→大→夫→舞 and seven more families); every weapon is a true
+radical worn on your body — become the right form carrying the right radical
+and you spell a real character (牛+宀=牢, 隹+网=羅). Five-element synergies, a
+bamboo-scroll upgrade desk, a carved-seal meta-progression, and a codex where
+every glyph links to its real 3,000-year history. A survivors-style arcade
+game that quietly teaches oracle-bone etymology.
+
+THE OTHER GAMES
 • Game of Life — draw cells, watch them evolve, and turn the living grid into
   music. Sandbox, leaderboard challenges, and a Music Box sequencer.
 • Gomoku — five-in-a-row against a minimax AI, AI-vs-AI, or a friend online.

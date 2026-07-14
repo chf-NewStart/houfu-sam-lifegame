@@ -15,6 +15,7 @@ const COPY = [
   // files
   'index.html',
   'life.html',
+  'wip.html',
   'privacy.html',
   'manifest.json',
   'icon-192.png',
