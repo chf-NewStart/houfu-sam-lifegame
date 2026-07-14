@@ -267,7 +267,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b30</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b31</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -1099,7 +1099,10 @@ function drawOraclePath(ctx, g, cx, cy, s, color){
   ctx.translate(cx, cy);
   const k = s/100;
   ctx.scale(k, k); ctx.translate(-50, -50);
-  ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = (arguments.length > 6 && arguments[6] ? arguments[6] : 8)/Math.max(0.2, k);
+  ctx.fillStyle = color; ctx.shadowColor = color;
+  /* shadow blur ignores the transform scale, so size it from the drawn glyph —
+     the old 8/k formula ballooned into a card-filling haze at portrait sizes */
+  ctx.shadowBlur = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : Math.max(3, Math.min(14, s*0.2));
   ctx.fill(g._P, 'evenodd');
   ctx.restore();
   return true;
