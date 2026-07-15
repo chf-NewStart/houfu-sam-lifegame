@@ -309,7 +309,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b58</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b59</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -1330,12 +1330,21 @@ function drawOraclePath(ctx, g, cx, cy, s, color){
 /* tapered strokes — pressure at the heel, a flying tip. Every hit in the
    game is a brush touching paper, so the fx are drawn as real strokes.  */
 function brushLine(ctx, x0, y0, x1, y1, w){
+  /* stroked segments with round caps, thick at the heel and thinning toward
+     the tip — the taper of a real stroke WITHOUT a filled wedge, so it can
+     never read as a little triangle */
   const dx = x1-x0, dy = y1-y0, L = Math.hypot(dx,dy)||1, nx = -dy/L, ny = dx/L;
-  ctx.beginPath();
-  ctx.moveTo(x0+nx*w*0.5, y0+ny*w*0.5);
-  ctx.quadraticCurveTo((x0+x1)/2+nx*w*0.72, (y0+y1)/2+ny*w*0.72, x1, y1);
-  ctx.quadraticCurveTo((x0+x1)/2-nx*w*0.72, (y0+y1)/2-ny*w*0.72, x0-nx*w*0.5, y0-ny*w*0.5);
-  ctx.closePath(); ctx.fill();
+  const cx = (x0+x1)/2 + nx*w*0.6, cy = (y0+y1)/2 + ny*w*0.6;      // the stroke keeps its slight bow
+  const pt = (u)=>[(1-u)*(1-u)*x0 + 2*(1-u)*u*cx + u*u*x1,
+                   (1-u)*(1-u)*y0 + 2*(1-u)*u*cy + u*u*y1];
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const N = 4;
+  for(let i=0; i<N; i++){
+    const [ax, ay] = pt(i/N), [bx, by] = pt((i+1)/N);
+    ctx.lineWidth = Math.max(1.3, w*(1 - 0.72*(i+0.5)/N));         // pressure at the heel, a lighter tip
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  }
+  ctx.restore();
 }
 function brushArc(ctx, x, y, r, a0, a1, w){
   const N = 12;
