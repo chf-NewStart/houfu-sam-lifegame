@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dilemma Lab // houfu.xyz</title>
+  <link rel="icon" type="image/png" href="/gameicon.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Consolas, 'Courier New', monospace; background: #080808; color: #ccc; min-height: 100vh; padding: 20px 16px 60px; }
+    html, body, button, a, input, select, label { touch-action: manipulation; }
+    body{-webkit-tap-highlight-color:transparent;}
+    canvas { image-rendering: pixelated; }
+
+    .pg-header { max-width: 960px; margin: 0 auto 16px; }
+    .pg-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .pg-title { color: #1db954; font-size: 1.4rem; text-transform: uppercase; letter-spacing: -1px; }
+    .pg-sub   { color: #666; font-size: 0.72rem; margin-top: 3px; line-height: 1.6; }
+    .pg-back  { font-size: 0.72rem; color: #1db954; text-decoration: none; margin-top: 6px; display: inline-block; }
+    .pg-back:hover { text-decoration: underline; }
+    .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; transition: background 0.1s; flex-shrink: 0; }
+    .lang-btn:hover { background: rgba(29,185,84,0.1); }
+
+    .wrap { max-width: 960px; margin: 0 auto; }
+    .pcard { background: #111; border: 1px solid #1c1c1c; padding: 12px 14px; margin-bottom: 10px; }
+    .pcard-title { color: #1db954; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 9px; padding-bottom: 5px; border-bottom: 1px solid #1a1a1a; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .pcard-title .hint { color:#555; text-transform:none; letter-spacing:0; font-size:0.66rem; }
+
+    /* payoff matrix */
+    .pay-wrap { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .pay-note { flex:1; min-width: 230px; color:#999; font-size:0.74rem; line-height:1.75; }
+    .pay-note b.c { color:#1db954; } .pay-note b.d { color:#f44336; }
+    table.pay { border-collapse: collapse; font-size:0.7rem; }
+    table.pay td, table.pay th { border:1px solid #222; padding:7px 9px; text-align:center; font-weight:normal; }
+    table.pay th { color:#666; }
+    table.pay td.cc { color:#1db954; } table.pay td.dd { color:#f44336; }
+    table.pay td.mx { color:#e8b04a; }
+
+    /* layout: builder | field */
+    .cols { display:flex; gap:10px; align-items:flex-start; }
+    .col-build { flex: 1.25; min-width:0; }
+    .col-field { flex: 1; min-width:0; }
+    @media (max-width: 760px){ .cols { flex-direction:column; } .col-build,.col-field{ width:100%; } }
+
+    /* rule builder */
+    .strat-name-row { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+    .strat-name-row input { flex:1; min-width:0; background:#0a0a0a; border:1px solid #232323; color:#1db954; font-family:inherit; font-size:0.8rem; padding:6px 8px; text-transform:uppercase; letter-spacing:1px; }
+    .strat-name-row input:focus { outline:none; border-color:#1db954; }
+    .rule-row { display:flex; align-items:center; gap:5px; margin-bottom:5px; flex-wrap:wrap; background:#0d0d0d; border:1px solid #1c1c1c; padding:6px 7px; }
+    .rule-row .rnum { color:#444; font-size:0.66rem; width:14px; flex-shrink:0; }
+    .rule-row select, .rule-row input[type=number] { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.68rem; padding:4px 4px; max-width:100%; }
+    .rule-row select:focus, .rule-row input:focus { outline:none; border-color:#1db954; }
+    .rule-row input[type=number]{ width:52px; }
+    .rule-row .arrow { color:#555; font-size:0.7rem; }
+    .rule-row select.act { color:#e8b04a; }
+    .rule-row .rbtns { margin-left:auto; display:flex; gap:3px; }
+    .rbtn { background:transparent; border:1px solid #262626; color:#666; font-family:inherit; font-size:0.66rem; width:20px; height:20px; cursor:pointer; line-height:1; }
+    .rbtn:hover { border-color:#1db954; color:#1db954; }
+    .rbtn.del:hover { border-color:#f44336; color:#f44336; }
+    .rule-row.otherwise { border-style:dashed; }
+    .rule-row.otherwise .fixed { color:#888; font-size:0.68rem; }
+    .add-rule { width:100%; background:#0d0d0d; border:1px dashed #2a2a2a; color:#777; font-family:inherit; font-size:0.7rem; padding:6px; cursor:pointer; margin-bottom:8px; }
+    .add-rule:hover { border-color:#1db954; color:#1db954; }
+    .recipe-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:0.68rem; color:#666; }
+    .recipe-row select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.68rem; padding:4px; }
+    .build-note { color:#555; font-size:0.64rem; margin-top:8px; line-height:1.6; }
+
+    /* field roster */
+    .field-row { display:flex; gap:9px; align-items:center; padding:5px 4px; border-bottom:1px solid #161616; }
+    .field-row:last-child { border-bottom:none; }
+    .field-row canvas { width:28px; height:28px; flex-shrink:0; }
+    .field-name { font-size:0.7rem; width:118px; flex-shrink:0; }
+    .field-bio { color:#666; font-size:0.64rem; line-height:1.45; }
+
+    /* settings strip */
+    .set-strip { display:flex; gap:18px; align-items:center; flex-wrap:wrap; font-size:0.7rem; color:#888; }
+    .set-strip select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.7rem; padding:4px; }
+    .set-strip input[type=range]{ width:110px; accent-color:#f44336; vertical-align:middle; }
+    .set-strip .noise-val { color:#f44336; width:34px; display:inline-block; }
+
+    /* tabs */
+    .tab-row { display:flex; gap:4px; margin:14px 0 10px; }
+    .tab { flex:1; background:#0d0d0d; border:1px solid #1e1e1e; color:#555; font-family:inherit; font-size:0.72rem; padding:8px 6px; cursor:pointer; text-align:center; text-transform:uppercase; letter-spacing:1px; transition:all 0.1s; }
+    .tab:hover { border-color:#888; color:#aaa; }
+    .tab.sel { border-color:#1db954; color:#1db954; background:rgba(29,185,84,0.06); }
+    .tabpanel { display:none; } .tabpanel.sel { display:block; }
+
+    .big-btn { background:transparent; border:1px solid #1db954; color:#1db954; font-family:inherit; font-size:0.8rem; padding:9px 22px; cursor:pointer; text-transform:uppercase; letter-spacing:2px; transition:all 0.1s; }
+    .big-btn:hover { background:rgba(29,185,84,0.12); }
+    .big-btn:disabled { border-color:#333; color:#333; cursor:default; }
+    .sm-btn { background:transparent; border:1px solid #2a2a2a; color:#999; font-family:inherit; font-size:0.68rem; padding:5px 12px; cursor:pointer; transition:all 0.1s; }
+    .sm-btn:hover { border-color:#1db954; color:#1db954; }
+    .sm-btn.sel { border-color:#1db954; color:#1db954; background:rgba(29,185,84,0.06); }
+
+    /* leaderboard */
+    .lb-row { display:flex; align-items:center; gap:8px; padding:4px 6px; border-bottom:1px solid #141414; cursor:pointer; }
+    .lb-row:hover { background:#141414; }
+    .lb-row.me { background:rgba(29,185,84,0.07); }
+    .lb-row .rank { color:#555; font-size:0.68rem; width:22px; flex-shrink:0; }
+    .lb-row canvas { width:26px; height:26px; flex-shrink:0; }
+    .lb-row .nm { font-size:0.7rem; width:150px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .lb-row .barbox { flex:1; height:15px; background:#0a0a0a; border:1px solid #1a1a1a; position:relative; min-width:60px; }
+    .lb-row .bar { height:100%; width:0; transition:width 0.7s cubic-bezier(.2,.7,.3,1); }
+    .lb-row .sc { color:#e8b04a; font-size:0.72rem; width:44px; text-align:right; flex-shrink:0; }
+    .lb-note { color:#777; font-size:0.7rem; margin-top:10px; line-height:1.7; }
+    .lb-note .gold { color:#e8b04a; }
+    .breakdown { margin-top:10px; border-top:1px solid #1a1a1a; padding-top:8px; display:none; }
+    .bd-title { color:#888; font-size:0.68rem; margin-bottom:6px; }
+    .bd-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:5px; }
+    .bd-cell { display:flex; align-items:center; gap:6px; background:#0d0d0d; border:1px solid #1a1a1a; padding:4px 6px; font-size:0.66rem; }
+    .bd-cell canvas { width:18px; height:18px; }
+    .bd-cell .s { margin-left:auto; color:#e8b04a; }
+    .bd-cell .w { color:#1db954; cursor:pointer; text-decoration:underline; }
+
+    /* match stage */
+    .match-picks { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; font-size:0.72rem; color:#666; }
+    .match-picks select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.72rem; padding:5px; }
+    .stage { display:flex; align-items:center; justify-content:center; gap:14px; margin:10px 0 14px; flex-wrap:wrap; }
+    .fighter { text-align:center; width:150px; }
+    .fighter canvas { width:96px; height:96px; }
+    .fighter .fname { font-size:0.7rem; margin-top:4px; height: 2em; overflow:hidden; }
+    .fighter .fscore { font-size:1.25rem; color:#e8b04a; margin-top:2px; }
+    .vs-box { text-align:center; width:170px; }
+    .vs-round { color:#555; font-size:0.68rem; margin-bottom:6px; }
+    .moves { display:flex; justify-content:center; gap:12px; align-items:center; }
+    .mv { width:44px; height:44px; border:1px solid #222; display:flex; align-items:center; justify-content:center; font-size:1.35rem; background:#0a0a0a; }
+    .mv.C { color:#1db954; border-color:#1db954; background:rgba(29,185,84,0.08); }
+    .mv.D { color:#f44336; border-color:#f44336; background:rgba(244,67,54,0.08); }
+    .payline { color:#888; font-size:0.72rem; margin-top:7px; min-height:1.2em; }
+    .strips { max-width:640px; margin:0 auto; }
+    .strip-label { color:#555; font-size:0.64rem; margin:6px 0 2px; }
+    .strips canvas { width:100%; display:block; background:#0a0a0a; border:1px solid #1a1a1a; }
+    .match-result { display:none; text-align:center; padding:9px; margin:12px auto 0; max-width:640px; font-size:0.8rem; letter-spacing:1px; border:2px solid #555; color:#ccc; }
+    .match-ctl { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+
+    /* evolution */
+    .evo-ctl { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+    .evo-gen { color:#e8b04a; font-size:0.78rem; margin-left:auto; }
+    .evo-roster { display:flex; gap:4px 10px; flex-wrap:wrap; margin-bottom:10px; font-size:0.66rem; color:#999; }
+    .evo-roster label { display:flex; align-items:center; gap:4px; cursor:pointer; }
+    .evo-roster input { accent-color:#1db954; }
+    #evoChart { width:100%; background:#0a0a0a; border:1px solid #1a1a1a; display:block; }
+    .evo-pop { display:flex; gap:3px; flex-wrap:wrap; margin-top:9px; min-height:24px; }
+    .evo-pop canvas { width:22px; height:22px; }
+    .evo-log { color:#666; font-size:0.66rem; margin-top:9px; line-height:1.7; max-height:100px; overflow-y:auto; }
+    .evo-log .gg { color:#e8b04a; }
+    .legend { display:flex; gap:5px 12px; flex-wrap:wrap; margin-top:8px; font-size:0.64rem; color:#888; }
+    .legend .sw { display:inline-block; width:9px; height:9px; margin-right:4px; }
+
+    .foot-note { color:#4a4a4a; font-size:0.66rem; max-width:960px; margin:26px auto 0; line-height:1.7; }
+    .foot-note a { color:#6f9079; }
+  </style>
+</head>
+<body>
+
+<div class="pg-header">
+  <div class="pg-header-row">
+    <div>
+      <div class="pg-title" data-en="Dilemma Lab" data-zh="困境实验室">Dilemma Lab</div>
+      <div class="pg-sub" data-en="&gt;_ the iterated prisoner's dilemma · build a strategy · run the Axelrod tournament · let evolution judge" data-zh="&gt;_ 迭代囚徒困境 · 拼出你的策略 · 重跑阿克塞尔罗德锦标赛 · 交给演化来裁决">&gt;_ the iterated prisoner's dilemma · build a strategy · run the Axelrod tournament · let evolution judge</div>
+      <a class="pg-back" href="/" data-en="← back to arcade" data-zh="← 返回街机厅">← back to arcade</a>
+    </div>
+    <button class="lang-btn" id="langBtn">中文</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- rules of the game -->
+  <div class="pcard">
+    <div class="pcard-title"><span data-en="// the game" data-zh="// 游戏规则">// the game</span></div>
+    <div class="pay-wrap">
+      <div class="pay-note"
+        data-en="Each round, two players secretly choose to <b class='c'>COOPERATE</b> or <b class='d'>DEFECT</b>. Cooperating builds mutual profit; defecting steals a bigger cut — but only if the other player stays naive. Played once, defection rules. Played over and over against the same opponent, something much more interesting happens."
+        data-zh="每一回合，两名玩家秘密选择<b class='c'>〈合作〉</b>或<b class='d'>〈背叛〉</b>。合作创造共同收益；背叛能偷到更大的一份——但前提是对方还傻傻合作。只玩一次，背叛必胜。可要是和同一个对手反复交手，事情就有趣得多了。">
+        Each round, two players secretly choose to <b class="c">COOPERATE</b> or <b class="d">DEFECT</b>. Cooperating builds mutual profit; defecting steals a bigger cut — but only if the other player stays naive. Played once, defection rules. Played over and over against the same opponent, something much more interesting happens.</div>
+      <table class="pay">
+        <tr><th></th><th data-en="they C" data-zh="对方合作">they C</th><th data-en="they D" data-zh="对方背叛">they D</th></tr>
+        <tr><th data-en="you C" data-zh="你合作">you C</th><td class="cc">+3 / +3</td><td>+0 / <span style="color:#e8b04a">+5</span></td></tr>
+        <tr><th data-en="you D" data-zh="你背叛">you D</th><td class="mx">+5 / +0</td><td class="dd">+1 / +1</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- strategy builder -->
+    <div class="col-build">
+      <div class="pcard">
+        <div class="pcard-title">
+          <span data-en="// your strategy" data-zh="// 你的策略">// your strategy</span>
+          <span class="hint" data-en="rules check top-down · first match acts" data-zh="规则自上而下检查 · 命中即执行">rules check top-down · first match acts</span>
+        </div>
+        <div class="strat-name-row">
+          <canvas id="myAvatar" width="32" height="32" style="width:32px;height:32px;"></canvas>
+          <input id="stratName" maxlength="18" spellcheck="false">
+        </div>
+        <div id="ruleList"></div>
+        <button class="add-rule" id="addRule" data-en="+ add rule" data-zh="+ 添加规则">+ add rule</button>
+        <div class="recipe-row">
+          <span data-en="load a classic recipe:" data-zh="加载经典配方：">load a classic recipe:</span>
+          <select id="recipeSel">
+            <option value="" data-en="— pick —" data-zh="— 选择 —">— pick —</option>
+            <option value="tft" data-en="Tit for Tat" data-zh="一报还一报">Tit for Tat</option>
+            <option value="grudger" data-en="Grudger" data-zh="记仇者">Grudger</option>
+            <option value="tf2t" data-en="Tit for Two Tats" data-zh="事不过二">Tit for Two Tats</option>
+            <option value="sneaky" data-en="Sneaky (Joss)" data-zh="背刺者（乔斯）">Sneaky (Joss)</option>
+            <option value="majority" data-en="Majority Rule" data-zh="多数裁决">Majority Rule</option>
+          </select>
+        </div>
+        <div class="build-note" data-en="&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser." data-zh="&gt; 第一回合还没有历史：「模仿对方上一步」视为合作，「反着来」视为背叛。你的策略会保存在本浏览器里。">&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser.</div>
+      </div>
+    </div>
+
+    <!-- the field -->
+    <div class="col-field">
+      <div class="pcard">
+        <div class="pcard-title"><span data-en="// meet the field" data-zh="// 出场选手">// meet the field</span></div>
+        <div id="fieldList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- global settings -->
+  <div class="pcard">
+    <div class="set-strip">
+      <label><span data-en="rounds per match" data-zh="每场回合数">rounds per match</span>
+        <select id="roundsSel"><option>50</option><option>100</option><option selected>200</option></select>
+      </label>
+      <label><span data-en="mistake noise" data-zh="失误率（手抖）">mistake noise</span>
+        <input type="range" id="noiseRange" min="0" max="20" value="0" step="1">
+        <span class="noise-val" id="noiseVal">0%</span>
+      </label>
+      <span style="color:#555" data-en="noise = a move sometimes flips by accident. Try 5% and watch grudges become death spirals." data-zh="失误 = 动作偶尔会手滑翻转。试试 5%，看记仇如何滚成互咬的死循环。">noise = a move sometimes flips by accident. Try 5% and watch grudges become death spirals.</span>
+    </div>
+  </div>
+
+  <!-- mode tabs -->
+  <div class="tab-row">
+    <button class="tab sel" data-tab="tourney" data-en="tournament" data-zh="锦标赛">tournament</button>
+    <button class="tab" data-tab="match" data-en="watch a match" data-zh="观赛">watch a match</button>
+    <button class="tab" data-tab="evo" data-en="evolution" data-zh="演化">evolution</button>
+  </div>
+
+  <!-- TOURNAMENT -->
+  <div class="tabpanel sel" id="panel-tourney">
+    <div class="pcard">
+      <div class="pcard-title">
+        <span data-en="// round-robin — everyone plays everyone (self included, like Axelrod 1980)" data-zh="// 循环赛 —— 人人对战人人（含镜像自战，同 1980 年原版）">// round-robin — everyone plays everyone (self included, like Axelrod 1980)</span>
+      </div>
+      <div style="text-align:center;margin:6px 0 12px;">
+        <button class="big-btn" id="runTourney" data-en="▶ run tournament" data-zh="▶ 开赛">▶ run tournament</button>
+      </div>
+      <div id="lbBox"></div>
+      <div class="lb-note" id="lbNote"></div>
+      <div class="breakdown" id="bdBox">
+        <div class="bd-title" id="bdTitle"></div>
+        <div class="bd-grid" id="bdGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MATCH -->
+  <div class="tabpanel" id="panel-match">
+    <div class="pcard">
+      <div class="pcard-title"><span data-en="// single match — watch it play out move by move" data-zh="// 单场对决 —— 一步步看它如何展开">// single match — watch it play out move by move</span></div>
+      <div class="match-picks">
+        <select id="pickA"></select>
+        <span data-en="vs" data-zh="对阵">vs</span>
+        <select id="pickB"></select>
+        <span style="margin-left:8px" data-en="speed" data-zh="速度">speed</span>
+        <button class="sm-btn spd sel" data-spd="150">1×</button>
+        <button class="sm-btn spd" data-spd="40">4×</button>
+        <button class="sm-btn spd" data-spd="8">16×</button>
+        <button class="sm-btn spd" data-spd="0" data-en="instant" data-zh="瞬间">instant</button>
+      </div>
+      <div class="stage">
+        <div class="fighter"><canvas id="favA" width="96" height="96"></canvas><div class="fname" id="fnameA"></div><div class="fscore" id="fscoreA">0</div></div>
+        <div class="vs-box">
+          <div class="vs-round" id="vsRound">— / —</div>
+          <div class="moves"><div class="mv" id="mvA">·</div><div class="mv" id="mvB">·</div></div>
+          <div class="payline" id="payline"></div>
+        </div>
+        <div class="fighter"><canvas id="favB" width="96" height="96"></canvas><div class="fname" id="fnameB"></div><div class="fscore" id="fscoreB">0</div></div>
+      </div>
+      <div class="strips">
+        <div class="strip-label" id="stripLblA"></div>
+        <canvas id="stripA" height="10"></canvas>
+        <div class="strip-label" id="stripLblB"></div>
+        <canvas id="stripB" height="10"></canvas>
+      </div>
+      <div class="match-result" id="matchResult"></div>
+      <div class="match-ctl">
+        <button class="big-btn" id="runMatch" data-en="▶ fight" data-zh="▶ 开打">▶ fight</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVOLUTION -->
+  <div class="tabpanel" id="panel-evo">
+    <div class="pcard">
+      <div class="pcard-title"><span data-en="// evolution — each generation, the bottom 4 die and the top 4 reproduce" data-zh="// 演化 —— 每一代，末位 4 名淘汰，前 4 名繁殖">// evolution — each generation, the bottom 4 die and the top 4 reproduce</span></div>
+      <div class="evo-roster" id="evoRoster"></div>
+      <div class="evo-ctl">
+        <button class="sm-btn" id="evoStep" data-en="step ▸" data-zh="单步 ▸">step ▸</button>
+        <button class="sm-btn" id="evoPlay" data-en="▶ play" data-zh="▶ 播放">▶ play</button>
+        <button class="sm-btn" id="evoReset" data-en="reset" data-zh="重置">reset</button>
+        <span class="evo-gen" id="evoGen"></span>
+      </div>
+      <canvas id="evoChart" width="920" height="200"></canvas>
+      <div class="legend" id="evoLegend"></div>
+      <div class="evo-pop" id="evoPop"></div>
+      <div class="evo-log" id="evoLog"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot-note"
+  data-en="&gt; Inspired by Robert Axelrod's 1980 computer tournaments — where the simplest entry, Anatol Rapoport's TIT FOR TAT, beat every clever program — and by Nicky Case's “The Evolution of Trust”. The lesson survives noise, evolution and forty years: be nice, retaliate, forgive, don't be envious."
+  data-zh="&gt; 灵感来自罗伯特·阿克塞尔罗德 1980 年的计算机锦标赛——最简单的参赛作品、阿纳托尔·拉波波特的「一报还一报」击败了所有聪明程序——也来自 Nicky Case 的《信任的进化》。这条经验穿过噪音、演化与四十年依然成立：善良、回击、宽恕、不嫉妒。">
+  &gt; Inspired by Robert Axelrod's 1980 computer tournaments — where the simplest entry, Anatol Rapoport's TIT FOR TAT, beat every clever program — and by Nicky Case's “The Evolution of Trust”. The lesson survives noise, evolution and forty years: be nice, retaliate, forgive, don't be envious.</div>
+
+<script>
+/*ENGINE-START*/
+// ───────────────────────── engine (DOM-free) ─────────────────────────
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+
+var PAY = { CC:[3,3], CD:[0,5], DC:[5,0], DD:[1,1] };
+
+// rule interpreter for DIY strategies
+function condTest(rule, r, my, opp, rng){
+  var n = rule.n|0, p = rule.p|0;
+  switch(rule.c){
+    case 'first':        return r===0;
+    case 'opp_last_d':   return r>0 && opp[r-1]==='D';
+    case 'opp_last_c':   return r>0 && opp[r-1]==='C';
+    case 'opp_streak_d': if(r<n||n<1) return false; for(var i=r-n;i<r;i++){ if(opp[i]!=='D') return false; } return true;
+    case 'opp_streak_c': if(r<n||n<1) return false; for(var j=r-n;j<r;j++){ if(opp[j]!=='C') return false; } return true;
+    case 'opp_ever_d':   return opp.indexOf('D')!==-1;
+    case 'opp_rate_gt':  if(r===0) return false; var d=0; for(var k=0;k<r;k++){ if(opp[k]==='D') d++; } return (d/r*100)>p;
+    case 'my_last_d':    return r>0 && my[r-1]==='D';
+    case 'round_gt':     return (r+1)>n;
+    case 'every_n':      return n>0 && ((r+1)%n===0);
+    case 'chance':       return rng()*100 < p;
+    case 'always':       return true;
+  }
+  return false;
+}
+function actMove(a, r, my, opp, rng){
+  switch(a){
+    case 'coop':     return 'C';
+    case 'defect':   return 'D';
+    case 'copy':     return r>0 ? opp[r-1] : 'C';
+    case 'opposite': return r>0 ? (opp[r-1]==='C'?'D':'C') : 'D';
+    case 'random':   return rng()<0.5?'C':'D';
+  }
+  return 'C';
+}
+function compileRules(rules){
+  var rs = rules.slice();
+  return function(){ return { move:function(r,my,opp,rng){
+    for(var i=0;i<rs.length;i++){ if(condTest(rs[i],r,my,opp,rng)) return actMove(rs[i].a,r,my,opp,rng); }
+    return 'C';
+  }};};
+}
+
+// classic strategy factories — fresh instance per match
+var MAKERS = {
+  tft:   function(){ return { move:function(r,my,opp){ return r===0?'C':opp[r-1]; } }; },
+  allc:  function(){ return { move:function(){ return 'C'; } }; },
+  alld:  function(){ return { move:function(){ return 'D'; } }; },
+  grudger:function(){ var mad=false; return { move:function(r,my,opp){ if(r>0&&opp[r-1]==='D') mad=true; return mad?'D':'C'; } }; },
+  tf2t:  function(){ return { move:function(r,my,opp){ return (r>=2&&opp[r-1]==='D'&&opp[r-2]==='D')?'D':'C'; } }; },
+  pavlov:function(){ return { move:function(r,my,opp){ if(r===0) return 'C'; var pay=PAY[my[r-1]+opp[r-1]][0]; return pay>=3?my[r-1]:(my[r-1]==='C'?'D':'C'); } }; },
+  joss:  function(){ return { move:function(r,my,opp,rng){ var m=r===0?'C':opp[r-1]; if(m==='C'&&rng()<0.1) m='D'; return m; } }; },
+  tester:function(){ var tftMode=null; return { move:function(r,my,opp){
+      if(r===0) return 'D';
+      if(r===1||r===2) return 'C';
+      if(tftMode===null) tftMode = (opp[1]==='D'||opp[2]==='D');
+      return tftMode ? opp[r-1] : (r%2===1?'D':'C');
+    } }; },
+  gtft:  function(){ return { move:function(r,my,opp,rng){ if(r===0) return 'C'; if(opp[r-1]==='C') return 'C'; return rng()<0.33?'C':'D'; } }; },
+  rand:  function(){ return { move:function(r,my,opp,rng){ return rng()<0.5?'C':'D'; } }; }
+};
+
+// one match. noise = % chance an executed move flips. Histories record executed moves.
+function playMatch(makeA, makeB, rounds, noisePct, rng){
+  var A=makeA(), B=makeB(), ha=[], hb=[], sa=0, sb=0, firstDef=null;
+  var nz=noisePct/100, aSawD=false, bSawD=false;
+  for(var r=0;r<rounds;r++){
+    var ia=A.move(r,ha,hb,rng), ib=B.move(r,hb,ha,rng);
+    // "mean" = INTENDING to defect while the opponent has never (even accidentally) defected
+    if(firstDef===null){
+      var aU=(ia==='D'&&!aSawD), bU=(ib==='D'&&!bSawD);
+      if(aU&&bU) firstDef='both'; else if(aU) firstDef='A'; else if(bU) firstDef='B';
+    }
+    var ma=ia, mb=ib;
+    if(nz>0){ if(rng()<nz) ma=(ma==='C'?'D':'C'); if(rng()<nz) mb=(mb==='C'?'D':'C'); }
+    ha.push(ma); hb.push(mb);
+    if(mb==='D') aSawD=true; if(ma==='D') bSawD=true;
+    var pay=PAY[ma+mb]; sa+=pay[0]; sb+=pay[1];
+  }
+  return { sa:sa, sb:sb, ha:ha, hb:hb, firstDef:firstDef };
+}
+
+// round-robin incl. self-play. entries: [{id, make}]. Returns avg score matrix + niceness.
+function runTournament(entries, rounds, noisePct, reps, seed){
+  var n=entries.length, sum=[], defFirst={};
+  for(var i=0;i<n;i++){ sum.push(new Array(n).fill(0)); defFirst[entries[i].id]=false; }
+  for(var a=0;a<n;a++) for(var b=a;b<n;b++){
+    for(var rep=0;rep<reps;rep++){
+      var rng=mulberry32((seed + a*7919 + b*104729 + rep*1299709)>>>0);
+      var m=playMatch(entries[a].make, entries[b].make, rounds, noisePct, rng);
+      if(a===b){ sum[a][a]+=(m.sa+m.sb)/2; }
+      else { sum[a][b]+=m.sa; sum[b][a]+=m.sb; }
+      if(a!==b){
+        if(m.firstDef==='A'||m.firstDef==='both') defFirst[entries[a].id]=true;
+        if(m.firstDef==='B'||m.firstDef==='both') defFirst[entries[b].id]=true;
+      }
+    }
+  }
+  var board=[];
+  for(var x=0;x<n;x++){
+    var row=[], tot=0;
+    for(var y=0;y<n;y++){ var avg=sum[x][y]/reps; row.push(avg); tot+=avg; }
+    board.push({ id:entries[x].id, avg:tot/n, vs:row, nice:!defFirst[entries[x].id] });
+  }
+  board.sort(function(p,q){ return q.avg-p.avg; });
+  return board;
+}
+
+// evolution: population of type-ids. bottom `cull` replaced by clones of top `cull`.
+function evoGeneration(pop, makers, rounds, noisePct, seed, cull){
+  var types=[]; for(var t in makers) if(makers.hasOwnProperty(t)) types.push(t);
+  var present={}; pop.forEach(function(p){ present[p]=true; });
+  var pres=types.filter(function(t){ return present[t]; });
+  var score={}; // score[a][b] = avg per-match score of type a vs type b
+  for(var i=0;i<pres.length;i++){ score[pres[i]]={}; }
+  for(var a=0;a<pres.length;a++) for(var b=a;b<pres.length;b++){
+    var rng=mulberry32((seed + a*337 + b*7331)>>>0);
+    var m=playMatch(makers[pres[a]], makers[pres[b]], rounds, noisePct, rng);
+    score[pres[a]][pres[b]]=m.sa; score[pres[b]][pres[a]]=m.sb;
+  }
+  // fitness: average score vs every OTHER member of the population
+  var jr=mulberry32((seed^0x9e3779b9)>>>0);
+  var agents=pop.map(function(type,idx){
+    var tot=0;
+    for(var k=0;k<pop.length;k++){ if(k===idx) continue; tot+=score[type][pop[k]]; }
+    return { type:type, fit: tot/(pop.length-1) + jr()*0.001 };
+  });
+  agents.sort(function(p,q){ return q.fit-p.fit; });
+  var next=agents.slice(0,pop.length-cull).map(function(ag){ return ag.type; });
+  for(var c=0;c<cull;c++) next.push(agents[c%agents.length].type);
+  return next;
+}
+/*ENGINE-END*/
+
+// ───────────────────────── strategies metadata ─────────────────────────
+var STRATS = [
+  { id:'you',    color:'#1db954', av:{skin:'#3fbf6f', hat:'headband', eyes:'normal', mouth:'smile'},
+    name:{en:'YOU', zh:'你'}, bio:{en:'Built from your rule cards on the left.', zh:'由左侧你的规则卡构成。'} },
+  { id:'tft',    color:'#46c8ff', av:{skin:'#5aa8d8', hat:'cap', eyes:'normal', mouth:'smile'},
+    name:{en:'Tit for Tat', zh:'一报还一报'}, bio:{en:'Starts nice, then copies your last move. Won Axelrod 1980.', zh:'首回合合作，之后复制你上一步。1980 年锦标赛冠军。'} },
+  { id:'allc',   color:'#7ee081', av:{skin:'#e8d9a0', hat:'halo', eyes:'normal', mouth:'smile'},
+    name:{en:'Always Cooperate', zh:'永远合作'}, bio:{en:'Cooperates no matter what. A saint — and a doormat.', zh:'无论如何都合作。是圣人，也是受气包。'} },
+  { id:'alld',   color:'#f44336', av:{skin:'#c25048', hat:'horns', eyes:'angry', mouth:'frown'},
+    name:{en:'Always Defect', zh:'永远背叛'}, bio:{en:'Defects every round. Trusts no one.', zh:'每回合都背叛，谁也不信。'} },
+  { id:'grudger', color:'#9a86c8', av:{skin:'#8f86ad', hat:'hood', eyes:'angry', mouth:'flat'},
+    name:{en:'Grudger', zh:'记仇者'}, bio:{en:'Cooperates until you defect once — then never forgives.', zh:'一直合作；但你背叛一次，它记仇到底。'} },
+  { id:'tf2t',   color:'#36c5d0', av:{skin:'#63b8be', hat:'beanie', eyes:'normal', mouth:'smile'},
+    name:{en:'Tit for Two Tats', zh:'事不过二'}, bio:{en:'Only retaliates after two defections in a row.', zh:'连续被背叛两次才还手，更有耐心。'} },
+  { id:'pavlov', color:'#e8b04a', av:{skin:'#d8b06a', hat:'grad', eyes:'normal', mouth:'flat'},
+    name:{en:'Pavlov', zh:'巴甫洛夫'}, bio:{en:'Win-stay, lose-shift: repeats any move that paid well.', zh:'赢守输变：上回合得分高就重复原动作。'} },
+  { id:'joss',   color:'#d977c8', av:{skin:'#c583b8', hat:'none', eyes:'shades', mouth:'smirk'},
+    name:{en:'Joss', zh:'乔斯'}, bio:{en:'Tit for Tat with a sneaky 10% surprise defection.', zh:'一报还一报，但暗藏 10% 概率背刺。'} },
+  { id:'tester', color:'#c8a15a', av:{skin:'#bfa06a', hat:'detective', eyes:'normal', mouth:'flat'},
+    name:{en:'Tester', zh:'试探者'}, bio:{en:'Defects first to probe you. If you hit back, it behaves.', zh:'先背叛试探你；你敢还手它就老实。'} },
+  { id:'gtft',   color:'#ff9e80', av:{skin:'#e09a80', hat:'flower', eyes:'normal', mouth:'smile'},
+    name:{en:'Generous Tit for Tat', zh:'宽容版一报还一报'}, bio:{en:'Tit for Tat, but forgives a third of the time.', zh:'一报还一报，但三分之一的时候选择原谅。'} },
+  { id:'rand',   color:'#b0b0b0', av:{skin:'#a8a8a8', hat:'jester', eyes:'normal', mouth:'zigzag'},
+    name:{en:'Random', zh:'随机'}, bio:{en:'Flips a coin every round.', zh:'每回合抛硬币。'} }
+];
+var SBY = {}; STRATS.forEach(function(s){ SBY[s.id]=s; });
+
+// ───────────────────────── pixel avatars ─────────────────────────
+function shade(hex, f){
+  var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  r=Math.max(0,Math.min(255,Math.round(r*f))); g=Math.max(0,Math.min(255,Math.round(g*f))); b=Math.max(0,Math.min(255,Math.round(b*f)));
+  return 'rgb('+r+','+g+','+b+')';
+}
+function paintAvatar(cv, spec, accent){
+  var g=cv.getContext('2d'), S=cv.width/16;
+  g.clearRect(0,0,cv.width,cv.height);
+  function px(x,y,w,h,c){ g.fillStyle=c; g.fillRect(x*S,y*S,w*S,h*S); }
+  var skin=spec.skin, dark=shade(skin,0.72);
+  // head
+  px(5,4,6,1,skin); px(4,5,8,8,skin); px(5,13,6,1,skin);
+  px(4,12,8,1,dark); px(5,13,6,1,dark);
+  // eyes
+  if(spec.eyes==='shades'){ px(4,7,8,1,'#141414'); px(5,8,2,1,'#141414'); px(9,8,2,1,'#141414'); }
+  else {
+    px(6,8,1,2,'#101010'); px(9,8,1,2,'#101010');
+    if(spec.eyes==='angry'){ px(5,7,2,1,'#101010'); px(9,7,2,1,'#101010'); }
+  }
+  // mouth
+  var mc='#101010';
+  if(spec.mouth==='smile'){ px(6,11,1,1,mc); px(7,12,2,1,mc); px(9,11,1,1,mc); }
+  else if(spec.mouth==='frown'){ px(6,12,1,1,mc); px(7,11,2,1,mc); px(9,12,1,1,mc); }
+  else if(spec.mouth==='flat'){ px(6,11,4,1,mc); }
+  else if(spec.mouth==='smirk'){ px(7,11,3,1,mc); px(9,10,1,1,mc); }
+  else if(spec.mouth==='zigzag'){ px(6,11,1,1,mc); px(7,12,1,1,mc); px(8,11,1,1,mc); px(9,12,1,1,mc); }
+  // hats
+  var hc=accent;
+  switch(spec.hat){
+    case 'cap':      px(5,2,6,1,hc); px(4,3,8,1,hc); px(9,4,5,1,shade(hc,0.8)); break;
+    case 'halo':     px(5,1,6,1,'#ffe08a'); px(4,1,1,1,'#b3944a'); px(11,1,1,1,'#b3944a'); break;
+    case 'horns':    px(3,1,1,3,'#e2523e'); px(4,3,1,1,'#e2523e'); px(12,1,1,3,'#e2523e'); px(11,3,1,1,'#e2523e'); break;
+    case 'hood':     px(4,1,8,3,shade(hc,0.7)); px(3,3,1,4,shade(hc,0.7)); px(12,3,1,4,shade(hc,0.7)); break;
+    case 'beanie':   px(4,1,8,3,hc); px(4,3,8,1,shade(hc,1.3)); px(7,0,2,1,'#eee'); break;
+    case 'grad':     px(3,2,10,1,'#141414'); px(5,3,6,1,'#141414'); px(13,2,1,3,'#e8b04a'); break;
+    case 'detective':px(5,1,6,2,'#7a5c38'); px(3,3,10,1,'#7a5c38'); px(5,2,6,1,'#4e3a22'); break;
+    case 'flower':   px(12,1,1,1,'#ff8ab0'); px(10,1,1,1,'#ff8ab0'); px(11,0,1,1,'#ff8ab0'); px(11,2,1,1,'#ff8ab0'); px(11,1,1,1,'#ffe08a'); break;
+    case 'jester':   px(3,0,2,3,'#e2523e'); px(7,0,2,3,'#e8b04a'); px(11,0,2,3,'#36c5d0'); px(3,0,1,1,'#eee'); px(8,0,1,1,'#eee'); px(12,0,1,1,'#eee'); break;
+    case 'headband': px(4,3,8,1,hc); px(12,4,2,1,hc); px(13,5,1,1,hc); break;
+  }
+}
+function avatarFor(id, cv){ var s=SBY[id]; paintAvatar(cv, s.av, s.color); }
+
+// ───────────────────────── i18n ─────────────────────────
+var lang='en';
+var TXT = {
+  pick:{en:'— pick —',zh:'— 选择 —'},
+  if_:{en:'IF',zh:'如果'}, then_:{en:'→',zh:'→'}, otherwise:{en:'OTHERWISE',zh:'否则'},
+  conds:{
+    first:{en:'it is the first round',zh:'是第一回合'},
+    opp_last_d:{en:'they defected last round',zh:'对方上回合背叛'},
+    opp_last_c:{en:'they cooperated last round',zh:'对方上回合合作'},
+    opp_streak_d:{en:'they defected N rounds in a row',zh:'对方连续背叛 N 回合'},
+    opp_streak_c:{en:'they cooperated N rounds in a row',zh:'对方连续合作 N 回合'},
+    opp_ever_d:{en:'they have EVER defected',zh:'对方背叛过（任何一次）'},
+    opp_rate_gt:{en:'their defection rate &gt; P%',zh:'对方背叛率 &gt; P%'},
+    my_last_d:{en:'I defected last round',zh:'我上回合背叛'},
+    round_gt:{en:'round number &gt; N',zh:'回合数 &gt; N'},
+    every_n:{en:'every Nth round',zh:'每第 N 回合'},
+    chance:{en:'random P% chance',zh:'随机 P% 概率'}
+  },
+  acts:{
+    coop:{en:'COOPERATE',zh:'合作'}, defect:{en:'DEFECT',zh:'背叛'},
+    copy:{en:'COPY their last move',zh:'模仿对方上一步'},
+    opposite:{en:'do the OPPOSITE of their last',zh:'和对方上一步反着来'},
+    random:{en:'RANDOM',zh:'随机'}
+  },
+  avgScore:{en:'avg score / match',zh:'场均得分'},
+  niceNote:{en:'<span class="gold">★</span> {n} of the top {k} are “nice” — they never defect first. Being nice pays.',
+            zh:'<span class="gold">★</span> 前 {k} 名中有 {n} 个是「善良」策略——从不率先背叛。善良是划算的。'},
+  noiseNote:{en:'With {p}% noise, unforgiving strategies bleed points in accidental feuds. Forgiveness starts to matter.',
+             zh:'在 {p}% 失误率下，不懂原谅的策略会在误伤引发的世仇里失血。宽恕开始变得重要。'},
+  clickRow:{en:'click a row for the head-to-head breakdown',zh:'点击任意一行查看逐个对阵明细'},
+  bdTitle:{en:'{name} — score per opponent (them / max {mx})',zh:'{name} —— 对每个对手的得分（满分 {mx}）'},
+  watch:{en:'watch',zh:'观赛'},
+  round:{en:'round',zh:'回合'},
+  winner:{en:'{name} WINS  {a} : {b}',zh:'{name} 获胜  {a} : {b}'},
+  tie:{en:'TIE  {a} : {b}',zh:'平局  {a} : {b}'},
+  coopRate:{en:'cooperation: {ca}% vs {cb}%',zh:'合作率：{ca}% 对 {cb}%'},
+  bothLose:{en:'(both would have earned more by cooperating)',zh:'（若能合作，两边本可赚得更多）'},
+  gen:{en:'generation {g} · population {n}',zh:'第 {g} 代 · 种群 {n}'},
+  extinct:{en:'gen {g} — {name} went extinct',zh:'第 {g} 代 —— {name} 灭绝'},
+  domin:{en:'gen {g} — {name} has taken over the whole population',zh:'第 {g} 代 —— {name} 占领了整个种群'},
+  pause:{en:'❚❚ pause',zh:'❚❚ 暂停'}, play:{en:'▶ play',zh:'▶ 播放'},
+  myDefault:{en:'MY STRATEGY',zh:'我的策略'}
+};
+function L(obj){ return obj[lang]; }
+function fmt(t, map){ var s=L(t); for(var k in map){ s=s.split('{'+k+'}').join(map[k]); } return s; }
+function sname(id){ return id==='you' ? (playerName||L(TXT.myDefault)) : L(SBY[id].name); }
+
+// ───────────────────────── player strategy state ─────────────────────────
+var RECIPES = {
+  tft:      [{c:'first',a:'coop'},{c:'always',a:'copy'}],
+  grudger:  [{c:'opp_ever_d',a:'defect'},{c:'always',a:'coop'}],
+  tf2t:     [{c:'opp_streak_d',n:2,a:'defect'},{c:'always',a:'coop'}],
+  sneaky:   [{c:'first',a:'coop'},{c:'chance',p:10,a:'defect'},{c:'always',a:'copy'}],
+  majority: [{c:'opp_rate_gt',p:50,a:'defect'},{c:'always',a:'coop'}]
+};
+var playerRules = [{c:'first',a:'coop'},{c:'always',a:'copy'}];
+var playerName = '';
+try{
+  var saved=JSON.parse(localStorage.getItem('dilemma_player_v1')||'null');
+  if(saved && saved.rules && saved.rules.length){ playerRules=saved.rules; playerName=saved.name||''; }
+}catch(e){}
+function savePlayer(){ try{ localStorage.setItem('dilemma_player_v1', JSON.stringify({rules:playerRules,name:playerName})); }catch(e){} }
+function playerMaker(){ return compileRules(playerRules)(); }
+function makerFor(id){ return id==='you' ? function(){ return playerMaker(); } : MAKERS[id]; }
+
+// ───────────────────────── rule builder UI ─────────────────────────
+var CONDS=['first','opp_last_d','opp_last_c','opp_streak_d','opp_streak_c','opp_ever_d','opp_rate_gt','my_last_d','round_gt','every_n','chance'];
+var ACTS=['coop','defect','copy','opposite','random'];
+var needsN={opp_streak_d:1,opp_streak_c:1,round_gt:1,every_n:1}, needsP={opp_rate_gt:1,chance:1};
+
+function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
+
+function renderRules(){
+  var box=document.getElementById('ruleList'); box.innerHTML='';
+  // ensure a trailing 'always' rule exists
+  if(!playerRules.length || playerRules[playerRules.length-1].c!=='always') playerRules.push({c:'always',a:'coop'});
+  playerRules.forEach(function(rule, i){
+    var last = i===playerRules.length-1;
+    var row=el('div','rule-row'+(last?' otherwise':''));
+    row.appendChild(el('span','rnum',(i+1)+'.'));
+    if(last){
+      row.appendChild(el('span','fixed',L(TXT.otherwise)));
+    } else {
+      row.appendChild(el('span','arrow',L(TXT.if_)));
+      var cs=document.createElement('select');
+      CONDS.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.innerHTML=L(TXT.conds[c]); if(c===rule.c) o.selected=true; cs.appendChild(o); });
+      cs.onchange=function(){ rule.c=cs.value; delete rule.n; delete rule.p;
+        if(needsN[rule.c]) rule.n=2; if(needsP[rule.c]) rule.p=50; savePlayer(); renderRules(); };
+      row.appendChild(cs);
+      if(needsN[rule.c]||needsP[rule.c]){
+        var num=document.createElement('input'); num.type='number'; num.min=1; num.max=needsP[rule.c]?100:50;
+        num.value = needsN[rule.c] ? (rule.n||2) : (rule.p||50);
+        num.onchange=function(){ var v=Math.max(1,Math.min(needsP[rule.c]?100:50, num.value|0));
+          if(needsN[rule.c]) rule.n=v; else rule.p=v; num.value=v; savePlayer(); };
+        row.appendChild(num);
+      }
+    }
+    row.appendChild(el('span','arrow','→'));
+    var as=document.createElement('select'); as.className='act';
+    ACTS.forEach(function(a){ var o=document.createElement('option'); o.value=a; o.innerHTML=L(TXT.acts[a]); if(a===rule.a) o.selected=true; as.appendChild(o); });
+    as.onchange=function(){ rule.a=as.value; savePlayer(); };
+    row.appendChild(as);
+    if(!last){
+      var btns=el('div','rbtns');
+      var up=el('button','rbtn','▲'); up.onclick=function(){ if(i>0){ playerRules.splice(i-1,0,playerRules.splice(i,1)[0]); savePlayer(); renderRules(); } };
+      var dn=el('button','rbtn','▼'); dn.onclick=function(){ if(i<playerRules.length-2){ playerRules.splice(i+1,0,playerRules.splice(i,1)[0]); savePlayer(); renderRules(); } };
+      var dl=el('button','rbtn del','×'); dl.onclick=function(){ playerRules.splice(i,1); savePlayer(); renderRules(); };
+      btns.appendChild(up); btns.appendChild(dn); btns.appendChild(dl);
+      row.appendChild(btns);
+    }
+    box.appendChild(row);
+  });
+}
+document.getElementById('addRule').onclick=function(){
+  playerRules.splice(playerRules.length-1,0,{c:'opp_last_d',a:'defect'}); savePlayer(); renderRules();
+};
+document.getElementById('recipeSel').onchange=function(){
+  var v=this.value; if(!v) return;
+  playerRules = RECIPES[v].map(function(r){ var o={}; for(var k in r) o[k]=r[k]; return o; });
+  savePlayer(); renderRules(); this.value='';
+};
+var nameInput=document.getElementById('stratName');
+nameInput.oninput=function(){ playerName=nameInput.value; savePlayer(); refreshNames(); };
+
+// ───────────────────────── field roster ─────────────────────────
+function renderField(){
+  var box=document.getElementById('fieldList'); box.innerHTML='';
+  STRATS.forEach(function(s){
+    if(s.id==='you') return;
+    var row=el('div','field-row');
+    var cv=document.createElement('canvas'); cv.width=32; cv.height=32; avatarFor(s.id,cv);
+    row.appendChild(cv);
+    row.appendChild(el('div','field-name','<span style="color:'+s.color+'">'+L(s.name)+'</span>'));
+    row.appendChild(el('div','field-bio',L(s.bio)));
+    box.appendChild(row);
+  });
+}
+
+// ───────────────────────── settings ─────────────────────────
+function getRounds(){ return document.getElementById('roundsSel').value|0; }
+function getNoise(){ return document.getElementById('noiseRange').value|0; }
+document.getElementById('noiseRange').oninput=function(){
+  document.getElementById('noiseVal').textContent=this.value+'%';
+};
+
+// ───────────────────────── tabs ─────────────────────────
+var tabs=document.querySelectorAll('.tab');
+tabs.forEach(function(t){ t.onclick=function(){ selectTab(t.dataset.tab); }; });
+function selectTab(id){
+  tabs.forEach(function(t){ t.classList.toggle('sel', t.dataset.tab===id); });
+  document.querySelectorAll('.tabpanel').forEach(function(p){ p.classList.toggle('sel', p.id==='panel-'+id); });
+}
+
+// ───────────────────────── tournament ─────────────────────────
+var lastBoard=null;
+document.getElementById('runTourney').onclick=function(){
+  var rounds=getRounds(), noise=getNoise();
+  var entries=STRATS.map(function(s){ return { id:s.id, make: makerFor(s.id) }; });
+  var reps = noise>0 ? 5 : 3;
+  var seed = (Math.random()*0xffffffff)>>>0;
+  lastBoard = runTournament(entries, rounds, noise, reps, seed);
+  renderBoard();
+};
+function renderBoard(){
+  var box=document.getElementById('lbBox'); box.innerHTML='';
+  document.getElementById('bdBox').style.display='none';
+  if(!lastBoard){ document.getElementById('lbNote').innerHTML=''; return; }
+  var rounds=getRounds(), mx=rounds*5, top=lastBoard[0].avg;
+  lastBoard.forEach(function(row, i){
+    var s=SBY[row.id];
+    var r=el('div','lb-row'+(row.id==='you'?' me':''));
+    r.appendChild(el('span','rank', (i+1)<10?'0'+(i+1):''+(i+1)));
+    var cv=document.createElement('canvas'); cv.width=32; cv.height=32; avatarFor(row.id,cv); r.appendChild(cv);
+    r.appendChild(el('span','nm','<span style="color:'+s.color+'">'+sname(row.id)+(row.nice?' <span title="never defects first" style="color:#e8b04a">★</span>':'')+'</span>'));
+    var bb=el('div','barbox'); var bar=el('div','bar'); bar.style.background=s.color; bb.appendChild(bar); r.appendChild(bb);
+    r.appendChild(el('span','sc', ''+Math.round(row.avg)));
+    r.onclick=function(){ renderBreakdown(row); };
+    box.appendChild(r);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ bar.style.width=(row.avg/top*100)+'%'; }); });
+  });
+  // insight note
+  var K=5, nice=0;
+  for(var i=0;i<K&&i<lastBoard.length;i++){ if(lastBoard[i].nice) nice++; }
+  var note = fmt(TXT.niceNote,{n:nice,k:K});
+  var nz=getNoise(); if(nz>0) note += '<br>'+fmt(TXT.noiseNote,{p:nz});
+  note += '<br><span style="color:#555">'+L(TXT.clickRow)+' · '+L(TXT.avgScore)+' (max '+mx+')</span>';
+  document.getElementById('lbNote').innerHTML=note;
+}
+function renderBreakdown(row){
+  var bd=document.getElementById('bdBox'); bd.style.display='block';
+  document.getElementById('bdTitle').innerHTML=fmt(TXT.bdTitle,{name:sname(row.id), mx:getRounds()*5});
+  var grid=document.getElementById('bdGrid'); grid.innerHTML='';
+  lastBoard.forEach(function(opp){
+    var idx=lastBoard.indexOf(opp);
+    var vsScore=row.vs[ STRATS.map(function(s){return s.id;}).indexOf(opp.id) ];
+    var cell=el('div','bd-cell');
+    var cv=document.createElement('canvas'); cv.width=32; cv.height=32; avatarFor(opp.id,cv); cell.appendChild(cv);
+    cell.appendChild(el('span','', sname(opp.id)));
+    cell.appendChild(el('span','s', ''+Math.round(vsScore)));
+    var w=el('span','w', L(TXT.watch));
+    w.onclick=function(ev){ ev.stopPropagation(); document.getElementById('pickA').value=row.id; document.getElementById('pickB').value=opp.id; selectTab('match'); startMatch(); };
+    cell.appendChild(w);
+    grid.appendChild(cell);
+  });
+  bd.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ───────────────────────── match viewer ─────────────────────────
+var speed=150, matchTimer=null, matchData=null, matchPos=0;
+document.querySelectorAll('.spd').forEach(function(b){
+  b.onclick=function(){ document.querySelectorAll('.spd').forEach(function(x){x.classList.remove('sel');}); b.classList.add('sel'); speed=b.dataset.spd|0;
+    if(matchData && matchTimer){ clearInterval(matchTimer); matchTimer=null; tickLoop(); } };
+});
+function fillPickers(){
+  ['pickA','pickB'].forEach(function(pid){
+    var sel=document.getElementById(pid), cur=sel.value; sel.innerHTML='';
+    STRATS.forEach(function(s){ var o=document.createElement('option'); o.value=s.id; o.textContent=sname(s.id); sel.appendChild(o); });
+    if(cur) sel.value=cur;
+  });
+}
+document.getElementById('runMatch').onclick=startMatch;
+function startMatch(){
+  if(matchTimer){ clearInterval(matchTimer); matchTimer=null; }
+  var a=document.getElementById('pickA').value||'you', b=document.getElementById('pickB').value||'tft';
+  var rounds=getRounds(), noise=getNoise();
+  var rng=mulberry32((Math.random()*0xffffffff)>>>0);
+  matchData={ a:a, b:b, m:playMatch(makerFor(a), makerFor(b), rounds, noise, rng), rounds:rounds };
+  matchPos=0;
+  avatarFor(a, document.getElementById('favA')); avatarFor(b, document.getElementById('favB'));
+  document.getElementById('fnameA').innerHTML='<span style="color:'+SBY[a].color+'">'+sname(a)+'</span>';
+  document.getElementById('fnameB').innerHTML='<span style="color:'+SBY[b].color+'">'+sname(b)+'</span>';
+  document.getElementById('matchResult').style.display='none';
+  document.getElementById('stripLblA').textContent=sname(a);
+  document.getElementById('stripLblB').textContent=sname(b);
+  sizeStrips(rounds);
+  if(speed===0){ matchPos=rounds; drawMatchState(); finishMatch(); }
+  else tickLoop();
+}
+function tickLoop(){
+  if(!matchData) return;
+  if(speed===0){ matchPos=matchData.rounds; drawMatchState(); finishMatch(); return; }
+  matchTimer=setInterval(function(){
+    matchPos++;
+    drawMatchState();
+    if(matchPos>=matchData.rounds){ clearInterval(matchTimer); matchTimer=null; finishMatch(); }
+  }, speed);
+}
+var stripCellW=6, stripPerRow=100;
+function sizeStrips(rounds){
+  ['stripA','stripB'].forEach(function(id){
+    var cv=document.getElementById(id);
+    var wCss=cv.parentElement.clientWidth||640;
+    stripPerRow=Math.max(20,Math.floor(wCss/stripCellW));
+    var rows=Math.ceil(rounds/stripPerRow);
+    cv.width=stripPerRow*stripCellW; cv.height=rows*stripCellW;
+    cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+  });
+  drawMatchState();
+}
+function drawStrip(cvId, hist, upto){
+  var cv=document.getElementById(cvId), g=cv.getContext('2d');
+  g.fillStyle='#0a0a0a'; g.fillRect(0,0,cv.width,cv.height);
+  for(var i=0;i<upto;i++){
+    var x=(i%stripPerRow)*stripCellW, y=Math.floor(i/stripPerRow)*stripCellW;
+    g.fillStyle = hist[i]==='C' ? '#1db954' : '#f44336';
+    g.fillRect(x+1,y+1,stripCellW-2,stripCellW-2);
+  }
+}
+function drawMatchState(){
+  if(!matchData) return;
+  var m=matchData.m, p=matchPos;
+  var sa=0, sb=0;
+  for(var i=0;i<p;i++){ var pay=PAY[m.ha[i]+m.hb[i]]; sa+=pay[0]; sb+=pay[1]; }
+  document.getElementById('fscoreA').textContent=sa;
+  document.getElementById('fscoreB').textContent=sb;
+  document.getElementById('vsRound').textContent=L(TXT.round)+' '+p+' / '+matchData.rounds;
+  var mvA=document.getElementById('mvA'), mvB=document.getElementById('mvB');
+  if(p>0){
+    var la=m.ha[p-1], lb=m.hb[p-1];
+    mvA.className='mv '+la; mvA.textContent= la==='C'?'✓':'✗';
+    mvB.className='mv '+lb; mvB.textContent= lb==='C'?'✓':'✗';
+    var py=PAY[la+lb];
+    document.getElementById('payline').textContent='+'+py[0]+' / +'+py[1];
+  } else {
+    mvA.className='mv'; mvA.textContent='·'; mvB.className='mv'; mvB.textContent='·';
+    document.getElementById('payline').textContent='';
+  }
+  drawStrip('stripA', m.ha, p); drawStrip('stripB', m.hb, p);
+}
+function finishMatch(){
+  var m=matchData.m, a=matchData.a, b=matchData.b;
+  var box=document.getElementById('matchResult'); box.style.display='block';
+  var ca=Math.round(m.ha.filter(function(x){return x==='C';}).length/m.ha.length*100);
+  var cb=Math.round(m.hb.filter(function(x){return x==='C';}).length/m.hb.length*100);
+  var txt;
+  if(m.sa===m.sb) txt=fmt(TXT.tie,{a:m.sa,b:m.sb});
+  else { var wid = m.sa>m.sb?a:b; txt=fmt(TXT.winner,{name:sname(wid), a:Math.max(m.sa,m.sb), b:Math.min(m.sa,m.sb)}); }
+  txt+='<br><span style="font-size:0.68rem;color:#888">'+fmt(TXT.coopRate,{ca:ca,cb:cb});
+  var maxPossible=matchData.rounds*3;
+  if(m.sa<maxPossible*0.6 && m.sb<maxPossible*0.6) txt+=' · '+L(TXT.bothLose);
+  txt+='</span>';
+  box.innerHTML=txt;
+  var wcol = m.sa===m.sb ? '#888' : SBY[m.sa>m.sb?a:b].color;
+  box.style.borderColor=wcol; box.style.color='#ccc';
+}
+
+// ───────────────────────── evolution ─────────────────────────
+var POPN=24, CULL=4;
+var evoPop=null, evoGenN=0, evoHist=[], evoTimer=null, evoLogSeen={};
+function evoChecked(){
+  var out=[]; document.querySelectorAll('#evoRoster input:checked').forEach(function(c){ out.push(c.value); });
+  return out;
+}
+function renderEvoRoster(){
+  var box=document.getElementById('evoRoster'); box.innerHTML='';
+  STRATS.forEach(function(s){
+    var lb=document.createElement('label');
+    var ck=document.createElement('input'); ck.type='checkbox'; ck.value=s.id;
+    ck.checked = ['you','tft','allc','alld','grudger','gtft','rand'].indexOf(s.id)!==-1;
+    ck.onchange=evoReset;
+    lb.appendChild(ck);
+    var sp=document.createElement('span'); sp.style.color=s.color; sp.textContent=sname(s.id); lb.appendChild(sp);
+    box.appendChild(lb);
+  });
+}
+function evoReset(){
+  if(evoTimer){ clearInterval(evoTimer); evoTimer=null; document.getElementById('evoPlay').innerHTML=L(TXT.play); }
+  var types=evoChecked(); if(!types.length){ types=['tft','alld']; }
+  evoPop=[]; evoGenN=0; evoHist=[]; evoLogSeen={};
+  for(var i=0;i<POPN;i++) evoPop.push(types[i%types.length]);
+  evoPop.sort();
+  document.getElementById('evoLog').innerHTML='';
+  snapshotEvo(); drawEvo();
+}
+function snapshotEvo(){
+  var counts={}; evoPop.forEach(function(t){ counts[t]=(counts[t]||0)+1; });
+  evoHist.push(counts);
+}
+function evoStepOnce(){
+  var makers={}; var uniq={};
+  evoPop.forEach(function(t){ uniq[t]=1; });
+  for(var t in uniq) makers[t]=makerFor(t);
+  var rounds=Math.min(getRounds(),100), noise=getNoise();
+  evoPop = evoGeneration(evoPop, makers, rounds, noise, (Math.random()*0xffffffff)>>>0, CULL);
+  evoPop.sort();
+  evoGenN++;
+  snapshotEvo();
+  // log extinctions / domination
+  var prev=evoHist[evoHist.length-2], cur=evoHist[evoHist.length-1];
+  for(var p in prev){ if(!cur[p] && !evoLogSeen['x'+p]){ evoLogSeen['x'+p]=1; evoLogLine(fmt(TXT.extinct,{g:evoGenN,name:sname(p)})); } }
+  for(var c in cur){ if(cur[c]===POPN && !evoLogSeen['d'+c]){ evoLogSeen['d'+c]=1; evoLogLine('<span class="gg">'+fmt(TXT.domin,{g:evoGenN,name:sname(c)})+'</span>'); } }
+  drawEvo();
+}
+function evoLogLine(html){
+  var lg=document.getElementById('evoLog');
+  var d=document.createElement('div'); d.innerHTML='&gt; '+html; lg.appendChild(d); lg.scrollTop=lg.scrollHeight;
+}
+function drawEvo(){
+  document.getElementById('evoGen').innerHTML=fmt(TXT.gen,{g:evoGenN,n:POPN});
+  // population chips
+  var pb=document.getElementById('evoPop'); pb.innerHTML='';
+  evoPop.forEach(function(t){
+    var cv=document.createElement('canvas'); cv.width=32; cv.height=32; avatarFor(t,cv); cv.title=sname(t); pb.appendChild(cv);
+  });
+  // stacked area chart
+  var cv=document.getElementById('evoChart'), g=cv.getContext('2d');
+  g.fillStyle='#0a0a0a'; g.fillRect(0,0,cv.width,cv.height);
+  var H=cv.height, W=cv.width, n=evoHist.length;
+  if(n<1) return;
+  var typeOrder=STRATS.map(function(s){return s.id;}).filter(function(t){ return evoHist.some(function(h){return h[t];}); });
+  var xw = n===1 ? W : W/(n-1);
+  for(var gi=0; gi<n; gi++){
+    var x = n===1 ? 0 : gi*xw, w=Math.max(1,Math.ceil(xw)+1);
+    var y=0;
+    typeOrder.forEach(function(t){
+      var c=evoHist[gi][t]||0; if(!c) return;
+      var h=c/POPN*H;
+      g.fillStyle=SBY[t].color; g.fillRect(x, y, w, h+0.5);
+      y+=h;
+    });
+  }
+  // legend
+  var lg=document.getElementById('evoLegend'); lg.innerHTML='';
+  typeOrder.forEach(function(t){
+    var cur=evoHist[n-1][t]||0;
+    var sp=el('span','', '<span class="sw" style="background:'+SBY[t].color+'"></span>'+sname(t)+' × '+cur);
+    lg.appendChild(sp);
+  });
+}
+document.getElementById('evoStep').onclick=function(){ if(!evoPop) evoReset(); evoStepOnce(); };
+document.getElementById('evoPlay').onclick=function(){
+  if(!evoPop) evoReset();
+  if(evoTimer){ clearInterval(evoTimer); evoTimer=null; this.innerHTML=L(TXT.play); }
+  else { var self=this; self.innerHTML=L(TXT.pause); evoTimer=setInterval(function(){ evoStepOnce(); if(evoGenN>=200){ clearInterval(evoTimer); evoTimer=null; self.innerHTML=L(TXT.play);} }, 220); }
+};
+document.getElementById('evoReset').onclick=evoReset;
+
+// ───────────────────────── language ─────────────────────────
+function applyLangAttrs(){
+  document.querySelectorAll('[data-en]').forEach(function(n){
+    var v=n.getAttribute('data-'+lang); if(v!=null) n.innerHTML=v;
+  });
+  document.getElementById('langBtn').textContent = lang==='en' ? '中文' : 'EN';
+  document.documentElement.lang = lang==='en'?'en':'zh';
+}
+function refreshNames(){
+  fillPickers(); renderField();
+  if(lastBoard) renderBoard();
+  drawEvoSafe();
+}
+function drawEvoSafe(){ if(evoPop) drawEvo(); }
+document.getElementById('langBtn').onclick=function(){
+  lang = lang==='en' ? 'zh' : 'en';
+  try{ localStorage.setItem('arcade_lang', lang); }catch(e){}
+  applyLangAttrs(); renderRules(); renderEvoRosterKeepChecks(); refreshNames();
+  nameInput.placeholder=L(TXT.myDefault);
+};
+function renderEvoRosterKeepChecks(){
+  var checked={}; document.querySelectorAll('#evoRoster input').forEach(function(c){ checked[c.value]=c.checked; });
+  renderEvoRoster();
+  document.querySelectorAll('#evoRoster input').forEach(function(c){ if(c.value in checked) c.checked=checked[c.value]; });
+}
+
+// ───────────────────────── init ─────────────────────────
+try{ if(localStorage.getItem('arcade_lang')==='zh') lang='zh'; }catch(e){}
+applyLangAttrs();
+avatarFor('you', document.getElementById('myAvatar'));
+nameInput.value=playerName; nameInput.placeholder=L(TXT.myDefault);
+renderRules(); renderField(); fillPickers();
+document.getElementById('pickA').value='you'; document.getElementById('pickB').value='tft';
+renderEvoRoster(); evoReset();
+window.addEventListener('resize', function(){ if(matchData) sizeStrips(matchData.rounds); });
+</script>
+</body>
+</html>

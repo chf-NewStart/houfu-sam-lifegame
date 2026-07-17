@@ -171,6 +171,9 @@
     box-shadow:0 0 18px -12px rgba(var(--mq),.35);}
   .card.star.glow-gomoku{--mq:232,176,74;--mqwash:.09;}
   .card.star.glow-rope{--mq:54,197,208;}
+  .card.star.glow-dilemma{--mq:224,106,138;--mqwash:.10;}
+  .card.glow-dilemma{transition:box-shadow .3s ease,border-color .3s ease;}
+  .card.glow-dilemma:hover{border-color:#a04a6e;box-shadow:0 0 22px -8px rgba(224,106,138,.5);}
   /* lamp: the marquee throws a soft spotlight cone down the screen (sized to the thumb,
      masked out before the text); hovering brings it to full brightness. */
   .card.star::before{content:'';position:absolute;top:0;left:0;right:0;height:auto;aspect-ratio:440/240;z-index:4;pointer-events:none;
@@ -245,6 +248,24 @@
     <div class="card-footer">
       <span class="card-meta" data-en="JS · canvas · bilingual" data-zh="JS · canvas · 双语">JS · canvas · bilingual</span>
       <a class="play-btn" href="/game/glyphrun.html?v=b57" data-en="→ play" data-zh="→ 游玩">→ play</a>
+    </div>
+  </div>
+
+  <div class="card glow-dilemma star" data-players="1">
+    <div class="ribbon" data-en="1UP · NEW" data-zh="1UP · 新">1UP · NEW</div>
+    <canvas class="card-thumb dl-canvas" role="img" aria-label="Dilemma Lab — two pixel strategies trade cooperation and defection while the tournament bars fill" width="440" height="240"></canvas>
+    <div class="card-icon" style="color:#e06a8a">[C|D]</div>
+    <div class="card-title" data-en="dilemma_lab.exe" data-zh="困境实验室.exe">dilemma_lab.exe</div>
+    <div class="card-desc" data-en="The iterated prisoner's dilemma as an arcade. Snap rule cards into your own strategy, throw it into Axelrod's 1980 tournament against Tit for Tat and friends — then let evolution decide who inherits the earth." data-zh="迭代囚徒困境街机版。用规则卡拼出你自己的策略，投入 1980 年阿克塞尔罗德锦标赛，与「一报还一报」们同场竞技——再让演化决定谁能笑到最后。">The iterated prisoner's dilemma as an arcade. Snap rule cards into your own strategy, throw it into Axelrod's 1980 tournament against Tit for Tat and friends — then let evolution decide who inherits the earth.</div>
+    <div class="card-tags">
+      <span class="tag green" data-en="new" data-zh="新">new</span>
+      <span class="tag" data-en="game theory" data-zh="博弈论">game theory</span>
+      <span class="tag" data-en="DIY strategy" data-zh="自制策略">DIY strategy</span>
+      <span class="tag" data-en="evolution" data-zh="演化">evolution</span>
+    </div>
+    <div class="card-footer">
+      <span class="card-meta" data-en="JS · Axelrod tournament · bilingual" data-zh="JS · 阿克塞尔罗德锦标赛 · 双语">JS · Axelrod tournament · bilingual</span>
+      <a class="play-btn" href="/game/dilemma.html?v=b1" data-en="→ play" data-zh="→ 游玩">→ play</a>
     </div>
   </div>
 
@@ -1434,6 +1455,68 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
   if ('IntersectionObserver' in window) {
     new IntersectionObserver((es) => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0.05 }).observe(card);
   } else start();
+})();
+</script>
+<script>
+/* ── dilemma_lab card: two strategies trade moves, tournament bars fill.
+      One-shot on hover; resting state is the finished still. ── */
+(function(){
+  const cv = document.querySelector('.card.glow-dilemma .dl-canvas');
+  if(!cv) return;
+  const g = cv.getContext('2d');
+  const PAY = { CC:[3,3], CD:[0,5], DC:[5,0], DD:[1,1] };
+  // a little arc: trust, a betrayal, punishment, forgiveness, recovery
+  const SEQ = [['C','C'],['C','C'],['C','D'],['D','D'],['C','C'],['C','C']];
+  const BARS = [['#ff9e80',300],['#46c8ff',282],['#1db954',265],['#f44336',120]];
+
+  function face(x,y,s,skin,hat){
+    const px=(a,b,w,h,c)=>{ g.fillStyle=c; g.fillRect(x+a*s, y+b*s, w*s, h*s); };
+    px(5,4,6,1,skin); px(4,5,8,8,skin); px(5,13,6,1,skin);
+    px(6,8,1,2,'#101010'); px(9,8,1,2,'#101010');
+    if(hat==='horns'){ px(5,7,2,1,'#101010'); px(9,7,2,1,'#101010');           /* angry brows */
+      px(6,12,1,1,'#101010'); px(7,11,2,1,'#101010'); px(9,12,1,1,'#101010');  /* frown */
+      px(3,1,1,3,'#e2523e'); px(4,3,1,1,'#e2523e'); px(12,1,1,3,'#e2523e'); px(11,3,1,1,'#e2523e'); }
+    else { px(6,11,1,1,'#101010'); px(7,12,2,1,'#101010'); px(9,11,1,1,'#101010'); /* smile */
+      px(4,3,8,1,'#0f6f34'); px(12,4,2,1,'#0f6f34'); }                         /* headband */
+  }
+  // t: 0..1 progress of the one-shot
+  function draw(t){
+    g.clearRect(0,0,440,240);
+    g.fillStyle='#0b0d0c'; g.fillRect(0,0,440,240);
+    g.fillStyle='rgba(224,106,138,0.05)'; g.fillRect(0,0,440,54);
+    face(52,44,6,'#3fbf6f','headband');
+    face(292,44,6,'#c25048','horns');
+    const shown = Math.floor(t*(SEQ.length+2));                 // rounds pop in first
+    let sa=0, sb=0;
+    for(let i=0;i<SEQ.length;i++){
+      const y=36+i*24, on=i<shown;
+      if(on){ const p=PAY[SEQ[i][0]+SEQ[i][1]]; sa+=p[0]; sb+=p[1]; }
+      g.fillStyle = !on ? '#151515' : (SEQ[i][0]==='C' ? '#1db954' : '#f44336');
+      g.fillRect(196,y,16,16);
+      g.fillStyle = !on ? '#151515' : (SEQ[i][1]==='C' ? '#1db954' : '#f44336');
+      g.fillRect(228,y,16,16);
+    }
+    g.font='bold 20px Consolas, monospace'; g.textAlign='center';
+    g.fillStyle='#e8b04a'; g.fillText(sa,100,178); g.fillText(sb,340,178);
+    const bt=Math.max(0,Math.min(1,(t-0.55)/0.45));            // bars fill last
+    for(let i=0;i<BARS.length;i++){
+      const y=196+i*11;
+      g.fillStyle='#121212'; g.fillRect(70,y,300,7);
+      g.fillStyle=BARS[i][0]; g.fillRect(70,y,BARS[i][1]*bt,7);
+    }
+  }
+  draw(1);                                                      // resting still = finished scene
+  let raf=null;
+  function play(){
+    if(raf || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t0=performance.now(), DUR=1600;
+    (function step(now){
+      const t=Math.min(1,(now-t0)/DUR);
+      draw(t);
+      raf = t<1 ? requestAnimationFrame(step) : (draw(1), null);
+    })(t0);
+  }
+  cv.closest('.card').addEventListener('mouseenter', play);
 })();
 </script>
 </body>
