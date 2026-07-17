@@ -147,6 +147,41 @@
     .legend { display:flex; gap:5px 12px; flex-wrap:wrap; margin-top:8px; font-size:0.64rem; color:#888; }
     .legend .sw { display:inline-block; width:9px; height:9px; margin-right:4px; }
 
+    /* trust trials */
+    .trial-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:10px; }
+    .trial-progress { color:#e8b04a; font-size:0.7rem; white-space:nowrap; }
+    .trial-deck { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:13px; }
+    .trial-card { background:#0d0d0d; border:1px solid #222; color:#777; font-family:inherit; min-width:0; padding:7px 5px; cursor:pointer; text-align:left; }
+    .trial-card:hover:not(:disabled) { border-color:#777; color:#bbb; }
+    .trial-card.sel { border-color:#e8b04a; color:#e8b04a; background:rgba(232,176,74,0.06); }
+    .trial-card:disabled { color:#333; cursor:not-allowed; }
+    .trial-card .case { display:block; font-size:0.58rem; margin-bottom:4px; }
+    .trial-card .case-name { display:block; font-size:0.66rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .trial-card .medals { display:block; font-size:0.66rem; margin-top:5px; letter-spacing:1px; }
+    .trial-brief { background:#0d0d0d; border-left:2px solid #e8b04a; padding:9px 11px; margin-bottom:12px; }
+    .trial-title { color:#e8b04a; font-size:0.82rem; letter-spacing:1px; margin-bottom:5px; }
+    .trial-copy { color:#999; font-size:0.7rem; line-height:1.65; }
+    .trial-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:7px; }
+    .trial-tag { border:1px solid #282828; color:#777; font-size:0.62rem; padding:3px 6px; }
+    .trial-arena { display:flex; align-items:center; justify-content:center; gap:18px; margin:10px 0; }
+    .trial-agent { width:120px; text-align:center; }
+    .trial-agent canvas { width:64px; height:64px; }
+    .trial-agent .who { font-size:0.68rem; margin-top:3px; min-height:2em; }
+    .trial-agent .trial-score { color:#e8b04a; font-size:1.2rem; }
+    .trial-vs { color:#555; font-size:0.72rem; text-align:center; }
+    .trial-vs b { display:block; color:#888; font-size:1rem; margin-bottom:4px; }
+    .trial-actions { display:flex; justify-content:center; gap:7px; flex-wrap:wrap; margin:9px 0; }
+    #trialStrip { width:100%; max-width:640px; height:52px; margin:8px auto 0; display:none; background:#0a0a0a; border:1px solid #1a1a1a; image-rendering:pixelated; }
+    .trial-verdict { display:none; max-width:640px; margin:9px auto 0; padding:8px 10px; border:1px solid #333; font-size:0.7rem; line-height:1.65; text-align:center; }
+    .trial-verdict.pass { border-color:#e8b04a; color:#e8b04a; background:rgba(232,176,74,0.04); }
+    .trial-verdict.fail { border-color:#f44336; color:#bbb; background:rgba(244,67,54,0.04); }
+    @media (max-width:600px){
+      .trial-deck { grid-template-columns:repeat(5, minmax(52px,1fr)); overflow-x:auto; }
+      .trial-card .case-name { display:none; }
+      .trial-arena { gap:6px; }
+      .trial-agent { width:100px; }
+    }
+
     .foot-note { color:#4a4a4a; font-size:0.66rem; max-width:960px; margin:26px auto 0; line-height:1.7; }
     .foot-note a { color:#6f9079; }
   </style>
@@ -239,6 +274,7 @@
     <button class="tab sel" data-tab="tourney" data-en="tournament" data-zh="锦标赛">tournament</button>
     <button class="tab" data-tab="match" data-en="watch a match" data-zh="观赛">watch a match</button>
     <button class="tab" data-tab="evo" data-en="evolution" data-zh="演化">evolution</button>
+    <button class="tab" data-tab="trials" data-en="trust trials" data-zh="信任试炼">trust trials</button>
   </div>
 
   <!-- TOURNAMENT -->
@@ -310,6 +346,41 @@
       <div class="legend" id="evoLegend"></div>
       <div class="evo-pop" id="evoPop"></div>
       <div class="evo-log" id="evoLog"></div>
+    </div>
+  </div>
+
+  <!-- TRUST TRIALS -->
+  <div class="tabpanel" id="panel-trials">
+    <div class="pcard">
+      <div class="trial-head">
+        <div class="pcard-title" style="flex:1;margin:0;"><span data-en="// trust trials — prove your strategy under pressure" data-zh="// 信任试炼 —— 让你的策略接受压力测试">// trust trials — prove your strategy under pressure</span></div>
+        <div class="trial-progress" id="trialProgress"></div>
+      </div>
+      <div class="trial-deck" id="trialDeck"></div>
+      <div class="trial-brief">
+        <div class="trial-title" id="trialTitle"></div>
+        <div class="trial-copy" id="trialCopy"></div>
+        <div class="trial-tags" id="trialTags"></div>
+      </div>
+      <div class="trial-arena">
+        <div class="trial-agent">
+          <canvas id="trialAvYou" width="64" height="64"></canvas>
+          <div class="who" id="trialNameYou"></div>
+          <div class="trial-score" id="trialScoreYou">—</div>
+        </div>
+        <div class="trial-vs"><b>VS</b><span id="trialGoal"></span></div>
+        <div class="trial-agent">
+          <canvas id="trialAvOpp" width="64" height="64"></canvas>
+          <div class="who" id="trialNameOpp"></div>
+          <div class="trial-score" id="trialScoreOpp">—</div>
+        </div>
+      </div>
+      <div class="trial-actions">
+        <button class="big-btn" id="runTrial" data-en="▶ run trial" data-zh="▶ 开始试炼">▶ run trial</button>
+        <button class="sm-btn" id="editTrial" data-en="edit my strategy ↑" data-zh="修改我的策略 ↑">edit my strategy ↑</button>
+      </div>
+      <canvas id="trialStrip" width="640" height="52"></canvas>
+      <div class="trial-verdict" id="trialVerdict"></div>
     </div>
   </div>
 
@@ -923,6 +994,134 @@ document.getElementById('evoPlay').onclick=function(){
 };
 document.getElementById('evoReset').onclick=evoReset;
 
+// ───────────────────────── trust trials ─────────────────────────
+var TRIALS = [
+  {
+    id:'handshake', opp:'tft', rounds:30, noise:0, seed:1001,
+    title:{en:'01 // THE HANDSHAKE',zh:'01 // 握手'},
+    copy:{en:'Build trust with a mirror-minded rival. One needless betrayal costs the perfect outcome.',zh:'和一位以牙还牙的对手建立信任。一次多余的背叛，就会毁掉完美结局。'},
+    goal:{en:'Both players score at least 85.',zh:'双方都至少获得 85 分。'},
+    hint:{en:'Hint: begin peacefully and answer cooperation with cooperation.',zh:'提示：和平开局，并以合作回应合作。'}
+  },
+  {
+    id:'bully', opp:'alld', rounds:30, noise:0, seed:1002,
+    title:{en:'02 // THE BULLY',zh:'02 // 恶霸'},
+    copy:{en:'A pure defector wants a free lunch. Stay nice for too long and you leave empty-handed.',zh:'一个彻底的背叛者想吃白食。善良太久，你就会空手而归。'},
+    goal:{en:'Score at least 25 points.',zh:'至少获得 25 分。'},
+    hint:{en:'Hint: kindness is not surrender. Retaliate when defection is clear.',zh:'提示：善良不等于投降。确认对方背叛后要回击。'}
+  },
+  {
+    id:'powderkeg', opp:'grudger', rounds:40, noise:0, seed:1003,
+    title:{en:'03 // THE POWDER KEG',zh:'03 // 火药桶'},
+    copy:{en:'Your opponent forgives nothing. Earn together without lighting the fuse.',zh:'你的对手绝不原谅。别点燃导火索，一起把收益带走。'},
+    goal:{en:'Both players score at least 105.',zh:'双方都至少获得 105 分。'},
+    hint:{en:'Hint: some opponents turn one clever trick into a permanent feud.',zh:'提示：对有些对手耍一次聪明，会换来永久的世仇。'}
+  },
+  {
+    id:'static', opp:'tft', rounds:60, noise:8, seed:1004,
+    title:{en:'04 // STATIC STORM',zh:'04 // 静电风暴'},
+    copy:{en:'Eight percent of moves flip by accident. A rigid tit-for-tat can echo one mistake for rounds.',zh:'百分之八的行动会意外翻转。僵硬的一报还一报，可能让一次失误回响很多回合。'},
+    goal:{en:'Reach 305 combined points.',zh:'双方合计达到 305 分。'},
+    hint:{en:'Hint: absorb an isolated betrayal. “Tit for Two Tats” is built for this weather.',zh:'提示：容忍一次孤立的背叛。「事不过二」正适合这种天气。'}
+  },
+  {
+    id:'joss', opp:'joss', rounds:60, noise:0, seed:1007,
+    title:{en:'05 // THE SMILING KNIFE',zh:'05 // 笑里藏刀'},
+    copy:{en:'Joss mostly mirrors you, then slips in surprise defections. Prosper — but do not fall more than 45 points behind.',zh:'乔斯大多模仿你，却会突然背刺。既要共同获利，也不能落后超过 45 分。'},
+    goal:{en:'Reach 300 combined points and lose by no more than 45.',zh:'双方合计达到 300 分，且落后不超过 45 分。'},
+    hint:{en:'Hint: punish patterns, not single accidents. Patience can outperform paranoia.',zh:'提示：惩罚模式，而不是单次意外。耐心往往胜过多疑。'}
+  }
+];
+var trialIndex=0, trialState={};
+try{ trialState=JSON.parse(localStorage.getItem('dilemma_trials_v1')||'{}')||{}; }catch(e){ trialState={}; }
+
+function thresholdMedals(value, levels){
+  var n=0; for(var i=0;i<levels.length;i++){ if(value>=levels[i]) n=i+1; } return n;
+}
+function scoreTrial(i, m){
+  if(i===0) return thresholdMedals(Math.min(m.sa,m.sb),[85,88,90]);
+  if(i===1) return thresholdMedals(m.sa,[25,28,29]);
+  if(i===2) return thresholdMedals(Math.min(m.sa,m.sb),[105,115,120]);
+  if(i===3) return thresholdMedals(m.sa+m.sb,[305,325,340]);
+  if(i===4){ if(m.sb-m.sa>45) return 0; return thresholdMedals(m.sa+m.sb,[300,325,340]); }
+  return 0;
+}
+function trialUnlocked(i){ return i===0 || (trialState[TRIALS[i-1].id]||0)>0; }
+function trialMedalText(n){ return (n?new Array(n+1).join('★'):'')+new Array(4-n).join('·'); }
+function saveTrials(){ try{ localStorage.setItem('dilemma_trials_v1',JSON.stringify(trialState)); }catch(e){} }
+
+function renderTrialDeck(){
+  var deck=document.getElementById('trialDeck'); deck.innerHTML='';
+  var total=0; TRIALS.forEach(function(t){ total+=trialState[t.id]||0; });
+  document.getElementById('trialProgress').textContent=(lang==='en'?'MEDALS ':'勋章 ')+total+' / '+(TRIALS.length*3);
+  TRIALS.forEach(function(t,i){
+    var unlocked=trialUnlocked(i), b=el('button','trial-card'+(i===trialIndex?' sel':''));
+    b.disabled=!unlocked;
+    b.appendChild(el('span','case',unlocked?((lang==='en'?'CASE ':'关卡 ')+'0'+(i+1)):(lang==='en'?'LOCKED':'未解锁')));
+    b.appendChild(el('span','case-name',L(t.title).replace(/^\d+ \/\/ /,'')));
+    b.appendChild(el('span','medals',unlocked?trialMedalText(trialState[t.id]||0):'×'));
+    b.onclick=function(){ trialIndex=i; renderTrial(); };
+    deck.appendChild(b);
+  });
+}
+function renderTrial(){
+  if(!trialUnlocked(trialIndex)){
+    trialIndex=0; for(var i=0;i<TRIALS.length;i++){ if(trialUnlocked(i)) trialIndex=i; }
+  }
+  var t=TRIALS[trialIndex]; renderTrialDeck();
+  document.getElementById('trialTitle').textContent=L(t.title);
+  document.getElementById('trialCopy').textContent=L(t.copy);
+  var tags=document.getElementById('trialTags'); tags.innerHTML='';
+  tags.appendChild(el('span','trial-tag',t.rounds+' '+(lang==='en'?'ROUNDS':'回合')));
+  tags.appendChild(el('span','trial-tag',t.noise+'% '+(lang==='en'?'NOISE':'失误')));
+  tags.appendChild(el('span','trial-tag',L(t.goal)));
+  avatarFor('you',document.getElementById('trialAvYou'));
+  avatarFor(t.opp,document.getElementById('trialAvOpp'));
+  document.getElementById('trialNameYou').innerHTML='<span style="color:'+SBY.you.color+'">'+sname('you')+'</span>';
+  document.getElementById('trialNameOpp').innerHTML='<span style="color:'+SBY[t.opp].color+'">'+sname(t.opp)+'</span>';
+  document.getElementById('trialGoal').innerHTML=t.rounds+' '+(lang==='en'?'rounds':'回合')+'<br>'+t.noise+'% '+(lang==='en'?'noise':'失误');
+  document.getElementById('trialScoreYou').textContent='—';
+  document.getElementById('trialScoreOpp').textContent='—';
+  document.getElementById('trialStrip').style.display='none';
+  var verdict=document.getElementById('trialVerdict'); verdict.style.display='none'; verdict.className='trial-verdict';
+}
+function drawTrialStrip(m){
+  var cv=document.getElementById('trialStrip'), g=cv.getContext('2d'), n=m.ha.length;
+  g.fillStyle='#0a0a0a'; g.fillRect(0,0,cv.width,cv.height);
+  g.font='9px Consolas, monospace'; g.textAlign='right'; g.fillStyle='#666';
+  g.fillText(lang==='en'?'YOU':'你',27,19); g.fillText(lang==='en'?'THEM':'对方',27,40);
+  var x0=34, gap=2, cell=Math.max(3,Math.min(9,Math.floor((cv.width-x0-gap*(n-1))/n)));
+  for(var i=0;i<n;i++){
+    var x=x0+i*(cell+gap);
+    g.fillStyle=m.ha[i]==='C'?'#1db954':'#f44336'; g.fillRect(x,10,cell,11);
+    g.fillStyle=m.hb[i]==='C'?'#1db954':'#f44336'; g.fillRect(x,31,cell,11);
+  }
+  cv.style.display='block';
+}
+function runTrial(){
+  var t=TRIALS[trialIndex];
+  var m=playMatch(makerFor('you'),makerFor(t.opp),t.rounds,t.noise,mulberry32(t.seed));
+  var medals=scoreTrial(trialIndex,m), old=trialState[t.id]||0;
+  var unlocksNext=medals>0 && old===0 && trialIndex<TRIALS.length-1 && !trialUnlocked(trialIndex+1);
+  document.getElementById('trialScoreYou').textContent=m.sa;
+  document.getElementById('trialScoreOpp').textContent=m.sb;
+  drawTrialStrip(m);
+  var verdict=document.getElementById('trialVerdict'); verdict.style.display='block';
+  if(medals>0){
+    if(medals>old){ trialState[t.id]=medals; saveTrials(); }
+    verdict.className='trial-verdict pass';
+    verdict.innerHTML=(lang==='en'?'CASE CLEARED ':'试炼通过 ')+trialMedalText(medals)+(unlocksNext?'<br><span style="color:#888">'+(lang==='en'?'next case unlocked':'下一项试炼已解锁')+'</span>':'');
+  } else {
+    verdict.className='trial-verdict fail';
+    verdict.innerHTML=(lang==='en'?'NOT CLEARED — ':'未通过 —— ')+L(t.goal)+'<br><span style="color:#777">'+L(t.hint)+'</span>';
+  }
+  renderTrialDeck();
+}
+document.getElementById('runTrial').onclick=runTrial;
+document.getElementById('editTrial').onclick=function(){
+  document.querySelector('.col-build .pcard').scrollIntoView({behavior:'smooth',block:'start'});
+};
+
 // ───────────────────────── language ─────────────────────────
 function applyLangAttrs(){
   document.querySelectorAll('[data-en]').forEach(function(n){
@@ -935,6 +1134,7 @@ function refreshNames(){
   fillPickers(); renderField();
   if(lastBoard) renderBoard();
   drawEvoSafe();
+  renderTrial();
 }
 function drawEvoSafe(){ if(evoPop) drawEvo(); }
 document.getElementById('langBtn').onclick=function(){
@@ -957,6 +1157,7 @@ nameInput.value=playerName; nameInput.placeholder=L(TXT.myDefault);
 renderRules(); renderField(); fillPickers();
 document.getElementById('pickA').value='you'; document.getElementById('pickB').value='tft';
 renderEvoRoster(); evoReset();
+renderTrial();
 window.addEventListener('resize', function(){ if(matchData) sizeStrips(matchData.rounds); });
 </script>
 </body>
