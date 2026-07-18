@@ -80,12 +80,12 @@
     .glow-lander .ld-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
     .card.glow-lander:hover .ld-canvas { opacity: 1; }
 
-/* ===== Gomoku — Canvas WATER RIPPLE across the whole card ===== */
-/* The water canvas IS the card background: stones in the top band, dark body
-   below. On hover the whole surface ripples — mousemove wakes, click splashes —
-   refracting the image with specular glints. rAF auto-stops when flat. */
-.card.glow-glyph:hover{ border-color:#6e5a2a; box-shadow:0 0 22px -8px rgba(232,176,74,.55); }
-.glyphlive{ display:block; background:#0c1512; }
+/* Per-game card accents; Glyph Run stays restrained and image-led. */
+.card.glow-glyph{border-color:rgba(232,176,74,.38);}
+.card.glow-glyph:hover{border-color:#e8b04a;box-shadow:0 0 24px -10px rgba(232,176,74,.6);}
+.glow-glyph .card-thumb{background:#0c1110;filter:saturate(.88) brightness(.88) contrast(1.04);}
+.glow-glyph:hover .card-thumb{filter:saturate(1) brightness(1) contrast(1.02);}
+.glow-glyph .card-icon{color:#e8b04a;}
 .card.glow-dilemma .dl-canvas{cursor:pointer;touch-action:manipulation;}
 .card.glow-dilemma .dl-canvas:focus-visible{outline:2px solid #e06a8a;outline-offset:-2px;}
 .card.glow-gomoku{ transition: box-shadow .3s ease, border-color .3s ease; }
@@ -171,6 +171,7 @@
   .card.star{--mq:29,185,84;--mqwash:.14;
     border-color:rgba(var(--mq),.40);
     box-shadow:0 0 18px -12px rgba(var(--mq),.35);}
+  .card.star.glow-glyph{--mq:232,176,74;--mqwash:.08;}
   .card.star.glow-gomoku{--mq:232,176,74;--mqwash:.09;}
   .card.star.glow-rope{--mq:54,197,208;}
   .card.star.glow-dilemma{--mq:224,106,138;--mqwash:.10;}
@@ -236,16 +237,15 @@
   </div>
 
   <div class="card glow-glyph star" data-players="1">
-    <div class="ribbon" data-en="1UP · NEW" data-zh="1UP · 新">1UP · NEW</div>
-    <canvas class="card-thumb glyphlive" role="img" aria-label="Glyph Run — an evolving oracle-bone hero and today's daily oracle objective" width="440" height="240"></canvas>
-    <div class="card-icon" style="color:#e8b04a">[字]</div>
+    <div class="ribbon p12" data-en="1UP · FEATURED" data-zh="1UP · 精选">1UP · FEATURED</div>
+    <img class="card-thumb" src="/game/thumbs/glyphrun.jpg?v=2" alt="Glyph Run hero evolving through four eras of Chinese script" loading="eager" width="880" height="495">
+    <div class="card-icon">[字]</div>
     <div class="card-title" data-en="glyph_run.exe" data-zh="字源.exe">glyph_run.exe</div>
-    <div class="card-desc" data-en="You ARE a Chinese character, hunted through four nights of script. Steer while your ink fights on its own, evolve 3,000 years back to the oracle bones, and fulfil a fresh daily oracle for a permanent seal cut." data-zh="你就是一个汉字，被追猎着穿过四夜字体。只管走位，笔墨自会出手；逆行三千年回到甲骨，并完成每日卜辞，换取永久篆刻一刀。">You ARE a Chinese character, hunted through four nights of script. Steer while your ink fights on its own, evolve 3,000 years back to the oracle bones, and fulfil a fresh daily oracle for a permanent seal cut.</div>
+    <div class="card-desc" data-en="A survivor game drawn from the history of Chinese writing. Dodge spirits, collect fallen glyphs, and evolve from clerical script to oracle bone." data-zh="一款取材于汉字演变史的生存游戏。避开群鬼，收集落字，从隶书一路进化至甲骨文。">A survivor game drawn from the history of Chinese writing. Dodge spirits, collect fallen glyphs, and evolve from clerical script to oracle bone.</div>
     <div class="card-tags">
-      <span class="tag green" data-en="new" data-zh="新">new</span>
-      <span class="tag" data-en="arena survivor" data-zh="乱斗生存">arena survivor</span>
-      <span class="tag" data-en="甲骨文" data-zh="甲骨文">甲骨文</span>
-      <span class="tag" data-en="daily oracle" data-zh="每日卜辞">daily oracle</span>
+      <span class="tag green" data-en="survivor" data-zh="生存">survivor</span>
+      <span class="tag" data-en="4 eras" data-zh="四个时代">4 eras</span>
+      <span class="tag" data-en="oracle bone" data-zh="甲骨文">oracle bone</span>
     </div>
     <div class="card-footer">
       <span class="card-meta" data-en="JS · canvas · bilingual" data-zh="JS · canvas · 双语">JS · canvas · bilingual</span>
@@ -1308,190 +1308,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
 </script>
 
-<script>
-/* Glyph Run card — the hero portrait. You ARE the character: the exact
-   oracle glyph stands lit on the arena floor, casting its own shadow in a
-   warm pool of ink-light, 戈 and 弓 radicals riding, a jade-haloed glyph
-   drifting near — and it evolves 人→大→夫→舞 as you watch. Same look as the
-   game's new hero anchor. Rain drifts at rest; hover quickens the evolution. */
-(() => {
-  const card = document.querySelector('.card.glow-glyph');
-  const canvas = card && card.querySelector('.glyphlive');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const CW = 440, CH = 240;
-  const BG0 = '#0c1512', BG1 = '#0a1a14', HERO = '#fff6e2', ACC = '#8bc34a';   // green like the 金文 arena's radicals
-  const OG = {
-    '人': {p:'M50.9 0.0L49.6 6.6 53.1 15.4 30.3 45.2 35.1 47.4 55.3 21.1 57.9 20.2 61.8 25.0 65.4 43.4 48.7 75.0 45.2 90.8 46.5 100.0 50.4 96.9 51.3 80.3 69.7 45.2 69.7 32.9 54.8 11.0 53.9 0.4 50.9 0.0Z'},
-    '大': {p:'M45.7 0.0L43.5 17.7 14.2 38.4 14.7 41.4 18.1 40.5 36.2 26.7 43.1 23.3 44.4 25.4 43.5 43.5 34.1 50.4 28.0 59.9 29.7 80.6 28.0 89.2 22.0 97.8 28.9 94.4 34.1 84.1 31.5 61.6 41.4 50.0 47.4 47.4 51.3 48.7 59.1 60.8 59.1 90.1 69.8 100.0 72.0 97.8 65.1 92.7 60.8 84.1 62.5 59.9 55.6 48.7 47.8 42.7 47.8 23.7 82.8 37.1 85.8 34.9 48.3 18.1 48.7 2.2 45.7 0.0Z'},
-    '夫': {p:'M49.6 0.0L46.1 13.9 30.0 15.2 31.3 19.1 46.1 19.1 47.4 23.0 45.7 30.9 25.7 50.0 25.7 53.5 48.3 37.8 48.3 53.5 33.5 83.9 33.9 100.0 37.0 98.7 39.6 77.8 50.4 60.9 61.3 70.0 66.5 83.9 67.4 97.0 72.6 97.0 67.4 73.5 62.2 63.9 51.7 54.3 53.0 36.5 71.3 50.4 74.3 49.1 55.2 31.7 51.7 24.8 51.7 20.4 55.7 17.4 71.7 15.2 69.6 13.0 52.2 13.0 49.6 0.0Z'},
-    '舞': {p:'M53.9 1.8L32.9 3.5 32.0 7.9 45.2 7.0 47.4 16.2 14.5 20.2 12.3 32.9 0.0 44.3 3.9 47.4 11.8 40.4 13.2 58.3 16.2 58.8 18.9 40.4 29.8 46.1 17.5 32.0 19.3 24.1 46.5 21.5 46.5 29.4 34.2 41.7 38.2 43.9 46.1 36.8 47.4 50.4 31.6 73.2 28.1 89.9 30.3 98.2 33.3 96.1 35.1 75.9 49.6 56.1 61.4 63.6 67.5 81.1 69.3 97.8 73.7 96.1 66.7 64.5 52.6 50.4 50.9 40.8 53.9 35.1 63.6 42.1 67.5 39.9 52.6 28.5 53.1 21.1 71.5 21.1 82.5 25.0 83.3 29.4 70.2 39.9 74.1 42.1 83.3 37.3 83.8 57.0 86.8 56.6 88.2 36.8 100.0 43.4 87.7 29.4 86.8 22.4 82.0 17.5 53.9 16.7 52.6 9.2 64.0 5.7 62.7 1.8 53.9 1.8Z'},
-    '戈': {p:'M48.7 0.0L46.1 21.6 19.4 20.7 19.0 24.6 47.4 26.3 46.6 92.7 34.5 96.1 39.2 99.1 58.2 100.0 60.3 96.1 50.9 92.7 52.6 26.3 80.6 24.1 81.0 21.1 53.9 20.7 52.6 7.3 64.2 7.8 66.4 4.7 48.7 0.0Z'},
-    '弓': {p:'M41.8 0.0L44.0 9.9 36.2 22.0 39.2 22.4 47.8 12.1 51.7 17.7 37.1 32.3 43.1 59.1 35.3 74.6 41.4 91.8 49.6 100.0 62.1 70.3 64.7 37.5 62.9 28.9 51.7 8.2 41.8 0.0ZM52.6 22.8L56.0 23.7 59.5 31.5 62.1 55.6 56.0 77.2 47.8 92.2 38.8 76.3 46.6 60.8 41.4 32.3 52.6 22.8Z'},
-    '日': {p:'M54.7 3.1L17.2 6.2 3.1 14.1 0.0 62.0 6.2 79.7 24.5 94.8 54.7 96.9 80.7 91.7 90.6 82.8 96.9 66.1 100.0 47.4 90.6 17.2 77.6 7.3 54.7 3.1ZM42.7 12.0L74.5 14.6 89.6 31.8 89.6 58.9 78.6 84.4 59.9 88.5 32.8 87.5 18.2 81.2 12.5 74.5 9.4 66.1 12.5 19.3 22.4 13.5 42.7 12.0ZM29.7 43.8L27.1 49.5 34.9 53.1 71.9 49.5 67.2 43.8 29.7 43.8Z'}
-  };
-  const FORMS = ['人', '大', '夫', '舞'];
-  const CARD_OMENS = [
-    { ch:'集', en:'GATHER 20 GLYPHS', zh:'拾取 20 字' },
-    { ch:'伐', en:'DEFEAT 35 SPIRITS', zh:'击败 35 鬼' },
-    { ch:'門', en:'CROSS 2 GATES', zh:'渡过 2 门' }
-  ];
-  function dailyOracle() {
-    const d = new Date(), key = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-    let hash = 0;
-    for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-    let done = false;
-    try { done = !!(JSON.parse(localStorage.getItem('glyphrun_daily_omens') || '{}') || {})[key]; } catch (e) {}
-    return { key, done, omen:CARD_OMENS[hash % CARD_OMENS.length] };
-  }
-  let daily = dailyOracle();
-  function drawOG(ch, cx, cy, s, color, blur) {
-    const g = OG[ch]; if (!g || typeof Path2D === 'undefined') return;
-    if (!g._P) g._P = new Path2D(g.p);
-    ctx.save(); ctx.translate(cx, cy);
-    const k = s / 100; ctx.scale(k, k); ctx.translate(-50, -50);
-    ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = blur == null ? 4 : blur;
-    ctx.fill(g._P, 'evenodd'); ctx.restore();
-  }
-  function drawDailyOracle() {
-    const o = daily.omen, col = daily.done ? '#55d47d' : '#e8b04a';
-    ctx.save();
-    ctx.fillStyle = 'rgba(5,10,7,0.84)'; ctx.fillRect(12, 11, 156, 43);
-    ctx.strokeStyle = col; ctx.globalAlpha = 0.72; ctx.strokeRect(12.5, 11.5, 155, 42);
-    ctx.globalAlpha = 1; ctx.fillStyle = col; ctx.textAlign = 'left';
-    ctx.font = 'bold 11px Consolas,ui-monospace,monospace';
-    ctx.fillText((daily.done ? '✓' : o.ch) + '  ' + t('DAILY ORACLE','每日卜辞'), 22, 28);
-    ctx.fillStyle = daily.done ? '#9fe2b2' : '#c9bea2';
-    ctx.font = '9px Consolas,ui-monospace,monospace';
-    ctx.fillText(daily.done ? t('FULFILLED · +1 SEAL CUT','已应验 · 篆刻 +1 刀') : t(o.en,o.zh), 22, 44);
-    ctx.restore();
-  }
-  const drops = Array.from({ length: 42 }, (_, i) => ({
-    x: (i * 97.3) % CW, y: (i * 53.7) % CH, v: 0.55 + ((i * 29) % 50) / 90
-  }));
-  let raf = 0, visible = false, last = 0, hover = false, T = 0, dpr = 1, reduced = false;
-  let boltT = 2200, flash = 0, bolt = null;                    // the thunder that cracks the night now and then
-  try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-  function size() {
-    dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = CW * dpr; canvas.height = CH * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  function render(dt) {
-    T += dt;
-    const g = ctx.createLinearGradient(0, 0, 0, CH);           // the arena night
-    g.addColorStop(0, BG0); g.addColorStop(1, BG1);
-    ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
-    const vg = ctx.createRadialGradient(CW * 0.44, CH * 0.5, 40, CW * 0.5, CH * 0.5, CW * 0.62);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(2,8,5,0.6)');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, CW, CH);
-    const spd = hover ? 1.9 : 1;                                // the rain drifts
-    ctx.save(); ctx.strokeStyle = 'rgba(200,224,210,0.10)'; ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (const d of drops) {
-      d.y += dt * 0.075 * d.v * spd; d.x -= dt * 0.012 * d.v * spd;
-      if (d.y > CH + 6) { d.y = -6; d.x = (d.x * 7.13 + 89) % CW; }
-      if (d.x < -6) d.x += CW + 12;
-      ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + 2, d.y - 9);
-    }
-    ctx.stroke(); ctx.restore();
-    const groundY = CH * 0.70;                                  // the hero stands higher on the card now
-    // thunder now and then — a bolt cracks down behind the hero and the night lights up
-    boltT -= dt;
-    if (boltT <= 0 && !reduced) {
-      boltT = 3800 + Math.random() * 4200;                     // every ~4–8s
-      flash = 1;
-      const bx = CW * (0.12 + Math.random() * 0.22);          // strike the LEFT sky — clear of the hero AND the 1UP badge, so the canopy shows
-      let yy = 26; const pts = [[bx, yy]];                     // starts just under the storm-canopy
-      while (yy < groundY) { yy += 15 + Math.random() * 15; pts.push([bx + (Math.random() - 0.5) * 44, Math.min(groundY, yy)]); }
-      bolt = { pts, x: bx, t: 320 };
-    }
-    if (flash > 0) flash -= dt / 340;
-    if (bolt) {
-      bolt.t -= dt;
-      if (bolt.t > 0) {
-        const bx = bolt.x;
-        ctx.save(); ctx.globalAlpha = Math.min(1, bolt.t / 170);
-        ctx.strokeStyle = '#eaf2ff'; ctx.shadowColor = '#cfe0ff'; ctx.shadowBlur = 12;
-        ctx.lineWidth = 2.4; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-        // 電's rain-canopy — the top of the thunder, the storm the bolt drops from
-        ctx.beginPath();
-        ctx.moveTo(bx - 15, 12); ctx.lineTo(bx + 15, 12);
-        ctx.moveTo(bx, 12); ctx.lineTo(bx, 20);
-        for (const ox of [-9, 9]) { ctx.moveTo(bx + ox, 14); ctx.lineTo(bx + ox - 1.5, 21); }
-        ctx.stroke();
-        // the tail lashing to earth
-        ctx.beginPath(); ctx.moveTo(bolt.pts[0][0], bolt.pts[0][1]);
-        for (let i = 1; i < bolt.pts.length; i++) ctx.lineTo(bolt.pts[i][0], bolt.pts[i][1]);
-        ctx.stroke(); ctx.restore();
-      }
-    }
-    // the floor line the hero stands on
-    ctx.save(); ctx.strokeStyle = 'rgba(232,223,200,0.12)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(20, groundY); ctx.lineTo(CW - 20, groundY); ctx.stroke(); ctx.restore();
-    // the hero: the exact glyph, lit, with its shadow and warm ink-pool — evolving
-    const cyc = (T / 2600) % FORMS.length, fi = cyc | 0, seg = cyc - fi;
-    const hx = CW * 0.5, hy = groundY - 6, bob = reduced ? 0 : Math.abs(Math.sin(T / 520)) * 3;
-    ctx.save(); ctx.globalAlpha = 0.36; ctx.fillStyle = '#03060a';   // the shadow — only the hero casts one
-    ctx.beginPath(); ctx.ellipse(hx, groundY + 4, 30, 8, 0, 0, Math.PI * 2); ctx.fill();
-    const pool = ctx.createRadialGradient(hx, hy - 34, 3, hx, hy - 34, 74);
-    pool.addColorStop(0, 'rgba(255,246,226,0.16)'); pool.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.globalAlpha = 1; ctx.fillStyle = pool;
-    ctx.beginPath(); ctx.arc(hx, hy - 34, 74, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    // the evolution flash, right as the form turns over
-    if (seg < 0.16) {
-      ctx.save(); ctx.strokeStyle = ACC; ctx.globalAlpha = (1 - seg / 0.16) * 0.6; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(hx, hy - 42, 20 + seg * 260, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-    }
-    ctx.save(); ctx.translate(0, -bob);
-    drawOG(FORMS[fi], hx, hy, 96, HERO, 10);                    // brighter & bolder than anything on the sheet
-    ctx.restore();
-    // the radicals sit IN the hands, which move with each form — big enough to read as real weapons
-    const HAND = [
-      { l: [-20, 4],  r: [24, 6],  s: 38 },   // 人 — one figure, arm to the side
-      { l: [-40, -8], r: [40, -9], s: 40 },   // 大 — arms spread wide
-      { l: [-31, -16],r: [31, -16],s: 40 },   // 夫 — arms raised
-      { l: [-52, -12],r: [52, -11],s: 38 }    // 舞 — plumes in both hands
-    ][fi];
-    drawOG('弓', hx + HAND.l[0], hy - bob + HAND.l[1], HAND.s, ACC, 7);   // 弓 in the left hand, as in 引 — glows green
-    drawOG('戈', hx + HAND.r[0], hy - bob + HAND.r[1], HAND.s + 6, ACC, 7); // 戈 in the right, as in 伐
-    if (flash > 0) {                                            // the thunder lights the whole sheet
-      ctx.save(); ctx.globalAlpha = Math.max(0, flash) * 0.22;
-      ctx.fillStyle = '#dfe8ff'; ctx.fillRect(0, 0, CW, CH); ctx.restore();
-    }
-    drawDailyOracle();
-    // the evolution caption — 人 → 舞, the whole arc named
-    ctx.save(); ctx.globalAlpha = 0.9; ctx.fillStyle = 'rgba(242,236,216,0.9)';
-    ctx.font = '12px Consolas,ui-monospace,monospace'; ctx.textAlign = 'center';
-    ctx.fillText(FORMS[fi] + '  —  you ARE the character', hx, CH - 14);
-    ctx.restore();
-  }
-  function loop(ts) {
-    if (!visible) { raf = 0; return; }
-    const dt = Math.min(50, ts - (last || ts)) * (hover ? 1.6 : 1); last = ts;
-    render(dt);
-    raf = requestAnimationFrame(loop);
-  }
-  function start() {
-    daily = dailyOracle();
-    size();
-    if (reduced) { T = 3200; render(16); return; }             // one still frame, mid-evolution
-    visible = true; last = 0;
-    if (!raf) raf = requestAnimationFrame(loop);
-  }
-  function stop() { visible = false; }
-  card.addEventListener('mouseenter', () => { hover = true; });
-  card.addEventListener('mouseleave', () => { hover = false; });
-  window.addEventListener('pageshow', () => { daily = dailyOracle(); if (canvas.width) render(0); });
-  window.addEventListener('storage', (e) => { if (e.key === 'glyphrun_daily_omens') { daily = dailyOracle(); if (canvas.width) render(0); } });
-  const glyphToggleLang = window.toggleLang;
-  if (glyphToggleLang) window.toggleLang = function () { glyphToggleLang(); daily = dailyOracle(); if (canvas.width) render(0); };
-  document.addEventListener('visibilitychange', () => { document.hidden ? stop() : (!reduced && start()); });
-  if ('IntersectionObserver' in window) {
-    new IntersectionObserver((es) => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0.05 }).observe(card);
-  } else start();
-})();
-</script>
 <script>
 /* ── dilemma_lab card: a playable one-screen dilemma. Pick C or D against
       Tit for Tat; it cooperates first, then mirrors the visitor's last move.
