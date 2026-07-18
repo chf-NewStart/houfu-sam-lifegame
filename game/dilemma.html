@@ -65,6 +65,15 @@
     .recipe-row select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.68rem; padding:4px; }
     .build-note { color:#555; font-size:0.64rem; margin-top:8px; line-height:1.6; }
 
+    /* share / import */
+    .share-box { margin-top:10px; padding-top:9px; border-top:1px solid #1a1a1a; }
+    .share-row, .import-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+    .share-row input, .import-row input { flex:1; min-width:120px; background:#0a0a0a; border:1px solid #262626; color:#999; font-family:inherit; font-size:0.66rem; padding:6px 7px; }
+    .share-row input:focus, .import-row input:focus { outline:none; border-color:#1db954; }
+    .import-msg { font-size:0.66rem; flex-basis:100%; }
+    .import-msg.ok { color:#1db954; }
+    .import-msg.err { color:#f44336; }
+
     /* field roster */
     .field-row { display:flex; gap:9px; align-items:center; padding:5px 4px; border-bottom:1px solid #161616; }
     .field-row:last-child { border-bottom:none; }
@@ -243,6 +252,18 @@
           </select>
         </div>
         <div class="build-note" data-en="&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser." data-zh="&gt; 第一回合还没有历史：「模仿对方上一步」视为合作，「反着来」视为背叛。你的策略会保存在本浏览器里。">&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser.</div>
+        <div class="share-box">
+          <div class="share-row">
+            <button class="sm-btn" id="shareBtn" data-en="share my strategy" data-zh="分享我的策略">share my strategy</button>
+            <input id="shareCode" readonly spellcheck="false">
+            <button class="sm-btn" id="copyShareBtn" data-en="copy" data-zh="复制">copy</button>
+          </div>
+          <div class="import-row">
+            <input id="importCode" spellcheck="false">
+            <button class="sm-btn" id="importBtn" data-en="import code ↓" data-zh="导入代码 ↓">import code ↓</button>
+            <span class="import-msg" id="importMsg"></span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -638,7 +659,13 @@ var TXT = {
   extinct:{en:'gen {g} — {name} went extinct',zh:'第 {g} 代 —— {name} 灭绝'},
   domin:{en:'gen {g} — {name} has taken over the whole population',zh:'第 {g} 代 —— {name} 占领了整个种群'},
   pause:{en:'❚❚ pause',zh:'❚❚ 暂停'}, play:{en:'▶ play',zh:'▶ 播放'},
-  myDefault:{en:'MY STRATEGY',zh:'我的策略'}
+  myDefault:{en:'MY STRATEGY',zh:'我的策略'},
+  shareHint:{en:'code copied here',zh:'代码将显示于此'},
+  importHint:{en:'paste a friend’s code…',zh:'粘贴朋友的代码……'},
+  copyBtn:{en:'copy',zh:'复制'}, copiedBtn:{en:'copied!',zh:'已复制！'},
+  importBtn:{en:'import code ↓',zh:'导入代码 ↓'},
+  importOk:{en:'imported “{name}” — {n} rules loaded.',zh:'已导入「{name}」—— 载入 {n} 条规则。'},
+  importErr:{en:'that code doesn’t look valid. Check for typos.',zh:'代码无效，请检查是否有输入错误。'}
 };
 function L(obj){ return obj[lang]; }
 function fmt(t, map){ var s=L(t); for(var k in map){ s=s.split('{'+k+'}').join(map[k]); } return s; }
@@ -661,6 +688,28 @@ try{
 function savePlayer(){ try{ localStorage.setItem('dilemma_player_v1', JSON.stringify({rules:playerRules,name:playerName})); }catch(e){} }
 function playerMaker(){ return compileRules(playerRules)(); }
 function makerFor(id){ return id==='you' ? function(){ return playerMaker(); } : MAKERS[id]; }
+
+// ───────────────────────── share / import codes ─────────────────────────
+function b64EncodeUnicode(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(m, p1){ return String.fromCharCode('0x'+p1); }));
+}
+function b64DecodeUnicode(str){
+  return decodeURIComponent(atob(str).split('').map(function(c){ return '%'+('00'+c.charCodeAt(0).toString(16)).slice(-2); }).join(''));
+}
+function encodeShareCode(){
+  return b64EncodeUnicode(JSON.stringify({ v:1, n:playerName, r:playerRules }));
+}
+function decodeShareCode(code){
+  var obj = JSON.parse(b64DecodeUnicode(code.trim()));
+  if(!obj || typeof obj!=='object' || !Array.isArray(obj.r) || !obj.r.length) throw new Error('bad payload');
+  obj.r.forEach(function(rule){
+    if(!rule || (CONDS.indexOf(rule.c)===-1 && rule.c!=='always')) throw new Error('bad cond');
+    if(ACTS.indexOf(rule.a)===-1) throw new Error('bad act');
+  });
+  return { name: typeof obj.n==='string' ? obj.n.slice(0,18) : '', rules: obj.r.map(function(r){
+    var o={ c:r.c, a:r.a }; if(needsN[r.c]) o.n=r.n|0||2; if(needsP[r.c]) o.p=Math.max(1,Math.min(100,r.p|0||50)); return o;
+  }) };
+}
 
 // ───────────────────────── rule builder UI ─────────────────────────
 var CONDS=['first','opp_last_d','opp_last_c','opp_streak_d','opp_streak_c','opp_ever_d','opp_rate_gt','my_last_d','round_gt','every_n','chance'];
@@ -720,6 +769,33 @@ document.getElementById('recipeSel').onchange=function(){
 };
 var nameInput=document.getElementById('stratName');
 nameInput.oninput=function(){ playerName=nameInput.value; savePlayer(); refreshNames(); };
+
+document.getElementById('shareBtn').onclick=function(){
+  document.getElementById('shareCode').value = encodeShareCode();
+};
+document.getElementById('copyShareBtn').onclick=function(){
+  var inp=document.getElementById('shareCode');
+  if(!inp.value) inp.value=encodeShareCode();
+  inp.select(); inp.setSelectionRange(0,99999);
+  var btn=this, done=function(){ btn.innerHTML=L(TXT.copiedBtn); setTimeout(function(){ btn.innerHTML=L(TXT.copyBtn); },1200); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(inp.value).then(done, function(){ try{ document.execCommand('copy'); done(); }catch(e){} });
+  } else {
+    try{ document.execCommand('copy'); done(); }catch(e){}
+  }
+};
+document.getElementById('importBtn').onclick=function(){
+  var code=document.getElementById('importCode').value, msg=document.getElementById('importMsg');
+  if(!code.trim()) return;
+  try{
+    var loaded=decodeShareCode(code);
+    playerRules=loaded.rules; playerName=loaded.name;
+    savePlayer(); nameInput.value=playerName; renderRules(); refreshNames();
+    msg.className='import-msg ok'; msg.innerHTML=fmt(TXT.importOk,{name:playerName||L(TXT.myDefault), n:loaded.rules.length});
+  }catch(e){
+    msg.className='import-msg err'; msg.innerHTML=L(TXT.importErr);
+  }
+};
 
 // ───────────────────────── field roster ─────────────────────────
 function renderField(){
@@ -1129,6 +1205,8 @@ function applyLangAttrs(){
   });
   document.getElementById('langBtn').textContent = lang==='en' ? '中文' : 'EN';
   document.documentElement.lang = lang==='en'?'en':'zh';
+  document.getElementById('shareCode').placeholder=L(TXT.shareHint);
+  document.getElementById('importCode').placeholder=L(TXT.importHint);
 }
 function refreshNames(){
   fillPickers(); renderField();
