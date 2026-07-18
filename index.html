@@ -86,6 +86,8 @@
    refracting the image with specular glints. rAF auto-stops when flat. */
 .card.glow-glyph:hover{ border-color:#6e5a2a; box-shadow:0 0 22px -8px rgba(232,176,74,.55); }
 .glyphlive{ display:block; background:#0c1512; }
+.card.glow-dilemma .dl-canvas{cursor:pointer;touch-action:manipulation;}
+.card.glow-dilemma .dl-canvas:focus-visible{outline:2px solid #e06a8a;outline-offset:-2px;}
 .card.glow-gomoku{ transition: box-shadow .3s ease, border-color .3s ease; }
 .card.glow-gomoku:hover{ border-color:#2f6fa0; box-shadow:0 0 22px -8px rgba(58,158,230,.5); }
 .glow-gomoku .gwater{ position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none;
@@ -235,15 +237,15 @@
 
   <div class="card glow-glyph star" data-players="1">
     <div class="ribbon" data-en="1UP · NEW" data-zh="1UP · 新">1UP · NEW</div>
-    <canvas class="card-thumb glyphlive" role="img" aria-label="Glyph Run — the exact oracle-bone hero stands lit on the arena floor, 戈 and 弓 riding, evolving 人 to 大 to 夫 to 舞" width="440" height="240"></canvas>
+    <canvas class="card-thumb glyphlive" role="img" aria-label="Glyph Run — an evolving oracle-bone hero and today's daily oracle objective" width="440" height="240"></canvas>
     <div class="card-icon" style="color:#e8b04a">[字]</div>
     <div class="card-title" data-en="glyph_run.exe" data-zh="字源.exe">glyph_run.exe</div>
-    <div class="card-desc" data-en="You ARE a Chinese character, hunted through four nights of script. Steer — your ink fights on its own. Evolve your glyph 3,000 years back to the oracle bones; every monster, weapon and drop is a real ancient character." data-zh="你就是一个汉字，被追猎着穿过四夜字体。只管走位——笔墨自会出手。让你的字逆行三千年回到甲骨；每只妖物、每件兵器、每个掉落，都是真实的古文字。">You ARE a Chinese character, hunted through four nights of script. Steer — your ink fights on its own. Evolve your glyph 3,000 years back to the oracle bones; every monster, weapon and drop is a real ancient character.</div>
+    <div class="card-desc" data-en="You ARE a Chinese character, hunted through four nights of script. Steer while your ink fights on its own, evolve 3,000 years back to the oracle bones, and fulfil a fresh daily oracle for a permanent seal cut." data-zh="你就是一个汉字，被追猎着穿过四夜字体。只管走位，笔墨自会出手；逆行三千年回到甲骨，并完成每日卜辞，换取永久篆刻一刀。">You ARE a Chinese character, hunted through four nights of script. Steer while your ink fights on its own, evolve 3,000 years back to the oracle bones, and fulfil a fresh daily oracle for a permanent seal cut.</div>
     <div class="card-tags">
       <span class="tag green" data-en="new" data-zh="新">new</span>
       <span class="tag" data-en="arena survivor" data-zh="乱斗生存">arena survivor</span>
       <span class="tag" data-en="甲骨文" data-zh="甲骨文">甲骨文</span>
-      <span class="tag" data-en="learn hanzi" data-zh="识字">learn hanzi</span>
+      <span class="tag" data-en="daily oracle" data-zh="每日卜辞">daily oracle</span>
     </div>
     <div class="card-footer">
       <span class="card-meta" data-en="JS · canvas · bilingual" data-zh="JS · canvas · 双语">JS · canvas · bilingual</span>
@@ -253,12 +255,12 @@
 
   <div class="card glow-dilemma star" data-players="1">
     <div class="ribbon" data-en="1UP · NEW" data-zh="1UP · 新">1UP · NEW</div>
-    <canvas class="card-thumb dl-canvas" role="img" aria-label="Dilemma Lab — two pixel strategies trade cooperation and defection while the tournament bars fill" width="440" height="240"></canvas>
+    <canvas class="card-thumb dl-canvas" role="application" tabindex="0" aria-label="Dilemma Lab mini match. Choose cooperate or defect with the mouse, or press C or D." width="440" height="240"></canvas>
     <div class="card-icon" style="color:#e06a8a">[C|D]</div>
     <div class="card-title" data-en="dilemma_lab.exe" data-zh="困境实验室.exe">dilemma_lab.exe</div>
-    <div class="card-desc" data-en="The iterated prisoner's dilemma as an arcade. Snap rule cards into your own strategy, throw it into Axelrod's 1980 tournament against Tit for Tat and friends — then let evolution decide who inherits the earth." data-zh="迭代囚徒困境街机版。用规则卡拼出你自己的策略，投入 1980 年阿克塞尔罗德锦标赛，与「一报还一报」们同场竞技——再让演化决定谁能笑到最后。">The iterated prisoner's dilemma as an arcade. Snap rule cards into your own strategy, throw it into Axelrod's 1980 tournament against Tit for Tat and friends — then let evolution decide who inherits the earth.</div>
+    <div class="card-desc" data-en="Build a strategy from rule cards, enter Axelrod's classic tournament, and prove it across five replayable Trust Trials. Try one live round against Tit for Tat in the screen above." data-zh="用规则卡拼出你的策略，投入经典阿克塞尔罗德锦标赛，再闯过五项可重复挑战的信任试炼。先在上方屏幕与「一报还一报」过一招。">Build a strategy from rule cards, enter Axelrod's classic tournament, and prove it across five replayable Trust Trials. Try one live round against Tit for Tat in the screen above.</div>
     <div class="card-tags">
-      <span class="tag green" data-en="new" data-zh="新">new</span>
+      <span class="tag green" data-en="trust trials" data-zh="信任试炼">trust trials</span>
       <span class="tag" data-en="game theory" data-zh="博弈论">game theory</span>
       <span class="tag" data-en="DIY strategy" data-zh="自制策略">DIY strategy</span>
       <span class="tag" data-en="evolution" data-zh="演化">evolution</span>
@@ -1329,6 +1331,20 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
     '日': {p:'M54.7 3.1L17.2 6.2 3.1 14.1 0.0 62.0 6.2 79.7 24.5 94.8 54.7 96.9 80.7 91.7 90.6 82.8 96.9 66.1 100.0 47.4 90.6 17.2 77.6 7.3 54.7 3.1ZM42.7 12.0L74.5 14.6 89.6 31.8 89.6 58.9 78.6 84.4 59.9 88.5 32.8 87.5 18.2 81.2 12.5 74.5 9.4 66.1 12.5 19.3 22.4 13.5 42.7 12.0ZM29.7 43.8L27.1 49.5 34.9 53.1 71.9 49.5 67.2 43.8 29.7 43.8Z'}
   };
   const FORMS = ['人', '大', '夫', '舞'];
+  const CARD_OMENS = [
+    { ch:'集', en:'GATHER 20 GLYPHS', zh:'拾取 20 字' },
+    { ch:'伐', en:'DEFEAT 35 SPIRITS', zh:'击败 35 鬼' },
+    { ch:'門', en:'CROSS 2 GATES', zh:'渡过 2 门' }
+  ];
+  function dailyOracle() {
+    const d = new Date(), key = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    let done = false;
+    try { done = !!(JSON.parse(localStorage.getItem('glyphrun_daily_omens') || '{}') || {})[key]; } catch (e) {}
+    return { key, done, omen:CARD_OMENS[hash % CARD_OMENS.length] };
+  }
+  let daily = dailyOracle();
   function drawOG(ch, cx, cy, s, color, blur) {
     const g = OG[ch]; if (!g || typeof Path2D === 'undefined') return;
     if (!g._P) g._P = new Path2D(g.p);
@@ -1336,6 +1352,19 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
     const k = s / 100; ctx.scale(k, k); ctx.translate(-50, -50);
     ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = blur == null ? 4 : blur;
     ctx.fill(g._P, 'evenodd'); ctx.restore();
+  }
+  function drawDailyOracle() {
+    const o = daily.omen, col = daily.done ? '#55d47d' : '#e8b04a';
+    ctx.save();
+    ctx.fillStyle = 'rgba(5,10,7,0.84)'; ctx.fillRect(12, 11, 156, 43);
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.72; ctx.strokeRect(12.5, 11.5, 155, 42);
+    ctx.globalAlpha = 1; ctx.fillStyle = col; ctx.textAlign = 'left';
+    ctx.font = 'bold 11px Consolas,ui-monospace,monospace';
+    ctx.fillText((daily.done ? '✓' : o.ch) + '  ' + t('DAILY ORACLE','每日卜辞'), 22, 28);
+    ctx.fillStyle = daily.done ? '#9fe2b2' : '#c9bea2';
+    ctx.font = '9px Consolas,ui-monospace,monospace';
+    ctx.fillText(daily.done ? t('FULFILLED · +1 SEAL CUT','已应验 · 篆刻 +1 刀') : t(o.en,o.zh), 22, 44);
+    ctx.restore();
   }
   const drops = Array.from({ length: 42 }, (_, i) => ({
     x: (i * 97.3) % CW, y: (i * 53.7) % CH, v: 0.55 + ((i * 29) % 50) / 90
@@ -1430,6 +1459,7 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
       ctx.save(); ctx.globalAlpha = Math.max(0, flash) * 0.22;
       ctx.fillStyle = '#dfe8ff'; ctx.fillRect(0, 0, CW, CH); ctx.restore();
     }
+    drawDailyOracle();
     // the evolution caption — 人 → 舞, the whole arc named
     ctx.save(); ctx.globalAlpha = 0.9; ctx.fillStyle = 'rgba(242,236,216,0.9)';
     ctx.font = '12px Consolas,ui-monospace,monospace'; ctx.textAlign = 'center';
@@ -1443,6 +1473,7 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
     raf = requestAnimationFrame(loop);
   }
   function start() {
+    daily = dailyOracle();
     size();
     if (reduced) { T = 3200; render(16); return; }             // one still frame, mid-evolution
     visible = true; last = 0;
@@ -1451,6 +1482,10 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
   function stop() { visible = false; }
   card.addEventListener('mouseenter', () => { hover = true; });
   card.addEventListener('mouseleave', () => { hover = false; });
+  window.addEventListener('pageshow', () => { daily = dailyOracle(); if (canvas.width) render(0); });
+  window.addEventListener('storage', (e) => { if (e.key === 'glyphrun_daily_omens') { daily = dailyOracle(); if (canvas.width) render(0); } });
+  const glyphToggleLang = window.toggleLang;
+  if (glyphToggleLang) window.toggleLang = function () { glyphToggleLang(); daily = dailyOracle(); if (canvas.width) render(0); };
   document.addEventListener('visibilitychange', () => { document.hidden ? stop() : (!reduced && start()); });
   if ('IntersectionObserver' in window) {
     new IntersectionObserver((es) => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0.05 }).observe(card);
@@ -1458,65 +1493,112 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
 })();
 </script>
 <script>
-/* ── dilemma_lab card: two strategies trade moves, tournament bars fill.
-      One-shot on hover; resting state is the finished still. ── */
+/* ── dilemma_lab card: a playable one-screen dilemma. Pick C or D against
+      Tit for Tat; it cooperates first, then mirrors the visitor's last move.
+      The saved Trust Trials medal count is pulled into the marquee. ── */
 (function(){
   const cv = document.querySelector('.card.glow-dilemma .dl-canvas');
   if(!cv) return;
-  const g = cv.getContext('2d');
+  const g = cv.getContext('2d'), W = 440, H = 240;
   const PAY = { CC:[3,3], CD:[0,5], DC:[5,0], DD:[1,1] };
-  // a little arc: trust, a betrayal, punishment, forgiveness, recovery
-  const SEQ = [['C','C'],['C','C'],['C','D'],['D','D'],['C','C'],['C','C']];
-  const BARS = [['#ff9e80',300],['#46c8ff',282],['#1db954',265],['#f44336',120]];
+  const BTNS = { C:{x:88,y:190,w:122,h:34}, D:{x:230,y:190,w:122,h:34} };
+  let rounds = [], scoreYou = 0, scoreTft = 0, tftMove = 'C', hot = '', flash = null, raf = 0;
+  let reduced = false;
+  try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
+  function trialMedals(){
+    try { const s=JSON.parse(localStorage.getItem('dilemma_trials_v1')||'{}')||{}; return Object.keys(s).reduce((n,k)=>n+(Number(s[k])||0),0); }
+    catch(e){ return 0; }
+  }
   function face(x,y,s,skin,hat){
-    const px=(a,b,w,h,c)=>{ g.fillStyle=c; g.fillRect(x+a*s, y+b*s, w*s, h*s); };
+    const px=(a,b,w,h,c)=>{ g.fillStyle=c; g.fillRect(x+a*s,y+b*s,w*s,h*s); };
     px(5,4,6,1,skin); px(4,5,8,8,skin); px(5,13,6,1,skin);
     px(6,8,1,2,'#101010'); px(9,8,1,2,'#101010');
-    if(hat==='horns'){ px(5,7,2,1,'#101010'); px(9,7,2,1,'#101010');           /* angry brows */
-      px(6,12,1,1,'#101010'); px(7,11,2,1,'#101010'); px(9,12,1,1,'#101010');  /* frown */
-      px(3,1,1,3,'#e2523e'); px(4,3,1,1,'#e2523e'); px(12,1,1,3,'#e2523e'); px(11,3,1,1,'#e2523e'); }
-    else { px(6,11,1,1,'#101010'); px(7,12,2,1,'#101010'); px(9,11,1,1,'#101010'); /* smile */
-      px(4,3,8,1,'#0f6f34'); px(12,4,2,1,'#0f6f34'); }                         /* headband */
-  }
-  // t: 0..1 progress of the one-shot
-  function draw(t){
-    g.clearRect(0,0,440,240);
-    g.fillStyle='#0b0d0c'; g.fillRect(0,0,440,240);
-    g.fillStyle='rgba(224,106,138,0.05)'; g.fillRect(0,0,440,54);
-    face(52,44,6,'#3fbf6f','headband');
-    face(292,44,6,'#c25048','horns');
-    const shown = Math.floor(t*(SEQ.length+2));                 // rounds pop in first
-    let sa=0, sb=0;
-    for(let i=0;i<SEQ.length;i++){
-      const y=36+i*24, on=i<shown;
-      if(on){ const p=PAY[SEQ[i][0]+SEQ[i][1]]; sa+=p[0]; sb+=p[1]; }
-      g.fillStyle = !on ? '#151515' : (SEQ[i][0]==='C' ? '#1db954' : '#f44336');
-      g.fillRect(196,y,16,16);
-      g.fillStyle = !on ? '#151515' : (SEQ[i][1]==='C' ? '#1db954' : '#f44336');
-      g.fillRect(228,y,16,16);
-    }
-    g.font='bold 20px Consolas, monospace'; g.textAlign='center';
-    g.fillStyle='#e8b04a'; g.fillText(sa,100,178); g.fillText(sb,340,178);
-    const bt=Math.max(0,Math.min(1,(t-0.55)/0.45));            // bars fill last
-    for(let i=0;i<BARS.length;i++){
-      const y=196+i*11;
-      g.fillStyle='#121212'; g.fillRect(70,y,300,7);
-      g.fillStyle=BARS[i][0]; g.fillRect(70,y,BARS[i][1]*bt,7);
+    if(hat==='mirror'){
+      px(5,7,2,1,'#101010'); px(9,7,2,1,'#101010');
+      px(6,11,1,1,'#101010'); px(7,12,2,1,'#101010'); px(9,11,1,1,'#101010');
+      px(4,2,8,2,'#8d4770'); px(6,1,4,1,'#e06a8a');
+    } else {
+      px(6,11,1,1,'#101010'); px(7,12,2,1,'#101010'); px(9,11,1,1,'#101010');
+      px(4,3,8,1,'#0f6f34'); px(12,4,2,1,'#0f6f34');
     }
   }
-  draw(1);                                                      // resting still = finished scene
-  let raf=null;
-  function play(){
-    if(raf || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t0=performance.now(), DUR=1600;
-    (function step(now){
-      const t=Math.min(1,(now-t0)/DUR);
-      draw(t);
-      raf = t<1 ? requestAnimationFrame(step) : (draw(1), null);
-    })(t0);
+  function actionCell(x,y,a,alpha){
+    g.globalAlpha=alpha==null?1:alpha; g.fillStyle=a==='C'?'#1db954':'#f44336'; g.fillRect(x,y,16,16);
+    g.fillStyle='#07110a'; g.font='bold 11px Consolas,monospace'; g.textAlign='center'; g.fillText(a,x+8,y+12); g.globalAlpha=1;
   }
-  cv.closest('.card').addEventListener('mouseenter', play);
+  function button(a,now){
+    const b=BTNS[a], active=hot===a, just=flash&&flash.you===a&&now-flash.at<520, col=a==='C'?'#1db954':'#f44336';
+    g.fillStyle=active||just?(a==='C'?'rgba(29,185,84,.18)':'rgba(244,67,54,.16)'):'#101211'; g.fillRect(b.x,b.y,b.w,b.h);
+    g.strokeStyle=active||just?col:'#343434'; g.lineWidth=active||just?2:1; g.strokeRect(b.x+.5,b.y+.5,b.w-1,b.h-1);
+    g.fillStyle=active||just?col:'#aaa'; g.font='bold 11px Consolas,monospace'; g.textAlign='center';
+    g.fillText(a+'  '+(a==='C'?t('COOPERATE','合作'):t('DEFECT','背叛')),b.x+b.w/2,b.y+21);
+  }
+  function updateAria(){
+    cv.setAttribute('aria-label',t(
+      'Dilemma Lab mini match against Tit for Tat. Your score '+scoreYou+', opponent '+scoreTft+'. Choose cooperate or defect with the mouse, or press C or D.',
+      '困境实验室微型对局，对手为一报还一报。你 '+scoreYou+' 分，对手 '+scoreTft+' 分。用鼠标选择合作或背叛，或按 C、D 键。'
+    ));
+  }
+  function draw(now){
+    now=now||performance.now();
+    g.clearRect(0,0,W,H); g.fillStyle='#0b0d0c'; g.fillRect(0,0,W,H);
+    const wash=g.createLinearGradient(0,0,W,0); wash.addColorStop(0,'rgba(29,185,84,.08)'); wash.addColorStop(.5,'rgba(224,106,138,.04)'); wash.addColorStop(1,'rgba(244,67,54,.08)');
+    g.fillStyle=wash; g.fillRect(0,0,W,34);
+    g.font='bold 11px Consolas,monospace'; g.textAlign='left'; g.fillStyle='#e06a8a';
+    g.fillText(t('MICRO MATCH // TIT FOR TAT','微型对局 // 一报还一报'),14,21);
+    g.textAlign='right'; g.fillStyle='#e8b04a'; g.fillText('★ '+trialMedals()+'/15',426,21);
+
+    face(32,43,5,'#3fbf6f','headband'); face(328,43,5,'#b95661','mirror');
+    g.textAlign='center'; g.font='10px Consolas,monospace'; g.fillStyle='#75d997'; g.fillText(t('YOU','你'),72,126);
+    g.fillStyle='#ed8eaa'; g.fillText(t('TIT FOR TAT','一报还一报'),368,126);
+    g.font='bold 22px Consolas,monospace'; g.fillStyle='#e8b04a'; g.fillText(scoreYou,72,153); g.fillText(scoreTft,368,153);
+
+    const recent=rounds.slice(-5);
+    if(!recent.length){
+      g.fillStyle='#777'; g.font='10px Consolas,monospace';
+      g.fillText(t('COOPERATES FIRST','先合作'),220,67); g.fillText(t('THEN COPIES YOU','之后模仿你'),220,84);
+      g.strokeStyle='#333'; g.beginPath(); g.moveTo(203,101); g.lineTo(237,101); g.stroke();
+    } else {
+      const y0=48+(5-recent.length)*9;
+      recent.forEach((r,i)=>{ const y=y0+i*21; actionCell(196,y,r.you); actionCell(228,y,r.tft); });
+    }
+    if(flash&&now-flash.at<650){
+      const p=PAY[flash.you+flash.tft], a=1-(now-flash.at)/650;
+      g.globalAlpha=Math.max(0,a); g.fillStyle='#e8b04a'; g.font='bold 12px Consolas,monospace'; g.textAlign='center';
+      g.fillText(t('YOU +','你 +')+p[0]+'  ·  '+t('TFT +','对手 +')+p[1],220,166); g.globalAlpha=1;
+    } else {
+      g.fillStyle='#686868'; g.font='9px Consolas,monospace'; g.textAlign='center';
+      g.fillText(t('YOUR MOVE · CLICK OR PRESS C / D','轮到你 · 点击或按 C / D'),220,174);
+    }
+    button('C',now); button('D',now);
+  }
+  function animate(){
+    if(reduced){ draw(); return; }
+    if(raf) return;
+    (function frame(now){ draw(now); raf=flash&&now-flash.at<680?requestAnimationFrame(frame):0; })(performance.now());
+  }
+  function choose(a){
+    const theirs=tftMove, p=PAY[a+theirs];
+    rounds.push({you:a,tft:theirs}); scoreYou+=p[0]; scoreTft+=p[1]; tftMove=a;
+    flash={you:a,tft:theirs,at:performance.now()}; hot=a; updateAria(); animate();
+  }
+  function pointerPos(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; }
+  function hit(x,y){ for(const a of ['C','D']){ const b=BTNS[a]; if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h) return a; } return ''; }
+  cv.addEventListener('pointermove',e=>{ const p=pointerPos(e), h=hit(p[0],p[1]); if(h!==hot){ hot=h; draw(); } });
+  cv.addEventListener('pointerleave',()=>{ hot=''; draw(); });
+  cv.addEventListener('click',e=>{ const p=pointerPos(e), h=hit(p[0],p[1]); if(h){ e.preventDefault(); cv.focus({preventScroll:true}); choose(h); } });
+  cv.addEventListener('keydown',e=>{
+    const k=e.key.toUpperCase();
+    if(k==='C'||k==='D'){ e.preventDefault(); choose(k); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); hot=e.key==='ArrowLeft'?'C':'D'; draw(); }
+    else if((e.key==='Enter'||e.key===' ')&&hot){ e.preventDefault(); choose(hot); }
+  });
+  window.addEventListener('pageshow',()=>{ updateAria(); draw(); });
+  window.addEventListener('storage',e=>{ if(e.key==='dilemma_trials_v1') draw(); });
+  const dilemmaToggleLang=window.toggleLang;
+  if(dilemmaToggleLang) window.toggleLang=function(){ dilemmaToggleLang(); updateAria(); draw(); };
+  updateAria(); draw();
 })();
 </script>
 </body>
