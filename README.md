@@ -12,9 +12,9 @@ What began as a Conway's Game of Life implementation grew into a terminal-themed
 
 | Cabinet | What it is |
 |---|---|
-| **game_of_life.exe** | The original. Draw patterns, watch them evolve, turn them into music — sandbox, 11 leaderboard challenges, and a Music Box sequencer. *(details below)* |
-| **glyph_run.exe** | An arena survivor where you ARE a Chinese character — evolve 3,000 years back to your oracle-bone form. Every monster, weapon and drop is a real ancient glyph. *(details below)* |
-| **gomoku.exe** | Classic 5-in-a-row. Beat a minimax AI (alpha-beta), watch AI-vs-AI, or play a friend online. |
+| **game_of_life.exe** | The original. Draw patterns, explore four cellular universes, turn them into music — sandbox, 11 leaderboard challenges, and a Music Box sequencer. *(details below)* |
+| **glyph_run.exe** | An arena survivor where you ARE a Chinese character — evolve 3,000 years back to your oracle-bone form, with a fresh daily oracle objective. Every monster, weapon and drop is a real ancient glyph. *(details below)* |
+| **gomoku.exe** | Classic 5-in-a-row. Beat a minimax AI, learn with the tactical coach, watch AI-vs-AI, or play a friend online. |
 | **tether.exe** | Two players, one rope. Verlet rope physics, wind, ice, crumbling ledges — local or online co-op. |
 | **labyrinth.exe** | An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, a bigger maze every escape. |
 | **grow_a_tomato.exe** | Grow the biggest, sweetest tomato — powered by a real plant-metabolism model. |
@@ -41,6 +41,7 @@ A top-down Brotato-style survivor where **you are a Chinese character**, and eve
 - **The scholar's desk (文房四宝)**: between waves a bamboo scroll unrolls with three refinements across 筆 brush · 墨 ink · 硯 inkstone · 紙 paper — some pay now, the ones marked 遠 pay at the bones. 墨池 makes kills leave mire-ink pools.
 - **合文 ripening**: glyphs left clustered on the ground fuse into a 鼎 worth five glyphs, a heart and the light of 光 — guard territory instead of hoovering XP.
 - **篆刻 meta-progression**: waves survived and glyphs gathered earn cuts; carve radicals (心止又目火貝) into a soapstone seal and every later run opens with the seal stamping your bonuses onto the paper.
+- **每日卜辞**: a rotating daily oracle asks you to gather glyphs, quiet spirits or cross gates in one run; fulfil it once to earn a permanent seal cut.
 - **In-game codex** (文): a permanent unlock gallery — foes met, forms grown, tiers held and synergies woken persist between runs; the rest stays veiled as 未識 — with every entry linked back to its zdic 字源字形 page.
 
 ---
@@ -66,7 +67,7 @@ Three modes, switched from the header: **✦ Sandbox** (draw, stamp, evolve), **
 | **draw & play**<br>![draw and play](demo/gif/regular.gif) | **🔮 Aura** — cells coloured by age<br>![aura](demo/gif/aura.gif) |
 | **⚡ Lookahead** — preview future generations<br>![lookahead](demo/gif/lookingahead.gif) | **🎠 Music Box** — patterns become music<br>![symphony](demo/gif/sound.gif) |
 
-Highlights: freehand drawing with zoom/pan, 8 classic patterns with drag-and-drop stamping (rotate/mirror), full undo/redo plus "back a play", image→cells conversion, save/share patterns to a community gallery, PNG export, B3/S23 on a finite grid.
+Highlights: freehand drawing with zoom/pan, 8 classic patterns with drag-and-drop stamping (rotate/mirror), full undo/redo plus "back a play", image→cells conversion, save/share patterns to a community gallery, PNG export, and a shareable Rule Lab spanning Conway (B3/S23), HighLife, Day & Night and Seeds.
 
 🔊 **[▶ Watch the Music Box with sound](demo/symphony-with-sound.mp4)**
 

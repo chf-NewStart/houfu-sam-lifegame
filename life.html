@@ -270,6 +270,11 @@
     .rules-item { white-space: nowrap; }
     .rules-bar b { color: #d8d8d8; font-weight: 600; }
     .rules-note { color: #858585; }
+    .rule-lab { margin: 2px 0 9px; padding: 8px; background: #0c0c0c; border: 1px solid #1d291f; }
+    .rule-lab-row { display: flex; gap: 8px; align-items: center; }
+    .rule-lab-row label { color: #1db954; font-size: 0.65rem; white-space: nowrap; }
+    .rule-lab select { flex: 1; min-width: 0; background: #090909; border: 1px solid #2a342b; color: #ccc; font: 0.68rem Consolas, monospace; padding: 5px 6px; }
+    .rule-lab-desc { color: #666; font-size: 0.61rem; line-height: 1.55; margin-top: 5px; }
 
     /* ── Pattern tray — horizontal strip below the grid (desktop + mobile) ── */
     .patterns-mobile { display: block; width: 100%; order: 99; margin-top: 10px; border-top: 1px solid #1e1e1e; padding-top: 10px; }
@@ -402,6 +407,8 @@
     /* ── Mobile ───────────────────────────────────────── */
     @media (max-width: 700px) {
       .main-layout { flex-direction: column; overflow: visible; }
+      .pg-header .mode-switch { width:100%; }
+      .pg-header .mode-btn { flex:1; padding:7px 5px; font-size:0.76rem; }
 
       /* Full-width grid + controls (vertical swipe scrolls thanks to the
          canvas touch-action; no need for narrow gutters anymore) */
@@ -521,10 +528,10 @@
     <!-- Rules (B3/S23) — horizontal strip right above the grid -->
     <div class="rules-bar">
       <span class="rules-lbl" data-en="// rules" data-zh="// 规则">// rules</span>
-      <span class="rules-item"><b style="color:#1db954">■</b> <b data-en="Survive" data-zh="幸存">Survive</b> <span data-en="live cell with 2 or 3 neighbours" data-zh="存活时，2–3 邻居">live cell with 2 or 3 neighbours</span></span>
-      <span class="rules-item"><b style="color:#f44336">■</b> <b data-en="Die" data-zh="死亡">Die</b> <span data-en="live cell with fewer than 2, or more than 3" data-zh="存活时，&lt;2 或 &gt;3 邻居">live cell with fewer than 2, or more than 3</span></span>
-      <span class="rules-item"><b style="color:#9a9a9a">■</b> <b data-en="Born" data-zh="诞生">Born</b> <span data-en="empty cell with exactly 3 neighbours" data-zh="非存活时，恰好 3 邻居">empty cell with exactly 3 neighbours</span></span>
-      <span class="rules-note" data-en="· B3/S23 · cells die at the border" data-zh="· B3/S23 · 细胞在边界消亡">· B3/S23 · cells die at the border</span>
+      <span class="rules-item"><b style="color:#1db954">■</b> <b data-en="Survive" data-zh="幸存">Survive</b> <span id="ruleSurvive">live cell with 2 or 3 neighbours</span></span>
+      <span class="rules-item"><b style="color:#f44336">■</b> <b data-en="Die" data-zh="死亡">Die</b> <span id="ruleDie">live cell at every other count</span></span>
+      <span class="rules-item"><b style="color:#9a9a9a">■</b> <b data-en="Born" data-zh="诞生">Born</b> <span id="ruleBorn">empty cell with exactly 3 neighbours</span></span>
+      <span class="rules-note" id="ruleNotation">· B3/S23 · cells die at the border</span>
     </div>
 
     <div class="canvas-wrap">
@@ -642,6 +649,18 @@
         <span data-en="// more" data-zh="// 更多">// more</span><span id="moreChevron">▾</span>
       </div>
       <div id="moreSection" style="display:block">
+        <div class="rule-lab sb-only">
+          <div class="rule-lab-row">
+            <label for="ruleSelect" data-en="// universe" data-zh="// 宇宙规则">// universe</label>
+            <select id="ruleSelect" onchange="setRule(this.value)">
+              <option value="conway" data-en="Conway · B3/S23" data-zh="康威 · B3/S23">Conway · B3/S23</option>
+              <option value="highlife" data-en="HighLife · B36/S23" data-zh="高生命 · B36/S23">HighLife · B36/S23</option>
+              <option value="daynight" data-en="Day &amp; Night · B3678/S34678" data-zh="昼与夜 · B3678/S34678">Day &amp; Night · B3678/S34678</option>
+              <option value="seeds" data-en="Seeds · B2/S" data-zh="种子 · B2/S">Seeds · B2/S</option>
+            </select>
+          </div>
+          <div class="rule-lab-desc" id="ruleDesc"></div>
+        </div>
         <div class="brow">
           <button class="btn" onclick="saveImage()" data-en="📸 Save image (S)" data-zh="📸 保存图片 (S)" title="Save / share the current pattern as a PNG  (shortcut: S)">📸 Save image (S)</button>
           <button class="btn" id="shareBtn" onclick="shareSeed()" data-en="⎘ Share link" data-zh="⎘ 分享链接">⎘ Share link</button>
@@ -871,6 +890,41 @@ let CELL = 8;
 let COLS, ROWS;
 let grid, next;
 
+/* ── Rule Lab: Life-like cellular automata ───────── */
+const RULESETS = {
+  conway:  { b:[3],       s:[2,3],       code:'B3/S23',       en:'The classic balance: gliders, oscillators and intricate long-lived machines.', zh:'经典平衡：滑翔机、振荡器与复杂的长寿结构。' },
+  highlife:{ b:[3,6],     s:[2,3],       code:'B36/S23',      en:'A sixth neighbour can also give birth, creating the famous self-replicator.', zh:'六个邻居也能诞生细胞，会产生著名的自我复制结构。' },
+  daynight:{b:[3,6,7,8],  s:[3,4,6,7,8], code:'B3678/S34678', en:'Dense and empty space mirror one another; continents of life push through the dark.', zh:'稠密与空白彼此镜像，生命大陆会在黑暗中推进。' },
+  seeds:   { b:[2],       s:[],          code:'B2/S',         en:'Every cell lives for one instant; pairs ignite explosive branching growth.', zh:'每个细胞只活一瞬；成对细胞会点燃爆炸式分枝。' }
+};
+let activeRule = (()=>{ try{ const v=localStorage.getItem('lifegame_rule'); return RULESETS[v]?v:'conway'; }catch(e){ return 'conway'; } })();
+function ruleWillLive(alive, neighbours){
+  const r=RULESETS[activeRule]; return (alive ? r.s : r.b).includes(neighbours);
+}
+function countWords(nums){
+  if(!nums.length) return t('no neighbour count','没有任何邻居数');
+  return nums.join(lang==='zh'?'、':', ');
+}
+function updateRuleUI(){
+  const r=RULESETS[activeRule], sel=document.getElementById('ruleSelect');
+  if(sel) sel.value=activeRule;
+  const survive=document.getElementById('ruleSurvive'), born=document.getElementById('ruleBorn');
+  if(survive) survive.textContent=r.s.length
+    ? t(`live cell with ${countWords(r.s)} neighbours`,`存活细胞在 ${countWords(r.s)} 个邻居时幸存`)
+    : t('no live cell survives','存活细胞不会幸存');
+  if(born) born.textContent=t(`empty cell with ${countWords(r.b)} neighbours`,`空白细胞在 ${countWords(r.b)} 个邻居时诞生`);
+  const die=document.getElementById('ruleDie'); if(die) die.textContent=t('live cell at every other count','其余邻居数下死亡');
+  const note=document.getElementById('ruleNotation'); if(note) note.textContent=`· ${r.code} · `+t('cells die at the border','细胞在边界消亡');
+  const desc=document.getElementById('ruleDesc'); if(desc) desc.textContent=t(r.en,r.zh);
+}
+function setRule(id){
+  if(!RULESETS[id] || id===activeRule) return;
+  if(running) togglePlay();
+  activeRule=id; clearHistory();
+  try{ localStorage.setItem('lifegame_rule',id); }catch(e){}
+  updateRuleUI(); draw(); refreshDevPanel();
+}
+
 function initGrid() {
   const mobile = window.innerWidth <= 700;
   let maxW, maxH;
@@ -986,11 +1040,11 @@ function draw() {
       const i = idx(c, r);
       const alive = grid[i];
       const n = neighbors(c, r);
-      const willLive = alive ? (n === 2 || n === 3) : (n === 3);
+      const willLive = ruleWillLive(!!alive,n);
       if (willLive) nextLive++;
       if (alive) {
         live++;
-        ctx.fillStyle = auraMode ? auraColor(age[i]) : ((n === 2 || n === 3) ? GREEN : RED);
+        ctx.fillStyle = auraMode ? auraColor(age[i]) : (willLive ? GREEN : RED);
         ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
       } else if (auraMode && trail[i] > 0) {
         // fading afterglow of a recently-dead cell (cool blue, fades out)
@@ -998,7 +1052,7 @@ function draw() {
         ctx.fillStyle = '#3a7bd5';
         ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
         ctx.globalAlpha = 1;
-      } else if (n === 3 && !auraMode) {
+      } else if (ruleWillLive(false,n) && !auraMode) {
         // next-gen birth preview — predict mode only (cleaner art look in Aura)
         ctx.fillStyle = GHOST;
         ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 1, CELL - 1);
@@ -1193,7 +1247,7 @@ function step() {
       const i = idx(c, r);
       const n = neighbors(c, r);
       const alive = grid[i];
-      const willLive = alive ? (n === 2 || n === 3) : (n === 3);
+      const willLive = ruleWillLive(!!alive,n);
       next[i] = willLive ? 1 : 0;
       // age: survivor keeps counting, newborn starts at 1, dead resets to 0
       nextAge[i] = willLive ? (alive ? Math.min(age[i] + 1, 65000) : 1) : 0;
@@ -1288,7 +1342,7 @@ function _computeFuture(startG, steps) {
             const nc = c + dc, nr = r + dr;
             if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS) nb += a[idx(nc, nr)];
           }
-        b[idx(c, r)] = (a[idx(c, r)] ? (nb === 2 || nb === 3) : (nb === 3)) ? 1 : 0;
+        b[idx(c, r)] = ruleWillLive(!!a[idx(c, r)],nb) ? 1 : 0;
       }
     }
     [a, b] = [b, a];
@@ -1440,6 +1494,7 @@ function updateUI() {
     status.textContent = prefix + t(ch.goal, ch.goalZh);
   }
   _syncMusicBtn();   // keep the Music ⏵/⏸ Sound button correct after a language switch
+  updateRuleUI();
 }
 
 /* ── Mouse / touch drawing ────────────────────────── */
@@ -1590,6 +1645,11 @@ function setMode(m) {
     b.classList.toggle('active', b.dataset.mode === m));
 
   if (m === 'challenges') {
+    if(activeRule!=='conway'){
+      activeRule='conway';
+      try{ localStorage.setItem('lifegame_rule','conway'); }catch(e){}
+      updateRuleUI();
+    }
     // Entering Challenges: neutral competitive view — drop sandbox-only Aura
     // (its toggle is hidden here) and reset the prompt if idle.
     if (auraMode) toggleAura();
@@ -2214,10 +2274,13 @@ function applySeed(live) {
 
 function loadSeedParam() {
   // Use hash (#s=...) — never touched by servers or redirects
-  const hash = window.location.hash;
-  if (!hash.startsWith('#s=')) return false;
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const seed = params.get('s');
+  if (!seed) return false;
   try {
-    urlSeed = JSON.parse(b64dec(hash.slice(3)));
+    const sharedRule=params.get('r');
+    if(sharedRule && RULESETS[sharedRule]) activeRule=sharedRule;
+    urlSeed = JSON.parse(b64dec(seed));
     applySeed(urlSeed); draw();
     urlSeed = null;   // applied once at load — resizes must never re-apply it (doResize re-centers the live cells instead)
     return true;
@@ -2225,7 +2288,8 @@ function loadSeedParam() {
 }
 
 function shareSeed() {
-  const url = window.location.origin + window.location.pathname + '#s=' + encodeSeed();
+  const rulePart=activeRule==='conway'?'':'&r='+encodeURIComponent(activeRule);
+  const url = window.location.origin + window.location.pathname + '#s=' + encodeSeed() + rulePart;
   const btn = document.getElementById('shareBtn');
   const prev = btn.textContent;
   const flash = () => {
@@ -2326,6 +2390,11 @@ function _inZoneA(c, r) { return zoneA && c >= zoneA.c0 && c <= zoneA.c1 && r >=
 
 function startChallenge(i) {
   if (running) togglePlay();
+  if(activeRule!=='conway'){
+    activeRule='conway';
+    try{ localStorage.setItem('lifegame_rule','conway'); }catch(e){}
+    updateRuleUI();
+  }
   clearGrid(); activeChallenge = i;
   prevGridSnap = null; prevPrevGridSnap = null; challengeStartSeed = null;
   stableCountStreak = 0; prevCellCount = -1;
