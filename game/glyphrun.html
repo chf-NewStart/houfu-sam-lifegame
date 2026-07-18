@@ -161,6 +161,13 @@
   .overlay.shell .char-card{background:rgba(10,14,10,0.72);border-color:#2c362a;}
   .overlay.shell .char-card:hover{border-color:#4a6350;}
   .overlay.shell #prevBox{border-color:#2c362a;}
+  .daily-omen{width:min(760px,94%);margin:0 auto 10px;padding:8px 12px;border:1px solid #3b321d;border-left:3px solid #c9a04a;
+    background:rgba(12,14,9,0.76);display:flex;gap:12px;align-items:center;text-align:left;}
+  .daily-omen .og{font-size:1.45rem;color:#e8b04a;flex:0 0 auto;}
+  .daily-omen .ot{color:#c9a04a;font-size:0.72rem;letter-spacing:1px;}
+  .daily-omen .od{color:#a79d82;font-size:0.7rem;line-height:1.45;margin-top:2px;}
+  .daily-omen.done{border-color:#49634d;border-left-color:#1db954;}
+  .daily-omen.done .og,.daily-omen.done .ot{color:#1db954;}
   /* ink-wash hover: the brush touches the shell and the pale wash spreads */
   .char-card{position:relative;overflow:hidden;}
   .char-card::before{content:'';position:absolute;left:50%;top:55%;width:150%;aspect-ratio:1;
@@ -338,6 +345,7 @@
       <h2 data-en="字源 · GLYPH RUN" data-zh="字源 · 汉字奔跑">字源 · GLYPH RUN</h2>
       <div class="big" style="margin-bottom:10px" data-en="You ARE the character. Steer — ink, arms and your family's gift fight on their own. Gather fallen glyphs, evolve back to the bones." data-zh="你就是字。只管走位——笔墨、兵器与天赋自动出手。集字升级，一路进化回甲骨。">You ARE the character. Steer — ink, arms and your family's gift fight on their own. Gather fallen glyphs, evolve back to the bones.</div>
       <div class="keys" id="nightBest" style="display:none;margin:-4px 0 8px;color:#8a7a4a"></div>
+      <div class="daily-omen" id="dailyOmen"><div class="og">卜</div><div><div class="ot" id="omenTitle"></div><div class="od" id="omenDesc"></div></div></div>
       <div class="setup">
         <div class="setup-left">
           <div class="pick-box">
@@ -2587,7 +2595,7 @@ const Game = (function(){
   let desk = freshDesk();
   let elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
   let synOn = {}, shengT = 18, duanT = 12, oppSeen = false;
-  let pools = [], embers = [], waveGuard = false, strokeN = 0, matT = 0.6, stainFade = 0, runGlyphs = 0, composeT = 1;
+  let pools = [], embers = [], waveGuard = false, strokeN = 0, matT = 0.6, stainFade = 0, runGlyphs = 0, runKills = 0, composeT = 1;
   const touch = {on:false, ox:0, oy:0, kx:0, ky:0};   // the thumb-stick, drawn where the thumb lands
   const inkCvs = document.createElement('canvas'); inkCvs.width = CW; inkCvs.height = CH;
   const inkCtx = inkCvs.getContext('2d');
@@ -2601,6 +2609,39 @@ const Game = (function(){
   function mark(cat, key, val){
     const nv = val === undefined ? 1 : val, cur = seen[cat][key];
     if(cur === undefined || nv > cur){ seen[cat][key] = nv; saveJSON('glyphrun_codex', seen); }
+  }
+
+  /* 每日卜辞 · one small oracle changes each local day. Fulfilling it once
+     earns a permanent seal cut, giving returning runs a fresh purpose. */
+  const OMENS = [
+    {id:'gather', ch:'集', goal:20, title_en:'GATHER THE SIGNS', title_zh:'集字成兆',
+     en:'Gather 20 fallen glyphs in one battle.', zh:'在一场战斗中拾取 20 个掉落的字。', get:()=>runGlyphs},
+    {id:'quell', ch:'伐', goal:35, title_en:'QUIET THE NIGHT', title_zh:'伐鬼静夜',
+     en:'Defeat 35 spirits in one battle.', zh:'在一场战斗中击败 35 个鬼灵。', get:()=>runKills},
+    {id:'gates', ch:'門', goal:2, title_en:'CROSS TWO GATES', title_zh:'连渡二门',
+     en:'Reach the third era in the main journey.', zh:'在主旅程中抵达第三个字体时代。', get:()=>(stage||endless?0:stageIdx)}
+  ];
+  const omenDone = loadJSON('glyphrun_daily_omens', {});
+  function omenDay(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+  function todaysOmen(){
+    const key=omenDay(); let hash=0; for(let i=0;i<key.length;i++) hash=(hash*31+key.charCodeAt(i))>>>0;
+    return {key, omen:OMENS[hash%OMENS.length]};
+  }
+  function updateOmenUI(){
+    const box=$('dailyOmen'); if(!box) return;
+    const d=todaysOmen(), o=d.omen, done=!!omenDone[d.key], cur=Math.min(o.goal,o.get());
+    box.classList.toggle('done',done); box.querySelector('.og').textContent=done?'✓':o.ch;
+    $('omenTitle').textContent=t(`DAILY ORACLE · ${o.title_en}`,`每日卜辞 · ${o.title_zh}`);
+    $('omenDesc').textContent=done
+      ? t('Fulfilled · the seal carver received +1 cut.','已应验 · 篆刻获得 1 刀。')
+      : `${t(o.en,o.zh)} · ${cur}/${o.goal} · ${t('reward: +1 seal cut','奖励：篆刻 +1 刀')}`;
+  }
+  function checkOmen(){
+    const d=todaysOmen(), o=d.omen; if(omenDone[d.key]){ updateOmenUI(); return; }
+    if(o.get()<o.goal){ updateOmenUI(); return; }
+    omenDone[d.key]={id:o.id,at:Date.now()}; saveJSON('glyphrun_daily_omens',omenDone);
+    seal.pts++; saveJSON('glyphrun_seal',seal); updateOmenUI();
+    popToastEx('兆','zhào',t('the daily oracle is fulfilled — +1 seal cut','每日卜辞应验——篆刻 +1 刀'),'qi');
   }
 
   function overlay(id, show){ $(id).classList.toggle('show', show); }
@@ -2658,7 +2699,7 @@ const Game = (function(){
     lives = maxHp; coins = 0; nextHeart = 14; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
     endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = true; glyphToasted = {};
     desk = freshDesk();
-    elems = {'金':0,'木':0,'水':0,'火':0,'土':0}; synOn = {}; oppSeen = true; runGlyphs = 0;
+    elems = {'金':0,'木':0,'水':0,'火':0,'土':0}; synOn = {}; oppSeen = true; runGlyphs = 0; runKills = 0;
     weapons = [{key:selArm, lv: seal.carved.you ? 3 : 2, t:0.8}];
     checkCompose();
     stage = {i, def}; stageKills = 0; stageHurt = 0; stageWinT = null;
@@ -2758,6 +2799,7 @@ const Game = (function(){
     $('hudCoins').textContent = coins;
     $('hudLives').innerHTML = '♥'.repeat(Math.max(0,lives)) + '<span style="opacity:0.3">' + '♥'.repeat(Math.max(0,maxHp-lives)) + '</span>';
     syncElems();
+    checkOmen();
   }
   /* the five phases, counted under the arena; woken synergies glow cinnabar */
   function syncElems(){
@@ -2822,7 +2864,7 @@ const Game = (function(){
     stage = null; stageWinT = null;
     desk = freshDesk();
     elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
-    synOn = {}; shengT = 18; duanT = 12; oppSeen = false; strokeN = 0; runGlyphs = 0;
+    synOn = {}; shengT = 18; duanT = 12; oppSeen = false; strokeN = 0; runGlyphs = 0; runKills = 0;
     weapons = [{key:selArm, lv: seal.carved.you ? 3 : 2, t:0.8}];   // the starting arm is bronze-cast; the carved 又 makes it oracle
     mark('arms', selArm, weapons[0].lv);
     checkCompose();
@@ -3050,6 +3092,7 @@ const Game = (function(){
   }
   function killSpirit(s, ang){
     s.dead = true;
+    if(s.type!=='guo'){ runKills++; checkOmen(); }
     if(stage && s.type !== 'guo'){ stageKills++; if(stage.def.goal.kill) syncHud(); }
     stopT = Math.max(stopT, s.boss ? 0.11 : 0.06);    // the brush lifts
     addFx({kind:'ripple', x:s.x, y:s.y, t:0.8, r: s.boss ? 64 : 42});   // a drop in still water
@@ -5089,7 +5132,7 @@ const Game = (function(){
     running = false; paused = false; hideAll(); overlay('ovStart', true);
     loadStage(0);
   }
-  function onLang(){ syncHud(); buildCharSelect(); buildArmSelect(); PV.refreshLine(); }
+  function onLang(){ syncHud(); buildCharSelect(); buildArmSelect(); PV.refreshLine(); updateOmenUI(); }
   function bookCanvas(w, h, draw){
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     draw(c.getContext('2d'), c);
@@ -5441,7 +5484,7 @@ const Game = (function(){
   if(bookWenCv && bookWenCv.getContext) drawWen(bookWenCv.getContext('2d'), 23, 47, 36, '#e8b04a');
   const st = $('sealTitle');
   if(st && st.getContext) drawSealStamp(st);        // the 字源 stamp in the masthead
-  buildCharSelect(); buildArmSelect(); PV.reset(); updateNightBest();
+  buildCharSelect(); buildArmSelect(); PV.reset(); updateNightBest(); updateOmenUI();
   // idle attract render so the start screen isn't blank
   loadStage(0); running = false; render();
 
@@ -5449,7 +5492,7 @@ const Game = (function(){
            openScroll, closeScroll, startStage, retryStage, nextStagePage,
            openBook, closeBook, openSeal, closeSeal,
            dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, pav, endless, endlessN, exhaleT,
-                         stageIdx, selChar, selArm, waveT, gate, hp: lives, maxHp, level, coins,
+                         stageIdx, selChar, selArm, waveT, gate, hp: lives, maxHp, level, coins, runGlyphs, runKills, daily: todaysOmen(),
                          hat: hatOn, sheng: shengPed, buffT, paused, banner,
                          desk, elems, synOn, pools, sealSave: seal, codexSave: seen }) };
 })();

@@ -73,6 +73,10 @@
     .btn { flex: 1; background: transparent; border: 1px solid #2a2a2a; color: #777; font-family: Consolas, monospace; font-size: 0.72rem; padding: 7px 8px; cursor: pointer; transition: all 0.1s; }
     .btn:hover:not(:disabled) { border-color: #1db954; color: #1db954; }
     .btn:disabled { opacity: 0.2; cursor: not-allowed; }
+    .btn.active { border-color:#e8b04a; color:#e8b04a; background:rgba(232,176,74,0.06); }
+    .coach-note { display:none; margin-top:7px; padding:7px 8px; border-left:2px solid #e8b04a; background:#0c0c0c; color:#888; font-size:0.64rem; line-height:1.55; }
+    .coach-note.show { display:block; }
+    .coach-note b { color:#e8b04a; font-weight:normal; }
     @keyframes btn-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.3);}50%{box-shadow:0 0 0 5px rgba(255,255,255,0);} }
     .btn.glow-g { border-color: #1db954; color: #1db954; animation: btn-pulse 1.4s infinite; }
     .btn.glow-r { border-color: #f44336; color: #f44336; animation: btn-pulse 1.4s infinite; }
@@ -224,7 +228,9 @@
         <button class="btn" id="undoBtn"   onclick="undoMove()"       data-en="↩ Undo"     data-zh="↩ 悔棋"   disabled>↩ Undo</button>
         <button class="btn" id="resignBtn" onclick="resign()"       data-en="⚑ Resign"   data-zh="⚑ 认输">⚑ Resign</button>
         <button class="btn" id="pauseBtn"  onclick="togglePause()"  style="display:none" data-en="⏸ Pause" data-zh="⏸ 暂停">⏸ Pause</button>
+        <button class="btn" id="coachBtn" onclick="toggleCoach()" data-en="◎ Coach" data-zh="◎ 教练">◎ Coach</button>
       </div>
+      <div class="coach-note" id="coachNote"></div>
     </div>
 
     <div class="pcard">
@@ -316,7 +322,9 @@ const ctx    = canvas.getContext('2d');
 let PAD, CELL, CSIZE;
 
 function computeLayout() {
-  const maxW = Math.min(window.innerWidth - 40, 520);
+  // Browsers can briefly report a zero-width viewport during navigation.
+  // Clamp it so a persisted Coach overlay never tries to draw negative radii.
+  const maxW = Math.min(Math.max(320, window.innerWidth || 0) - 40, 520);
   CELL  = Math.floor((maxW - 56) / (N - 1));
   PAD   = Math.floor(CELL * 0.8);
   CSIZE = CELL * (N - 1) + PAD * 2;
@@ -333,6 +341,7 @@ let diff = 'normal';
 let playerTypes = {1: 'human', 2: 'ai'};
 let paused = false;
 let remoteMode = false, myColor = null;
+let coachMode = (()=>{ try{return localStorage.getItem('gomoku_coach')==='1';}catch(e){return false;} })();
 
 function newGame() {
   paused = false;
@@ -529,6 +538,8 @@ function draw() {
     ctx.fillText(String(N - i), PAD - 10, PAD + i*CELL + 3);
   }
 
+  if (coachMode) drawCoachHints();
+
   // Hover ghost
   if (hoverCell) {
     const [hr, hc] = hoverCell;
@@ -602,6 +613,7 @@ function renderPanel() {
     document.getElementById('p2label').innerHTML = `●&nbsp;<span>${t('Tomato','番茄')} (${typeLabel(playerTypes[2])})</span>`;
   }
   document.getElementById('resignBtn').disabled = gameOver;
+  updateCoachUI();
 }
 
 /* ── Resign ───────────────────────────────────── */
@@ -716,6 +728,63 @@ function isWinMove(board, r, c, player) {
     if (cnt >= 5) return true;
   }
   return false;
+}
+
+/* ── Tactical coach ────────────────────────────────
+   Gold rings are wins, cyan rings are mandatory blocks, and green rings are
+   promising threat-building moves. Remote games suppress the coach. */
+function coachCoord(m){ return COLS[m[1]]+(N-m[0]); }
+function getCoachAnalysis(){
+  if(!coachMode || !board || remoteMode || gameOver || aiThinking || isAI(curP)) return {kind:'idle',moves:[]};
+  const opp=curP===1?2:1, wins=[], blocks=[];
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    if(board[r][c]!==0) continue;
+    board[r][c]=curP; const mine=isWinMove(board,r,c,curP); board[r][c]=0;
+    if(mine){ wins.push([r,c]); continue; }
+    board[r][c]=opp; const theirs=isWinMove(board,r,c,opp); board[r][c]=0;
+    if(theirs) blocks.push([r,c]);
+  }
+  if(wins.length) return {kind:'win',moves:wins};
+  if(blocks.length) return {kind:'block',moves:blocks};
+  const builds=[];
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++) if(board[r][c]===0){
+    const own=localThreat(board,r,c,curP), deny=localThreat(board,r,c,opp);
+    if(own>=250 || deny>=400) builds.push({m:[r,c],s:own+deny*0.8});
+  }
+  builds.sort((a,b)=>b.s-a.s);
+  return {kind:'build',moves:builds.slice(0,3).map(x=>x.m)};
+}
+function updateCoachUI(){
+  const btn=document.getElementById('coachBtn'), note=document.getElementById('coachNote');
+  if(!btn || !note) return;
+  btn.disabled=remoteMode;
+  btn.classList.toggle('active',coachMode && !remoteMode);
+  btn.textContent=coachMode?t('◎ Coach: on','◎ 教练：开'):t('◎ Coach','◎ 教练');
+  note.classList.toggle('show',coachMode && !remoteMode);
+  if(!coachMode || remoteMode) return;
+  const a=getCoachAnalysis();
+  if(a.kind==='win') note.innerHTML='<b>'+t('WIN NOW','立即取胜')+'</b> · '+a.moves.map(coachCoord).join(', ');
+  else if(a.kind==='block') note.innerHTML='<b>'+t('MUST BLOCK','必须封堵')+'</b> · '+a.moves.map(coachCoord).join(', ');
+  else if(a.moves.length) note.innerHTML='<b>'+t('BUILD PRESSURE','制造威胁')+'</b> · '+a.moves.map(coachCoord).join(', ')+' · '+t('rings are suggestions, not guarantees','圆环是建议，并非保证');
+  else note.textContent=t('No forced tactic yet — grow open lines in more than one direction.','暂无强制战术——尝试向多个方向发展活线。');
+}
+function drawCoachHints(){
+  const a=getCoachAnalysis(); if(!a.moves.length) return;
+  const color=a.kind==='win'?'#e8b04a':a.kind==='block'?'#46c8ff':'#1db954';
+  const mark=a.kind==='win'?'!':a.kind==='block'?'×':'?';
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=Math.max(2,CELL*0.07);
+  ctx.font=`bold ${Math.max(9,CELL*0.34)}px Consolas, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  a.moves.forEach(([r,c])=>{
+    const x=PAD+c*CELL,y=PAD+r*CELL;
+    ctx.beginPath(); ctx.arc(x,y,CELL*0.34,0,Math.PI*2); ctx.stroke(); ctx.fillText(mark,x,y+1);
+  });
+  ctx.restore();
+}
+function toggleCoach(){
+  if(remoteMode) return;
+  coachMode=!coachMode;
+  try{localStorage.setItem('gomoku_coach',coachMode?'1':'0');}catch(e){}
+  draw(); renderPanel();
 }
 
 function getCandidates(board, player) {
