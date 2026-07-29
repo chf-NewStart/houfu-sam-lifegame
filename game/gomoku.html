@@ -18,9 +18,9 @@
     .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; transition: background 0.1s; flex-shrink: 0; }
     .lang-btn:hover { background: rgba(29,185,84,0.1); }
 
-    .layout { display: flex; gap: 20px; align-items: flex-start; max-width: 920px; margin: 0 auto; }
+    .layout { display: flex; gap: 20px; align-items: flex-start; max-width: 1120px; margin: 0 auto; }
     .board-col { flex: 0 0 auto; }
-    .panel-col { flex: 1; min-width: 0; }
+    .panel-col { flex: 1; min-width: 250px; }
 
     /* Canvas wrapper */
     #boardWrap { position: relative; display: inline-block; }
@@ -54,6 +54,7 @@
 
     /* Mode / difficulty toggles */
     .tog-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+    .tog-row .tog { flex: 1 1 auto; text-align: center; white-space: nowrap; }
     .tog { flex: 1; background: #0d0d0d; border: 1px solid #1e1e1e; color: #555; font-family: Consolas, monospace; font-size: 0.65rem; padding: 5px 6px; cursor: pointer; text-align: center; transition: all 0.1s; white-space: nowrap; }
     .tog:hover:not(:disabled) { border-color: #888; color: #aaa; }
     .tog.sel { border-color: #1db954; color: #1db954; background: rgba(29,185,84,0.06); }
@@ -69,7 +70,8 @@
     #rlMsg { font-size:0.6rem; color:#555; margin-top:5px; }
 
     /* Buttons */
-    .brow { display: flex; gap: 5px; margin-top: 4px; }
+    .brow { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
+    .brow .btn { flex: 1 1 calc(50% - 5px); white-space: nowrap; }
     .btn { flex: 1; background: transparent; border: 1px solid #2a2a2a; color: #777; font-family: Consolas, monospace; font-size: 0.72rem; padding: 7px 8px; cursor: pointer; transition: all 0.1s; }
     .btn:hover:not(:disabled) { border-color: #1db954; color: #1db954; }
     .btn:disabled { opacity: 0.2; cursor: not-allowed; }
@@ -95,6 +97,7 @@
 
     @media (max-width: 700px) {
       .layout { flex-direction: column; }
+      .panel-col { min-width: 0; }   /* stacked: full width, no floor needed */
     }
 
     /* Player type selector */
@@ -393,9 +396,15 @@ let PAD, CELL, CSIZE;
 function computeLayout() {
   // Browsers can briefly report a zero-width viewport during navigation.
   // Clamp it so a persisted Coach overlay never tries to draw negative radii.
-  // 760, not 520: the old clamp held CELL at 33 or less, which is too small for
-  // a character to register on a desktop board.
-  const maxW = Math.min(Math.max(320, window.innerWidth || 0) - 40, 760);
+  // Reserve the side panel's width whenever the layout is a row, or the board
+  // grows into it and every control wraps into a ragged mess. Below 700px the
+  // layout stacks, so the board may use the full width.
+  const stacked = window.matchMedia('(max-width: 700px)').matches;
+  const reserve = stacked ? 0 : 270;            // panel min-width + gap
+  // 760 cap, not the old 520: at 520 the cell never exceeded 33px, too small
+  // for a character to register on a desktop board.
+  const avail = Math.max(320, window.innerWidth || 0) - 40 - reserve;
+  const maxW = Math.min(Math.max(300, avail), 760);
   CELL  = Math.floor((maxW - 56) / (N - 1));
   PAD   = Math.floor(CELL * 0.8);
   CSIZE = CELL * (N - 1) + PAD * 2;
