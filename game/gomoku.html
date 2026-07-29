@@ -554,9 +554,18 @@ function undoMove() {
     board = state.board; curP = state.curP; lastMove = state.lastMove; moveCount = state.moveCount;
   };
   apply();
-  // Playing against an AI, one undo lands on the AI's turn (which it would just
-  // replay). Step back once more so control returns to the human.
-  if (!gameOver && isAI(curP) && !(isAI(1) && isAI(2)) && history.length > 0) apply();
+  // Playing against an AI, one undo lands on the AI's turn, which it would just
+  // replay — so step back until it is the human's turn again.
+  //
+  // The `!gameOver` guard that used to be on this line made undo useless in the
+  // exact case you most want it: after LOSING. The AI's winning move is the last
+  // one, so a single pop returns the board to the AI's turn, gameOver is cleared,
+  // scheduleAI() fires, and the AI instantly replays the winning move. The board,
+  // the turn and the history length all came back identical and undo looked
+  // broken. The end of the game is precisely when stepping back to the human
+  // matters, so the condition must not exclude it.
+  const vsAI = (isAI(1) || isAI(2)) && !(isAI(1) && isAI(2));
+  while (vsAI && isAI(curP) && history.length > 0) apply();
   gameOver  = false;
   winResult = null;
   document.getElementById('winBanner').className = 'win-banner';
