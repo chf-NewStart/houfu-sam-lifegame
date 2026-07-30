@@ -80,9 +80,10 @@
     .glow-lander .ld-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
     .card.glow-lander:hover .ld-canvas { opacity: 1; }
 
-/* Per-game card accents; Glyph Run stays restrained and image-led. */
+/* Per-game card accents; Glyph Run is a still cabinet boot screen — 舞 in phosphor. */
 .card.glow-glyph{border-color:rgba(232,176,74,.38);}
 .card.glow-glyph:hover{border-color:#e8b04a;box-shadow:0 0 24px -10px rgba(232,176,74,.6);}
+.glyphlive{background:#080808;}
 .glow-glyph .card-thumb{background:#0c1110;filter:saturate(.88) brightness(.88) contrast(1.04);}
 .glow-glyph:hover .card-thumb{filter:saturate(1) brightness(1) contrast(1.02);}
 .glow-glyph .card-icon{color:#e8b04a;}
@@ -238,7 +239,7 @@
 
   <div class="card glow-glyph star" data-players="1">
     <div class="ribbon p12" data-en="1UP · FEATURED" data-zh="1UP · 精选">1UP · FEATURED</div>
-    <img class="card-thumb" src="/game/thumbs/glyphrun.jpg?v=2" alt="Glyph Run hero evolving through four eras of Chinese script" loading="eager" width="880" height="495">
+    <canvas class="card-thumb glyphlive" role="img" aria-label="舞 — the oracle-bone dancer glyph, glowing like a cabinet boot screen" width="440" height="240"></canvas>
     <div class="card-icon">[字]</div>
     <div class="card-title" data-en="glyph_run.exe" data-zh="字源.exe">glyph_run.exe</div>
     <div class="card-desc" data-en="A survivor game drawn from the history of Chinese writing. Dodge spirits, collect fallen glyphs, and evolve from clerical script to oracle bone." data-zh="一款取材于汉字演变史的生存游戏。避开群鬼，收集落字，从隶书一路进化至甲骨文。">A survivor game drawn from the history of Chinese writing. Dodge spirits, collect fallen glyphs, and evolve from clerical script to oracle bone.</div>
@@ -1415,6 +1416,86 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e
   const dilemmaToggleLang=window.toggleLang;
   if(dilemmaToggleLang) window.toggleLang=function(){ dilemmaToggleLang(); updateAria(); draw(); };
   updateAria(); draw();
+})();
+</script>
+<script>
+/* ── glyph_run card: 舞, the oracle-bone dancer, as a still cabinet boot screen.
+      The tracing is the authentic form from tools/oracle-glyphs.json (via the
+      甲骨文对应表). At rest nothing moves; hovering plays ONE CRT power-on sweep
+      — a scanline passes down, the phosphor lifts, the cursor blinks once. ── */
+(function(){
+  const card = document.querySelector('.card.glow-glyph');
+  const cv = card && card.querySelector('.glyphlive');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = 440, H = 240;
+  const BONE = '#fff6e2', AMBER = '#e8b04a';
+  const WU = 'M53.9 1.8L32.9 3.5 32.0 7.9 45.2 7.0 47.4 16.2 14.5 20.2 12.3 32.9 0.0 44.3 3.9 47.4 11.8 40.4 13.2 58.3 16.2 58.8 18.9 40.4 29.8 46.1 17.5 32.0 19.3 24.1 46.5 21.5 46.5 29.4 34.2 41.7 38.2 43.9 46.1 36.8 47.4 50.4 31.6 73.2 28.1 89.9 30.3 98.2 33.3 96.1 35.1 75.9 49.6 56.1 61.4 63.6 67.5 81.1 69.3 97.8 73.7 96.1 66.7 64.5 52.6 50.4 50.9 40.8 53.9 35.1 63.6 42.1 67.5 39.9 52.6 28.5 53.1 21.1 71.5 21.1 82.5 25.0 83.3 29.4 70.2 39.9 74.1 42.1 83.3 37.3 83.8 57.0 86.8 56.6 88.2 36.8 100.0 43.4 87.7 29.4 86.8 22.4 82.0 17.5 53.9 16.7 52.6 9.2 64.0 5.7 62.7 1.8 53.9 1.8Z';
+  const CX = 214, CY = 126, SIZE = 142;   /* sized so the ribbon corner stays clear at the narrowest grid column */
+  let P = null, dpr = 1, raf = 0, armed = true, reduced = false;
+  try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) {}
+  function sizeUp(){
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function glyph(color, blur, alpha){
+    if(!P) P = new Path2D(WU);
+    ctx.save(); ctx.translate(CX, CY);
+    const k = SIZE / 100; ctx.scale(k, k); ctx.translate(-50, -50);
+    if(alpha != null) ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    if(blur){ ctx.shadowColor = color; ctx.shadowBlur = blur * dpr; }  /* shadowBlur ignores the CTM */
+    ctx.fill(P, 'evenodd'); ctx.restore();
+  }
+  function draw(sweepY, cursorOn){
+    ctx.fillStyle = '#080808'; ctx.fillRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(CX, CY, 30, CX, CY, 230);
+    g.addColorStop(0, 'rgba(232,176,74,0.038)'); g.addColorStop(0.6, 'rgba(232,176,74,0.014)'); g.addColorStop(1, 'rgba(232,176,74,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    glyph(AMBER, 17, 0.22);                             /* phosphor halo */
+    if(sweepY != null){                                 /* the sweep lifts the glow as it passes */
+      const lift = Math.exp(-Math.pow(sweepY - CY, 2) / (2 * 70 * 70)) * 0.14;
+      if(lift > 0.01) glyph(AMBER, 22, lift);
+    }
+    glyph(BONE, 4, 1);                                  /* crisp core */
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);     /* scanlines live in device pixels */
+    ctx.fillStyle = 'rgba(0,0,0,0.13)';
+    const step = Math.max(3, Math.round(2 * dpr));
+    for(let y = 0; y < cv.height; y += step) ctx.fillRect(0, y, cv.width, 1);
+    ctx.restore();
+    if(sweepY != null){
+      const band = ctx.createLinearGradient(0, sweepY - 26, 0, sweepY + 2);
+      band.addColorStop(0, 'rgba(255,246,226,0)'); band.addColorStop(1, 'rgba(255,246,226,0.10)');
+      ctx.fillStyle = band; ctx.fillRect(0, sweepY - 26, W, 28);
+      ctx.fillStyle = 'rgba(255,246,226,0.35)'; ctx.fillRect(0, sweepY, W, 1.5);
+    }
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.font = '9.5px Consolas,"Courier New",monospace';
+    ctx.fillStyle = 'rgba(232,176,74,0.75)';
+    const label = '甲骨文 · ORACLE BONE', lx = 18, ly = H - 20;
+    ctx.fillText(label, lx, ly);
+    if(cursorOn){
+      ctx.fillStyle = 'rgba(232,176,74,0.55)';
+      ctx.fillRect(lx + ctx.measureText(label).width + 5, ly - 4, 4.5, 8);
+    }
+  }
+  const SWEEP = 650, BLINK = 140;                       /* one-shot: sweep, then a single cursor blink */
+  function powerOn(){
+    if(raf || reduced) return;
+    const t0 = performance.now();
+    (function step(now){
+      const t = now - t0;
+      if(document.hidden || t >= SWEEP + BLINK){ raf = 0; draw(null, true); return; }
+      if(t < SWEEP) draw(-30 + (H + 60) * (t / SWEEP), true);
+      else draw(null, false);
+      raf = requestAnimationFrame(step);
+    })(t0);
+  }
+  card.addEventListener('mouseenter', () => { if(armed){ armed = false; powerOn(); } });
+  card.addEventListener('mouseleave', () => { armed = true; });
+  window.addEventListener('pageshow', () => { if(!raf) draw(null, true); });
+  sizeUp(); draw(null, true);
 })();
 </script>
 </body>
