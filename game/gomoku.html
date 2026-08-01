@@ -512,8 +512,11 @@ function newGame() {
 function setSkin(p, id) {
   if (!CHARS[id]) return;
   const other = p === 1 ? 2 : 1;
-  if (SKIN[other] === id) {
-    // Swap rather than refuse — the click always does something visible.
+  // Two of the same character would be indistinguishable, so hand the other
+  // side whatever this one was wearing. Plain is exempt: those stones are
+  // already told apart by their colour, and both sides plain is the board the
+  // game started life with — the swap made it unreachable.
+  if (id !== 'plain' && SKIN[other] === id) {
     SKIN[other] = SKIN[p];
   }
   SKIN[p] = id;
