@@ -163,15 +163,22 @@
     .oracle-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; width: 168px; }
     .oracle-side .btn { margin: 0; }
     .oracle-side .remote-row { margin: 0; }
+    /* Handwriting looked the part and read badly: at this size Caveat's
+       digits blur, and a coordinate is mostly digits — "F12" was the hardest
+       thing on the panel to read. Back to the face the rest of the UI uses. */
     .comment-body {
-      font-family: 'Caveat', Consolas, 'Courier New', monospace;
-      font-size: 1.34rem; line-height: 1.38; color: #d9cef2;
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 0.84rem; line-height: 1.72; color: #cdc6de;
       flex: 1; min-width: 0; min-height: 3.2em;
     }
     .comment-body.waiting { color: #6d6685; font-style: italic; }
-    .oline { display: flex; gap: 8px; margin-bottom: 4px; }
+    .oline { display: flex; gap: 8px; margin-bottom: 5px; }
     .oline .odot { color: #7c6aa8; flex: 0 0 auto; }
-    .comment-body b { font-weight: 600; }
+    /* a coordinate should look like a thing you can go and find */
+    .comment-body b {
+      font-weight: 700; letter-spacing: 0.4px;
+      background: rgba(255,255,255,0.07); border-radius: 3px; padding: 0 4px;
+    }
     @media (max-width: 700px) {
       .oracle-row { flex-wrap: wrap; }
       .oracle-side { width: 100%; flex-direction: row; }
@@ -179,9 +186,6 @@
     }
     @media (prefers-reduced-motion: reduce) { .oracle-card.speaking .oracle-face { animation: none; } }
   </style>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>
@@ -731,9 +735,11 @@ function draw() {
     ctx.fill();
   }
 
-  // Coord labels (very faint)
-  ctx.fillStyle = '#252525';
-  ctx.font = `${Math.max(8, CELL*0.28)}px Consolas, monospace`;
+  // Coord labels. These used to be #252525 on an #0e0e0e board — about 1.5:1,
+  // which is fine as decoration and useless as a reference. They are a
+  // reference now: the oracle names squares and you have to find them.
+  ctx.fillStyle = '#6f6a7d';
+  ctx.font = `${Math.max(9, CELL*0.32)}px Consolas, monospace`;
   ctx.textAlign = 'center';
   for (let i = 0; i < N; i++) {
     ctx.fillText(COLS[i], PAD + i*CELL, PAD - 6);
