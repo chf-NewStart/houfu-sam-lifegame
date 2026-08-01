@@ -127,6 +127,17 @@
     </div>
 
     <div class="card">
+      <div class="card-title"><span data-en="// its playbook, in words" data-zh="// 它的战术手册">// its playbook, in words</span></div>
+      <div class="lesson" id="playbook"></div>
+      <div id="dsKeyRow" style="display:none;margin-top:10px">
+        <input class="codebox" id="dsKeyInput" type="password" placeholder="DeepSeek API key (sk-…) — stays in this browser" style="min-height:0;padding:7px">
+        <button class="btn ghost" onclick="saveDsKey()" data-en="Save key" data-zh="保存密钥">Save key</button>
+      </div>
+      <button class="btn ghost" id="btnPlaybook" onclick="writePlaybook()" data-en="✎ Write the playbook" data-zh="✎ 生成战术手册">✎ Write the playbook</button>
+      <div class="note" data-en="Puts the trained agent through set tactical positions, records what it actually plays and how it ranked the alternatives, then has DeepSeek turn those decisions into rules you could follow yourself. It reads the agent's real choices, not the picture — so it cannot invent a plan the agent does not have." data-zh="让训练好的智能体面对一组固定战术局面，记录它实际的落子与候选排序，再由 DeepSeek 将这些决策翻译成你可以照做的规则。它读取的是智能体的真实选择，而非棋盘图像——因此不会编造它并不存在的计划。">Puts the trained agent through set tactical positions, records what it actually plays and how it ranked the alternatives, then has DeepSeek turn those decisions into rules you could follow yourself.</div>
+    </div>
+
+    <div class="card">
       <div class="card-title"><span data-en="// use your agent" data-zh="// 使用你的智能体">// use your agent</span></div>
       <button class="btn primary" id="btnUse" onclick="saveForGame()" data-en="✓ Save &amp; play in Gomoku →" data-zh="✓ 保存并前往五子棋 →">✓ Save &amp; play in Gomoku →</button>
       <button class="btn ghost" onclick="downloadJSON()" data-en="⤓ Download weights (.json)" data-zh="⤓ 下载权重 (.json)">⤓ Download weights (.json)</button>
@@ -278,6 +289,7 @@ function resetAgent(){
   document.getElementById('btnTrain').textContent=t('▶ Start training','▶ 开始训练');
   document.getElementById('log').innerHTML='';
   document.getElementById('codebox').value='';   // drop any stale share-code from the previous agent
+  document.getElementById('playbook').textContent='';   // the old agent's playbook is not this one's
   log(t('agent reset to zero','智能体已归零'));
   refresh();
 }
@@ -351,6 +363,111 @@ function describeAgent(){
     +`它最想形成<b>${FEAT[tm].zh}</b>（+${mine[tm].toFixed(1)}），并把让你形成<span class="d">${FEAT[tf].zh}</span>视为最大失误（${foe[tf].toFixed(1)}）。`
     +`所以实战中：<b>有机会冲四就冲</b>，而<b>当你威胁${FEAT[tf].zh}时先封堵</b>，再考虑自己的进攻。`;
   return lang==='zh'?zh:en;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Playbook — probe the trained agent, then have DeepSeek put its
+   actual decisions into words. The probes are the honest part: the
+   model is shown what the agent really played and how it ranked the
+   alternatives, never asked to guess a plan from a picture.
+   ════════════════════════════════════════════════════════════ */
+const COLS='ABCDEFGHJKLMNOP';
+const coord=(r,c)=>COLS[c]+(N-r);
+
+// Each probe isolates one decision. Positions are kept deliberately sparse:
+// the agent only looks at squares touching a stone and keeps the 12 most
+// crowded, so clutter prunes the ends of a line out of its candidate list
+// before the weights ever get a say.
+const PROBES=[
+  {q:'Opening: the opponent has taken the centre and nothing is threatened yet. Where does it want to be?',
+   key:'', me:[], you:[[7,7]]},
+  {q:'It has an open three of its own and nothing of yours is urgent. Does it extend the line (K8 or F8) or drift off it?',
+   key:'K8/F8', me:[[7,6],[7,7],[7,8]], you:[]},
+  {q:'YOU have an open three, both ends free. Does it block an end (K8 or F8) or ignore you?',
+   key:'K8/F8', me:[], you:[[7,6],[7,7],[7,8]]},
+  {q:'It has a four in a row and can win outright by playing E8 or K8. Does it take the win?',
+   key:'E8/K8', me:[[7,5],[7,6],[7,7],[7,8]], you:[]},
+  {q:'YOU have a four and win next move unless it blocks at E6 or K6. Does it block?',
+   key:'E6/K6', me:[], you:[[9,5],[9,6],[9,7],[9,8]]},
+  {q:'Both sides have a four. It wins immediately at E8/K8; if it blocks you at E6/K6 instead, it loses. Greed or fear?',
+   key:'E8/K8 to win, E6/K6 to block', me:[[7,5],[7,6],[7,7],[7,8]], you:[[9,5],[9,6],[9,7],[9,8]]},
+];
+
+function runProbe(p){
+  const b=emptyBoard();
+  for(const[r,c]of p.me) b[r][c]=1;
+  for(const[r,c]of p.you) b[r][c]=2;
+  const cands=candidates(b);
+  const scored=cands.map(m=>{b[m[0]][m[1]]=1;const v=dot(w,psi(b));b[m[0]][m[1]]=0;return{m,v};});
+  scored.sort((a,z)=>z.v-a.v);                       // agent is player 1 → maximises
+  const chose=pickMove(b,1,w,0,rng);                 // eps=0: its honest, greedy choice
+  const won=(b[chose[0]][chose[1]]=1,isWin(b,chose[0],chose[1],1));
+  b[chose[0]][chose[1]]=0;
+  return {q:p.q, key:p.key,
+    mine:p.me.map(m=>coord(m[0],m[1])).join(' ')||'(none)',
+    yours:p.you.map(m=>coord(m[0],m[1])).join(' ')||'(none)',
+    chose:coord(chose[0],chose[1]), won, nCands:cands.length,
+    saw:cands.map(m=>coord(m[0],m[1])).join(' '),
+    ranked:scored.slice(0,6).map(s=>coord(s.m[0],s.m[1])+':'+s.v.toFixed(2)).join(', ')};
+}
+
+const DS_KEY='deepseek.apiKey';
+const dsKey=()=>localStorage.getItem(DS_KEY)||'';
+function saveDsKey(){
+  const k=document.getElementById('dsKeyInput').value.trim();
+  if(!k)return;
+  localStorage.setItem(DS_KEY,k);
+  document.getElementById('dsKeyRow').style.display='none';
+  writePlaybook();
+}
+
+let playbookBusy=false;
+function writePlaybook(){
+  if(playbookBusy)return;
+  if(!episode){alert(t('Train the agent first.','请先训练智能体。'));return;}
+  if(!dsKey()){document.getElementById('dsKeyRow').style.display='block';return;}
+  playbookBusy=true;
+  const out=document.getElementById('playbook');
+  out.textContent=t('putting the agent through its paces…','正在测试智能体…');
+
+  const probes=PROBES.map(runProbe);
+  const wLine=(lbl,off)=>lbl+': '+FEAT.map((f,i)=>f.en+' '+w[i+off].toFixed(2)).join(', ');
+  const info=[
+    'A gomoku agent trained by self-play. It scores a position with 12 weights over line patterns and plays the move with the best resulting score (one ply, no search).',
+    wLine('Weights for ITS OWN lines (higher = wants to build)',0),
+    wLine('Weights for YOUR lines (more negative = works harder to deny)',6),
+    'Reward settings it was trained under: '+JSON.stringify(S),
+    'Episodes trained: '+episode,
+    '',
+    'It only ever looks at empty squares touching a stone, and keeps at most the 12 most crowded of those. A square outside that list is never scored at all — so "it did not consider the winning square" is a real and reportable finding, different from "it considered and rejected it".',
+    'PROBES — each is a set position; "chose" is the move it actually played, "ranked" is its own top candidates with their scores (higher = better for it). Coordinates are columns A-P (no I) and rows 15 down to 1.',
+    ...probes.map((p,i)=>`\n${i+1}. ${p.q}\n   its stones: ${p.mine}\n   your stones: ${p.yours}${p.key?'\n   the move that matters here: '+p.key:''}\n   chose: ${p.chose}${p.won?' (WINS THE GAME OUTRIGHT)':''}\n   it scored ${p.nCands} candidates: ${p.saw}\n   its top ranking: ${p.ranked}`),
+    '',
+    'Write in '+(lang==='zh'?'Chinese':'English')+'.'
+  ].join('\n');
+
+  fetch('https://api.deepseek.com/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+dsKey()},
+    body:JSON.stringify({model:'deepseek-v4-flash',thinking:{type:'disabled'},max_tokens:900,
+      messages:[
+        {role:'system',content:'You are reverse-engineering a trained game agent into advice a human player can use. From the weights and the probe results you are given, write 3 to 5 short bullet points, each one rule the agent appears to follow, phrased as instructions to a person ("Block an open three before extending your own"). Cite the evidence briefly and concretely — the probe it came from or the weight that drives it. If a probe shows the agent doing something WEAK or wrong (missing a win, blocking when it should attack), say so plainly in its own bullet: an honest weakness is more useful than flattery. Then one closing line naming its overall temperament. Use "- " for bullets. No headings, no emoji, no preamble.'},
+        {role:'user',content:info}
+      ]})
+  }).then(r=>{
+    if(r.status===401)throw new Error(t('key rejected','密钥被拒'));
+    if(r.status===402)throw new Error(t('DeepSeek balance empty','DeepSeek 余额不足'));
+    if(!r.ok)throw new Error('DeepSeek '+r.status);
+    return r.json();
+  }).then(j=>{
+    const txt=((j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'').trim();
+    out.innerHTML=txt.split('\n').filter(l=>l.trim())
+      .map(l=>`<div style="margin-bottom:6px">${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`).join('');
+    log(t('playbook written','战术手册已生成'));
+  }).catch(e=>{
+    out.textContent=t('playbook unavailable: ','无法生成：')+(e&&e.message?e.message:'network');
+    if(e&&/rejected|被拒/.test(e.message||''))document.getElementById('dsKeyRow').style.display='block';
+  }).then(()=>{playbookBusy=false;});
 }
 
 /* export / share */
