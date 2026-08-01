@@ -172,6 +172,7 @@
       flex: 1; min-width: 0; min-height: 3.2em;
     }
     .comment-body.waiting { color: #6d6685; font-style: italic; }
+    .oracle-legend { font-size: 0.66rem; color: #6d6685; margin-top: 7px; letter-spacing: 0.3px; }
     .oline { display: flex; gap: 8px; margin-bottom: 5px; }
     .oline .odot { color: #7c6aa8; flex: 0 0 auto; }
     /* a coordinate should look like a thing you can go and find */
@@ -205,7 +206,10 @@
 <div class="oracle-card" id="oracleCard">
   <div class="oracle-row">
     <img class="oracle-face" id="oracleFace" src="../sprites/guru.png" alt="" width="64" height="64">
-    <div class="comment-body" id="aiCommentBody"></div>
+    <div style="flex:1;min-width:0">
+      <div class="comment-body" id="aiCommentBody"></div>
+      <div class="oracle-legend" id="oracleLegend" hidden></div>
+    </div>
     <div class="oracle-side">
       <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
       <div class="remote-row" id="dsKeyRow" style="display:none">
@@ -405,7 +409,7 @@ const CHARS = {
   block:       { box: 0.786, en: 'Block',       zh: '方块' },
 };
 const CHAR_IDS = Object.keys(CHARS);
-let SKIN = { 1: 'goose', 2: 'raccoon' };   // never enters board[]/history/moves
+let SKIN = { 1: 'plain', 2: 'plain' };     // never enters board[]/history/moves; a saved choice overrides this
 const SPRITES = {};                         // "goose_p1" -> HTMLImageElement
 const BADGE = new Map();                    // "goose_p1_14" -> pre-scaled canvas
 
@@ -462,8 +466,12 @@ function computeLayout() {
   // for a character to register on a desktop board.
   const avail = Math.max(320, window.innerWidth || 0) - 40 - reserve;
   const maxW = Math.min(Math.max(300, avail), 760);
-  CELL  = Math.floor((maxW - 56) / (N - 1));
-  PAD   = Math.floor(CELL * 0.8);
+  // PAD used to be 0.8 of a cell while a character stone is 0.94 wide, so the
+  // stones on row 15 and column A reached past the margin and painted over the
+  // coordinate labels living in it. Give the margin a full cell; the board
+  // loses a couple of pixels per cell and gains an axis you can read.
+  CELL  = Math.floor(maxW / (N + 1));
+  PAD   = CELL;
   CSIZE = CELL * (N - 1) + PAD * 2;
   // Back the canvas at device resolution. Without this every badge is upscaled
   // and resampled on a retina screen, which is exactly what turns a small
@@ -503,6 +511,8 @@ function newGame() {
   commentSeq++;                                  // drop any review still in flight
   voiceMarks = [];
   gameRecord = [];
+  const _lg = document.getElementById('oracleLegend');
+  if (_lg) _lg.hidden = true;
   const _cb = document.getElementById('aiCommentBody');
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
@@ -751,12 +761,16 @@ function draw() {
   // which is fine as decoration and useless as a reference. They are a
   // reference now: the oracle names squares and you have to find them.
   ctx.fillStyle = '#6f6a7d';
-  ctx.font = `${Math.max(9, CELL*0.32)}px Consolas, monospace`;
+  const lblFont = Math.max(9, CELL * 0.30);
+  ctx.font = `${lblFont}px Consolas, monospace`;
+  // far enough out to clear the widest stone, but never so far it walks off
+  // the top of the canvas on a narrow phone
+  const off = Math.min(CELL * 0.47 + 5, PAD - lblFont * 0.8);
   ctx.textAlign = 'center';
-  for (let i = 0; i < N; i++) {
-    ctx.fillText(COLS[i], PAD + i*CELL, PAD - 6);
-    ctx.fillText(String(N - i), PAD - 10, PAD + i*CELL + 3);
-  }
+  for (let i = 0; i < N; i++) ctx.fillText(COLS[i], PAD + i*CELL, PAD - off);
+  ctx.textAlign = 'right';
+  for (let i = 0; i < N; i++) ctx.fillText(String(N - i), PAD - off, PAD + i*CELL + 4);
+  ctx.textAlign = 'center';
 
   if (coachMode) drawCoachHints();
   drawVoiceMarks();
@@ -1445,7 +1459,7 @@ function reviewGame(winner){
       thinking: { type: 'disabled' },
       max_tokens: 400,
       messages: [
-        { role: 'system', content: 'You are an old master of gomoku, sat by the water with a rod, reviewing a game that has just ended. Answer as three short bullet points, each on its own line beginning with a hyphen and a space, each a single sentence: where the game was actually decided, the one move that decided it and what should have been played instead, and one thing to carry into the next game. Name the coordinates every time, so they can find the moment on the board. Speak only about what the record shows. Calm, unhurried, a little wry; never grand, never a lecture. No emoji, no heading, nothing before the first bullet.' },
+        { role: 'system', content: 'You are an old master of gomoku, sat by the water with a rod, reviewing a game that has just ended. Answer as three short bullet points, each on its own line beginning with a hyphen and a space, each a single sentence: where the game was actually decided, the one move that decided it and what should have been played instead, and one thing to carry into the next game. Name both the move number and the coordinate every time — "move 14, M11" — so they can find the moment in the log and on the board. Speak only about what the record shows. Calm, unhurried, a little wry; never grand, never a lecture. No emoji, no heading, nothing before the first bullet.' },
         { role: 'user', content: info }
       ]
     })
@@ -1462,6 +1476,12 @@ function reviewGame(winner){
     const shown = renderOracle(out || '…');
     body.innerHTML = shown.html;
     voiceMarks = shown.marks;
+    const legend = document.getElementById('oracleLegend');
+    if (legend){
+      legend.hidden = !voiceMarks.length;
+      legend.textContent = t('the coloured points above are ringed on the board · a solid ring is an empty point, a dashed collar is a stone already played',
+                             '上文彩色坐标已在棋盘标出 · 实线圈为空点，虚线圈为已落的子');
+    }
     draw();
   }).catch(e => {
     if (seq !== commentSeq) return;
