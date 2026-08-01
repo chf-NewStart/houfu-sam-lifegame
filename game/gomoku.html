@@ -106,9 +106,6 @@
     .skin-tog { font-size: 10px; padding: 3px 5px; }
     .skin-tog[disabled] { opacity: 0.4; cursor: not-allowed; }
 
-    /* Engine voice */
-    .comment-body { font-size: 0.7rem; line-height: 1.75; color: #999; min-height: 2.4em; white-space: pre-wrap; margin-bottom: 7px; }
-    .comment-body.waiting { color: #555; font-style: italic; }
     .player-slot { flex: 1; }
     .slot-label { font-size: 0.68rem; margin-bottom: 5px; }
     .green-t { color: #1db954; }
@@ -148,7 +145,28 @@
     body{-webkit-user-select:none;user-select:none;}
     input,textarea{-webkit-user-select:text;user-select:text;}
   }
-</style>
+
+    /* The oracle speaks in the journal's hand — Caveat, the same face the
+       diary uses — because a voice should not look like console output. */
+    .oracle-card { border-color: #2b2340; background: #0f0c16; }
+    .oracle-row { display: flex; gap: 11px; align-items: flex-start; }
+    .oracle-face {
+      flex: 0 0 auto; width: 54px; height: 54px; image-rendering: pixelated;
+      filter: drop-shadow(0 0 7px rgba(168,120,210,0.5));
+    }
+    .oracle-card.speaking .oracle-face { animation: guru-breathe 2.6s ease-in-out infinite; }
+    @keyframes guru-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    .comment-body {
+      font-family: 'Caveat', Consolas, 'Courier New', monospace;
+      font-size: 1.32rem; line-height: 1.4; color: #d9cef2;
+      min-height: 2.4em; white-space: pre-wrap; word-break: break-word; flex: 1; min-width: 0;
+    }
+    .comment-body.waiting { color: #6d6685; font-style: italic; }
+    @media (prefers-reduced-motion: reduce) { .oracle-card.speaking .oracle-face { animation: none; } }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>
@@ -178,6 +196,22 @@
   <div class="panel-col">
     <div id="winBanner" class="win-banner"></div>
     <div id="turnBar" class="turn-bar"></div>
+
+    <div class="pcard oracle-card">
+      <div class="pcard-title"><span data-en="// the oracle" data-zh="// 棋道人">// the oracle</span></div>
+      <div class="oracle-row">
+        <img class="oracle-face" id="oracleFace" src="../sprites/guru.png" alt="" width="54" height="54">
+        <div class="comment-body" id="aiCommentBody"></div>
+      </div>
+      <div class="remote-row" id="dsKeyRow" style="display:none">
+        <input class="join-input" id="dsKeyInput" type="password" placeholder="DeepSeek API key (sk-…)">
+        <button class="btn" style="flex:0 0 auto" onclick="saveDsKey()" data-en="Save" data-zh="保存">Save</button>
+      </div>
+      <div class="brow">
+        <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
+      </div>
+    </div>
+
 
     <div class="pcard">
       <div class="pcard-title" data-en="// score" data-zh="// 比分">// score</div>
@@ -270,18 +304,6 @@
         <button onclick="sendReact('🔥')" title="fire">🔥</button>
         <button onclick="sendReact('💣')" title="boom">💣</button>
         <button onclick="sendReact('🏳️')" title="i give up">🏳️</button>
-      </div>
-    </div>
-
-    <div class="pcard">
-      <div class="pcard-title" data-en="// engine voice" data-zh="// 引擎心声">// engine voice</div>
-      <div class="comment-body" id="aiCommentBody"></div>
-      <div class="remote-row" id="dsKeyRow" style="display:none">
-        <input class="join-input" id="dsKeyInput" type="password" placeholder="DeepSeek API key (sk-…)">
-        <button class="btn" style="flex:0 0 auto" onclick="saveDsKey()" data-en="Save" data-zh="保存">Save</button>
-      </div>
-      <div class="brow">
-        <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
       </div>
     </div>
 
@@ -460,6 +482,7 @@ function newGame() {
   document.getElementById('winBanner').className = 'win-banner';
   updatePauseBtn();
   commentSeq++;                                  // drop any comment still in flight
+  voiceMarks = [];
   const _cb = document.getElementById('aiCommentBody');
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
@@ -572,6 +595,7 @@ function undoMove() {
   if (history.length === 0 || aiThinking) return;
   aiTick++;   // cancel any pending AI move so undo can't be immediately overwritten
   commentSeq++;   // the comment described a move that no longer happened
+  voiceMarks = [];
   const apply = () => {
     const state = history.pop();
     board = state.board; curP = state.curP; lastMove = state.lastMove; moveCount = state.moveCount;
@@ -700,6 +724,7 @@ function draw() {
   }
 
   if (coachMode) drawCoachHints();
+  drawVoiceMarks();
 
   // Hover ghost
   if (hoverCell) {
@@ -963,11 +988,17 @@ function updateCoachUI(){
 }
 function drawCoachHints(){
   const a=getCoachAnalysis(); if(!a.moves.length) return;
-  const color=a.kind==='win'?'#e8b04a':a.kind==='block'?'#46c8ff':'#1db954';
+  // Build suggestions arrive best-first, so let the ring say so: green for the
+  // strongest, amber, then a dim rust — and thin enough not to shout over the
+  // stones. Win and block stay one colour; there is no ranking in "you win now".
+  const RANK=['rgba(29,185,84,0.95)','rgba(232,176,74,0.9)','rgba(198,106,80,0.85)'];
+  const single=a.kind==='win'?'#e8b04a':a.kind==='block'?'#46c8ff':null;
   const mark=a.kind==='win'?'!':a.kind==='block'?'×':'?';
-  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=Math.max(2,CELL*0.07);
-  ctx.font=`bold ${Math.max(9,CELL*0.34)}px Consolas, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
-  a.moves.forEach(([r,c])=>{
+  ctx.save(); ctx.lineWidth=Math.max(1.4,CELL*0.042);
+  ctx.font=`${Math.max(9,CELL*0.30)}px Consolas, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  a.moves.forEach(([r,c],i)=>{
+    const col=single||RANK[Math.min(i,RANK.length-1)];
+    ctx.strokeStyle=col; ctx.fillStyle=col;
     const x=PAD+c*CELL,y=PAD+r*CELL;
     ctx.beginPath(); ctx.arc(x,y,CELL*0.34,0,Math.PI*2); ctx.stroke(); ctx.fillText(mark,x,y+1);
   });
@@ -1264,6 +1295,32 @@ function renderEngineVoiceUI(){
 }
 
 const coordName = (r, c) => COLS[c] + (N - r);
+
+/* The oracle talks in coordinates. Pull them back out of what it said and
+   ring them, so "F12" is somewhere you can look rather than hunt for. */
+let voiceMarks = [];
+function parseVoiceMarks(txt){
+  const out = [], re = /\b([A-HJ-P])\s?(\d{1,2})\b/g;
+  let m;
+  while ((m = re.exec(txt))){
+    const c = COLS.indexOf(m[1]), n = parseInt(m[2], 10);
+    if (c < 0 || n < 1 || n > N) continue;
+    const r = N - n;
+    if (!out.some(q => q[0] === r && q[1] === c)) out.push([r, c]);
+  }
+  return out.slice(0, 6);
+}
+function drawVoiceMarks(){
+  if (!voiceMarks.length) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(190,150,235,0.9)';
+  ctx.lineWidth = Math.max(1.5, CELL * 0.05);
+  ctx.setLineDash([3, 3]);
+  voiceMarks.forEach(([r, c]) => {
+    ctx.beginPath(); ctx.arc(PAD + c * CELL, PAD + r * CELL, CELL * 0.45, 0, Math.PI * 2); ctx.stroke();
+  });
+  ctx.restore();
+}
 /* the prompt is English, and the players are whatever stone they wear */
 function engineName(p){
   const c = CHARS[SKIN[p]];
@@ -1287,6 +1344,8 @@ function maybeEngineComment(mover, r, c, won){
   const body = document.getElementById('aiCommentBody');
   body.dataset.live = '1';
   body.classList.add('waiting');
+  const card = body.closest('.oracle-card');
+  if (card) card.classList.add('speaking');
   body.textContent = t('putting it into words…', '正在组织语言…');
 
   const top = [...lastSearch.scored].filter(x => x.s !== null)
@@ -1314,7 +1373,7 @@ function maybeEngineComment(mover, r, c, won){
       thinking: { type: 'disabled' },
       max_tokens: 300,
       messages: [
-        { role: 'system', content: 'You are the inner voice of a minimax gomoku engine (alpha-beta pruning) talking to the human you are playing against. In 1-2 short sentences, reveal the tactical idea of the move you just made: the threat you are building, the line you blocked, or why this spot outscored the others. First person, concrete coordinates, playful but precise. No lists, no emoji.' },
+        { role: 'system', content: 'You are an old master of gomoku who has watched ten thousand games, and you happen to be the search running inside this engine. Speak to the human you are playing in ONE short paragraph, three sentences at the very most: name the move you just made and what it really does — the threat you are growing, the line you closed, why this point outweighed the others — and let one quiet observation about patience, greed, shape or attention sit alongside it. Calm, unhurried, a little wry; never grand, never a lecture. Always name the actual coordinates so they can find the point on the board. Never use line breaks. No lists, no emoji.' },
         { role: 'user', content: info }
       ]
     })
@@ -1327,10 +1386,14 @@ function maybeEngineComment(mover, r, c, won){
     if (seq !== commentSeq) return;                 // a newer move already superseded this
     const out = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
     body.classList.remove('waiting');
+    if (card) card.classList.remove('speaking');
     body.textContent = out || '…';
+    voiceMarks = parseVoiceMarks(out);      // ring the points he just named
+    draw();
   }).catch(e => {
     if (seq !== commentSeq) return;
     body.classList.remove('waiting');
+    if (card) card.classList.remove('speaking');
     body.textContent = t('voice unavailable: ', '解说不可用：') + (e && e.message ? e.message : 'network');
     if (e && /rejected|被拒/.test(e.message || '')) document.getElementById('dsKeyRow').style.display = 'flex';
   });
