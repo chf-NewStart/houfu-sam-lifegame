@@ -485,6 +485,7 @@ let scores = {1: 0, 2: 0};
 let diff = 'normal';
 let playerTypes = {1: 'human', 2: 'ai'};
 let lastSearch = null;   // the candidate scores the last minimax search produced
+let gameRecord = [];     // the game so far, for the review at the end
 let paused = false;
 let remoteMode = false, myColor = null;
 let coachMode = (()=>{ try{return localStorage.getItem('gomoku_coach')==='1';}catch(e){return false;} })();
@@ -499,8 +500,9 @@ function newGame() {
   document.getElementById('newBtn').className = 'btn';
   document.getElementById('winBanner').className = 'win-banner';
   updatePauseBtn();
-  commentSeq++;                                  // drop any comment still in flight
+  commentSeq++;                                  // drop any review still in flight
   voiceMarks = [];
+  gameRecord = [];
   const _cb = document.getElementById('aiCommentBody');
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
@@ -649,6 +651,10 @@ function undoMove() {
 function placeStone(r, c) {
   if (gameOver || board[r][c] !== 0) return;
   const mover = curP;
+  // getBestMove leaves its candidate scores behind; they belong to this move
+  // and nothing after it, so take them and clear the slate.
+  const searchInfo = (!remoteMode && playerTypes[mover] === 'ai' && diff !== 'rl') ? lastSearch : null;
+  lastSearch = null;
   if (!remoteMode) {
     history.push({ board: board.map(row => [...row]), curP, lastMove, moveCount });
     document.getElementById('undoBtn').disabled = false;
@@ -658,6 +664,13 @@ function placeStone(r, c) {
   moveCount++;
   const col = COLS[c], row = N - r;
   log(`${moveCount}. ${t(curP===1?'Lime':'Tomato', curP===1?'青柠':'番茄')} ${col}${row}`, 'lmove');
+  gameRecord.push({
+    n: moveCount, p: mover, at: col + row,
+    alt: searchInfo ? [...searchInfo.scored].filter(x => x.s !== null)
+           .sort((a, b) => mover === 1 ? b.s - a.s : a.s - b.s).slice(0, 3)
+           .map(x => COLS[x.m[1]] + (N - x.m[0]) + ':' + x.s).join(', ') : null,
+    forced: !!(searchInfo && searchInfo.forced)
+  });
 
   const wr = checkWin(board, r, c);
   if (wr) {
@@ -670,10 +683,9 @@ function placeStone(r, c) {
     wb.className = 'win-banner ' + (wr.player === 1 ? 'win-g' : 'win-r');
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
-    maybeEngineComment(mover, r, c, true);
+    reviewGame(wr.player);
     draw(); renderPanel(); return;
   }
-  maybeEngineComment(mover, r, c, false);
 
   curP = curP === 1 ? 2 : 1;
   draw(); renderPanel();
@@ -871,6 +883,7 @@ function showResign(loser) {
   wb.textContent = msg;
   document.getElementById('newBtn').className = 'btn ' + (winner === 1 ? 'glow-g' : 'glow-r');
   updateUndoBtn(); renderPanel(); draw();
+  reviewGame(winner);
 }
 function resign() {
   if (gameOver) return;
@@ -1303,17 +1316,21 @@ function toggleEngineVoice(){
   engineVoiceOn = !engineVoiceOn;
   localStorage.setItem('gomoku.engineVoice', engineVoiceOn ? '1' : '0');
   renderEngineVoiceUI();
+  if (engineVoiceOn && gameOver) reviewGame(winResult ? winResult.player : null);
 }
 function renderEngineVoiceUI(){
   const btn = document.getElementById('aiVoiceBtn');
   if (!btn) return;
   btn.textContent = !dsKey() ? t('◇ connect DeepSeek key', '◇ 连接 DeepSeek 密钥')
-                  : engineVoiceOn ? t('◆ voice on', '◆ 解说·开') : t('◇ voice off', '◇ 解说·关');
+                  : engineVoiceOn ? t('◆ review: on', '◆ 复盘·开') : t('◇ review: off', '◇ 复盘·关');
   const body = document.getElementById('aiCommentBody');
   if (body && !body.dataset.live){
     body.classList.remove('waiting');
-    body.textContent = t('The minimax engine explains each move it plays — the threats it builds, the lines it blocks, why the search picked that spot. Voiced by DeepSeek; bring your own API key.',
-                         '极小极大引擎会解释它走的每一步——它构筑的威胁、封堵的线路、搜索为何选中这一点。由 DeepSeek 代言；需自备 API 密钥。');
+    body.textContent = !dsKey()
+      ? t('When a game ends he looks back over it — where it turned, the move that decided it, what to carry into the next one. Reads the engine\'s own search, voiced by DeepSeek; bring your own API key.',
+          '每局结束后，他会为你复盘——胜负在哪一手转向，决定性的一步是什么，下一局该带走什么。基于引擎自身的搜索，由 DeepSeek 代言；需自备 API 密钥。')
+      : t('He is watching. When the game ends, he will look back over it.',
+          '他在观棋。此局终了，自会与你复盘。');
   }
 }
 
@@ -1390,46 +1407,45 @@ function boardText(){
   return lines.join('\n');
 }
 
-function maybeEngineComment(mover, r, c, won){
+function reviewGame(winner){
   if (remoteMode || !engineVoiceOn || !dsKey()) return;
-  if (playerTypes[mover] !== 'ai' || diff === 'rl') return;         // only the minimax can explain itself
-  if (playerTypes[mover === 1 ? 2 : 1] !== 'human') return;         // nobody to explain it to
-  if (!lastSearch) return;
+  if (!gameRecord.length) return;
 
   const seq = ++commentSeq;
   const body = document.getElementById('aiCommentBody');
   body.dataset.live = '1';
   body.classList.add('waiting');
+  body.textContent = t('looking back over the game…', '正在复盘…');
   const card = body.closest('.oracle-card');
   if (card) card.classList.add('speaking');
-  body.textContent = t('putting it into words…', '正在组织语言…');
 
-  const top = [...lastSearch.scored].filter(x => x.s !== null)
-    .sort((a,b) => mover === 1 ? b.s - a.s : a.s - b.s).slice(0,5)
-    .map(x => coordName(x.m[0], x.m[1]) + ':' + x.s).join(', ');
+  const who = p => engineName(p) + ' (' + (playerTypes[p] === 'human' ? 'the human' :
+               playerTypes[p] === 'random' ? 'random' : 'the engine') + ')';
+  const moves = gameRecord.map(m =>
+    m.n + '. ' + engineName(m.p) + ' ' + m.at +
+    (m.alt ? '   [it also weighed ' + m.alt + (m.forced ? '; search saw a forced win' : '') + ']' : '')
+  ).join('\n');
+
   const info = [
-    'Board (L=' + engineName(1) + ', T=' + engineName(2) + ', .=empty; columns A-P skipping I, rows 15 top to 1 bottom):',
-    boardText(),
-    'You are ' + engineName(mover) + ' (' + (mover === 1 ? 'L' : 'T') + '), minimax with alpha-beta at depth ' + DEPTHS[diff] + ' (' + diff + ').',
-    'You just played ' + coordName(r, c) + '.',
-    top ? 'The candidate scores your own search produced (evaluation is from ' + engineName(1) + '\'s side; positive favours ' + engineName(1) + '): ' + top
-        : 'Only one candidate was reasonable, so you played it without searching.',
-    lastSearch.forced ? 'Your search stopped early: it found a forced win.' : '',
-    won ? 'That move just WON the game — five in a row.' : '',
-    'Respond in ' + (lang === 'zh' ? 'Chinese' : 'English') + '.'
-  ].filter(Boolean).join('\n');
+    'A finished game of gomoku on a 15x15 board. Columns are A-P with I skipped, rows 15 at the top down to 1.',
+    who(1) + ' played first as L; ' + who(2) + ' played T.',
+    'Where a move has a bracket, that side is the minimax engine and those were the candidate scores its own search produced, best first (the evaluation is from ' + engineName(1) + "'s side, so positive favours " + engineName(1) + ').',
+    '',
+    moves,
+    '',
+    winner ? (engineName(winner) + ' won.') : 'The game ended without a winner.',
+    'Address the human directly as "you".'
+  ].join('\n');
 
   fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dsKey() },
     body: JSON.stringify({
       model: 'deepseek-v4-flash',
-      /* thinking mode eats the whole budget and returns an empty string,
-         and a running commentary should be quick anyway */
       thinking: { type: 'disabled' },
-      max_tokens: 300,
+      max_tokens: 400,
       messages: [
-        { role: 'system', content: 'You are an old master of gomoku who has watched ten thousand games, and you happen to be the search running inside this engine. Answer as two or three short bullet points, each on its own line beginning with a hyphen and a space, each a single sentence: one bullet for the move you just made and what it really does, one for the threat it grows or the line it closes, and one quiet observation about patience, greed, shape or attention. Calm, unhurried, a little wry; never grand, never a lecture. Always name the actual coordinates so they can find the point on the board. No emoji, no heading, nothing before the first bullet.' },
+        { role: 'system', content: 'You are an old master of gomoku, sat by the water with a rod, reviewing a game that has just ended. Answer as three short bullet points, each on its own line beginning with a hyphen and a space, each a single sentence: where the game was actually decided, the one move that decided it and what should have been played instead, and one thing to carry into the next game. Name the coordinates every time, so they can find the moment on the board. Speak only about what the record shows. Calm, unhurried, a little wry; never grand, never a lecture. No emoji, no heading, nothing before the first bullet.' },
         { role: 'user', content: info }
       ]
     })
@@ -1439,19 +1455,19 @@ function maybeEngineComment(mover, r, c, won){
     if (!res.ok) throw new Error('DeepSeek ' + res.status);
     return res.json();
   }).then(j => {
-    if (seq !== commentSeq) return;                 // a newer move already superseded this
+    if (seq !== commentSeq) return;
     const out = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
     body.classList.remove('waiting');
     if (card) card.classList.remove('speaking');
     const shown = renderOracle(out || '…');
     body.innerHTML = shown.html;
-    voiceMarks = shown.marks;               // the colours his sentence wears
+    voiceMarks = shown.marks;
     draw();
   }).catch(e => {
     if (seq !== commentSeq) return;
     body.classList.remove('waiting');
     if (card) card.classList.remove('speaking');
-    body.textContent = t('voice unavailable: ', '解说不可用：') + (e && e.message ? e.message : 'network');
+    body.textContent = t('no review this time: ', '无法复盘：') + (e && e.message ? e.message : 'network');
     if (e && /rejected|被拒/.test(e.message || '')) document.getElementById('dsKeyRow').style.display = 'flex';
   });
 }
