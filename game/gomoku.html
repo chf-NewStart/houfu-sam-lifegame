@@ -105,6 +105,10 @@
     .skin-row { flex-wrap: wrap; margin-bottom: 6px; }
     .skin-tog { font-size: 10px; padding: 3px 5px; }
     .skin-tog[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+    /* Engine voice */
+    .comment-body { font-size: 0.7rem; line-height: 1.75; color: #999; min-height: 2.4em; white-space: pre-wrap; margin-bottom: 7px; }
+    .comment-body.waiting { color: #555; font-style: italic; }
     .player-slot { flex: 1; }
     .slot-label { font-size: 0.68rem; margin-bottom: 5px; }
     .green-t { color: #1db954; }
@@ -270,6 +274,18 @@
     </div>
 
     <div class="pcard">
+      <div class="pcard-title" data-en="// engine voice" data-zh="// 引擎心声">// engine voice</div>
+      <div class="comment-body" id="aiCommentBody"></div>
+      <div class="remote-row" id="dsKeyRow" style="display:none">
+        <input class="join-input" id="dsKeyInput" type="password" placeholder="DeepSeek API key (sk-…)">
+        <button class="btn" style="flex:0 0 auto" onclick="saveDsKey()" data-en="Save" data-zh="保存">Save</button>
+      </div>
+      <div class="brow">
+        <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
+      </div>
+    </div>
+
+    <div class="pcard">
       <div class="pcard-title" data-en="// log" data-zh="// 棋谱">// log</div>
       <div class="log" id="gameLog"></div>
     </div>
@@ -294,6 +310,7 @@ function t(en, zh) { return lang === 'zh' ? zh : en; }
 
 function applyLang() {
   if (typeof renderSkinRows === 'function' && document.getElementById('skinRow1')) renderSkinRows();
+  if (typeof renderEngineVoiceUI === 'function') renderEngineVoiceUI();
   document.getElementById('pgTitle').textContent = t('Gomoku', '五子棋');
   document.getElementById('pgSub').textContent   = t('5 in a row wins · 15×15 · click to place your stone', '五子连珠获胜 · 15×15棋盘 · 点击落子');
   document.getElementById('pgBack').textContent  = t('← arcade', '← 游戏厅');
@@ -427,6 +444,7 @@ let history = [];
 let scores = {1: 0, 2: 0};
 let diff = 'normal';
 let playerTypes = {1: 'human', 2: 'ai'};
+let lastSearch = null;   // the candidate scores the last minimax search produced
 let paused = false;
 let remoteMode = false, myColor = null;
 let coachMode = (()=>{ try{return localStorage.getItem('gomoku_coach')==='1';}catch(e){return false;} })();
@@ -441,6 +459,10 @@ function newGame() {
   document.getElementById('newBtn').className = 'btn';
   document.getElementById('winBanner').className = 'win-banner';
   updatePauseBtn();
+  commentSeq++;                                  // drop any comment still in flight
+  const _cb = document.getElementById('aiCommentBody');
+  if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
+  renderEngineVoiceUI();
   log(t('── new game ──', '── 新游戏 ──'), 'lround');
   draw();
   renderPanel();
@@ -549,6 +571,7 @@ function undoMove() {
   }
   if (history.length === 0 || aiThinking) return;
   aiTick++;   // cancel any pending AI move so undo can't be immediately overwritten
+  commentSeq++;   // the comment described a move that no longer happened
   const apply = () => {
     const state = history.pop();
     board = state.board; curP = state.curP; lastMove = state.lastMove; moveCount = state.moveCount;
@@ -580,6 +603,7 @@ function undoMove() {
 /* ── Place stone ──────────────────────────────── */
 function placeStone(r, c) {
   if (gameOver || board[r][c] !== 0) return;
+  const mover = curP;
   if (!remoteMode) {
     history.push({ board: board.map(row => [...row]), curP, lastMove, moveCount });
     document.getElementById('undoBtn').disabled = false;
@@ -601,8 +625,10 @@ function placeStone(r, c) {
     wb.className = 'win-banner ' + (wr.player === 1 ? 'win-g' : 'win-r');
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
+    maybeEngineComment(mover, r, c, true);
     draw(); renderPanel(); return;
   }
+  maybeEngineComment(mover, r, c, false);
 
   curP = curP === 1 ? 2 : 1;
   draw(); renderPanel();
@@ -700,6 +726,35 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
   const radius = CELL * 0.40;
   const color = player === 1 ? '#1db954' : '#f44336';
 
+  // A character plays as itself: no coloured disc under it, the way a stone
+  // has one. Ownership comes from a halo in the player's colour instead, which
+  // also lifts art authored dark (it used to sit on a bright disc) off a board
+  // that is nearly black. Guarded: an unknown id, an unloaded sprite or a
+  // failed decode all fall through to the plain disc the game always drew.
+  const spec = ghost ? null : CHARS[SKIN[player]];
+  const cv = (spec && spec.box > 0)
+    ? badge(SKIN[player], player, Math.max(3, Math.round(CELL * 0.94)))
+    : null;
+
+  if (cv) {
+    const px = cv.width;
+    ctx.shadowColor = isWin ? '#ffffff' : color;
+    ctx.shadowBlur  = isWin ? 15 : 7;
+    var _f = ctx.filter;
+    ctx.filter = 'brightness(1.8)';                 // ignored where unsupported; art just stays dark
+    ctx.drawImage(cv, Math.round(x - px / 2), Math.round(y - px / 2), px, px);
+    ctx.filter = _f || 'none';
+    ctx.shadowBlur = 0;
+    if (isLast && !isWin) {                          // a dot would land on the character's face
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.15, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    return;
+  }
+
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
     // #ff6b5b lifted Tomato's luminance only 1.38x against Lime's 2.11x, so a
@@ -712,15 +767,6 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
   }
   ctx.fill();
   ctx.shadowBlur = 0;
-
-  // Character badge. Guarded: an unknown id, an unloaded sprite or a failed
-  // decode all fall through to the plain disc the game has always drawn.
-  const spec = ghost ? null : CHARS[SKIN[player]];
-  if (spec && spec.box > 0) {
-    const px = Math.max(3, Math.round(radius * 2 * spec.box));
-    const cv = badge(SKIN[player], player, px);
-    if (cv) ctx.drawImage(cv, Math.round(x - px / 2), Math.round(y - px / 2), px, px);
-  }
 
   // Last move dot
   if (isLast && !isWin) {
@@ -1145,7 +1191,8 @@ function getBestMove() {
   const depth  = DEPTHS[diff];
   const cands  = getCandidates(board, player);
   if (!cands.length) return null;
-  if (cands.length === 1) return cands[0];
+  lastSearch = { scored: [], forced: false };
+  if (cands.length === 1) { lastSearch.scored.push({ m: cands[0], s: null }); return cands[0]; }
 
   let bestScore = isMax ? -Infinity : Infinity;
   let bestMove  = cands[0];
@@ -1159,6 +1206,7 @@ function getBestMove() {
       score = minimax(board, depth - 1, -Infinity, Infinity, !isMax, r, c);
     }
     board[r][c] = 0;
+    lastSearch.scored.push({ m: [r, c], s: score });
 
     if (isMax ? score > bestScore : score < bestScore) {
       bestScore = score;
@@ -1167,9 +1215,125 @@ function getBestMove() {
     // Stop early only on a forced WIN for us. Breaking on a forced loss too was a
     // real bug: the search would give up after the first candidate and play an
     // arbitrary neighbour cell instead of the most resistant defence.
-    if ((isMax ? bestScore : -bestScore) >= 500000) break;
+    if ((isMax ? bestScore : -bestScore) >= 500000) { lastSearch.forced = true; break; }
   }
   return bestMove;
+}
+
+/* ═══════════════════════════════════════════════
+   Engine voice — the minimax explains the move it
+   just played. It is handed the candidate scores the
+   search actually produced, so it can only describe a
+   plan the engine really had. Bring your own key.
+   ═══════════════════════════════════════════════ */
+const DS_KEY = 'deepseek.apiKey';
+let engineVoiceOn = localStorage.getItem('gomoku.engineVoice') === '1';
+let commentSeq = 0;
+
+function dsKey(){ return localStorage.getItem(DS_KEY) || ''; }
+function saveDsKey(){
+  const k = document.getElementById('dsKeyInput').value.trim();
+  if (!k) return;
+  localStorage.setItem(DS_KEY, k);
+  document.getElementById('dsKeyRow').style.display = 'none';
+  engineVoiceOn = true;
+  localStorage.setItem('gomoku.engineVoice', '1');
+  renderEngineVoiceUI();
+}
+function toggleEngineVoice(){
+  if (!dsKey()){
+    const row = document.getElementById('dsKeyRow');
+    row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+    return;
+  }
+  engineVoiceOn = !engineVoiceOn;
+  localStorage.setItem('gomoku.engineVoice', engineVoiceOn ? '1' : '0');
+  renderEngineVoiceUI();
+}
+function renderEngineVoiceUI(){
+  const btn = document.getElementById('aiVoiceBtn');
+  if (!btn) return;
+  btn.textContent = !dsKey() ? t('◇ connect DeepSeek key', '◇ 连接 DeepSeek 密钥')
+                  : engineVoiceOn ? t('◆ voice on', '◆ 解说·开') : t('◇ voice off', '◇ 解说·关');
+  const body = document.getElementById('aiCommentBody');
+  if (body && !body.dataset.live){
+    body.classList.remove('waiting');
+    body.textContent = t('The minimax engine explains each move it plays — the threats it builds, the lines it blocks, why the search picked that spot. Voiced by DeepSeek; bring your own API key.',
+                         '极小极大引擎会解释它走的每一步——它构筑的威胁、封堵的线路、搜索为何选中这一点。由 DeepSeek 代言；需自备 API 密钥。');
+  }
+}
+
+const coordName = (r, c) => COLS[c] + (N - r);
+/* the prompt is English, and the players are whatever stone they wear */
+function engineName(p){
+  const c = CHARS[SKIN[p]];
+  return c && SKIN[p] !== 'plain' ? c.en : (p === 1 ? 'Lime (green)' : 'Tomato (red)');
+}
+function boardText(){
+  const sym = {0:'.', 1:'L', 2:'T'};
+  const lines = [];
+  for (let r = 0; r < N; r++) lines.push(String(N - r).padStart(2,' ') + ' ' + board[r].map(v => sym[v]).join(' '));
+  lines.push('   ' + COLS.split('').join(' '));
+  return lines.join('\n');
+}
+
+function maybeEngineComment(mover, r, c, won){
+  if (remoteMode || !engineVoiceOn || !dsKey()) return;
+  if (playerTypes[mover] !== 'ai' || diff === 'rl') return;         // only the minimax can explain itself
+  if (playerTypes[mover === 1 ? 2 : 1] !== 'human') return;         // nobody to explain it to
+  if (!lastSearch) return;
+
+  const seq = ++commentSeq;
+  const body = document.getElementById('aiCommentBody');
+  body.dataset.live = '1';
+  body.classList.add('waiting');
+  body.textContent = t('putting it into words…', '正在组织语言…');
+
+  const top = [...lastSearch.scored].filter(x => x.s !== null)
+    .sort((a,b) => mover === 1 ? b.s - a.s : a.s - b.s).slice(0,5)
+    .map(x => coordName(x.m[0], x.m[1]) + ':' + x.s).join(', ');
+  const info = [
+    'Board (L=' + engineName(1) + ', T=' + engineName(2) + ', .=empty; columns A-P skipping I, rows 15 top to 1 bottom):',
+    boardText(),
+    'You are ' + engineName(mover) + ' (' + (mover === 1 ? 'L' : 'T') + '), minimax with alpha-beta at depth ' + DEPTHS[diff] + ' (' + diff + ').',
+    'You just played ' + coordName(r, c) + '.',
+    top ? 'The candidate scores your own search produced (evaluation is from ' + engineName(1) + '\'s side; positive favours ' + engineName(1) + '): ' + top
+        : 'Only one candidate was reasonable, so you played it without searching.',
+    lastSearch.forced ? 'Your search stopped early: it found a forced win.' : '',
+    won ? 'That move just WON the game — five in a row.' : '',
+    'Respond in ' + (lang === 'zh' ? 'Chinese' : 'English') + '.'
+  ].filter(Boolean).join('\n');
+
+  fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dsKey() },
+    body: JSON.stringify({
+      model: 'deepseek-v4-flash',
+      /* thinking mode eats the whole budget and returns an empty string,
+         and a running commentary should be quick anyway */
+      thinking: { type: 'disabled' },
+      max_tokens: 300,
+      messages: [
+        { role: 'system', content: 'You are the inner voice of a minimax gomoku engine (alpha-beta pruning) talking to the human you are playing against. In 1-2 short sentences, reveal the tactical idea of the move you just made: the threat you are building, the line you blocked, or why this spot outscored the others. First person, concrete coordinates, playful but precise. No lists, no emoji.' },
+        { role: 'user', content: info }
+      ]
+    })
+  }).then(res => {
+    if (res.status === 401) throw new Error(t('key rejected — tap below to re-enter it', '密钥被拒——点击下方重新输入'));
+    if (res.status === 402) throw new Error(t('DeepSeek balance is empty', 'DeepSeek 余额不足'));
+    if (!res.ok) throw new Error('DeepSeek ' + res.status);
+    return res.json();
+  }).then(j => {
+    if (seq !== commentSeq) return;                 // a newer move already superseded this
+    const out = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
+    body.classList.remove('waiting');
+    body.textContent = out || '…';
+  }).catch(e => {
+    if (seq !== commentSeq) return;
+    body.classList.remove('waiting');
+    body.textContent = t('voice unavailable: ', '解说不可用：') + (e && e.message ? e.message : 'network');
+    if (e && /rejected|被拒/.test(e.message || '')) document.getElementById('dsKeyRow').style.display = 'flex';
+  });
 }
 
 /* ── Firebase remote play ─────────────────────── */
