@@ -6,12 +6,17 @@
   <title>Gomoku // houfu.xyz</title>
   <link rel="icon" type="image/png" href="/game/stones.png?v=3">
   <!-- The guru quotes the classics, and a classic set in Consolas is just a
-       string. Ma Shan Zheng is a Chinese 行楷 hand; Yuji Syuku is a Japanese
-       楷書 brush — so a line is written in the hand of the tradition it came
-       from. Both degrade to a local 楷体 / 明朝 before they degrade to sans. -->
+       string. Three hands, used for three jobs, the way a 法帖 does:
+         Liu Jian Mao Cao — 草书, for what he shouts. A shout is not read
+           letter by letter, it is recognised, so it can afford to run.
+         Ma Shan Zheng    — 行楷, for the lines he wants you to keep. Cursive
+           enough to be a brush, upright enough to be read.
+         Yuji Syuku       — a Japanese 楷書 brush, for the lines that came from
+           Japan, so a quote is written in the hand of its own tradition.
+       All three degrade to a local 楷体 / 明朝 before they degrade to sans. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Yuji+Syuku&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=Yuji+Syuku&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Consolas, 'Courier New', monospace; background: #080808; color: #ccc; min-height: 100vh; padding: 20px 16px; }
@@ -34,19 +39,6 @@
     #boardCanvas { display: block; cursor: crosshair; }
     #boardCanvas.thinking { cursor: wait; }
 
-    /* When the guru brings his hand down on the board, the board takes the blow
-       and the stones take the rebound — the jolt below is the table, the hop is
-       drawn per-stone on the canvas (see slamLift). Down first, then settle. */
-    @keyframes board-slam {
-      0%   { transform: translate3d(0, 0, 0); }
-      10%  { transform: translate3d(0, 4px, 0); }
-      28%  { transform: translate3d(-3px, -2px, 0); }
-      46%  { transform: translate3d(3px, 2px, 0); }
-      64%  { transform: translate3d(-2px, -1px, 0); }
-      82%  { transform: translate3d(1px, 1px, 0); }
-      100% { transform: translate3d(0, 0, 0); }
-    }
-    #boardWrap.slam { animation: board-slam 0.4s ease-out; }
 
     /* Coord labels */
     .col-labels, .row-labels { position: absolute; font-size: 9px; color: #2a2a2a; user-select: none; pointer-events: none; }
@@ -123,10 +115,6 @@
 
     /* Player type selector */
     .player-row { display: flex; gap: 10px; }
-    .skin-row { flex-wrap: wrap; margin-bottom: 6px; }
-    .skin-tog { font-size: 10px; padding: 3px 5px; }
-    .skin-tog[disabled] { opacity: 0.4; cursor: not-allowed; }
-
     .player-slot { flex: 1; }
     .slot-label { font-size: 0.68rem; margin-bottom: 5px; }
     .green-t { color: #1db954; }
@@ -182,24 +170,27 @@
     }
     .oracle-card.speaking .oracle-face { animation: guru-breathe 2.6s ease-in-out infinite; }
     @keyframes guru-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-    /* the hand comes down: he rears back, then drops through the board */
-    @keyframes guru-strike {
-      0%   { transform: translate(0,0) scale(1,1); }
-      18%  { transform: translate(0,-6px) scale(0.96,1.06); }
-      34%  { transform: translate(0,5px) scale(1.1,0.88); }
-      58%  { transform: translate(0,0) scale(0.98,1.03); }
-      100% { transform: translate(0,0) scale(1,1); }
+    /* the cast: he leans back off the rod, then swings it out over the board */
+    @keyframes guru-cast {
+      0%   { transform: translate(0,0) rotate(0deg); }
+      22%  { transform: translate(3px,-2px) rotate(5deg); }
+      46%  { transform: translate(-5px,1px) rotate(-9deg); }
+      70%  { transform: translate(-1px,0) rotate(-3deg); }
+      100% { transform: translate(0,0) rotate(0deg); }
     }
-    .oracle-face.striking { animation: guru-strike 0.42s ease-out; }
+    .oracle-face.casting { animation: guru-cast 0.62s ease-out; }
 
-    /* He shouts. It should read as a shout: brush characters, big, and gone
-       again in a couple of seconds — not another line of panel text. */
+    /* He shouts, and it is written the way a 真迹 is: running ink, no box
+       around it, a seal stamped after the last stroke. The only backing is
+       enough darkness to keep it off the text underneath. Gone in two seconds
+       — a shout is not another line of panel text. */
     .guru-shout {
-      position: absolute; left: 72px; top: -6px; z-index: 40;
-      background: #150f22; border: 1px solid #6b4fa8; border-radius: 4px;
-      padding: 5px 12px 7px; white-space: nowrap; pointer-events: none;
+      position: absolute; left: 70px; top: -10px; z-index: 40;
+      padding: 8px 26px 10px 20px; white-space: nowrap; pointer-events: none;
       opacity: 0; visibility: hidden;
-      box-shadow: 0 0 26px -6px rgba(168,120,210,0.85);
+      /* opaque under the strokes, feathered at the edge, so it sits on the
+         panel text like ink on paper rather than a dialogue box over it */
+      background: radial-gradient(ellipse at 42% 50%, #0b0812 0%, #0b0812 66%, rgba(11,8,18,0) 100%);
     }
     .guru-shout.go { animation: shout-pop 2.2s ease-out forwards; }
     @keyframes shout-pop {
@@ -209,9 +200,23 @@
       78%  { opacity: 1; visibility: visible; transform: translate(0,0) scale(1); }
       100% { opacity: 0; visibility: visible; transform: translate(0,-14px) scale(1); }
     }
-    .gs-cn { font-family: 'Ma Shan Zheng', 'LXGW WenKai', 'Kaiti SC', STKaiti, KaiTi, '楷体', serif;
-             font-size: 1.7rem; line-height: 1.25; color: #ffd98a; letter-spacing: 0.06em; }
-    .gs-gloss { font-size: 0.6rem; color: #b9a8dc; letter-spacing: 0.6px; }
+    .gs-cn {
+      font-family: 'Liu Jian Mao Cao', 'Ma Shan Zheng', 'LXGW WenKai', 'Kaiti SC', STKaiti, KaiTi, '楷体', serif;
+      font-size: 2.1rem; line-height: 1.15; letter-spacing: 0.04em;
+      color: #f4eee1; text-shadow: 0 0 14px rgba(0,0,0,0.9);
+    }
+    /* a boot is not written in the same ink as a fish */
+    .guru-shout.bad .gs-cn { color: #a9a191; }
+    /* 朱文印, stamped after the last stroke and sitting a little off square */
+    .gs-seal {
+      display: inline-block; vertical-align: 0.55em; margin-left: 8px;
+      font-family: 'Ma Shan Zheng', STKaiti, KaiTi, '楷体', serif;
+      font-size: 0.72rem; line-height: 1.5; width: 1.5em; height: 1.5em;
+      text-align: center; color: #fff1e8; background: #b3352a;
+      transform: rotate(-4deg); border-radius: 1px;
+    }
+    .guru-shout.bad .gs-seal { background: #4a4640; color: #cfc8bb; }
+    .gs-gloss { font-size: 0.6rem; color: #a89ec4; letter-spacing: 0.6px; margin-top: 2px; }
     .oracle-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; width: 168px; }
     .oracle-side .btn { margin: 0; }
     .oracle-side .remote-row { margin: 0; }
@@ -233,7 +238,7 @@
     .guru-quote[hidden] { display: none; }
     .gq-text {
       font-family: 'Ma Shan Zheng', 'LXGW WenKai', 'Kaiti SC', STKaiti, KaiTi, '楷体', serif;
-      font-size: 1.6rem; line-height: 1.45; color: #e2d8f6; letter-spacing: 0.09em;
+      font-size: 1.7rem; line-height: 1.5; color: #e6dcf8; letter-spacing: 0.09em;
     }
     .gq-text[lang="ja"] {
       font-family: 'Yuji Syuku', 'Yu Mincho', YuMincho, 'Hiragino Mincho ProN', 'Noto Serif JP', serif;
@@ -261,7 +266,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       .oracle-card.speaking .oracle-face { animation: none; }
-      .oracle-face.striking, #boardWrap.slam, .guru-quote.fresh .gq-text { animation: none; }
+      .oracle-face.casting, .guru-quote.fresh .gq-text { animation: none; }
       /* the shout still has to appear and leave, just without the pounce */
       .guru-shout.go { animation: shout-fade 2.2s linear forwards; }
       @keyframes shout-fade { 0%,90% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: visible; } }
@@ -336,7 +341,6 @@
       <div class="player-row">
         <div class="player-slot">
           <div class="slot-label green-t">● <span data-en="Lime" data-zh="青柠">Lime</span></div>
-          <div class="tog-row skin-row" id="skinRow1"></div>
           <div class="tog-row">
             <button class="tog sel ptype-1" data-val="human"  onclick="setPlayerType(1,'human')"  data-en="Human"  data-zh="人">Human</button>
             <button class="tog     ptype-1" data-val="ai"     onclick="setPlayerType(1,'ai')"     data-en="AI"     data-zh="AI">AI</button>
@@ -345,7 +349,6 @@
         </div>
         <div class="player-slot">
           <div class="slot-label red-t">● <span data-en="Tomato" data-zh="番茄">Tomato</span></div>
-          <div class="tog-row skin-row" id="skinRow2"></div>
           <div class="tog-row">
             <button class="tog     ptype-2" data-val="human"  onclick="setPlayerType(2,'human')"  data-en="Human"  data-zh="人">Human</button>
             <button class="tog sel ptype-2" data-val="ai"     onclick="setPlayerType(2,'ai')"     data-en="AI"     data-zh="AI">AI</button>
@@ -441,7 +444,6 @@ let lang = 'en';
 function t(en, zh) { return lang === 'zh' ? zh : en; }
 
 function applyLang() {
-  if (typeof renderSkinRows === 'function' && document.getElementById('skinRow1')) renderSkinRows();
   if (typeof renderEngineVoiceUI === 'function') renderEngineVoiceUI();
   if (typeof renderGuruSfxUI === 'function') renderGuruSfxUI();
   if (typeof renderQuote === 'function') renderQuote();   // the gloss is translated, the line is not
@@ -476,76 +478,6 @@ const DEPTHS = { easy: 1, normal: 2, hard: 3 };
 // Forcing moves (wins/blocks) are never capped.
 const MAX_CANDS = 12;
 
-/* ── Stone characters ─────────────────────────────
-   Three stones and no more: plain, and two animals. The plastids and the Life
-   patterns are gone — a roster you scroll past is not a choice, and none of
-   them ever looked like anything at 30px.
-
-   The two that remain are proper pixel art now, in the same hand as
-   sprites/guru.png: a fixed palette, a dark outline, one shade for volume.
-   They are drawn at an INTEGER scale with smoothing off (see badge()), which
-   is the whole trick — a sprite resampled to a fractional size stops being
-   pixel art and becomes a smudge, which is exactly what the old two-tone
-   stencils turned into.
-
-   Ownership still survives colour blindness: the character rides on its
-   player's disc, and #1db954 vs #f44336 sit on the red-green confusion axis,
-   so under deuteranopia the two discs collapse to the same olive — but a
-   goose is not a raccoon, and the silhouette carries the distinction alone.
-
-   box[] normalises how much ink each character puts on its disc. Rendered ink
-   is coverage * box^2, so scaling the box by sqrt(ref/coverage) makes that
-   equal for both — otherwise one player's stones read heavier than the other's.
-   Generated, not hand-tuned: see tools/gen_stone_sprites.py. */
-const CHARS = {
-  plain:   { box: 0,     en: 'Plain',   zh: '纯色' },
-  goose:   { box: 0.936, en: 'Goose',   zh: '大鹅' },
-  raccoon: { box: 0.867, en: 'Raccoon', zh: '浣熊' },
-};
-const CHAR_IDS = Object.keys(CHARS);
-let SKIN = { 1: 'plain', 2: 'plain' };     // never enters board[]/history/moves; a saved choice overrides this
-const SPRITES = {};                         // "goose" -> HTMLImageElement
-const BADGE = new Map();                    // "goose_3" -> canvas pre-scaled 3x
-
-function loadSprites() {
-  const jobs = [];
-  for (const id of CHAR_IDS) {
-    if (id === 'plain') continue;
-    jobs.push(new Promise((res) => {
-      const im = new Image();
-      // Resolve either way: a failed sprite must degrade to a plain disc,
-      // never reject and take the board down with it.
-      im.onload = () => { SPRITES[id] = im; res(); };
-      im.onerror = () => res();
-      im.src = `../sprites/stone_${id}.png`;
-    }));
-  }
-  return Promise.all(jobs);
-}
-
-// One canvas per (character, integer scale), blitted thereafter. Scaling the
-// source for every stone on every repaint measured 3.23ms against 0.51ms for
-// plain discs; caching puts it back to disc cost.
-//
-// `want` is in DEVICE pixels, and the returned canvas is the nearest whole
-// multiple of the 16px source — never the exact size asked for. That rounding
-// is the point: at 2.4x a one-pixel outline lands on some rows and not others,
-// and the sprite crawls as the window resizes. Whole multiples only.
-function badge(id, want) {
-  const im = SPRITES[id];
-  if (!im) return null;
-  const k = Math.max(1, Math.round(want / im.width));
-  const key = id + '_' + k;
-  if (BADGE.has(key)) return BADGE.get(key);
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = im.width * k;
-  const g = cv.getContext('2d');
-  g.imageSmoothingEnabled = false;
-  g.drawImage(im, 0, 0, cv.width, cv.height);
-  BADGE.set(key, cv);
-  return cv;
-}
-
 /* ── Canvas setup ─────────────────────────────── */
 const canvas = document.getElementById('boardCanvas');
 const ctx    = canvas.getContext('2d');
@@ -570,9 +502,8 @@ function computeLayout() {
   CELL  = Math.floor(maxW / (N + 1));
   PAD   = CELL;
   CSIZE = CELL * (N - 1) + PAD * 2;
-  // Back the canvas at device resolution. Without this every badge is upscaled
-  // and resampled on a retina screen, which is exactly what turns a small
-  // stencil into a smudge. It sharpens the grid and the plain discs too.
+  // Back the canvas at device resolution, or the grid, the discs and the ink
+  // he throws are all drawn at CSS resolution and upscaled on a retina screen.
   DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
   canvas.width  = Math.round(CSIZE * DPR);
   canvas.height = Math.round(CSIZE * DPR);
@@ -612,54 +543,13 @@ function newGame() {
   const _cb = document.getElementById('aiCommentBody');
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
-  _lastPraise = -9;
-  slam = null;
+  _lastPraise = -9; _lastScold = -9;
+  drop = null;
   showQuote('open');                             // he opens the game with a line
   log(t('── new game ──', '── 新游戏 ──'), 'lround');
   draw();
   renderPanel();
   scheduleAI();
-}
-
-/* ── Stone character picker ───────────────────────
-   Mutual exclusion is enforced here and defended again at render time: two
-   players sharing one silhouette would undo the entire point. */
-function setSkin(p, id) {
-  if (!CHARS[id]) return;
-  const other = p === 1 ? 2 : 1;
-  // Two of the same character would be indistinguishable, so hand the other
-  // side whatever this one was wearing. Plain is exempt: those stones are
-  // already told apart by their colour, and both sides plain is the board the
-  // game started life with — the swap made it unreachable.
-  if (id !== 'plain' && SKIN[other] === id) {
-    SKIN[other] = SKIN[p];
-  }
-  SKIN[p] = id;
-  if (remoteMode) fbSendSkin(p, id);
-  try { localStorage.setItem('gomoku_skins', JSON.stringify(SKIN)); } catch (e) {}
-  renderSkinRows();
-  draw();
-}
-
-function renderSkinRows() {
-  for (const p of [1, 2]) {
-    const row = document.getElementById('skinRow' + p);
-    if (!row) continue;
-    // In remote play you only dress your own side.
-    const locked = remoteMode && myColor !== p;
-    row.innerHTML = CHAR_IDS.map((id) => {
-      const c = CHARS[id];
-      const sel = SKIN[p] === id ? ' sel' : '';
-      const dis = locked ? ' disabled' : '';
-      return `<button class="tog skin-tog${sel}"${dis} onclick="setSkin(${p},'${id}')" `
-           + `title="${t(c.en, c.zh)}" data-en="${c.en}" data-zh="${c.zh}">${t(c.en, c.zh)}</button>`;
-    }).join('');
-  }
-}
-
-function fbSendSkin(p, id) {
-  // Disjoint paths per player, so two simultaneous picks cannot collide.
-  try { gameRef('skins/' + p).set(id); } catch (e) {}
 }
 
 /* ── Player type ──────────────────────────────── */
@@ -795,14 +685,14 @@ function placeStone(r, c) {
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
     // The last stone of the game gets the hardest blow he has.
-    if (quality) { _lastPraise = moveCount; strikeBoard(r, c, 1.3, mover); guruShout('five'); }
+    if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'fish'); guruShout('five'); }
     const you = humanSide();
     showQuote(you == null ? 'calm' : wr.player === you ? 'win' : 'lose');
     reviewGame(wr.player);
     draw(); renderPanel(); return;
   }
 
-  if (quality) praiseMove(r, c, mover, quality);
+  if (quality) judgeMove(r, c, mover, quality);
 
   curP = curP === 1 ? 2 : 1;
   draw(); renderPanel();
@@ -881,7 +771,6 @@ function draw() {
 
   if (coachMode) drawCoachHints();
   drawVoiceMarks();
-  drawSlamRing();
 
   // Hover ghost
   if (hoverCell) {
@@ -901,40 +790,14 @@ function draw() {
       }
     }
   }
+
+  drawDrop();          // whatever he threw is lying on top of all of it
 }
 
 function drawStone(r, c, player, isWin, isLast, ghost) {
-  const seat = PAD + r * CELL;                 // where the stone lives when it is still
-  const lift = ghost ? 0 : slamLift(r, c);     // and how far off it the strike threw it
-  const x = PAD + c * CELL, y = seat - lift;
+  const x = PAD + c * CELL, y = PAD + r * CELL;
+  const radius = CELL * 0.40;
   const color = player === 1 ? '#1db954' : '#f44336';
-
-  // The character rides ON the disc and stays inside its rim — a sprite drawn
-  // to the full cell overhangs the disc at the waist, and all you see of the
-  // colour is a cap over the animal's head. A character stone is also a shade
-  // wider than a plain one, so the ring of colour left around the art is still
-  // worth as much signal as a plain stone's whole face.
-  // Guarded: an unknown id, an unloaded sprite or a failed decode all fall
-  // through to the plain disc the game always drew. The hover preview wears the
-  // character too — it is the stone you are about to put down, and at 35% it no
-  // longer smudges the way the old tinted stencil did.
-  const spec = CHARS[SKIN[player]];
-  const cv = (spec && spec.box > 0) ? badge(SKIN[player], CELL * 0.80 * spec.box * DPR) : null;
-  const radius = cv ? CELL * 0.455 : CELL * 0.40;
-
-  // An airborne stone leaves the point it came off, or it reads as having been
-  // drawn a little higher rather than as having jumped. Not a black shadow —
-  // the board is #0e0e0e and a dark ellipse on it is invisible — but a dim
-  // ghost of the stone itself, which darkens as the stone climbs away.
-  if (lift > 0.4) {
-    ctx.save();
-    ctx.globalAlpha = Math.min(0.34, lift / (CELL * 0.55));
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.ellipse(x, seat, radius * 0.88, radius * 0.32, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
 
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -949,93 +812,209 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  if (cv) {
-    // Land the sprite on whole device pixels too — a half-pixel origin
-    // re-samples every column of it, integer scale or not.
-    const px = cv.width / DPR;
-    const dx = Math.round((x - px / 2) * DPR) / DPR;
-    const dy = Math.round((y - px / 2) * DPR) / DPR;
-    const sm = ctx.imageSmoothingEnabled;
-    ctx.imageSmoothingEnabled = false;
-    if (isWin) { ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 14; }
-    ctx.drawImage(cv, dx, dy, px, px);
-    ctx.shadowBlur = 0;
-    ctx.imageSmoothingEnabled = sm;
-  }
-
-  // Last move: a dot on a plain stone, a collar on a character — a dot would
-  // land on its face.
+  // Last move dot
   if (isLast && !isWin) {
     ctx.beginPath();
-    if (cv) {
-      // hugs the stone: any wider and it collides with the neighbouring point
-      ctx.arc(x, y, radius * 1.04, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.62)';
-      ctx.lineWidth = Math.max(1.2, CELL * 0.045);
-      ctx.stroke();
-    } else {
-      ctx.arc(x, y, radius * 0.28, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fill();
-    }
+    ctx.arc(x, y, radius * 0.28, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fill();
   }
 }
 
-/* ── The guru's hand ──────────────────────────────
-   A good move earns a shout and a blow on the board: the table jolts (CSS, on
-   #boardWrap) and every stone hops, the near ones first and highest, the far
-   ones late and barely — a shock spreading through the wood rather than every
-   stone politely bouncing in unison. Nothing here touches board state; a slam
-   is purely something draw() reads. */
-let slam = null, slamRaf = 0;
+/* ── What he throws you ───────────────────────────
+   He is a fisherman, so a good move lands you a fish and a bad one lands you
+   the boot he pulled up instead — it falls out of the sky onto the board, lies
+   there a couple of seconds, and is gone. Drawn as ink, not as sprites: a
+   tapered brush stroke has a width profile, so inkStroke() walks the curve and
+   fills an outline rather than calling stroke() with one flat width, which is
+   the whole difference between a brush mark and a wire. Bone white, because
+   this board is #0e0e0e and 墨 on it would be invisible — the same inversion a
+   碑帖 rubbing makes.
+   Nothing here touches board state; a drop is purely something draw() reads. */
+let drop = null, dropRaf = 0;
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-function slamLift(r, c) {
-  if (!slam) return 0;
-  const d = Math.hypot(r - slam.r, c - slam.c);
-  const u = (performance.now() - slam.t0 - d * 17) / 380;   // 17ms per cell of travel
-  if (u <= 0 || u >= 1) return 0;
-  return Math.sin(Math.PI * u) * CELL * 0.34 * slam.mag * Math.exp(-d * 0.13);
+function cubicPts(p0, p1, p2, p3, n) {
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, v = 1 - u;
+    out.push([
+      v*v*v*p0[0] + 3*v*v*u*p1[0] + 3*v*u*u*p2[0] + u*u*u*p3[0],
+      v*v*v*p0[1] + 3*v*v*u*p1[1] + 3*v*u*u*p2[1] + u*u*u*p3[1],
+    ]);
+  }
+  return out;
 }
 
-function drawSlamRing() {
-  if (!slam) return;
-  const u = (performance.now() - slam.t0) / 300;
-  if (u >= 1) return;
+// One brush mark: thin where the tip lands, full through the belly of the
+// stroke, thin again where it lifts.
+function inkStroke(g, pts, wStart, wPeak, wEnd) {
+  const n = pts.length, L = [], R = [];
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1);
+    const w = u < 0.34 ? wStart + (wPeak - wStart) * (u / 0.34)
+                       : wPeak + (wEnd - wPeak) * ((u - 0.34) / 0.66);
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+    let dx = b[0] - a[0], dy = b[1] - a[1];
+    const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m;
+    L.push([pts[i][0] - dy * w / 2, pts[i][1] + dx * w / 2]);
+    R.push([pts[i][0] + dy * w / 2, pts[i][1] - dx * w / 2]);
+  }
+  g.beginPath();
+  g.moveTo(L[0][0], L[0][1]);
+  for (let i = 1; i < n; i++) g.lineTo(L[i][0], L[i][1]);
+  for (let i = n - 1; i >= 0; i--) g.lineTo(R[i][0], R[i][1]);
+  g.closePath(); g.fill();
+}
+function inkCurve(g, p0, p1, p2, p3, w0, w1, w2) { inkStroke(g, cubicPts(p0, p1, p2, p3, 22), w0, w1, w2); }
+
+/* A carp, facing left, drawn in a unit box roughly x∈[-1,1] y∈[-0.6,0.6] and
+   scaled by the caller. Outline strokes over a pale wash — the wash is what
+   stops it reading as a hole cut in the board when it lands over stones. */
+function drawFish(g, s) {
+  g.fillStyle = 'rgba(244,238,226,0.17)';
+  g.beginPath();
+  g.ellipse(-0.06 * s, 0.01 * s, 0.74 * s, 0.28 * s, -0.05, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#f4eee1';
+  // back and belly — the two strokes that make the body
+  inkCurve(g, [-0.92*s, 0.03*s], [-0.55*s, -0.34*s], [0.16*s, -0.33*s], [0.66*s, -0.09*s], 0.014*s, 0.085*s, 0.030*s);
+  inkCurve(g, [-0.92*s, 0.08*s], [-0.50*s,  0.36*s], [0.16*s,  0.32*s], [0.66*s,  0.11*s], 0.014*s, 0.072*s, 0.028*s);
+  // tail — two sweeps off the peduncle, closed by a soft trailing edge
+  inkCurve(g, [0.62*s, -0.02*s], [0.86*s, -0.10*s], [0.98*s, -0.28*s], [1.04*s, -0.46*s], 0.075*s, 0.052*s, 0.012*s);
+  inkCurve(g, [0.62*s,  0.03*s], [0.86*s,  0.12*s], [0.98*s,  0.30*s], [1.02*s,  0.44*s], 0.075*s, 0.048*s, 0.012*s);
+  inkCurve(g, [1.04*s, -0.46*s], [0.90*s, -0.10*s], [0.90*s,  0.10*s], [1.02*s,  0.44*s], 0.012*s, 0.032*s, 0.012*s);
+  // dorsal and pectoral fins, both starting on the line they grow out of
+  inkCurve(g, [-0.10*s, -0.28*s], [0.06*s, -0.46*s], [0.30*s, -0.46*s], [0.46*s, -0.22*s], 0.012*s, 0.040*s, 0.012*s);
+  inkCurve(g, [-0.42*s, 0.20*s], [-0.34*s, 0.34*s], [-0.20*s, 0.40*s], [-0.06*s, 0.37*s], 0.012*s, 0.034*s, 0.010*s);
+  // gill, mouth, eye
+  inkCurve(g, [-0.60*s, -0.20*s], [-0.52*s, -0.06*s], [-0.52*s, 0.08*s], [-0.58*s, 0.21*s], 0.012*s, 0.026*s, 0.012*s);
+  inkCurve(g, [-0.94*s, 0.05*s], [-0.86*s, 0.12*s], [-0.80*s, 0.14*s], [-0.72*s, 0.13*s], 0.010*s, 0.024*s, 0.008*s);
+  g.beginPath(); g.arc(-0.74*s, -0.09*s, 0.060*s, 0, Math.PI*2); g.fill();
+  g.fillStyle = '#14120f';
+  g.beginPath(); g.arc(-0.745*s, -0.09*s, 0.028*s, 0, Math.PI*2); g.fill();
+}
+
+/* And the boot, which is what you actually catch most days. A boot has no
+   outline worth drawing at three cells wide — it is a mass, so it is painted
+   as one, in ink with the life taken out of it. */
+function drawBoot(g, s) {
+  g.fillStyle = '#7d7669';
+  g.beginPath();
+  g.moveTo(0.04 * s, -0.88 * s);
+  g.lineTo(0.54 * s, -0.86 * s);
+  g.bezierCurveTo(0.62 * s, -0.40 * s, 0.64 * s, 0.02 * s, 0.68 * s, 0.30 * s);
+  g.lineTo(-0.82 * s, 0.30 * s);
+  g.bezierCurveTo(-0.96 * s, 0.26 * s, -0.94 * s, 0.06 * s, -0.78 * s, 0.01 * s);
+  g.bezierCurveTo(-0.44 * s, -0.08 * s, -0.06 * s, -0.14 * s, 0.04 * s, -0.32 * s);
+  g.closePath();
+  g.fill();
+  // the sole, and the welt above it
+  g.fillStyle = '#4f4a42';
+  g.beginPath();
+  g.moveTo(-0.86 * s, 0.28 * s);
+  g.lineTo(0.72 * s, 0.28 * s);
+  g.lineTo(0.70 * s, 0.44 * s);
+  g.bezierCurveTo(0.10 * s, 0.50 * s, -0.60 * s, 0.50 * s, -0.88 * s, 0.42 * s);
+  g.closePath();
+  g.fill();
+  g.fillStyle = '#a9a191';
+  // cuff, instep seam, two eyelet ties
+  inkCurve(g, [0.02*s, -0.74*s], [0.20*s, -0.68*s], [0.40*s, -0.70*s], [0.56*s, -0.74*s], 0.012*s, 0.034*s, 0.012*s);
+  inkCurve(g, [-0.74*s, 0.02*s], [-0.40*s, -0.08*s], [-0.06*s, -0.14*s], [0.05*s, -0.30*s], 0.010*s, 0.026*s, 0.010*s);
+  for (const ly of [-0.56, -0.38]) {
+    inkCurve(g, [0.12*s, ly*s], [0.24*s, (ly-0.05)*s], [0.36*s, (ly+0.05)*s], [0.48*s, ly*s], 0.008*s, 0.020*s, 0.008*s);
+  }
+  // and the weed that came up with it, because it has been down there a while
+  g.fillStyle = 'rgba(150,160,132,0.75)';
+  inkCurve(g, [0.20*s, -0.86*s], [0.14*s, -1.02*s], [0.32*s, -1.06*s], [0.30*s, -1.22*s], 0.008*s, 0.020*s, 0.006*s);
+  inkCurve(g, [0.44*s, -0.84*s], [0.52*s, -0.98*s], [0.66*s, -0.92*s], [0.74*s, -1.04*s], 0.008*s, 0.018*s, 0.005*s);
+}
+
+/* Where it lands, how hard, and what it does when it gets there.
+     0–260ms   falling, tumbling
+     260–420ms one bounce, squashed on contact
+     420–2400  lying there (a fish flops twice; a boot does not)
+     2400–2950 fading out */
+function dropShape() {
+  if (!drop) return null;
+  const el = performance.now() - drop.t0;
+  const fish = drop.kind === 'fish';
+  const size = CELL * (fish ? 1.5 : 1.35);        // half-width, so a fish spans ~3 cells
+  // keep it wholly on the board even when the move was played in a corner
+  const lo = PAD + size * 0.9, hi = PAD + (N - 1) * CELL - size * 0.9;
+  const x = Math.max(lo, Math.min(hi, PAD + drop.c * CELL));
+  const y = Math.max(PAD + size * 0.6, Math.min(PAD + (N - 1) * CELL - size * 0.5, PAD + drop.r * CELL));
+  let dy = 0, rot = drop.tilt, sx = 1, sy = 1, alpha = 1;
+  if (el < 260) {                                  // fall: accelerating, tumbling
+    const u = el / 260;
+    dy = -(1 - u * u) * CELL * 6;
+    rot = drop.tilt + (1 - u) * drop.spin;
+    alpha = Math.min(1, el / 90);
+  } else if (el < 340) {                           // contact
+    const u = (el - 260) / 80;
+    dy = -Math.sin(u * Math.PI) * CELL * 0.55;
+    sy = 1 - 0.22 * Math.sin((1 - u) * Math.PI * 0.5); sx = 2 - sy;
+  } else if (el < 420) {
+    const u = (el - 340) / 80;
+    dy = -Math.sin(u * Math.PI) * CELL * 0.16;
+  } else if (el > 2400) {
+    alpha = Math.max(0, 1 - (el - 2400) / 550);
+  }
+  // the fish is not dead yet
+  if (drop.kind === 'fish' && el > 700) {
+    const flop = Math.exp(-(((el - 900) / 260) ** 2)) + Math.exp(-(((el - 1650) / 260) ** 2));
+    rot += Math.sin(el / 42) * 0.16 * flop;
+    dy -= Math.abs(Math.sin(el / 42)) * CELL * 0.22 * flop;
+  }
+  return { x, y, dy, rot, sx, sy, alpha, size, fish };
+}
+
+function drawDrop() {
+  const d = dropShape();
+  if (!d) return;
   ctx.save();
-  ctx.globalAlpha = (1 - u) * 0.55;
-  ctx.strokeStyle = slam.colour;
-  ctx.lineWidth = Math.max(1.5, CELL * 0.10 * (1 - u));
+  ctx.globalAlpha = d.alpha;
+  // A contact shadow: tight and dark once it is down, wide and faint while it
+  // is still in the air.
+  const air = Math.min(1, Math.abs(d.dy) / (CELL * 3));
+  ctx.globalAlpha = d.alpha * (0.44 - 0.30 * air);
+  ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.arc(PAD + slam.c * CELL, PAD + slam.r * CELL, CELL * (0.28 + u * 2.6), 0, Math.PI * 2);
-  ctx.stroke();
+  ctx.ellipse(d.x, d.y + d.size * 0.30, d.size * (0.72 + 0.5 * air), d.size * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = d.alpha;
+  ctx.translate(d.x, d.y + d.dy);
+  ctx.rotate(d.rot);
+  ctx.scale(d.sx, d.sy);
+  if (d.fish) drawFish(ctx, d.size); else drawBoot(ctx, d.size);
   ctx.restore();
 }
 
-function slamFrame() {
-  if (!slam) { slamRaf = 0; return; }
-  if (performance.now() - slam.t0 > slam.dur) { slam = null; slamRaf = 0; draw(); return; }
+function dropFrame() {
+  if (!drop) { dropRaf = 0; return; }
+  if (performance.now() - drop.t0 > drop.dur) { drop = null; dropRaf = 0; draw(); return; }
   draw();
-  slamRaf = requestAnimationFrame(slamFrame);
+  dropRaf = requestAnimationFrame(dropFrame);
 }
 
-function strikeBoard(r, c, mag, player) {
-  thud(mag);
+function throwOnBoard(r, c, kind) {
+  splash(kind);
   const face = document.getElementById('oracleFace');
-  if (face) { face.classList.remove('striking'); void face.offsetWidth; face.classList.add('striking'); }
-  const wrap = document.getElementById('boardWrap');
-  if (wrap) { wrap.classList.remove('slam'); void wrap.offsetWidth; wrap.classList.add('slam'); }
-  if (REDUCED.matches) return;                 // the shout still lands; the board just keeps still
-  // Longest journey on a 15x15 board is ~20 cells, so the last stone starts at
-  // ~340ms and needs 380ms of hop.
-  slam = { t0: performance.now(), r, c, mag, dur: 760, colour: player === 1 ? '#1db954' : '#f44336' };
-  if (!slamRaf) slamRaf = requestAnimationFrame(slamFrame);
+  if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
+  if (REDUCED.matches) return;      // the shout still lands; nothing sails across the board
+  drop = {
+    t0: performance.now(), r, c, kind, dur: 2960,
+    tilt: (kind === 'fish' ? -0.10 : 0.16) + (Math.random() - 0.5) * 0.2,
+    spin: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random()),
+  };
+  if (!dropRaf) dropRaf = requestAnimationFrame(dropFrame);
 }
 
-/* ── The blow itself ──────────────────────────────
-   A palm on a wooden board is a low body with a short crack on top of it, and
-   almost no tail. Synthesised rather than shipped as a file: it is forty lines
-   against a download, and it can be tuned to how good the move actually was. */
+/* ── The sound of it landing ──────────────────────
+   A fish hitting a wooden board is a wet slap with a body to it; a boot is the
+   same event with the life taken out — lower, duller, no splash. Synthesised
+   rather than shipped as two files, so it is forty lines against a download. */
 let guruSfx = (() => { try { return localStorage.getItem('gomoku_sfx') !== '0'; } catch (e) { return true; } })();
 let _ac = null;
 function audioCtx() {
@@ -1045,52 +1024,57 @@ function audioCtx() {
   }
   return _ac || null;
 }
-function thud(mag) {
+function splash(kind) {
   if (!guruSfx) return;
   const ac = audioCtx();
   if (!ac) return;
-  // Every strike follows a click, so the context is always unlocked by then —
-  // but a tab restored from the background can still come back suspended.
+  // Every drop follows a click, so the context is unlocked by then — but a tab
+  // restored from the background can still come back suspended.
   if (ac.state === 'suspended') ac.resume().catch(() => {});
-  const t0 = ac.currentTime, m = Math.max(0.3, Math.min(1.3, mag));
+  const wet = kind === 'fish';
+  const t0 = ac.currentTime + 0.26;                 // it has to fall first
   const body = ac.createOscillator(), bg = ac.createGain();
   body.type = 'sine';
-  body.frequency.setValueAtTime(160, t0);
-  body.frequency.exponentialRampToValueAtTime(44, t0 + 0.17);
+  body.frequency.setValueAtTime(wet ? 190 : 130, t0);
+  body.frequency.exponentialRampToValueAtTime(wet ? 62 : 48, t0 + 0.15);
   bg.gain.setValueAtTime(0.0001, t0);
-  bg.gain.exponentialRampToValueAtTime(0.20 * m, t0 + 0.008);
-  bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+  bg.gain.exponentialRampToValueAtTime(wet ? 0.17 : 0.20, t0 + 0.01);
+  bg.gain.exponentialRampToValueAtTime(0.0001, t0 + (wet ? 0.20 : 0.26));
   body.connect(bg).connect(ac.destination);
   body.start(t0); body.stop(t0 + 0.3);
-  // the crack of the wood
-  const len = Math.floor(ac.sampleRate * 0.06);
+  // the slap on top: bright and short for a fish, muffled for wet leather
+  const len = Math.floor(ac.sampleRate * 0.07);
   const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, wet ? 2.2 : 3.4);
   const noise = ac.createBufferSource(); noise.buffer = buf;
-  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 0.7;
-  const ng = ac.createGain(); ng.gain.value = 0.15 * m;
-  noise.connect(bp).connect(ng).connect(ac.destination);
+  const f = ac.createBiquadFilter();
+  f.type = wet ? 'bandpass' : 'lowpass';
+  f.frequency.value = wet ? 1900 : 620; f.Q.value = 0.7;
+  const ng = ac.createGain(); ng.gain.value = wet ? 0.17 : 0.10;
+  noise.connect(f).connect(ng).connect(ac.destination);
   noise.start(t0);
 }
 function toggleGuruSfx() {
   guruSfx = !guruSfx;
   try { localStorage.setItem('gomoku_sfx', guruSfx ? '1' : '0'); } catch (e) {}
   renderGuruSfxUI();
-  if (guruSfx) thud(0.55);      // so you hear what you just turned on
+  if (guruSfx) splash('fish');      // so you hear what you just turned on
 }
 function renderGuruSfxUI() {
   const b = document.getElementById('guruSfxBtn');
-  if (b) b.textContent = guruSfx ? t('◆ his hand: on', '◆ 拍案·开') : t('◇ his hand: off', '◇ 拍案·关');
+  if (b) b.textContent = guruSfx ? t('◆ sound: on', '◆ 声音·开') : t('◇ sound: off', '◇ 声音·关');
 }
 
 /* ── What he thinks of the move ───────────────────
    Judged from the position, not from the engine: the same runScore the search
    uses, asked twice about the point just played — what it built for the mover,
    and what it denied the other side. Nothing here can praise a move the board
-   does not actually justify. */
+   does not actually justify.
+
+   Call it while the point is still EMPTY; localThreat plays the stone itself. */
 function moveQuality(r, c, p) {
   const opp = p === 1 ? 2 : 1;
-  const mine = localThreat(board, r, c, p);      // needs the point empty; callers oblige
+  const mine = localThreat(board, r, c, p);
   const deny = localThreat(board, r, c, opp);
   let tier = 0, kind = 'three';
   if (deny >= 1000000)      { tier = 3; kind = 'block';  }   // stopped a five outright
@@ -1102,6 +1086,36 @@ function moveQuality(r, c, p) {
   else if (mine >= 250 && deny >= 400) { tier = 1; kind = 'shape'; }
   return { tier, kind, mine, deny };
 }
+
+/* And what he thinks of a bad one, judged AFTER the stone is down: the question
+   is what the position you just handed over is worth to the other side. A move
+   that leaves them a five on the board is an oversight whatever it was aiming
+   at; one that leaves them an open four has lost by force even if nobody has
+   noticed yet. */
+// `q` is the judgement of the move made while its point was still empty; this
+// runs after, so it may only ask about points that are still empty — localThreat
+// plays a stone on the point it is given and takes it off again, which on an
+// occupied point would quietly rub out the move that was just made.
+function moveBlunder(p, q) {
+  const opp = p === 1 ? 2 : 1;
+  let five = false, four = false;
+  for (let i = 0; i < N && !five; i++) {
+    for (let j = 0; j < N; j++) {
+      if (board[i][j] !== 0) continue;
+      const v = localThreat(board, i, j, opp);
+      if (v >= 1000000) { five = true; break; }
+      if (v >= 100000) four = true;
+    }
+  }
+  if (five) return { tier: 3, kind: 'leak' };
+  if (four) return { tier: 2, kind: 'bad' };
+  // A stone touching nothing at all: a lone stone with all four lines open
+  // scores 80, so at or under that it built nothing and denied nothing. Not
+  // applied to the opening, where there is nothing to touch.
+  if (moveCount >= 6 && q.mine <= 90 && q.deny <= 90) return { tier: 1, kind: 'slow' };
+  return { tier: 0, kind: '' };
+}
+
 // He only watches the person. An engine praising itself every other ply is
 // noise, and in AI-vs-AI it would never stop.
 function praiseWatch(p) { return remoteMode ? p === myColor : playerTypes[p] === 'human'; }
@@ -1112,15 +1126,27 @@ function humanSide() {
   return null;                                    // two humans, or none — nobody to console
 }
 
-let _lastPraise = -9, _shoutTimer = 0;
-function praiseMove(r, c, p, q) {
+let _lastPraise = -9, _lastScold = -9, _shoutTimer = 0;
+function judgeMove(r, c, p, q) {
+  // A blunder outranks whatever the move was also trying to do — you do not get
+  // a fish for building a nice shape while five is sitting on the board.
+  const bad = moveBlunder(p, q);
+  if (bad.tier === 3 || (bad.tier && !q.tier)) {
+    if (bad.tier === 1 && moveCount - _lastScold < 8) return;
+    if (bad.tier === 2 && moveCount - _lastScold < 4) return;
+    _lastScold = moveCount;
+    throwOnBoard(r, c, 'boot');
+    guruShout(bad.kind);
+    if (bad.tier === 3) showQuote('lose');
+    return;
+  }
   if (!q.tier) return;
   // A shout on every third stone stops being a compliment. The better the
   // move, the shorter the silence it has to break.
   if (q.tier === 1 && moveCount - _lastPraise < 7) return;
   if (q.tier === 2 && moveCount - _lastPraise < 3) return;
   _lastPraise = moveCount;
-  strikeBoard(r, c, q.tier === 3 ? 1 : q.tier === 2 ? 0.7 : 0.45, p);
+  throwOnBoard(r, c, 'fish');
   guruShout(q.kind);
   if (q.tier === 3) showQuote(q.kind === 'block' ? 'defend' : 'attack');
 }
@@ -1132,19 +1158,24 @@ function praiseMove(r, c, p, q) {
 // underneath only exists to translate it, so in Chinese there is nothing left
 // for it to say and it goes away.
 const SHOUTS = {
-  five:   { cn: '五子连珠！', en: 'five in a row!' },
-  four:   { cn: '胜着！',     en: 'the winning blow' },
-  double: { cn: '妙手！',     en: 'a brilliancy' },
-  both:   { cn: '攻守兼备！', en: 'attack and defence at once' },
-  block:  { cn: '好挡！',     en: 'well blocked' },
-  three:  { cn: '好棋！',     en: 'good move' },
-  shape:  { cn: '有形！',     en: 'good shape' },
+  five:   { cn: '五子连珠！', en: 'five in a row!',             seal: '终' },
+  four:   { cn: '胜着！',     en: 'the winning blow',           seal: '胜' },
+  double: { cn: '妙手！',     en: 'a brilliancy',               seal: '妙' },
+  both:   { cn: '攻守兼备！', en: 'attack and defence at once', seal: '全' },
+  block:  { cn: '好挡！',     en: 'well blocked',               seal: '守' },
+  three:  { cn: '好棋！',     en: 'good move',                  seal: '好' },
+  shape:  { cn: '有形！',     en: 'good shape',                 seal: '形' },
+  // and the three he says with a boot in his hand
+  leak:   { cn: '漏着！',     en: 'you left it open',           seal: '漏', bad: 1 },
+  bad:    { cn: '恶手！',     en: 'that one costs you',         seal: '恶', bad: 1 },
+  slow:   { cn: '缓手…',     en: 'a stone with nothing to do',  seal: '缓', bad: 1 },
 };
 function guruShout(kind) {
   const s = SHOUTS[kind] || SHOUTS.three;
   const el = document.getElementById('guruShout');
   if (!el) return;
-  el.innerHTML = '<div class="gs-cn">' + s.cn + '</div>' +
+  el.classList.toggle('bad', !!s.bad);
+  el.innerHTML = '<div class="gs-cn">' + s.cn + '<span class="gs-seal">' + s.seal + '</span></div>' +
                  (lang === 'zh' ? '' : '<div class="gs-gloss">' + escHtml(s.en) + '</div>');
   el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
   clearTimeout(_shoutTimer);
@@ -1806,11 +1837,8 @@ function drawVoiceMarks(){
   ctx.restore();
 }
 
-/* the prompt is English, and the players are whatever stone they wear */
-function engineName(p){
-  const c = CHARS[SKIN[p]];
-  return c && SKIN[p] !== 'plain' ? c.en : (p === 1 ? 'Lime (green)' : 'Tomato (red)');
-}
+/* the prompt is English, and the two sides are their colours */
+function engineName(p){ return p === 1 ? 'Lime (green)' : 'Tomato (red)'; }
 function boardText(){
   const sym = {0:'.', 1:'L', 2:'T'};
   const lines = [];
@@ -1903,7 +1931,7 @@ const firebaseConfig = {
 
 let _fbDb = null, _fbCode = null, _fbSession = 0;
 let _isHost = false, _curHost = 1, _remoteMoves = [], _remoteOver = false, _prevLen = 0, _reactSeen = 0;
-let _fbJoinRef=null,_fbJoinCb=null, _fbPlayRef=null,_fbPlayCb=null, _fbHostRef=null,_fbHostCb=null, _fbReqRef=null,_fbReqCb=null, _fbReactRef=null,_fbReactCb=null, _fbOverRef=null,_fbOverCb=null, _fbSkinRef=null,_fbSkinCb=null;
+let _fbJoinRef=null,_fbJoinCb=null, _fbPlayRef=null,_fbPlayCb=null, _fbHostRef=null,_fbHostCb=null, _fbReqRef=null,_fbReqCb=null, _fbReactRef=null,_fbReactCb=null, _fbOverRef=null,_fbOverCb=null;
 
 function fbDb() {
   if (!_fbDb) { firebase.initializeApp(firebaseConfig); _fbDb = firebase.database(); }
@@ -1960,7 +1988,7 @@ function onPlay(snap) {
   const s = v.s || 0;
   const moves = v.moves ? (Array.isArray(v.moves) ? v.moves : Object.values(v.moves)) : [];
   if (s !== _fbSession) {
-    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; slam = null;
+    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; _lastScold = -9; drop = null;
     showQuote('open');
     log(t('── new game ──', '── 新游戏 ──'), 'lround');
   }
@@ -1979,8 +2007,8 @@ function onPlay(snap) {
   _prevLen = moves.length;
   applyState(moves);
   if (fresh) {
-    if (gameOver) { _lastPraise = moveCount; strikeBoard(fresh.r, fresh.c, 1.3, fresh.p); guruShout('five'); }
-    else praiseMove(fresh.r, fresh.c, fresh.p, fresh.q);
+    if (gameOver) { _lastPraise = moveCount; throwOnBoard(fresh.r, fresh.c, 'fish'); guruShout('five'); }
+    else judgeMove(fresh.r, fresh.c, fresh.p, fresh.q);
   }
 }
 function onHost(snap) {
@@ -2031,20 +2059,8 @@ function startRemoteListeners() {
   if (_fbReqCb) _fbReqRef.off('value', _fbReqCb);        _fbReqRef = gameRef('req');     _fbReqCb = _fbReqRef.on('value', onReq);
   if (_fbReactCb) _fbReactRef.off('value', _fbReactCb);  _fbReactRef = gameRef('react'); _fbReactCb = _fbReactRef.on('value', onReact);
   if (_fbOverCb) _fbOverRef.off('value', _fbOverCb);     _fbOverRef = gameRef('over');   _fbOverCb = _fbOverRef.on('value', onOver);
-  if (_fbSkinCb) _fbSkinRef.off('value', _fbSkinCb);     _fbSkinRef = gameRef('skins');  _fbSkinCb = _fbSkinRef.on('value', onSkins);
 }
 
-function onSkins(snap) {
-  const v = snap.val() || {};
-  // Trust only ids this build knows; a newer client must not blank our board.
-  for (const p of [1, 2]) if (CHARS[v[p]]) SKIN[p] = v[p];
-  // Two sides wearing one character would be indistinguishable — but two plain
-  // sides are the board this game started life with, and are told apart by
-  // colour, so that pairing is left alone.
-  if (SKIN[1] === SKIN[2] && SKIN[1] !== 'plain') SKIN[2] = SKIN[1] === 'raccoon' ? 'goose' : 'raccoon';
-  renderSkinRows();
-  draw();
-}
 function fbSendMove(r, c) { gameRef('play').set({ s: _fbSession, moves: _remoteMoves.concat([[r, c]]) }); }
 
 async function createRoom() {
@@ -2104,18 +2120,9 @@ function floatReact(e) { const el = document.getElementById('reactFloat'); el.te
 /* ── Init ─────────────────────────────────────── */
 function init() {
   computeLayout();
-  try {
-    const st = JSON.parse(localStorage.getItem('gomoku_skins') || 'null');
-    if (st && CHARS[st[1]] && CHARS[st[2]] && st[1] !== st[2]) SKIN = { 1: st[1], 2: st[2] };
-  } catch (e) {}
-  renderSkinRows();
   applyLang();
   rlInit();
   newGame();
-  // Deliberately after the board already exists and has drawn plain discs:
-  // fire-and-forget, so a missing or failed sprite leaves today's game intact
-  // instead of taking the board down with it.
-  loadSprites().then(draw).catch(() => {});
 }
 
 window.addEventListener('resize', () => { computeLayout(); draw(); });
