@@ -1,173 +1,130 @@
 from PIL import Image
+import json
 import os
 
-# Two-value stencil art. K = ink (the mass), P = paper (accents). No mid tone:
-# the game caps CELL at 33, so a three-value miniature is mud at that size.
+# Proper pixel art, not stencils. The two-value silhouettes these replace were
+# drawn for a board that tinted them per player and stamped them on a disc; they
+# read as ink blots at 16px. These are authored the way sprites/guru.png is —
+# a small fixed palette, a dark outline, one shade for volume — and the board
+# now draws them at an INTEGER scale with smoothing off, so the pixels survive
+# to the screen instead of being resampled into a smudge.
+#
+# The art is player-independent: ownership is carried by the coloured stone the
+# character stands on, and by the silhouette (a goose is not a raccoon under any
+# form of colour blindness), so the sprites no longer ship in two tints.
+PAL = {
+ 'goose': {
+   'o': (23, 19, 31),      # outline
+   'w': (246, 243, 236),   # feather white
+   's': (201, 197, 192),   # feather shade
+   'b': (233, 163, 62),    # bill / knob
+   'd': (176, 102, 36),    # bill shade
+   'e': (23, 19, 31),      # eye
+ },
+ 'raccoon': {
+   'o': (23, 19, 31),
+   'g': (170, 168, 180),   # fur
+   'h': (116, 114, 130),   # fur shade
+   'm': (44, 38, 56),      # mask
+   'w': (238, 236, 242),   # muzzle / brow
+   'n': (66, 54, 70),      # nose
+   'e': (246, 243, 236),   # eye glint
+ },
+}
+
+# 16x16, because the board draws a character at ~2x on a desktop cell and 1x on
+# a phone; anything finer is thrown away, anything coarser cannot hold a face.
 GRIDS = {
- # Heavy HORIZONTAL body, thin vertical neck, defined head — reads as a goose,
- # not a musical note.
+ # A domestic goose in profile facing right: knobbed bill, long neck, heavy
+ # horizontal body. The silhouette is the same one the old stencil earned its
+ # place with — it just has feathers now.
  'goose': [
   "................",
-  ".........KKK....",
-  "........KKPKK...",
-  "........KKKKK...",
-  ".......PKKKK....",
-  "........KK......",
-  "........KK......",
-  "...KKKKKKKK.....",
-  "..KKKKKKKKKKK...",
-  ".KKKKKKKKKKKKK..",
-  "KKKKKKKKKKKKKKK.",
-  "KKKKKKKKKKKKKKK.",
-  ".KKKKKKKKKKKKK..",
-  "..KKKKKKKKKKK...",
-  "....KKKKKKK.....",
-  "................",
+  ".........ooo....",
+  "........owwwo...",
+  "........owewo...",
+  "........owwwoooo",
+  "........owwwbbbd",
+  "........owwwooo.",
+  ".........osswo..",
+  "....ooo..osswo..",
+  "..oowwwooosswwo.",
+  ".owwwwwwwwwwwwwo",
+  ".owwwwwwwwwwwwso",
+  ".oswwwwwwwwwwsso",
+  "..ossswwwwwssso.",
+  "...oosssssssoo..",
+  ".....oooooooo...",
  ],
- # Rounded ears, mask band across the eyes, soft muzzle. Thinned so its ink
- # budget matches the goose instead of reading heavier.
+ # A raccoon head-on: round ears, the mask over both eyes, pale brow and
+ # muzzle. Front-facing so it never reads as a second bird at cell size.
  'raccoon': [
   "................",
-  "................",
-  "...KK......KK...",
-  "..KKKK....KKKK..",
-  "..KKKKKKKKKKKK..",
-  ".KKK........KKK.",
-  ".KK..........KK.",
-  ".KKPP.KKKK.PPKK.",
-  ".KKPP.KKKK.PPKK.",
-  ".KK..........KK.",
-  "..KKKKPPPPKKKK..",
-  "..KKKKPPPPKKKK..",
-  "...KKKKKKKKKK...",
-  ".....KKKKKK.....",
-  "................",
-  "................",
- ],
- # Lens-shaped plastid with visible grana stacks.
- 'chloroplast': [
-  "................",
-  "................",
-  "......KKKKK.....",
-  "....KKKKKKKKK...",
-  "...KK.......KK..",
-  "..KK.PPPPP...KK.",
-  "..KK.........KK.",
-  ".KK..PPPPP....KK",
-  ".KK...........KK",
-  ".KK....PPPPP..KK",
-  "..KK.........KK.",
-  "..KK........KK..",
-  "...KKKKKKKKK....",
-  ".....KKKKK......",
-  "................",
-  "................",
- ],
- # Compact faceted body with one bright carotenoid needle — not an asterisk.
- 'chromoplast': [
-  "................",
-  "................",
-  "......KKKK......",
-  ".....KKKKKK.....",
-  "....KKKKKKKK....",
-  "...KKKKKKKKKK...",
-  "..KKKKKPKKKKKK..",
-  "..KKKKKPKKKKKK..",
-  ".KKKKKKPKKKKKKK.",
-  ".KKKKKKPKKKKKKK.",
-  "..KKKKKPKKKKKK..",
-  "..KKKKKKKKKKKK..",
-  "...KKKKKKKKKK...",
-  "....KKKKKKKK....",
-  ".....KKKKKK.....",
-  "................",
- ],
- # Game of Life: a three-cell bar.
- 'blinker': [
-  "................",
-  "................",
-  "................",
-  "................",
-  "..KKKKKKKKKKKK..",
-  "..KKKKKKKKKKKK..",
-  "..KKKKKKKKKKKK..",
-  "..KKKKKKKKKKKK..",
-  "..KKKKKKKKKKKK..",
-  "..KKKKKKKKKKKK..",
-  "................",
-  "................",
-  "................",
-  "................",
-  "................",
-  "................",
- ],
- # Game of Life: a 2x2 square, thinned to a ring so its ink matches the blinker.
- 'block': [
-  "................",
-  "................",
-  "..KKKKKKKKKKKK..",
-  "..KKKKKKKKKKKK..",
-  "..KK........KK..",
-  "..KK........KK..",
-  "..KK........KK..",
-  "..KK........KK..",
-  "..KK........KK..",
-  "..KK........KK..",
-  "..KK........KK..",
-  "..KK........KK..",
-  "..KKKKKKKKKKKK..",
-  "..KKKKKKKKKKKK..",
-  "................",
-  "................",
+  "..oo........oo..",
+  ".ohho.oooo.ohho.",
+  ".oggooggggooggo.",
+  ".oggggggggggggo.",
+  ".ogwwwwwwwwwwgo.",
+  ".ommmmmwwmmmmmo.",
+  ".ommemmwwmmemmo.",
+  ".ommmmmwwmmmmmo.",
+  "..oggwwwwwwggo..",
+  "..oggwwwwwwggo..",
+  "...ogwwnnwwgo...",
+  "...ogwwwwwwgo...",
+  "....ohwwwwho....",
+  ".....ohhhho.....",
+  "......oooo......",
  ],
 }
 
-# Ink and paper tints per player, derived from the game's own stone colours so
-# the badge reads as part of the stone rather than pasted onto it.
-TINT = {
-  1: {'K': (6, 33, 15), 'P': (234, 255, 241)},     # on #1db954
-  2: {'K': (43, 9, 6),  'P': (255, 240, 238)},     # on #f44336
-}
-SCALE = 4   # export at 4x so the canvas downsamples from real pixels
+OUT = 'sprites'
 
-out = 'sprites'
-os.makedirs(out, exist_ok=True)
-report = []
+
+def build(name, rows):
+    pal = PAL[name]
+    im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+    px = im.load()
+    ink = 0
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch == '.':
+                continue
+            if ch not in pal:
+                raise SystemExit(f"{name} row {y}: '{ch}' is not in the palette")
+            px[x, y] = pal[ch] + (255,)
+            ink += 1
+    return im, ink / 256.0
+
+
+os.makedirs(OUT, exist_ok=True)
+cov = {}
 for name, rows in GRIDS.items():
-    assert len(rows) == 16, name
+    if len(rows) != 16:
+        raise SystemExit(f"{name} has {len(rows)} rows")
     for i, r in enumerate(rows):
-        assert len(r) == 16, f"{name} row {i} is {len(r)}"
-    ink = sum(r.count('K') + r.count('P') for r in rows)
-    report.append((name, ink / 256.0))
-    for p in (1, 2):
-        im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
-        px = im.load()
-        for y, row in enumerate(rows):
-            for x, ch in enumerate(row):
-                if ch == 'K': px[x, y] = TINT[p]['K'] + (255,)
-                elif ch == 'P': px[x, y] = TINT[p]['P'] + (255,)
-        im.resize((16 * SCALE, 16 * SCALE), Image.NEAREST).save(f'{out}/stone_{name}_p{p}.png')
+        if len(r) != 16:
+            raise SystemExit(f"{name} row {i} is {len(r)} wide")
+    im, c = build(name, rows)
+    cov[name] = c
+    # Native size. The board scales by an integer factor with NEAREST, so a
+    # pre-scaled export would only give it a source it has to resample again.
+    im.save(f'{OUT}/stone_{name}.png')
 
-# Equalise the ink each badge actually PUTS ON the disc, rather than trying to
-# hand-draw six sprites to the same coverage. Rendered ink area is
-# coverage * box^2, so box = BASE * sqrt(ref / coverage) makes that product
-# constant for any art. Solves F1 exactly instead of approximately.
-BASE = 0.72
-cov = dict(report)
+# Equalise the ink each character actually puts on its stone: rendered area is
+# coverage * box^2, so box = BASE * sqrt(ref/coverage) holds that product
+# constant and neither side reads heavier than the other.
+BASE = 0.90
 ref = sum(cov.values()) / len(cov)
-scales = {n: max(0.55, min(0.86, BASE * (ref / c) ** 0.5)) for n, c in cov.items()}
+boxes = {n: max(0.70, min(1.00, BASE * (ref / c) ** 0.5)) for n, c in cov.items()}
 
 print("character      coverage   box    normalised ink")
 for n in GRIDS:
-    print(f"  {n:12s} {cov[n]*100:5.1f}%   {scales[n]:.3f}   {cov[n]*scales[n]**2:.4f}")
-vals = [cov[n] * scales[n] ** 2 for n in GRIDS]
+    print(f"  {n:12s} {cov[n]*100:5.1f}%   {boxes[n]:.3f}   {cov[n]*boxes[n]**2:.4f}")
+vals = [cov[n] * boxes[n] ** 2 for n in GRIDS]
 spread = max(vals) / min(vals)
-print(f"\nspread across ALL characters: {spread:.3f}  {'OK' if spread <= 1.12 else 'FAIL'}")
-for a, b in [('goose','raccoon'), ('chloroplast','chromoplast'), ('blinker','block')]:
-    r = max(cov[a]*scales[a]**2, cov[b]*scales[b]**2) / min(cov[a]*scales[a]**2, cov[b]*scales[b]**2)
-    print(f"  {a} vs {b}: {r:.3f}  {'OK' if r <= 1.12 else 'FAIL'}")
+print(f"\nspread: {spread:.3f}  {'OK' if spread <= 1.12 else 'FAIL'}")
 
-with open(f'{out}/stone_boxes.json', 'w') as f:
-    import json
-    json.dump({n: round(v, 3) for n, v in scales.items()}, f, indent=2, sort_keys=True)
-print("\nwrote sprites/stone_boxes.json")
+with open(f'{OUT}/stone_boxes.json', 'w') as f:
+    json.dump({n: round(v, 3) for n, v in boxes.items()}, f, indent=2, sort_keys=True)
+print("wrote sprites/stone_boxes.json")

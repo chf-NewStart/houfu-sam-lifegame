@@ -25,6 +25,7 @@ const COPY = [
   // directories (recursive)
   'game',
   'patterns',
+  'sprites',        // the gomoku guru and his stones — /game/*.html loads these
   'training',
 ];
 

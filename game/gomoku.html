@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gomoku // houfu.xyz</title>
   <link rel="icon" type="image/png" href="/game/stones.png?v=3">
+  <!-- The guru quotes the classics, and a classic set in Consolas is just a
+       string. Ma Shan Zheng is a Chinese 行楷 hand; Yuji Syuku is a Japanese
+       楷書 brush — so a line is written in the hand of the tradition it came
+       from. Both degrade to a local 楷体 / 明朝 before they degrade to sans. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Yuji+Syuku&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Consolas, 'Courier New', monospace; background: #080808; color: #ccc; min-height: 100vh; padding: 20px 16px; }
@@ -26,6 +33,20 @@
     #boardWrap { position: relative; display: inline-block; }
     #boardCanvas { display: block; cursor: crosshair; }
     #boardCanvas.thinking { cursor: wait; }
+
+    /* When the guru brings his hand down on the board, the board takes the blow
+       and the stones take the rebound — the jolt below is the table, the hop is
+       drawn per-stone on the canvas (see slamLift). Down first, then settle. */
+    @keyframes board-slam {
+      0%   { transform: translate3d(0, 0, 0); }
+      10%  { transform: translate3d(0, 4px, 0); }
+      28%  { transform: translate3d(-3px, -2px, 0); }
+      46%  { transform: translate3d(3px, 2px, 0); }
+      64%  { transform: translate3d(-2px, -1px, 0); }
+      82%  { transform: translate3d(1px, 1px, 0); }
+      100% { transform: translate3d(0, 0, 0); }
+    }
+    #boardWrap.slam { animation: board-slam 0.4s ease-out; }
 
     /* Coord labels */
     .col-labels, .row-labels { position: absolute; font-size: 9px; color: #2a2a2a; user-select: none; pointer-events: none; }
@@ -154,12 +175,43 @@
       border: 1px solid #2b2340; padding: 12px 14px;
     }
     .oracle-row { display: flex; gap: 14px; align-items: flex-start; }
+    .oracle-facewrap { flex: 0 0 auto; position: relative; width: 64px; }
     .oracle-face {
-      flex: 0 0 auto; width: 64px; height: 64px; image-rendering: pixelated;
+      display: block; width: 64px; height: 64px; image-rendering: pixelated;
       filter: drop-shadow(0 0 8px rgba(168,120,210,0.5));
     }
     .oracle-card.speaking .oracle-face { animation: guru-breathe 2.6s ease-in-out infinite; }
     @keyframes guru-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    /* the hand comes down: he rears back, then drops through the board */
+    @keyframes guru-strike {
+      0%   { transform: translate(0,0) scale(1,1); }
+      18%  { transform: translate(0,-6px) scale(0.96,1.06); }
+      34%  { transform: translate(0,5px) scale(1.1,0.88); }
+      58%  { transform: translate(0,0) scale(0.98,1.03); }
+      100% { transform: translate(0,0) scale(1,1); }
+    }
+    .oracle-face.striking { animation: guru-strike 0.42s ease-out; }
+
+    /* He shouts. It should read as a shout: brush characters, big, and gone
+       again in a couple of seconds — not another line of panel text. */
+    .guru-shout {
+      position: absolute; left: 72px; top: -6px; z-index: 40;
+      background: #150f22; border: 1px solid #6b4fa8; border-radius: 4px;
+      padding: 5px 12px 7px; white-space: nowrap; pointer-events: none;
+      opacity: 0; visibility: hidden;
+      box-shadow: 0 0 26px -6px rgba(168,120,210,0.85);
+    }
+    .guru-shout.go { animation: shout-pop 2.2s ease-out forwards; }
+    @keyframes shout-pop {
+      0%   { opacity: 0; visibility: visible; transform: translate(-10px,6px) scale(0.6) rotate(-7deg); }
+      14%  { opacity: 1; visibility: visible; transform: translate(0,0) scale(1.14) rotate(2deg); }
+      26%  { transform: translate(0,0) scale(1) rotate(0deg); }
+      78%  { opacity: 1; visibility: visible; transform: translate(0,0) scale(1); }
+      100% { opacity: 0; visibility: visible; transform: translate(0,-14px) scale(1); }
+    }
+    .gs-cn { font-family: 'Ma Shan Zheng', 'LXGW WenKai', 'Kaiti SC', STKaiti, KaiTi, '楷体', serif;
+             font-size: 1.7rem; line-height: 1.25; color: #ffd98a; letter-spacing: 0.06em; }
+    .gs-gloss { font-size: 0.6rem; color: #b9a8dc; letter-spacing: 0.6px; }
     .oracle-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; width: 168px; }
     .oracle-side .btn { margin: 0; }
     .oracle-side .remote-row { margin: 0; }
@@ -173,6 +225,24 @@
     }
     .comment-body.waiting { color: #6d6685; font-style: italic; }
     .oracle-legend { font-size: 0.66rem; color: #6d6685; margin-top: 7px; letter-spacing: 0.3px; }
+
+    /* A line from the classics, written by hand. The gloss underneath is the
+       translation and the source — the point is that you can read it, not only
+       admire it. Chinese lines get a 行楷 hand, Japanese ones a 楷書 brush. */
+    .guru-quote { margin-top: 9px; padding-top: 8px; border-top: 1px dashed #2b2340; }
+    .guru-quote[hidden] { display: none; }
+    .gq-text {
+      font-family: 'Ma Shan Zheng', 'LXGW WenKai', 'Kaiti SC', STKaiti, KaiTi, '楷体', serif;
+      font-size: 1.6rem; line-height: 1.45; color: #e2d8f6; letter-spacing: 0.09em;
+    }
+    .gq-text[lang="ja"] {
+      font-family: 'Yuji Syuku', 'Yu Mincho', YuMincho, 'Hiragino Mincho ProN', 'Noto Serif JP', serif;
+      color: #dfe6f6;
+    }
+    .gq-gloss { font-size: 0.65rem; color: #7d759a; margin-top: 5px; line-height: 1.6; }
+    .gq-gloss .gq-src { color: #6b6386; }
+    .guru-quote.fresh .gq-text { animation: quote-ink 0.9s ease-out; }
+    @keyframes quote-ink { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
     .oline { display: flex; gap: 8px; margin-bottom: 5px; }
     .oline .odot { color: #7c6aa8; flex: 0 0 auto; }
     /* a coordinate should look like a thing you can go and find */
@@ -184,8 +254,18 @@
       .oracle-row { flex-wrap: wrap; }
       .oracle-side { width: 100%; flex-direction: row; }
       .oracle-side .btn { flex: 1; }
+      /* keep the bubble inside the card on a phone */
+      .guru-shout { left: 56px; padding: 4px 9px 6px; }
+      .gs-cn { font-size: 1.35rem; }
+      .gq-text { font-size: 1.4rem; }
     }
-    @media (prefers-reduced-motion: reduce) { .oracle-card.speaking .oracle-face { animation: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .oracle-card.speaking .oracle-face { animation: none; }
+      .oracle-face.striking, #boardWrap.slam, .guru-quote.fresh .gq-text { animation: none; }
+      /* the shout still has to appear and leave, just without the pounce */
+      .guru-shout.go { animation: shout-fade 2.2s linear forwards; }
+      @keyframes shout-fade { 0%,90% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: visible; } }
+    }
   </style>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -205,13 +285,21 @@
 
 <div class="oracle-card" id="oracleCard">
   <div class="oracle-row">
-    <img class="oracle-face" id="oracleFace" src="../sprites/guru.png" alt="" width="64" height="64">
+    <div class="oracle-facewrap">
+      <img class="oracle-face" id="oracleFace" src="../sprites/guru.png" alt="" width="64" height="64">
+      <div class="guru-shout" id="guruShout" aria-live="polite"></div>
+    </div>
     <div style="flex:1;min-width:0">
       <div class="comment-body" id="aiCommentBody"></div>
       <div class="oracle-legend" id="oracleLegend" hidden></div>
+      <div class="guru-quote" id="guruQuote" hidden>
+        <div class="gq-text" id="gqText"></div>
+        <div class="gq-gloss" id="gqGloss"></div>
+      </div>
     </div>
     <div class="oracle-side">
       <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
+      <button class="btn" id="guruSfxBtn" onclick="toggleGuruSfx()"></button>
       <div class="remote-row" id="dsKeyRow" style="display:none">
         <input class="join-input" id="dsKeyInput" type="password" placeholder="DeepSeek key (sk-…)">
         <button class="btn" style="flex:0 0 auto" onclick="saveDsKey()" data-en="Save" data-zh="保存">Save</button>
@@ -355,6 +443,8 @@ function t(en, zh) { return lang === 'zh' ? zh : en; }
 function applyLang() {
   if (typeof renderSkinRows === 'function' && document.getElementById('skinRow1')) renderSkinRows();
   if (typeof renderEngineVoiceUI === 'function') renderEngineVoiceUI();
+  if (typeof renderGuruSfxUI === 'function') renderGuruSfxUI();
+  if (typeof renderQuote === 'function') renderQuote();   // the gloss is translated, the line is not
   document.getElementById('pgTitle').textContent = t('Gomoku', '五子棋');
   document.getElementById('pgSub').textContent   = t('5 in a row wins · 15×15 · click to place your stone', '五子连珠获胜 · 15×15棋盘 · 点击落子');
   document.getElementById('pgBack').textContent  = t('← arcade', '← 游戏厅');
@@ -387,64 +477,71 @@ const DEPTHS = { easy: 1, normal: 2, hard: 3 };
 const MAX_CANDS = 12;
 
 /* ── Stone characters ─────────────────────────────
-   Each stone stays exactly the disc it always was; a flat two-tone stencil of
-   a character is stamped on top, pre-tinted into that player's own hue. The
-   point is not decoration: #1db954 and #f44336 sit on the red-green confusion
-   axis, so the two sides collapse to near-identical olive under deuteranopia
-   and the board becomes close to unreadable. A silhouette carries the
-   distinction with colour removed entirely.
+   Three stones and no more: plain, and two animals. The plastids and the Life
+   patterns are gone — a roster you scroll past is not a choice, and none of
+   them ever looked like anything at 30px.
 
-   box[] normalises how much ink each badge puts on its disc. Rendered ink is
-   coverage * box^2, so scaling the box by sqrt(ref/coverage) makes that equal
-   for every character — otherwise a dense badge steals more colour signal
-   than a sparse one and one player's stones read heavier than the other's.
-   Generated, not hand-tuned: see sprites/stone_boxes.json. */
+   The two that remain are proper pixel art now, in the same hand as
+   sprites/guru.png: a fixed palette, a dark outline, one shade for volume.
+   They are drawn at an INTEGER scale with smoothing off (see badge()), which
+   is the whole trick — a sprite resampled to a fractional size stops being
+   pixel art and becomes a smudge, which is exactly what the old two-tone
+   stencils turned into.
+
+   Ownership still survives colour blindness: the character rides on its
+   player's disc, and #1db954 vs #f44336 sit on the red-green confusion axis,
+   so under deuteranopia the two discs collapse to the same olive — but a
+   goose is not a raccoon, and the silhouette carries the distinction alone.
+
+   box[] normalises how much ink each character puts on its disc. Rendered ink
+   is coverage * box^2, so scaling the box by sqrt(ref/coverage) makes that
+   equal for both — otherwise one player's stones read heavier than the other's.
+   Generated, not hand-tuned: see tools/gen_stone_sprites.py. */
 const CHARS = {
-  plain:       { box: 0,     en: 'Plain',       zh: '纯色' },
-  goose:       { box: 0.656, en: 'Goose',       zh: '大鹅' },
-  raccoon:     { box: 0.696, en: 'Raccoon',     zh: '浣熊' },
-  chloroplast: { box: 0.812, en: 'Chloroplast', zh: '叶绿体' },
-  chromoplast: { box: 0.621, en: 'Chromoplast', zh: '有色体' },
-  blinker:     { box: 0.828, en: 'Blinker',     zh: '闪灯' },
-  block:       { box: 0.786, en: 'Block',       zh: '方块' },
+  plain:   { box: 0,     en: 'Plain',   zh: '纯色' },
+  goose:   { box: 0.936, en: 'Goose',   zh: '大鹅' },
+  raccoon: { box: 0.867, en: 'Raccoon', zh: '浣熊' },
 };
 const CHAR_IDS = Object.keys(CHARS);
 let SKIN = { 1: 'plain', 2: 'plain' };     // never enters board[]/history/moves; a saved choice overrides this
-const SPRITES = {};                         // "goose_p1" -> HTMLImageElement
-const BADGE = new Map();                    // "goose_p1_14" -> pre-scaled canvas
+const SPRITES = {};                         // "goose" -> HTMLImageElement
+const BADGE = new Map();                    // "goose_3" -> canvas pre-scaled 3x
 
 function loadSprites() {
   const jobs = [];
   for (const id of CHAR_IDS) {
     if (id === 'plain') continue;
-    for (const p of [1, 2]) {
-      jobs.push(new Promise((res) => {
-        const im = new Image();
-        // Resolve either way: a failed sprite must degrade to a plain disc,
-        // never reject and take the board down with it.
-        im.onload = () => { SPRITES[`${id}_p${p}`] = im; res(); };
-        im.onerror = () => res();
-        im.src = `../sprites/stone_${id}_p${p}.png`;
-      }));
-    }
+    jobs.push(new Promise((res) => {
+      const im = new Image();
+      // Resolve either way: a failed sprite must degrade to a plain disc,
+      // never reject and take the board down with it.
+      im.onload = () => { SPRITES[id] = im; res(); };
+      im.onerror = () => res();
+      im.src = `../sprites/stone_${id}.png`;
+    }));
   }
   return Promise.all(jobs);
 }
 
-// One small canvas per (character, player, size), blitted thereafter. Scaling a
-// 64px source down to ~14px for every stone on every repaint measured 3.23ms
-// against 0.51ms for plain discs; caching puts it back to disc cost.
-function badge(id, player, px) {
-  const key = `${id}_p${player}_${px}`;
+// One canvas per (character, integer scale), blitted thereafter. Scaling the
+// source for every stone on every repaint measured 3.23ms against 0.51ms for
+// plain discs; caching puts it back to disc cost.
+//
+// `want` is in DEVICE pixels, and the returned canvas is the nearest whole
+// multiple of the 16px source — never the exact size asked for. That rounding
+// is the point: at 2.4x a one-pixel outline lands on some rows and not others,
+// and the sprite crawls as the window resizes. Whole multiples only.
+function badge(id, want) {
+  const im = SPRITES[id];
+  if (!im) return null;
+  const k = Math.max(1, Math.round(want / im.width));
+  const key = id + '_' + k;
   if (BADGE.has(key)) return BADGE.get(key);
-  const im = SPRITES[`${id}_p${player}`];
-  if (!im || px < 3) { BADGE.set(key, null); return null; }
   const cv = document.createElement('canvas');
-  cv.width = cv.height = px;
+  cv.width = cv.height = im.width * k;
   const g = cv.getContext('2d');
-  g.imageSmoothingEnabled = px < im.width;
-  g.imageSmoothingQuality = 'high';
-  g.drawImage(im, 0, 0, px, px);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(im, 0, 0, cv.width, cv.height);
   BADGE.set(key, cv);
   return cv;
 }
@@ -452,7 +549,7 @@ function badge(id, player, px) {
 /* ── Canvas setup ─────────────────────────────── */
 const canvas = document.getElementById('boardCanvas');
 const ctx    = canvas.getContext('2d');
-let PAD, CELL, CSIZE;
+let PAD, CELL, CSIZE, DPR = 1;
 
 function computeLayout() {
   // Browsers can briefly report a zero-width viewport during navigation.
@@ -476,13 +573,12 @@ function computeLayout() {
   // Back the canvas at device resolution. Without this every badge is upscaled
   // and resampled on a retina screen, which is exactly what turns a small
   // stencil into a smudge. It sharpens the grid and the plain discs too.
-  const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-  canvas.width  = Math.round(CSIZE * dpr);
-  canvas.height = Math.round(CSIZE * dpr);
+  DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  canvas.width  = Math.round(CSIZE * DPR);
+  canvas.height = Math.round(CSIZE * DPR);
   canvas.style.width  = CSIZE + 'px';
   canvas.style.height = CSIZE + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  BADGE.clear();          // badges are cached per pixel size
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 
 /* ── Game state ───────────────────────────────── */
@@ -516,6 +612,9 @@ function newGame() {
   const _cb = document.getElementById('aiCommentBody');
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
+  _lastPraise = -9;
+  slam = null;
+  showQuote('open');                             // he opens the game with a line
   log(t('── new game ──', '── 新游戏 ──'), 'lround');
   draw();
   renderPanel();
@@ -665,6 +764,8 @@ function placeStone(r, c) {
   // and nothing after it, so take them and clear the slate.
   const searchInfo = (!remoteMode && playerTypes[mover] === 'ai' && diff !== 'rl') ? lastSearch : null;
   lastSearch = null;
+  // Judged while the point is still empty — localThreat plays the stone itself.
+  const quality = praiseWatch(mover) ? moveQuality(r, c, mover) : null;
   if (!remoteMode) {
     history.push({ board: board.map(row => [...row]), curP, lastMove, moveCount });
     document.getElementById('undoBtn').disabled = false;
@@ -693,9 +794,15 @@ function placeStone(r, c) {
     wb.className = 'win-banner ' + (wr.player === 1 ? 'win-g' : 'win-r');
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
+    // The last stone of the game gets the hardest blow he has.
+    if (quality) { _lastPraise = moveCount; strikeBoard(r, c, 1.3, mover); guruShout('five'); }
+    const you = humanSide();
+    showQuote(you == null ? 'calm' : wr.player === you ? 'win' : 'lose');
     reviewGame(wr.player);
     draw(); renderPanel(); return;
   }
+
+  if (quality) praiseMove(r, c, mover, quality);
 
   curP = curP === 1 ? 2 : 1;
   draw(); renderPanel();
@@ -774,12 +881,13 @@ function draw() {
 
   if (coachMode) drawCoachHints();
   drawVoiceMarks();
+  drawSlamRing();
 
   // Hover ghost
   if (hoverCell) {
     const [hr, hc] = hoverCell;
     ctx.globalAlpha = 0.35;
-    drawStone(hr, hc, curP, false, false, true);   // ghost: no badge
+    drawStone(hr, hc, curP, false, false, true);   // ghost: never hops
     ctx.globalAlpha = 1;
   }
 
@@ -796,37 +904,36 @@ function draw() {
 }
 
 function drawStone(r, c, player, isWin, isLast, ghost) {
-  const x = PAD + c * CELL, y = PAD + r * CELL;
-  const radius = CELL * 0.40;
+  const seat = PAD + r * CELL;                 // where the stone lives when it is still
+  const lift = ghost ? 0 : slamLift(r, c);     // and how far off it the strike threw it
+  const x = PAD + c * CELL, y = seat - lift;
   const color = player === 1 ? '#1db954' : '#f44336';
 
-  // A character plays as itself: no coloured disc under it, the way a stone
-  // has one. Ownership comes from a halo in the player's colour instead, which
-  // also lifts art authored dark (it used to sit on a bright disc) off a board
-  // that is nearly black. Guarded: an unknown id, an unloaded sprite or a
-  // failed decode all fall through to the plain disc the game always drew.
-  const spec = ghost ? null : CHARS[SKIN[player]];
-  const cv = (spec && spec.box > 0)
-    ? badge(SKIN[player], player, Math.max(3, Math.round(CELL * 0.94)))
-    : null;
+  // The character rides ON the disc and stays inside its rim — a sprite drawn
+  // to the full cell overhangs the disc at the waist, and all you see of the
+  // colour is a cap over the animal's head. A character stone is also a shade
+  // wider than a plain one, so the ring of colour left around the art is still
+  // worth as much signal as a plain stone's whole face.
+  // Guarded: an unknown id, an unloaded sprite or a failed decode all fall
+  // through to the plain disc the game always drew. The hover preview wears the
+  // character too — it is the stone you are about to put down, and at 35% it no
+  // longer smudges the way the old tinted stencil did.
+  const spec = CHARS[SKIN[player]];
+  const cv = (spec && spec.box > 0) ? badge(SKIN[player], CELL * 0.80 * spec.box * DPR) : null;
+  const radius = cv ? CELL * 0.455 : CELL * 0.40;
 
-  if (cv) {
-    const px = cv.width;
-    ctx.shadowColor = isWin ? '#ffffff' : color;
-    ctx.shadowBlur  = isWin ? 15 : 7;
-    var _f = ctx.filter;
-    ctx.filter = 'brightness(1.8)';                 // ignored where unsupported; art just stays dark
-    ctx.drawImage(cv, Math.round(x - px / 2), Math.round(y - px / 2), px, px);
-    ctx.filter = _f || 'none';
-    ctx.shadowBlur = 0;
-    if (isLast && !isWin) {                          // a dot would land on the character's face
-      ctx.beginPath();
-      ctx.arc(x, y, radius * 1.15, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-    return;
+  // An airborne stone leaves the point it came off, or it reads as having been
+  // drawn a little higher rather than as having jumped. Not a black shadow —
+  // the board is #0e0e0e and a dark ellipse on it is invisible — but a dim
+  // ghost of the stone itself, which darkens as the stone climbs away.
+  if (lift > 0.4) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.34, lift / (CELL * 0.55));
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(x, seat, radius * 0.88, radius * 0.32, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   ctx.beginPath();
@@ -842,13 +949,302 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  // Last move dot
+  if (cv) {
+    // Land the sprite on whole device pixels too — a half-pixel origin
+    // re-samples every column of it, integer scale or not.
+    const px = cv.width / DPR;
+    const dx = Math.round((x - px / 2) * DPR) / DPR;
+    const dy = Math.round((y - px / 2) * DPR) / DPR;
+    const sm = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = false;
+    if (isWin) { ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 14; }
+    ctx.drawImage(cv, dx, dy, px, px);
+    ctx.shadowBlur = 0;
+    ctx.imageSmoothingEnabled = sm;
+  }
+
+  // Last move: a dot on a plain stone, a collar on a character — a dot would
+  // land on its face.
   if (isLast && !isWin) {
     ctx.beginPath();
-    ctx.arc(x, y, radius * 0.28, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fill();
+    if (cv) {
+      // hugs the stone: any wider and it collides with the neighbouring point
+      ctx.arc(x, y, radius * 1.04, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.62)';
+      ctx.lineWidth = Math.max(1.2, CELL * 0.045);
+      ctx.stroke();
+    } else {
+      ctx.arc(x, y, radius * 0.28, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fill();
+    }
   }
+}
+
+/* ── The guru's hand ──────────────────────────────
+   A good move earns a shout and a blow on the board: the table jolts (CSS, on
+   #boardWrap) and every stone hops, the near ones first and highest, the far
+   ones late and barely — a shock spreading through the wood rather than every
+   stone politely bouncing in unison. Nothing here touches board state; a slam
+   is purely something draw() reads. */
+let slam = null, slamRaf = 0;
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+function slamLift(r, c) {
+  if (!slam) return 0;
+  const d = Math.hypot(r - slam.r, c - slam.c);
+  const u = (performance.now() - slam.t0 - d * 17) / 380;   // 17ms per cell of travel
+  if (u <= 0 || u >= 1) return 0;
+  return Math.sin(Math.PI * u) * CELL * 0.34 * slam.mag * Math.exp(-d * 0.13);
+}
+
+function drawSlamRing() {
+  if (!slam) return;
+  const u = (performance.now() - slam.t0) / 300;
+  if (u >= 1) return;
+  ctx.save();
+  ctx.globalAlpha = (1 - u) * 0.55;
+  ctx.strokeStyle = slam.colour;
+  ctx.lineWidth = Math.max(1.5, CELL * 0.10 * (1 - u));
+  ctx.beginPath();
+  ctx.arc(PAD + slam.c * CELL, PAD + slam.r * CELL, CELL * (0.28 + u * 2.6), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function slamFrame() {
+  if (!slam) { slamRaf = 0; return; }
+  if (performance.now() - slam.t0 > slam.dur) { slam = null; slamRaf = 0; draw(); return; }
+  draw();
+  slamRaf = requestAnimationFrame(slamFrame);
+}
+
+function strikeBoard(r, c, mag, player) {
+  thud(mag);
+  const face = document.getElementById('oracleFace');
+  if (face) { face.classList.remove('striking'); void face.offsetWidth; face.classList.add('striking'); }
+  const wrap = document.getElementById('boardWrap');
+  if (wrap) { wrap.classList.remove('slam'); void wrap.offsetWidth; wrap.classList.add('slam'); }
+  if (REDUCED.matches) return;                 // the shout still lands; the board just keeps still
+  // Longest journey on a 15x15 board is ~20 cells, so the last stone starts at
+  // ~340ms and needs 380ms of hop.
+  slam = { t0: performance.now(), r, c, mag, dur: 760, colour: player === 1 ? '#1db954' : '#f44336' };
+  if (!slamRaf) slamRaf = requestAnimationFrame(slamFrame);
+}
+
+/* ── The blow itself ──────────────────────────────
+   A palm on a wooden board is a low body with a short crack on top of it, and
+   almost no tail. Synthesised rather than shipped as a file: it is forty lines
+   against a download, and it can be tuned to how good the move actually was. */
+let guruSfx = (() => { try { return localStorage.getItem('gomoku_sfx') !== '0'; } catch (e) { return true; } })();
+let _ac = null;
+function audioCtx() {
+  if (_ac === null) {
+    try { _ac = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { _ac = false; }
+  }
+  return _ac || null;
+}
+function thud(mag) {
+  if (!guruSfx) return;
+  const ac = audioCtx();
+  if (!ac) return;
+  // Every strike follows a click, so the context is always unlocked by then —
+  // but a tab restored from the background can still come back suspended.
+  if (ac.state === 'suspended') ac.resume().catch(() => {});
+  const t0 = ac.currentTime, m = Math.max(0.3, Math.min(1.3, mag));
+  const body = ac.createOscillator(), bg = ac.createGain();
+  body.type = 'sine';
+  body.frequency.setValueAtTime(160, t0);
+  body.frequency.exponentialRampToValueAtTime(44, t0 + 0.17);
+  bg.gain.setValueAtTime(0.0001, t0);
+  bg.gain.exponentialRampToValueAtTime(0.20 * m, t0 + 0.008);
+  bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+  body.connect(bg).connect(ac.destination);
+  body.start(t0); body.stop(t0 + 0.3);
+  // the crack of the wood
+  const len = Math.floor(ac.sampleRate * 0.06);
+  const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  const noise = ac.createBufferSource(); noise.buffer = buf;
+  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 0.7;
+  const ng = ac.createGain(); ng.gain.value = 0.15 * m;
+  noise.connect(bp).connect(ng).connect(ac.destination);
+  noise.start(t0);
+}
+function toggleGuruSfx() {
+  guruSfx = !guruSfx;
+  try { localStorage.setItem('gomoku_sfx', guruSfx ? '1' : '0'); } catch (e) {}
+  renderGuruSfxUI();
+  if (guruSfx) thud(0.55);      // so you hear what you just turned on
+}
+function renderGuruSfxUI() {
+  const b = document.getElementById('guruSfxBtn');
+  if (b) b.textContent = guruSfx ? t('◆ his hand: on', '◆ 拍案·开') : t('◇ his hand: off', '◇ 拍案·关');
+}
+
+/* ── What he thinks of the move ───────────────────
+   Judged from the position, not from the engine: the same runScore the search
+   uses, asked twice about the point just played — what it built for the mover,
+   and what it denied the other side. Nothing here can praise a move the board
+   does not actually justify. */
+function moveQuality(r, c, p) {
+  const opp = p === 1 ? 2 : 1;
+  const mine = localThreat(board, r, c, p);      // needs the point empty; callers oblige
+  const deny = localThreat(board, r, c, opp);
+  let tier = 0, kind = 'three';
+  if (deny >= 1000000)      { tier = 3; kind = 'block';  }   // stopped a five outright
+  else if (mine >= 100000)  { tier = 3; kind = 'four';   }   // open four — already over
+  else if (mine >= 10000)   { tier = 3; kind = 'double'; }   // two open threes at once
+  else if (mine >= 5000 && deny >= 5000) { tier = 3; kind = 'both'; }
+  else if (deny >= 12000)   { tier = 2; kind = 'block';  }   // stopped a four
+  else if (mine >= 5000)    { tier = 2; kind = 'three';  }   // made an open three
+  else if (mine >= 250 && deny >= 400) { tier = 1; kind = 'shape'; }
+  return { tier, kind, mine, deny };
+}
+// He only watches the person. An engine praising itself every other ply is
+// noise, and in AI-vs-AI it would never stop.
+function praiseWatch(p) { return remoteMode ? p === myColor : playerTypes[p] === 'human'; }
+function humanSide() {
+  if (remoteMode) return myColor;
+  if (playerTypes[1] === 'human' && playerTypes[2] !== 'human') return 1;
+  if (playerTypes[2] === 'human' && playerTypes[1] !== 'human') return 2;
+  return null;                                    // two humans, or none — nobody to console
+}
+
+let _lastPraise = -9, _shoutTimer = 0;
+function praiseMove(r, c, p, q) {
+  if (!q.tier) return;
+  // A shout on every third stone stops being a compliment. The better the
+  // move, the shorter the silence it has to break.
+  if (q.tier === 1 && moveCount - _lastPraise < 7) return;
+  if (q.tier === 2 && moveCount - _lastPraise < 3) return;
+  _lastPraise = moveCount;
+  strikeBoard(r, c, q.tier === 3 ? 1 : q.tier === 2 ? 0.7 : 0.45, p);
+  guruShout(q.kind);
+  if (q.tier === 3) showQuote(q.kind === 'block' ? 'defend' : 'attack');
+}
+
+/* ── His voice ────────────────────────────────────
+   The shout is short and loud and in his own hand; the line underneath is the
+   one you are meant to keep. */
+// He shouts in his own language whichever way the page is set; the small line
+// underneath only exists to translate it, so in Chinese there is nothing left
+// for it to say and it goes away.
+const SHOUTS = {
+  five:   { cn: '五子连珠！', en: 'five in a row!' },
+  four:   { cn: '胜着！',     en: 'the winning blow' },
+  double: { cn: '妙手！',     en: 'a brilliancy' },
+  both:   { cn: '攻守兼备！', en: 'attack and defence at once' },
+  block:  { cn: '好挡！',     en: 'well blocked' },
+  three:  { cn: '好棋！',     en: 'good move' },
+  shape:  { cn: '有形！',     en: 'good shape' },
+};
+function guruShout(kind) {
+  const s = SHOUTS[kind] || SHOUTS.three;
+  const el = document.getElementById('guruShout');
+  if (!el) return;
+  el.innerHTML = '<div class="gs-cn">' + s.cn + '</div>' +
+                 (lang === 'zh' ? '' : '<div class="gs-gloss">' + escHtml(s.en) + '</div>');
+  el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+  clearTimeout(_shoutTimer);
+  _shoutTimer = setTimeout(() => el.classList.remove('go'), 2200);
+}
+
+/* Lines he has by heart. Each is written in the hand of the tradition it came
+   from — a Chinese line in 行楷, a Japanese one in 楷書 — with the translation
+   and the source underneath, because a line you cannot read teaches nothing.
+   `lang` picks the regional glyph shapes as well as the brush. */
+const GURU_QUOTES = [
+  { tx: '不得贪胜', lang: 'zh-Hans', tags: ['open', 'win'],
+    en: 'Do not covet victory.', zh: '不要贪图取胜。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '弃子争先', lang: 'zh-Hans', tags: ['attack'],
+    en: 'Give up a stone to take the initiative.', zh: '舍得弃子，才能争到先手。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '舍小就大', lang: 'zh-Hans', tags: ['calm', 'lose'],
+    en: 'Let the small go, and take the large.', zh: '放开小利，去取大势。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '慎勿轻速', lang: 'zh-Hans', tags: ['lose'],
+    en: 'Be careful — never move in haste.', zh: '落子谨慎，不可图快。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '动须相应', lang: 'zh-Hans', tags: ['calm', 'defend'],
+    en: 'Every move must answer the whole board.', zh: '每一手都要与全局呼应。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '攻彼顾我', lang: 'zh-Hans', tags: ['attack'],
+    en: 'When you attack, keep one eye on your own.', zh: '进攻的同时，也要照顾自己。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '逢危须弃', lang: 'zh-Hans', tags: ['defend', 'lose'],
+    en: 'When a stone is lost, be willing to lose it.', zh: '遇危之子，当弃则弃。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '宁输数子，勿失一先', lang: 'zh-Hans', tags: ['attack'],
+    en: 'Better to lose several stones than to lose the initiative.', zh: '宁可少几个子，也不能失了先手。',
+    src: '《棋经十三篇》', srcEn: 'The Classic of Weiqi in Thirteen Chapters, Song' },
+  { tx: '持重而廉者多得', lang: 'zh-Hans', tags: ['calm', 'lose'],
+    en: 'The steady and the unhurried gain the most.', zh: '持重而不贪的人，得到的最多。',
+    src: '《棋经十三篇》', srcEn: 'The Classic of Weiqi in Thirteen Chapters, Song' },
+  { tx: '欲速则不达', lang: 'zh-Hans', tags: ['lose'],
+    en: 'Want it fast, and you will not arrive.', zh: '一味求快，反而到不了。',
+    src: '《论语·子路》', srcEn: 'Analects, Book 13' },
+  { tx: '大巧若拙', lang: 'zh-Hans', tags: ['calm', 'open'],
+    en: 'The greatest skill looks like clumsiness.', zh: '最高明的技巧，看起来反倒笨拙。',
+    src: '《道德经》四十五章', srcEn: 'Dao De Jing, ch. 45' },
+  { tx: '柔弱胜刚强', lang: 'zh-Hans', tags: ['defend'],
+    en: 'The soft and yielding overcome the hard and strong.', zh: '柔弱能够胜过刚强。',
+    src: '《道德经》三十六章', srcEn: 'Dao De Jing, ch. 36' },
+  { tx: '致人而不致于人', lang: 'zh-Hans', tags: ['attack', 'win'],
+    en: 'Bring the opponent to you; never be brought to him.', zh: '调动对手，而不被对手调动。',
+    src: '《孙子兵法·虚实》', srcEn: 'Sunzi, The Art of War' },
+  { tx: '闲敲棋子落灯花', lang: 'zh-Hans', tags: ['open', 'calm'],
+    en: 'Idly I tap a stone — and the lamp-wick blooms and falls.', zh: '闲来轻敲棋子，灯花簌簌落下。',
+    src: '赵师秀《约客》', srcEn: 'Zhao Shixiu, “Waiting for a Guest”' },
+  { tx: '观棋不语真君子', lang: 'zh-Hans', tags: ['open'],
+    en: 'To watch a game in silence — that is the gentleman.', zh: '观棋不出声，才是真君子。',
+    src: '棋谚', srcEn: 'a players’ saying' },
+  { tx: '一期一会', lang: 'ja', tags: ['open'],
+    en: 'One meeting, one lifetime — this game will not come again.', zh: '一期一会——此局不会再来。',
+    src: '茶の湯の言葉', srcEn: 'from the way of tea' },
+  { tx: '勝って兜の緒を締めよ', lang: 'ja', tags: ['win'],
+    en: 'Having won, tighten the cords of your helmet.', zh: '既已得胜，更要系紧盔带。',
+    src: '日本の諺', srcEn: 'Japanese proverb' },
+  { tx: '油断大敵', lang: 'ja', tags: ['lose', 'defend'],
+    en: 'Carelessness is the great enemy.', zh: '大意，才是真正的敌人。',
+    src: '日本の諺', srcEn: 'Japanese proverb' },
+  { tx: '急がば回れ', lang: 'ja', tags: ['calm'],
+    en: 'If you are in a hurry, go round.', zh: '欲速，则不妨绕行。',
+    src: '日本の諺', srcEn: 'Japanese proverb' },
+  { tx: '敵の急所は我が急所', lang: 'ja', tags: ['attack', 'defend'],
+    en: 'The opponent’s vital point is my vital point.', zh: '对手的要害，就是我的要害。',
+    src: '囲碁格言', srcEn: 'a go proverb' },
+  { tx: '石の上にも三年', lang: 'ja', tags: ['lose'],
+    en: 'Three years sitting on a rock, and even the rock grows warm.', zh: '石上坐三年，石头也会暖。',
+    src: '日本の諺', srcEn: 'Japanese proverb' },
+  { tx: '閑さや岩にしみ入る蝉の声', lang: 'ja', tags: ['calm', 'open'],
+    en: 'Such stillness — the cicadas’ cry sinks into the rock.', zh: '寂静啊——蝉声渗入岩石。',
+    src: '松尾芭蕉『奥の細道』', srcEn: 'Bashō, The Narrow Road to the Deep North' },
+];
+
+function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+let _lastQuote = null;
+function showQuote(tag) {
+  const pool = GURU_QUOTES.filter(q => q.tags.indexOf(tag) >= 0);
+  const list = pool.length ? pool : GURU_QUOTES;
+  let q = list[(Math.random() * list.length) | 0];
+  for (let i = 0; i < 8 && list.length > 1 && q === _lastQuote; i++) q = list[(Math.random() * list.length) | 0];
+  _lastQuote = q;
+  renderQuote();
+}
+function renderQuote() {
+  const box = document.getElementById('guruQuote');
+  if (!box || !_lastQuote) return;
+  const q = _lastQuote;
+  const tx = document.getElementById('gqText'), gl = document.getElementById('gqGloss');
+  tx.textContent = q.tx;
+  tx.setAttribute('lang', q.lang);
+  gl.innerHTML = '“' + escHtml(t(q.en, q.zh)) + '” <span class="gq-src">· ' + escHtml(t(q.srcEn, q.src)) + '</span>';
+  box.hidden = false;
+  box.classList.remove('fresh'); void box.offsetWidth; box.classList.add('fresh');
 }
 
 /* ── Panel ────────────────────────────────────── */
@@ -896,6 +1292,8 @@ function showResign(loser) {
   wb.className = 'win-banner ' + (winner === 1 ? 'win-g' : 'win-r');
   wb.textContent = msg;
   document.getElementById('newBtn').className = 'btn ' + (winner === 1 ? 'glow-g' : 'glow-r');
+  const you = remoteMode ? myColor : humanSide();
+  showQuote(you == null ? 'calm' : winner === you ? 'win' : 'lose');
   updateUndoBtn(); renderPanel(); draw();
   reviewGame(winner);
 }
@@ -1543,7 +1941,11 @@ function applyState(moves) {
   }
   const wb = document.getElementById('winBanner');
   if (winner) {
-    if (!_remoteOver) { _remoteOver = true; scores[winner.player]++; log(winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！'), winner.player === 1 ? 'lwin' : 'lwin-r'); }
+    if (!_remoteOver) {
+      _remoteOver = true; scores[winner.player]++;
+      log(winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！'), winner.player === 1 ? 'lwin' : 'lwin-r');
+      showQuote(winner.player === myColor ? 'win' : 'lose');
+    }
     wb.className = 'win-banner ' + (winner.player === 1 ? 'win-g' : 'win-r');
     wb.textContent = winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！');
     document.getElementById('newBtn').className = 'btn ' + (winner.player === 1 ? 'glow-g' : 'glow-r');
@@ -1557,12 +1959,29 @@ function onPlay(snap) {
   const v = snap.val(); if (!v) return;
   const s = v.s || 0;
   const moves = v.moves ? (Array.isArray(v.moves) ? v.moves : Object.values(v.moves)) : [];
-  if (s !== _fbSession) { _fbSession = s; _remoteOver = false; _prevLen = 0; log(t('── new game ──', '── 新游戏 ──'), 'lround'); }
+  if (s !== _fbSession) {
+    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; slam = null;
+    showQuote('open');
+    log(t('── new game ──', '── 新游戏 ──'), 'lround');
+  }
+  // A remote board is rebuilt from the move list rather than played through
+  // placeStone, so the one move that is actually new has to be picked out here
+  // — and judged now, while `board` still stands as it did before it.
+  let fresh = null;
   if (moves.length > _prevLen) {
     for (let i = _prevLen; i < moves.length; i++) { const r = moves[i][0], c = moves[i][1], who = (i % 2 === 0) ? 1 : 2; log(`${i + 1}. ${t(who === 1 ? 'Lime' : 'Tomato', who === 1 ? '青柠' : '番茄')} ${COLS[c]}${N - r}`, 'lmove'); }
+    const nm = moves[moves.length - 1];
+    const who = (moves.length - 1) % 2 === 0 ? 1 : 2;
+    if (moves.length === _prevLen + 1 && nm && board && board[nm[0]] && board[nm[0]][nm[1]] === 0 && praiseWatch(who)) {
+      fresh = { r: nm[0], c: nm[1], p: who, q: moveQuality(nm[0], nm[1], who) };
+    }
   } else if (moves.length < _prevLen) { log(t('↩ undo', '↩ 悔棋'), 'lround'); }
   _prevLen = moves.length;
   applyState(moves);
+  if (fresh) {
+    if (gameOver) { _lastPraise = moveCount; strikeBoard(fresh.r, fresh.c, 1.3, fresh.p); guruShout('five'); }
+    else praiseMove(fresh.r, fresh.c, fresh.p, fresh.q);
+  }
 }
 function onHost(snap) {
   _curHost = snap.val() || 1; computeMyColor();
@@ -1619,7 +2038,10 @@ function onSkins(snap) {
   const v = snap.val() || {};
   // Trust only ids this build knows; a newer client must not blank our board.
   for (const p of [1, 2]) if (CHARS[v[p]]) SKIN[p] = v[p];
-  if (SKIN[1] === SKIN[2]) SKIN[2] = SKIN[1] === 'raccoon' ? 'goose' : 'raccoon';
+  // Two sides wearing one character would be indistinguishable — but two plain
+  // sides are the board this game started life with, and are told apart by
+  // colour, so that pairing is left alone.
+  if (SKIN[1] === SKIN[2] && SKIN[1] !== 'plain') SKIN[2] = SKIN[1] === 'raccoon' ? 'goose' : 'raccoon';
   renderSkinRows();
   draw();
 }
