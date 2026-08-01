@@ -146,22 +146,37 @@
     input,textarea{-webkit-user-select:text;user-select:text;}
   }
 
-    /* The oracle speaks in the journal's hand — Caveat, the same face the
-       diary uses — because a voice should not look like console output. */
-    .oracle-card { border-color: #2b2340; background: #0f0c16; }
-    .oracle-row { display: flex; gap: 11px; align-items: flex-start; }
+    /* The oracle sits across the top of the board, not squeezed into the
+       side column, and speaks in the journal's hand — Caveat, the same face
+       the diary uses — because a voice should not look like console output. */
+    .oracle-card {
+      max-width: 920px; margin: 0 auto 12px; background: #0f0c16;
+      border: 1px solid #2b2340; padding: 12px 14px;
+    }
+    .oracle-row { display: flex; gap: 14px; align-items: flex-start; }
     .oracle-face {
-      flex: 0 0 auto; width: 54px; height: 54px; image-rendering: pixelated;
-      filter: drop-shadow(0 0 7px rgba(168,120,210,0.5));
+      flex: 0 0 auto; width: 64px; height: 64px; image-rendering: pixelated;
+      filter: drop-shadow(0 0 8px rgba(168,120,210,0.5));
     }
     .oracle-card.speaking .oracle-face { animation: guru-breathe 2.6s ease-in-out infinite; }
     @keyframes guru-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    .oracle-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; width: 168px; }
+    .oracle-side .btn { margin: 0; }
+    .oracle-side .remote-row { margin: 0; }
     .comment-body {
       font-family: 'Caveat', Consolas, 'Courier New', monospace;
-      font-size: 1.32rem; line-height: 1.4; color: #d9cef2;
-      min-height: 2.4em; white-space: pre-wrap; word-break: break-word; flex: 1; min-width: 0;
+      font-size: 1.34rem; line-height: 1.38; color: #d9cef2;
+      flex: 1; min-width: 0; min-height: 3.2em;
     }
     .comment-body.waiting { color: #6d6685; font-style: italic; }
+    .oline { display: flex; gap: 8px; margin-bottom: 4px; }
+    .oline .odot { color: #7c6aa8; flex: 0 0 auto; }
+    .comment-body b { font-weight: 600; }
+    @media (max-width: 700px) {
+      .oracle-row { flex-wrap: wrap; }
+      .oracle-side { width: 100%; flex-direction: row; }
+      .oracle-side .btn { flex: 1; }
+    }
     @media (prefers-reduced-motion: reduce) { .oracle-card.speaking .oracle-face { animation: none; } }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -183,6 +198,20 @@
   </div>
 </div>
 
+<div class="oracle-card" id="oracleCard">
+  <div class="oracle-row">
+    <img class="oracle-face" id="oracleFace" src="../sprites/guru.png" alt="" width="64" height="64">
+    <div class="comment-body" id="aiCommentBody"></div>
+    <div class="oracle-side">
+      <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
+      <div class="remote-row" id="dsKeyRow" style="display:none">
+        <input class="join-input" id="dsKeyInput" type="password" placeholder="DeepSeek key (sk-…)">
+        <button class="btn" style="flex:0 0 auto" onclick="saveDsKey()" data-en="Save" data-zh="保存">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="layout">
   <div class="board-col">
     <div id="boardWrap">
@@ -196,21 +225,6 @@
   <div class="panel-col">
     <div id="winBanner" class="win-banner"></div>
     <div id="turnBar" class="turn-bar"></div>
-
-    <div class="pcard oracle-card">
-      <div class="pcard-title"><span data-en="// the oracle" data-zh="// 棋道人">// the oracle</span></div>
-      <div class="oracle-row">
-        <img class="oracle-face" id="oracleFace" src="../sprites/guru.png" alt="" width="54" height="54">
-        <div class="comment-body" id="aiCommentBody"></div>
-      </div>
-      <div class="remote-row" id="dsKeyRow" style="display:none">
-        <input class="join-input" id="dsKeyInput" type="password" placeholder="DeepSeek API key (sk-…)">
-        <button class="btn" style="flex:0 0 auto" onclick="saveDsKey()" data-en="Save" data-zh="保存">Save</button>
-      </div>
-      <div class="brow">
-        <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
-      </div>
-    </div>
 
 
     <div class="pcard">
@@ -1296,31 +1310,51 @@ function renderEngineVoiceUI(){
 
 const coordName = (r, c) => COLS[c] + (N - r);
 
-/* The oracle talks in coordinates. Pull them back out of what it said and
-   ring them, so "F12" is somewhere you can look rather than hunt for. */
+/* He talks in coordinates. Give each one its own colour, wear that colour in
+   the sentence and again on the board, so a point he names can be found by
+   matching hue instead of hunting the grid. */
+const VOICE_COLOURS = ['#7ee0ff', '#ffd166', '#ff9ec4', '#a99bff', '#8bffb0', '#ffa870'];
 let voiceMarks = [];
-function parseVoiceMarks(txt){
-  const out = [], re = /\b([A-HJ-P])\s?(\d{1,2})\b/g;
-  let m;
+
+function renderOracle(txt){
+  const esc = x => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const seen = {}, marks = [];
+  const re = /\b([A-HJ-P])\s?(\d{1,2})\b/g;
+  let html = '', last = 0, m;
   while ((m = re.exec(txt))){
     const c = COLS.indexOf(m[1]), n = parseInt(m[2], 10);
     if (c < 0 || n < 1 || n > N) continue;
-    const r = N - n;
-    if (!out.some(q => q[0] === r && q[1] === c)) out.push([r, c]);
+    const key = m[1] + n;
+    if (!seen[key]){
+      if (marks.length >= VOICE_COLOURS.length) continue;   // out of colours; leave it plain
+      seen[key] = VOICE_COLOURS[marks.length];
+      marks.push({ r: N - n, c: c, colour: seen[key] });
+    }
+    html += esc(txt.slice(last, m.index)) +
+            '<b style="color:' + seen[key] + '">' + esc(m[0]) + '</b>';
+    last = m.index + m[0].length;
   }
-  return out.slice(0, 6);
+  html += esc(txt.slice(last));
+  html = html.split('\n').map(l => l.trim()).filter(Boolean).map(function(l){
+    return '<div class="oline"><span class="odot">&bull;</span><span>' +
+           l.replace(/^[-•*]\s*/, '') + '</span></div>';
+  }).join('');
+  return { html: html, marks: marks };
 }
+
 function drawVoiceMarks(){
   if (!voiceMarks.length) return;
   ctx.save();
-  ctx.strokeStyle = 'rgba(190,150,235,0.9)';
-  ctx.lineWidth = Math.max(1.5, CELL * 0.05);
-  ctx.setLineDash([3, 3]);
-  voiceMarks.forEach(([r, c]) => {
-    ctx.beginPath(); ctx.arc(PAD + c * CELL, PAD + r * CELL, CELL * 0.45, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = Math.max(2, CELL * 0.08);
+  voiceMarks.forEach(function(mk){
+    const x = PAD + mk.c * CELL, y = PAD + mk.r * CELL;
+    ctx.strokeStyle = mk.colour;
+    ctx.shadowColor = mk.colour; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(x, y, CELL * 0.46, 0, Math.PI * 2); ctx.stroke();
   });
   ctx.restore();
 }
+
 /* the prompt is English, and the players are whatever stone they wear */
 function engineName(p){
   const c = CHARS[SKIN[p]];
@@ -1373,7 +1407,7 @@ function maybeEngineComment(mover, r, c, won){
       thinking: { type: 'disabled' },
       max_tokens: 300,
       messages: [
-        { role: 'system', content: 'You are an old master of gomoku who has watched ten thousand games, and you happen to be the search running inside this engine. Speak to the human you are playing in ONE short paragraph, three sentences at the very most: name the move you just made and what it really does — the threat you are growing, the line you closed, why this point outweighed the others — and let one quiet observation about patience, greed, shape or attention sit alongside it. Calm, unhurried, a little wry; never grand, never a lecture. Always name the actual coordinates so they can find the point on the board. Never use line breaks. No lists, no emoji.' },
+        { role: 'system', content: 'You are an old master of gomoku who has watched ten thousand games, and you happen to be the search running inside this engine. Answer as two or three short bullet points, each on its own line beginning with a hyphen and a space, each a single sentence: one bullet for the move you just made and what it really does, one for the threat it grows or the line it closes, and one quiet observation about patience, greed, shape or attention. Calm, unhurried, a little wry; never grand, never a lecture. Always name the actual coordinates so they can find the point on the board. No emoji, no heading, nothing before the first bullet.' },
         { role: 'user', content: info }
       ]
     })
@@ -1387,8 +1421,9 @@ function maybeEngineComment(mover, r, c, won){
     const out = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
     body.classList.remove('waiting');
     if (card) card.classList.remove('speaking');
-    body.textContent = out || '…';
-    voiceMarks = parseVoiceMarks(out);      // ring the points he just named
+    const shown = renderOracle(out || '…');
+    body.innerHTML = shown.html;
+    voiceMarks = shown.marks;               // the colours his sentence wears
     draw();
   }).catch(e => {
     if (seq !== commentSeq) return;
