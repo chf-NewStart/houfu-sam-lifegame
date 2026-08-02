@@ -3180,21 +3180,10 @@ let _reviewWait = 0;
 // The winner is not passed around anywhere else once the game is over, so the
 // retry has to remember which game it is asking about.
 function retryReview() { if (gameOver) reviewGame(winResult ? winResult.player : null); }
-function reviewGame(winner){
-  if (!engineVoiceOn || !dsKey()) return;
-  if (!gameRecord.length) return;
-
-  const seq = ++commentSeq;
-  const body = document.getElementById('aiCommentBody');
-  body.dataset.live = '1';
-  body.classList.add('waiting');
-  body.textContent = t('looking back over the game…', '正在复盘…');
-  const card = body.closest('.oracle-card');
-  if (card) card.classList.add('speaking');
-
-  // Which way it went, from the reader's side — needed before the sides can be
-  // named, because who they are is mostly which one of them is reading.
-  const you = humanSide();
+/* The prompt, built for one seat. `you` is the side being written to — a
+   review is addressed to a person, and in a room the same game has to be
+   written twice, once to each of them, or the loser reads the winner's. */
+function reviewMessages(winner, you) {
   /* One way of saying who each side is, whatever kind of game it was. In a room
      both sides are people, and playerTypes still holds whatever this browser
      happens to be set to locally — which is not what is happening — so a remote
@@ -3246,17 +3235,7 @@ function reviewGame(winner){
     winner ? (engineName(winner) + ' won.') : 'The game ended without a winner.',
     you ? ('You are addressing ' + engineName(you) + ' — that is the human reading this.') : '',
   ].join('\n');
-
-  // Thinking at full extent is not quick. He is animated while he reads, but a
-  // wait this much longer than the old one needs saying, or it reads as stuck.
-  clearTimeout(_reviewWait);
-  _reviewWait = setTimeout(() => {
-    if (seq === commentSeq && body.dataset.live) {
-      body.textContent = t('still reading it through…', '还在细看这盘棋…');
-    }
-  }, 9000);
-
-  dsAsk([
+  return [
         { role: 'system', content:
           'You are an old master of gomoku, sat by the water with a rod, reviewing a game that has just ended. ' +
           'Reply with JSON only, in exactly this shape:\n' +
@@ -3276,40 +3255,115 @@ function reviewGame(winner){
           'thought said naturally in each. Address the human as "you" / "你". ' +
           'Calm, unhurried, a little wry; never grand, never a lecture. No emoji.' },
         { role: 'user', content: info }
-  ]).then(j => {
-    clearTimeout(_reviewWait);
-    if (seq !== commentSeq) return;
-    const txt = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
-    let raw = null;
-    try { raw = JSON.parse(txt); } catch (e) {
-      const m = txt.match(/\{[\s\S]*\}/);          // a model that wrapped it in prose anyway
-      if (m) { try { raw = JSON.parse(m[0]); } catch (e2) {} }
-    }
-    body.classList.remove('waiting');
-    if (card) card.classList.remove('speaking');
-    reviewData = raw ? validateReview(raw) : null;
-    reviewOpen = false;
-    if (!reviewData) {
-      // Same dead end as a failed request, and it deserves the same way out.
-      body.innerHTML = escHtml(t('no review this time: he could not make it out', '无法复盘：他没看明白')) + ' ' +
-        '<button type="button" class="detail-tog" onclick="retryReview()">' +
-        t('↻ ask him again', '↻ 再问一次') + '</button>';
-      return;
-    }
-    renderReview();
-  }).catch(e => {
-    clearTimeout(_reviewWait);
-    if (seq !== commentSeq) return;
-    body.classList.remove('waiting');
-    if (card) card.classList.remove('speaking');
-    // A lost review used to be lost for good — the game is over, so there is no
-    // second move to trigger another. One tap asks him again.
-    body.innerHTML = escHtml(t('no review this time: ', '无法复盘：') + dsNetMessage(e)) + ' ' +
+  ];
+}
+
+function parseReviewJson(j) {
+  const txt = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
+  try { return JSON.parse(txt); } catch (e) {
+    const m = txt.match(/\{[\s\S]*\}/);          // a model that wrapped it in prose anyway
+    if (m) { try { return JSON.parse(m[0]); } catch (e2) {} }
+  }
+  return null;
+}
+
+function reviewOne(winner, you) { return dsAsk(reviewMessages(winner, you)).then(parseReviewJson); }
+
+function reviewSettle() {
+  clearTimeout(_reviewWait);
+  const body = document.getElementById('aiCommentBody');
+  body.classList.remove('waiting');
+  const card = body.closest('.oracle-card');
+  if (card) card.classList.remove('speaking');
+  return body;
+}
+
+/* Validated here rather than where it was written, so a review that arrives
+   from the other side of a room is checked against this browser's own record
+   of the game before a word of it is shown. */
+function applyReviewRaw(raw, seq) {
+  if (seq != null && seq !== commentSeq) return;
+  const body = reviewSettle();
+  reviewData = raw ? validateReview(raw) : null;
+  reviewOpen = false;
+  if (!reviewData) {
+    body.innerHTML = escHtml(t('no review this time: he could not make it out', '无法复盘：他没看明白')) + ' ' +
       '<button type="button" class="detail-tog" onclick="retryReview()">' +
       t('↻ ask him again', '↻ 再问一次') + '</button>';
-    if (e && /rejected|被拒/.test(e.message || '')) document.getElementById('dsKeyRow').style.display = 'flex';
-  });
+    return;
+  }
+  renderReview();
+  renderReplayUI();
 }
+
+function showReviewFail(e, seq) {
+  if (seq !== commentSeq) return;
+  const body = reviewSettle();
+  body.innerHTML = escHtml(t('no review this time: ', '无法复盘：') + dsNetMessage(e)) + ' ' +
+    '<button type="button" class="detail-tog" onclick="retryReview()">' +
+    t('↻ ask him again', '↻ 再问一次') + '</button>';
+  if (e && /rejected|被拒/.test(e.message || '')) document.getElementById('dsKeyRow').style.display = 'flex';
+}
+
+function reviewGame(winner){
+  if (!engineVoiceOn) return;
+  if (!gameRecord.length) return;
+  if (!dsKey() && !remoteMode) return;      // your own game needs your own key
+
+  const seq = ++commentSeq;
+  const body = document.getElementById('aiCommentBody');
+  body.dataset.live = '1';
+  body.classList.add('waiting');
+  body.textContent = dsKey() ? t('looking back over the game…', '正在复盘…')
+                             : t('waiting for the review…', '等待对方的复盘…');
+  const card = body.closest('.oracle-card');
+  if (card) card.classList.add('speaking');
+
+  clearTimeout(_reviewWait);
+  _reviewWait = setTimeout(() => {
+    if (seq === commentSeq && body.dataset.live) {
+      body.textContent = t('still reading it through…', '还在细看这盘棋…');
+    }
+  }, 9000);
+
+  if (remoteMode) return reviewRemote(winner, seq);
+  reviewOne(winner, humanSide()).then(raw => applyReviewRaw(raw, seq)).catch(e => showReviewFail(e, seq));
+}
+
+/* One key is enough for a room. Whoever has one asks twice — once from each
+   seat — and puts both on the room, so the other side reads theirs without
+   needing a key at all. Side 1 goes straight away and side 2 waits a moment
+   and only steps in if nothing appeared, so two keys in one room do not both
+   pay for the same game. Without a key you simply wait: the panel says so. */
+const REVIEW_DEFER = 4500;
+function reviewRemote(winner, seq) {
+  if (!dsKey()) return;                     // the other side has it, or nobody does
+  const go = () => {
+    if (seq !== commentSeq || reviewData) return;
+    Promise.all([reviewOne(winner, 1), reviewOne(winner, 2)]).then(pair => {
+      if (seq !== commentSeq) return;
+      gameRef('review').set({ s: _fbSession, r1: pair[0] || null, r2: pair[1] || null });
+      applyReviewRaw(myColor === 1 ? pair[0] : pair[1], seq);
+    }).catch(e => showReviewFail(e, seq));
+  };
+  if (myColor === 1) return go();
+  setTimeout(() => {
+    if (seq !== commentSeq || reviewData) return;
+    gameRef('review').once('value').then(snap => {
+      const v = snap.val();
+      if (v && v.s === _fbSession) return;   // they had a key and got there first
+      go();
+    }).catch(go);
+  }, REVIEW_DEFER);
+}
+
+function onReview(snap) {
+  const v = snap.val();
+  if (!v || v.s !== _fbSession || !gameOver || reviewData) return;
+  const mine = myColor === 1 ? v.r1 : v.r2;
+  if (mine) applyReviewRaw(mine, null);
+}
+
 
 /* ── Rewind ───────────────────────────────────────
    Two complaints answered at once: "I forgot about the steps", and "show me
@@ -3551,6 +3605,7 @@ const firebaseConfig = {
 
 let _fbDb = null, _fbCode = null, _fbSession = 0;
 let _isHost = false, _curHost = 1, _remoteMoves = [], _remoteOver = false, _prevLen = 0, _reactSeen = 0;
+let _fbRevRef=null,_fbRevCb=null;
 let _fbJoinRef=null,_fbJoinCb=null, _fbPlayRef=null,_fbPlayCb=null, _fbHostRef=null,_fbHostCb=null, _fbReqRef=null,_fbReqCb=null, _fbReactRef=null,_fbReactCb=null, _fbOverRef=null,_fbOverCb=null;
 
 function fbDb() {
@@ -3702,6 +3757,7 @@ function startRemoteListeners() {
   if (_fbReqCb) _fbReqRef.off('value', _fbReqCb);        _fbReqRef = gameRef('req');     _fbReqCb = _fbReqRef.on('value', onReq);
   if (_fbReactCb) _fbReactRef.off('value', _fbReactCb);  _fbReactRef = gameRef('react'); _fbReactCb = _fbReactRef.on('value', onReact);
   if (_fbOverCb) _fbOverRef.off('value', _fbOverCb);     _fbOverRef = gameRef('over');   _fbOverCb = _fbOverRef.on('value', onOver);
+  if (_fbRevCb) _fbRevRef.off('value', _fbRevCb);        _fbRevRef = gameRef('review'); _fbRevCb = _fbRevRef.on('value', onReview);
 }
 
 function fbSendMove(r, c) { gameRef('play').set({ s: _fbSession, moves: _remoteMoves.concat([[r, c]]) }); }
@@ -3753,7 +3809,7 @@ async function createRoom() {
   await gameRef('meta').set({ created: Date.now() });
   await gameRef('host').set(1);
   await gameRef('play').set({ s: 0 });
-  await gameRef('react').remove(); await gameRef('req').remove(); await gameRef('over').remove(); await gameRef('joined').set(false);
+  await gameRef('react').remove(); await gameRef('req').remove(); await gameRef('over').remove(); await gameRef('review').remove(); await gameRef('joined').set(false);
   if (_fbJoinCb) _fbJoinRef.off('value', _fbJoinCb);
   _fbJoinRef = gameRef('joined');
   _fbJoinCb = _fbJoinRef.on('value', snap => {
