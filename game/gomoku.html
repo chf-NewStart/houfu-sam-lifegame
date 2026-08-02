@@ -602,6 +602,7 @@ let diff = 'normal';
 let playerTypes = {1: 'human', 2: 'ai'};
 let lastSearch = null;   // the candidate scores the last minimax search produced
 let gameRecord = [];     // the game so far, for the review at the end
+let winMove = null;      // and the stone that finished it, if one did
 let paused = false;
 let remoteMode = false, myColor = null;
 let coachMode = (()=>{ try{return localStorage.getItem('gomoku_coach')==='1';}catch(e){return false;} })();
@@ -620,6 +621,7 @@ function newGame() {
   commentSeq++;                                  // drop any review still in flight
   voiceMarks = [];
   gameRecord = [];
+  winMove = null;
   const _lg = document.getElementById('oracleLegend');
   if (_lg) _lg.hidden = true;
   const _cb = document.getElementById('aiCommentBody');
@@ -722,6 +724,16 @@ function undoMove() {
   // matters, so the condition must not exclude it.
   const vsAI = (isAI(1) || isAI(2)) && !(isAI(1) && isAI(2));
   while (vsAI && isAI(curP) && history.length > 0) apply();
+  // The move list is the game's memory, and it was not being taken back with
+  // the board: undo popped `history` and left gameRecord holding the moves that
+  // had just been unplayed. moveCount then walked back over numbers already in
+  // it, so the record ended up with two move 19s — one real, one from a line
+  // that never happened — and moveByNumber() would hand back whichever came
+  // first. That is how the review came to say "move 19, Lime J8" about a point
+  // holding a red stone. It is also what the whole prompt is built from, so the
+  // review was reasoning about a game nobody played.
+  gameRecord.length = Math.min(gameRecord.length, moveCount);
+  winMove = null;
   gameOver  = false;
   winResult = null;
   document.getElementById('winBanner').className = 'win-banner';
@@ -765,6 +777,7 @@ function placeStone(r, c) {
   const wr = checkWin(board, r, c);
   if (wr) {
     winResult = wr;
+    winMove = { n: moveCount, p: mover, r, c, at: col + row };
     gameOver = true;
     scores[wr.player]++;
     const winner = wr.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！');
@@ -2698,7 +2711,12 @@ function boardBefore(n) {
   for (const m of gameRecord) { if (m.n >= n) break; if (m.r != null) bd[m.r][m.c] = m.p; }
   return bd;
 }
-function moveByNumber(n) { return gameRecord.find(m => m.n === n) || null; }
+// Last match, not first: if a number were ever duplicated again, the later
+// entry is the one that is still on the board.
+function moveByNumber(n) {
+  for (let i = gameRecord.length - 1; i >= 0; i--) if (gameRecord[i].n === n) return gameRecord[i];
+  return null;
+}
 
 function validateReview(raw) {
   const pick = (o) => (o && typeof o === 'object') ? o : {};
@@ -2772,7 +2790,9 @@ function renderReview() {
     return '<b style="color:' + colour + '">' + COLS[rc[1]] + (N - rc[0]) + '</b>';
   };
   let html = '';
-  const C_TURN = '#ffd166', C_WAS = '#ff9ec4', C_BETTER = '#7ee0ff';
+  const C_TURN = '#ffd166', C_WAS = '#ff9ec4', C_BETTER = '#7ee0ff', C_WIN = '#8affc0';
+  // Whether the move he singled out is the one that actually finished it.
+  const decisiveIsWin = !!(winMove && d.decisive && d.decisive.m.n === winMove.n);
   if (d.turning) {
     const m = d.turning.m;
     html += line(t('It turned at move ', '转折在第 ') + m.n + t('', ' 手') + t(', ', '，') + sideName(m.p) + ' ' +
@@ -2783,7 +2803,17 @@ function renderReview() {
     const who = d.decisive.mine ? t('you played', '你下在') : sideName(m.p) + t(' played', '下在');
     let head = t('Move ', '第 ') + m.n + t(' — ', ' 手 — ') + who + ' ' + coord([m.r, m.c], C_WAS) + t('.', '。');
     if (d.decisive.better) head += ' ' + coord(d.decisive.better, C_BETTER) + t(' was the move.', ' 才是这一手。');
+    if (decisiveIsWin) head += t(' That was the five.', ' 五子连珠。');
     html += line(head, said(t(d.decisive.en, d.decisive.zh)));
+  }
+  // The stone that finished it, named outright. He picks whichever move he
+  // thinks decided the game and it is often not the last one — but the hand
+  // that actually won is a fact, not an opinion, and it should be said.
+  if (winMove && !decisiveIsWin) {
+    const w = winMove, you = humanSide();
+    const who = you != null && w.p === you ? t('you played', '你下在') : sideName(w.p) + t(' played', '下在');
+    html += line(t('Move ', '第 ') + w.n + t(' — ', ' 手 — ') + who + ' ' +
+                 coord([w.r, w.c], C_WIN) + t('. That was the five.', '，五子连珠。'));
   }
   if (d.lesson) html += line(said(t(d.lesson.en, d.lesson.zh)));
 
