@@ -20,6 +20,9 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Consolas, 'Courier New', monospace; background: #080808; color: #ccc; min-height: 100vh; padding: 20px 16px; }
+    /* On a phone the page gutter is 32px of a 390px screen — two cells' worth
+       of board. The board needs it more than the margin does. */
+    @media (max-width: 700px) { body { padding: 12px 6px; } }
 
     .pg-header { max-width: 920px; margin: 0 auto 18px; }
     .pg-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
@@ -55,6 +58,16 @@
 
     /* Coord labels */
     .col-labels, .row-labels { position: absolute; font-size: 9px; color: #2a2a2a; user-select: none; pointer-events: none; }
+
+    /* Rewind */
+    .rp-card { max-width: 100%; margin-top: 8px; }
+    .rp-row { display: flex; gap: 7px; align-items: center; }
+    .rp-nudge { flex: 0 0 auto; padding: 6px 12px; }
+    #rpRange { flex: 1; min-width: 0; accent-color: #e8b04a; background: transparent; height: 22px; }
+    .rp-cap { font-size: 0.68rem; color: #8a8299; margin-top: 7px; min-height: 1.4em; line-height: 1.5; }
+    .rp-cap b { color: #e8b04a; font-weight: normal; }
+    .rp-cap .rp-was { color: #ff9ec4; }
+    .rp-cap .rp-better { color: #7ee0ff; }
 
     /* Panel */
     .pcard { background: #111; border: 1px solid #1c1c1c; padding: 11px 13px; margin-bottom: 8px; }
@@ -334,6 +347,19 @@
         <span id="boardOverlayMsg"></span>
       </div>
     </div>
+    <div class="pcard rp-card" id="replayCard" style="display:none">
+      <div class="pcard-title" data-en="// rewind" data-zh="// 复盘">// rewind</div>
+      <div class="rp-row">
+        <button class="btn rp-nudge" onclick="rpStep(-1)" aria-label="back">◀</button>
+        <input type="range" id="rpRange" min="0" max="0" value="0" step="1" oninput="rpSeek(+this.value)">
+        <button class="btn rp-nudge" onclick="rpStep(1)" aria-label="forward">▶</button>
+      </div>
+      <div class="rp-cap" id="rpCap"></div>
+      <div class="brow">
+        <button class="btn" id="rpShow" onclick="rpTurn()"></button>
+        <button class="btn" id="rpExit" onclick="rpExit()"></button>
+      </div>
+    </div>
   </div>
 
   <div class="panel-col">
@@ -460,6 +486,10 @@ function applyLang() {
   if (typeof renderEngineVoiceUI === 'function') renderEngineVoiceUI();
   if (typeof renderGuruSfxUI === 'function') renderGuruSfxUI();
   if (typeof renderQuote === 'function') renderQuote();   // the gloss is translated, the line is not
+  // Both languages came back in the one call, so the review switches with the
+  // page instead of sitting there in English.
+  if (typeof reviewData !== 'undefined' && reviewData) renderReview();
+  if (typeof renderReplayUI === 'function') renderReplayUI();
   document.getElementById('pgTitle').textContent = t('Gomoku', '五子棋');
   document.getElementById('pgSub').textContent   = t('5 in a row wins · 15×15 · click to place your stone', '五子连珠获胜 · 15×15棋盘 · 点击落子');
   document.getElementById('pgBack').textContent  = t('← arcade', '← 游戏厅');
@@ -506,15 +536,19 @@ function computeLayout() {
   const reserve = stacked ? 0 : 270;            // panel min-width + gap
   // 760 cap, not the old 520: at 520 the cell never exceeded 33px, too small
   // for a character to register on a desktop board.
-  const avail = Math.max(320, window.innerWidth || 0) - 40 - reserve;
+  const avail = Math.max(320, window.innerWidth || 0) - (stacked ? 14 : 40) - reserve;
   const maxW = Math.min(Math.max(300, avail), 760);
-  // PAD used to be 0.8 of a cell while a character stone is 0.94 wide, so the
-  // stones on row 15 and column A reached past the margin and painted over the
-  // coordinate labels living in it. Give the margin a full cell; the board
-  // loses a couple of pixels per cell and gains an axis you can read.
-  CELL  = Math.floor(maxW / (N + 1));
+  // The coordinates live in the top and left margins, so that side needs a full
+  // cell of clearance — a stone on row 15 is 0.4 of a cell tall and would
+  // otherwise paint over the letters. The bottom and right margins carry
+  // nothing but the last stone, so they only need to clear that stone. Giving
+  // both sides a full cell spent 1/16th of the board's width on empty space,
+  // which on a 390px phone is most of the difference between a 21px cell and a
+  // 24px one.
+  const EDGE = 0.55;
+  CELL  = Math.floor(maxW / (N - 1 + 1 + EDGE));
   PAD   = CELL;
-  CSIZE = CELL * (N - 1) + PAD * 2;
+  CSIZE = Math.round(CELL * (N - 1) + PAD + CELL * EDGE);
   // Back the canvas at device resolution, or the grid, the discs and the ink
   // he throws are all drawn at CSS resolution and upscaled on a retina screen.
   DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
@@ -543,6 +577,7 @@ function newGame() {
   board = Array.from({length: N}, () => new Array(N).fill(0));
   curP = 1; gameOver = false; winResult = null; lastMove = null; moveCount = 0; aiThinking = false;
   aiTick++;   // cancel any AI move still "thinking" from the previous game
+  aimCell = null;
   history = [];
   document.getElementById('undoBtn').disabled = true;
   document.getElementById('newBtn').className = 'btn';
@@ -558,6 +593,8 @@ function newGame() {
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
   drop = null; jolts.clear();
+  rpStop(); replay = null; reviewData = null;
+  renderReplayUI();
   showQuote('open');                             // he opens the game with a line
   log(t('── new game ──', '── 新游戏 ──'), 'lround');
   draw();
@@ -628,6 +665,8 @@ function undoMove() {
     return;
   }
   if (history.length === 0 || aiThinking) return;
+  aimCell = null;
+  rpStop(); replay = null;
   aiTick++;   // cancel any pending AI move so undo can't be immediately overwritten
   commentSeq++;   // the comment described a move that no longer happened
   voiceMarks = [];
@@ -654,6 +693,7 @@ function undoMove() {
   document.getElementById('newBtn').className = 'btn';
   document.getElementById('undoBtn').disabled = history.length === 0;
   log(t('↩ undo', '↩ 悔棋'), 'lround');
+  renderReplayUI();
   draw();
   renderPanel();
   scheduleAI();   // resume AI-vs-AI if that's the mode
@@ -662,6 +702,7 @@ function undoMove() {
 /* ── Place stone ──────────────────────────────── */
 function placeStone(r, c) {
   if (gameOver || board[r][c] !== 0) return;
+  aimCell = null;
   const mover = curP;
   // getBestMove leaves its candidate scores behind; they belong to this move
   // and nothing after it, so take them and clear the slate.
@@ -679,7 +720,7 @@ function placeStone(r, c) {
   const col = COLS[c], row = N - r;
   log(`${moveCount}. ${t(curP===1?'Lime':'Tomato', curP===1?'青柠':'番茄')} ${col}${row}`, 'lmove');
   gameRecord.push({
-    n: moveCount, p: mover, at: col + row,
+    n: moveCount, p: mover, at: col + row, r, c,
     alt: searchInfo ? [...searchInfo.scored].filter(x => x.s !== null)
            .sort((a, b) => mover === 1 ? b.s - a.s : a.s - b.s).slice(0, 3)
            .map(x => COLS[x.m[1]] + (N - x.m[0]) + ':' + x.s).join(', ') : null,
@@ -701,6 +742,7 @@ function placeStone(r, c) {
     if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'fish', 1.5); guruShout('five'); }
     const you = humanSide();
     showQuote(you == null ? 'calm' : wr.player === you ? 'win' : 'lose');
+    renderReplayUI();
     reviewGame(wr.player);
     draw(); renderPanel(); return;
   }
@@ -712,32 +754,66 @@ function placeStone(r, c) {
   scheduleAI();
 }
 
-/* ── Canvas click ─────────────────────────────── */
-canvas.addEventListener('click', e => {
-  if (gameOver || aiThinking) return;
-  if (document.getElementById('boardOverlay').style.display !== 'none') return;
-  if (remoteMode && curP !== myColor) return;
-  if (!remoteMode && isAI(curP)) return;
+/* ── Canvas click ─────────────────────────────────
+   A finger is about 44px across and a cell on a phone is about 24, so a single
+   tap cannot say which intersection you meant — and the one you meant is under
+   your fingertip where you cannot see it. On a coarse pointer the first tap
+   therefore only AIMS: it puts a marked crosshair on the nearest point and
+   prints the coordinate above the board, clear of your hand. Tapping the same
+   point again plays it; tapping anywhere else moves the aim. A mouse keeps the
+   single click it always had. */
+const COARSE = window.matchMedia('(pointer: coarse)');
+let aimCell = null;
+
+function pointAt(e) {
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left, my = e.clientY - rect.top;
   const c = Math.round((mx - PAD) / CELL);
   const r = Math.round((my - PAD) / CELL);
-  if (r < 0 || r >= N || c < 0 || c >= N) return;
-  if (Math.abs(mx - (PAD + c*CELL)) > CELL/2) return;
-  if (Math.abs(my - (PAD + r*CELL)) > CELL/2) return;
-  if (remoteMode) { fbSendMove(r, c); }  // Firebase echoes back → placeStone fires on both sides
-  else { placeStone(r, c); }
+  if (r < 0 || r >= N || c < 0 || c >= N) return null;
+  // A generous target: anywhere in the cell counts, not just the middle half.
+  // Rounding already picked the nearest point; the old CELL/2 test only threw
+  // away taps that had nowhere else to go.
+  if (Math.abs(mx - (PAD + c * CELL)) > CELL * 0.72) return null;
+  if (Math.abs(my - (PAD + r * CELL)) > CELL * 0.72) return null;
+  return [r, c];
+}
+
+function myTurn() {
+  if (gameOver || aiThinking || replay) return false;
+  if (document.getElementById('boardOverlay').style.display !== 'none') return false;
+  if (remoteMode) return curP === myColor;
+  return !isAI(curP);
+}
+
+function commit(r, c) {
+  aimCell = null;
+  if (remoteMode) fbSendMove(r, c);   // Firebase echoes back → placeStone fires on both sides
+  else placeStone(r, c);
+}
+
+canvas.addEventListener('click', e => {
+  if (!myTurn()) return;
+  const p = pointAt(e);
+  if (!p) return;
+  const [r, c] = p;
+  if (board[r][c] !== 0) return;
+  if (!COARSE.matches) { commit(r, c); return; }
+  if (aimCell && aimCell[0] === r && aimCell[1] === c) { commit(r, c); draw(); return; }
+  aimCell = [r, c];
+  hoverCell = null;
+  draw();
+  renderPanel();
 });
 
 /* ── Hover preview ────────────────────────────── */
 let hoverCell = null;
 canvas.addEventListener('mousemove', e => {
-  if (gameOver || aiThinking || (remoteMode && curP !== myColor) || (!remoteMode && isAI(curP))) { hoverCell = null; return; }
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-  const c = Math.round((mx - PAD) / CELL);
-  const r = Math.round((my - PAD) / CELL);
-  if (r < 0 || r >= N || c < 0 || c >= N || board[r][c] !== 0) { hoverCell = null; draw(); return; }
+  if (COARSE.matches) return;                 // a touch device has no hover, only a hand in the way
+  if (!myTurn()) { hoverCell = null; return; }
+  const p = pointAt(e);
+  if (!p || board[p[0]][p[1]] !== 0) { hoverCell = null; draw(); return; }
+  const r = p[0], c = p[1];
   if (!hoverCell || hoverCell[0] !== r || hoverCell[1] !== c) { hoverCell = [r, c]; draw(); }
 });
 canvas.addEventListener('mouseleave', () => { hoverCell = null; draw(); });
@@ -782,30 +858,59 @@ function draw() {
   for (let i = 0; i < N; i++) ctx.fillText(String(N - i), PAD - off, PAD + i*CELL + 4);
   ctx.textAlign = 'center';
 
-  if (coachMode) drawCoachHints();
+  if (coachMode && !replay) drawCoachHints();
   drawVoiceMarks();
   drawShock();
 
   // Hover ghost
-  if (hoverCell) {
+  if (hoverCell && !replay) {
     const [hr, hc] = hoverCell;
     ctx.globalAlpha = 0.35;
     drawStone(hr, hc, curP, false, false, true);   // ghost: never hops
     ctx.globalAlpha = 1;
   }
 
-  // Stones
+  // Stones — the rewound position when the rewind is open, the live one otherwise
+  const view = replay ? replay.bd : board;
   for (let r = 0; r < N; r++) {
     for (let c = 0; c < N; c++) {
-      if (board[r][c] !== 0) {
-        const isWinStone = winResult?.line.some(([wr, wc]) => wr === r && wc === c);
-        const isLast = lastMove && lastMove[0] === r && lastMove[1] === c;
-        drawStone(r, c, board[r][c], isWinStone, isLast);
+      if (view[r][c] !== 0) {
+        const isWinStone = !replay && winResult?.line.some(([wr, wc]) => wr === r && wc === c);
+        const isLast = !replay && lastMove && lastMove[0] === r && lastMove[1] === c;
+        drawStone(r, c, view[r][c], isWinStone, isLast);
       }
     }
   }
+  drawReplayMarks();
 
+  drawAim();
   drawDrop();          // whatever he threw is lying on top of all of it
+}
+
+/* The aimed point: a ring on the intersection, and the coordinate printed in
+   the top margin where a hand is not covering it. */
+function drawAim() {
+  if (!aimCell || !COARSE.matches) return;
+  const [r, c] = aimCell;
+  const x = PAD + c * CELL, y = PAD + r * CELL;
+  const col = curP === 1 ? '#1db954' : '#f44336';
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  drawStone(r, c, curP, false, false, true);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = col;
+  ctx.lineWidth = Math.max(1.6, CELL * 0.07);
+  ctx.beginPath(); ctx.arc(x, y, CELL * 0.62, 0, Math.PI * 2); ctx.stroke();
+  // cross-hairs out to the margins, so the point is findable past a fingertip
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x, 0); ctx.lineTo(x, y - CELL * 0.7);
+  ctx.moveTo(x, y + CELL * 0.7); ctx.lineTo(x, CSIZE);
+  ctx.moveTo(0, y); ctx.lineTo(x - CELL * 0.7, y);
+  ctx.moveTo(x + CELL * 0.7, y); ctx.lineTo(CSIZE, y);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawStone(r, c, player, isWin, isLast, ghost) {
@@ -1434,7 +1539,14 @@ function renderPanel() {
     if (remoteMode) who = curP === myColor ? t('You', '你') : t('Remote', '对方');
     else { const tp = playerTypes[curP]; who = tp==='human' ? t('You','你') : tp==='random' ? t('Random','随机') : 'AI'; }
     const canClick = !isAI(curP) && !(remoteMode && curP !== myColor);
-    tb.textContent = `${whose} (${who})${thinking}${!thinking && canClick ? t(' · click to place',' · 点击落子') : ''}`;
+    if (aimCell && canClick) {
+      // The point you are aiming at, spelled out above the board — the stone
+      // itself is under your fingertip.
+      tb.textContent = `${whose} · ${COLS[aimCell[1]]}${N - aimCell[0]}` + t(' · tap again to place', ' · 再点一次落子');
+    } else {
+      const how = COARSE.matches ? t(' · tap to aim', ' · 点击瞄准') : t(' · click to place', ' · 点击落子');
+      tb.textContent = `${whose} (${who})${thinking}${!thinking && canClick ? how : ''}`;
+    }
     if (aiThinking) tb.innerHTML += `<span class="thinking-dot"></span>`;
   }
   document.getElementById('s1').textContent = scores[1];
@@ -1468,6 +1580,7 @@ function showResign(loser) {
   const you = remoteMode ? myColor : humanSide();
   showQuote(you == null ? 'calm' : winner === you ? 'win' : 'lose');
   updateUndoBtn(); renderPanel(); draw();
+  renderReplayUI();
   reviewGame(winner);
 }
 function resign() {
@@ -1924,41 +2037,16 @@ const coordName = (r, c) => COLS[c] + (N - r);
 /* He talks in coordinates. Give each one its own colour, wear that colour in
    the sentence and again on the board, so a point he names can be found by
    matching hue instead of hunting the grid. */
-// Three, not six. Six lit rings over a board that already carries stones and
-// the coach's markers is not a reference, it is confetti — and the list also
-// caps how many coordinates get coloured in the sentence, so the words and
-// the board always agree on exactly which points are being pointed at.
-const VOICE_COLOURS = ['#7ee0ff', '#ffd166', '#ff9ec4'];
+// Three points, not six. Six lit rings over a board that already carries
+// stones and the coach's markers is not a reference, it is confetti — and the
+// review only ever names three, so the words and the board always agree on
+// exactly which points are being pointed at. One colour, one meaning: amber is
+// where the game turned, pink is the move that lost it, cyan is the point he
+// wanted there instead — the same three the rewind marks the board with.
 let voiceMarks = [];
 
-function renderOracle(txt){
-  const esc = x => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const seen = {}, marks = [];
-  const re = /\b([A-HJ-P])\s?(\d{1,2})\b/g;
-  let html = '', last = 0, m;
-  while ((m = re.exec(txt))){
-    const c = COLS.indexOf(m[1]), n = parseInt(m[2], 10);
-    if (c < 0 || n < 1 || n > N) continue;
-    const key = m[1] + n;
-    if (!seen[key]){
-      if (marks.length >= VOICE_COLOURS.length) continue;   // out of colours; leave it plain
-      seen[key] = VOICE_COLOURS[marks.length];
-      marks.push({ r: N - n, c: c, colour: seen[key], taken: !!(board && board[N - n] && board[N - n][c]) });
-    }
-    html += esc(txt.slice(last, m.index)) +
-            '<b style="color:' + seen[key] + '">' + esc(m[0]) + '</b>';
-    last = m.index + m[0].length;
-  }
-  html += esc(txt.slice(last));
-  html = html.split('\n').map(l => l.trim()).filter(Boolean).map(function(l){
-    return '<div class="oline"><span class="odot">&bull;</span><span>' +
-           l.replace(/^[-•*]\s*/, '') + '</span></div>';
-  }).join('');
-  return { html: html, marks: marks };
-}
-
 function drawVoiceMarks(){
-  if (!voiceMarks.length) return;
+  if (!voiceMarks.length || replay) return;
   ctx.save();
   // Thin and unlit. The colour carries the meaning; the glow only made these
   // shout over the stones they were meant to point at. A point you could play
@@ -1989,6 +2077,111 @@ function boardText(){
   return lines.join('\n');
 }
 
+/* The review is asked for as DATA, not prose, and every coordinate in it is
+   checked against the record before it reaches the screen.
+
+   This is not tidiness. The old prompt ended "...name both the move number and
+   the coordinate every time — \"move 14, M11\"" — and the model duly answered
+   "Move 14, M11 should have been G12", in a game where nobody had ever played
+   M11. It had copied the example out of its own instructions. Now the model is
+   only ever asked WHICH move number went wrong and what it would have played
+   there; the sentence "at move 14 you played H15" is built here, from the move
+   list, and cannot be anything but true.
+
+   Both languages come back in the one call, so switching the page to Chinese
+   re-renders what he already said instead of leaving English on the screen. */
+let reviewData = null;      // the validated result, kept so a language toggle is free
+
+function coordToRC(s) {
+  const m = /^([A-HJ-P])\s?(\d{1,2})$/.exec(String(s || '').trim().toUpperCase());
+  if (!m) return null;
+  const c = COLS.indexOf(m[1]), n = parseInt(m[2], 10);
+  if (c < 0 || n < 1 || n > N) return null;
+  return [N - n, c];
+}
+// The board as it stood immediately before move `n` (1-based).
+function boardBefore(n) {
+  const bd = Array.from({ length: N }, () => new Array(N).fill(0));
+  for (const m of gameRecord) { if (m.n >= n) break; if (m.r != null) bd[m.r][m.c] = m.p; }
+  return bd;
+}
+function moveByNumber(n) { return gameRecord.find(m => m.n === n) || null; }
+
+function validateReview(raw) {
+  const pick = (o) => (o && typeof o === 'object') ? o : {};
+  const str = (v) => typeof v === 'string' ? v.trim() : '';
+  const out = { turning: null, decisive: null, lesson: null };
+  const you = humanSide();
+
+  const T = pick(raw.turning), D = pick(raw.decisive), L = pick(raw.lesson);
+  const tm = moveByNumber(+T.n);
+  if (tm && (str(T.en) || str(T.zh))) out.turning = { m: tm, en: str(T.en), zh: str(T.zh) };
+
+  const dm = moveByNumber(+D.n);
+  if (dm && (str(D.en) || str(D.zh))) {
+    let better = coordToRC(D.better);
+    // It has to be a point that was actually free at the time, and not simply
+    // the move that was played. Anything else is dropped: the criticism still
+    // stands, it just stops claiming an alternative it cannot support.
+    if (better) {
+      const bd = boardBefore(dm.n);
+      if (bd[better[0]][better[1]] !== 0 || (better[0] === dm.r && better[1] === dm.c)) better = null;
+    }
+    out.decisive = { m: dm, better, en: str(D.en), zh: str(D.zh), mine: you != null && dm.p === you };
+  }
+  if (str(L.en) || str(L.zh)) out.lesson = { en: str(L.en), zh: str(L.zh) };
+  return (out.turning || out.decisive || out.lesson) ? out : null;
+}
+
+function sideName(p) { return p === 1 ? t('Lime', '青柠') : t('Tomato', '番茄'); }
+
+function renderReview() {
+  const body = document.getElementById('aiCommentBody');
+  if (!body || !reviewData) return;
+  const d = reviewData;
+  const marks = [];
+  // His half of the bullet arrives as a bare clause; give it a capital and a
+  // full stop so it reads as a sentence after the one built from the record.
+  const said = (txt) => {
+    let x = String(txt || '').trim();
+    if (!x) return '';
+    if (lang !== 'zh') x = x.charAt(0).toUpperCase() + x.slice(1);
+    if (!/[.。！？!?]$/.test(x)) x += t('.', '。');
+    return escHtml(x);
+  };
+  const line = (head, tail) =>
+    '<div class="oline"><span class="odot">&bull;</span><span>' + head + (tail ? ' ' + tail : '') + '</span></div>';
+  const coord = (rc, colour) => {
+    marks.push({ r: rc[0], c: rc[1], colour, taken: !!(board && board[rc[0]] && board[rc[0]][rc[1]]) });
+    return '<b style="color:' + colour + '">' + COLS[rc[1]] + (N - rc[0]) + '</b>';
+  };
+  let html = '';
+  const C_TURN = '#ffd166', C_WAS = '#ff9ec4', C_BETTER = '#7ee0ff';
+  if (d.turning) {
+    const m = d.turning.m;
+    html += line(t('It turned at move ', '转折在第 ') + m.n + t('', ' 手') + t(', ', '，') + sideName(m.p) + ' ' +
+                 coord([m.r, m.c], C_TURN) + t('.', '。'), said(t(d.turning.en, d.turning.zh)));
+  }
+  if (d.decisive) {
+    const m = d.decisive.m;
+    const who = d.decisive.mine ? t('you played', '你下在') : sideName(m.p) + t(' played', '下在');
+    let head = t('Move ', '第 ') + m.n + t(' — ', ' 手 — ') + who + ' ' + coord([m.r, m.c], C_WAS) + t('.', '。');
+    if (d.decisive.better) head += ' ' + coord(d.decisive.better, C_BETTER) + t(' was the move.', ' 才是这一手。');
+    html += line(head, said(t(d.decisive.en, d.decisive.zh)));
+  }
+  if (d.lesson) html += line(said(t(d.lesson.en, d.lesson.zh)));
+  body.innerHTML = html;
+  voiceMarks = marks;
+  const legend = document.getElementById('oracleLegend');
+  if (legend) {
+    legend.hidden = !marks.length;
+    legend.textContent = t('the coloured points above are ringed on the board · a solid ring is an empty point, a dashed collar is a stone already played',
+                           '上文彩色坐标已在棋盘标出 · 实线圈为空点，虚线圈为已落的子');
+  }
+  renderReplayUI();
+  draw();
+}
+
 function reviewGame(winner){
   if (remoteMode || !engineVoiceOn || !dsKey()) return;
   if (!gameRecord.length) return;
@@ -2016,7 +2209,6 @@ function reviewGame(winner){
     moves,
     '',
     winner ? (engineName(winner) + ' won.') : 'The game ended without a winner.',
-    'Address the human directly as "you".'
   ].join('\n');
 
   fetch('https://api.deepseek.com/chat/completions', {
@@ -2025,9 +2217,24 @@ function reviewGame(winner){
     body: JSON.stringify({
       model: 'deepseek-v4-flash',
       thinking: { type: 'disabled' },
-      max_tokens: 400,
+      max_tokens: 700,
+      response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: 'You are an old master of gomoku, sat by the water with a rod, reviewing a game that has just ended. Answer as three short bullet points, each on its own line beginning with a hyphen and a space, each a single sentence: where the game was actually decided, the one move that decided it and what should have been played instead, and one thing to carry into the next game. Name both the move number and the coordinate every time — "move 14, M11" — so they can find the moment in the log and on the board. Speak only about what the record shows. Calm, unhurried, a little wry; never grand, never a lecture. No emoji, no heading, nothing before the first bullet.' },
+        { role: 'system', content:
+          'You are an old master of gomoku, sat by the water with a rod, reviewing a game that has just ended. ' +
+          'Reply with JSON only, in exactly this shape:\n' +
+          '{"turning":{"n":<move number>,"en":"...","zh":"..."},' +
+          '"decisive":{"n":<move number>,"better":"<coordinate>","en":"...","zh":"..."},' +
+          '"lesson":{"en":"...","zh":"..."}}\n' +
+          'turning.n is the move where the game really turned. decisive.n is the single move that lost it, ' +
+          'and decisive.better is the coordinate that should have been played on that move instead — it must be ' +
+          'a point that is still EMPTY at that stage of the move list. Every "n" must be a move number that ' +
+          'appears in the list you are given. Never mention a coordinate that is not in the list except ' +
+          'decisive.better. Do not restate the move number or the coordinate inside the sentences — they are ' +
+          'printed separately; each sentence gives only the reasoning, one sentence, no more. ' +
+          '"en" is English, "zh" is the same thing in Chinese (简体) — not a translation of the wording, the same ' +
+          'thought said naturally in each. Address the human as "you" / "你". ' +
+          'Calm, unhurried, a little wry; never grand, never a lecture. No emoji.' },
         { role: 'user', content: info }
       ]
     })
@@ -2038,19 +2245,17 @@ function reviewGame(winner){
     return res.json();
   }).then(j => {
     if (seq !== commentSeq) return;
-    const out = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
+    const txt = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
+    let raw = null;
+    try { raw = JSON.parse(txt); } catch (e) {
+      const m = txt.match(/\{[\s\S]*\}/);          // a model that wrapped it in prose anyway
+      if (m) { try { raw = JSON.parse(m[0]); } catch (e2) {} }
+    }
     body.classList.remove('waiting');
     if (card) card.classList.remove('speaking');
-    const shown = renderOracle(out || '…');
-    body.innerHTML = shown.html;
-    voiceMarks = shown.marks;
-    const legend = document.getElementById('oracleLegend');
-    if (legend){
-      legend.hidden = !voiceMarks.length;
-      legend.textContent = t('the coloured points above are ringed on the board · a solid ring is an empty point, a dashed collar is a stone already played',
-                             '上文彩色坐标已在棋盘标出 · 实线圈为空点，虚线圈为已落的子');
-    }
-    draw();
+    reviewData = raw ? validateReview(raw) : null;
+    if (!reviewData) { body.textContent = t('no review this time: he could not make it out', '无法复盘：他没看明白'); return; }
+    renderReview();
   }).catch(e => {
     if (seq !== commentSeq) return;
     body.classList.remove('waiting');
@@ -2058,6 +2263,189 @@ function reviewGame(winner){
     body.textContent = t('no review this time: ', '无法复盘：') + (e && e.message ? e.message : 'network');
     if (e && /rejected|被拒/.test(e.message || '')) document.getElementById('dsKeyRow').style.display = 'flex';
   });
+}
+
+/* ── Rewind ───────────────────────────────────────
+   Two complaints answered at once: "I forgot about the steps", and "show me
+   what I played, what I should have played, and how it would have gone".
+
+   The scrubber walks the finished game a stone at a time. The demonstration
+   goes further: it winds back to just before the move he flagged, plays the
+   stone you actually put down, lifts it off, puts down the one he wanted
+   instead — and then keeps going, because "that was better" means nothing
+   without the continuation. Those follow-up moves are not the model's opinion:
+   they are this page's own minimax reading out the position both ways, so
+   nothing is claimed that the engine cannot back.
+
+   Everything here is a view. `board` is untouched throughout; draw() reads
+   replay.bd when it exists and the live board when it does not, so leaving the
+   rewind puts the finished game straight back on the screen. */
+let replay = null, rpTimer = 0;
+
+// The engine's move for a side on an arbitrary board — getBestMove() reads the
+// live globals, and a hypothetical is by definition not the live game.
+function bestOn(bd, player, depth) {
+  const cands = getCandidates(bd, player);
+  if (!cands.length) return null;
+  const isMax = player === 1;
+  let best = isMax ? -Infinity : Infinity, bm = cands[0];
+  for (const [r, c] of cands) {
+    bd[r][c] = player;
+    const sc = isWinMove(bd, r, c, player) ? (isMax ? 1000000 : -1000000)
+             : minimax(bd, depth - 1, -Infinity, Infinity, !isMax, r, c);
+    bd[r][c] = 0;
+    if (isMax ? sc > best : sc < best) { best = sc; bm = [r, c]; }
+  }
+  return bm;
+}
+
+function rpStop() { clearTimeout(rpTimer); rpTimer = 0; }
+
+function rpSeek(k) {
+  rpStop();
+  const total = gameRecord.length;
+  k = Math.max(0, Math.min(total, k | 0));
+  const bd = boardBefore(k + 1);
+  const m = k > 0 ? gameRecord[k - 1] : null;
+  replay = { bd, at: k, marks: m ? [{ r: m.r, c: m.c, kind: 'here' }] : [] };
+  const cap = k === 0 ? t('an empty board', '空枰')
+    : t('Move ', '第 ') + m.n + t(' — ', ' 手 — ') + sideName(m.p) + ' <b>' + m.at + '</b>';
+  rpCaption(cap);
+  rpSync();
+  draw();
+}
+function rpStep(d) { rpSeek((replay ? replay.at : gameRecord.length) + d); }
+function rpExit() {
+  rpStop();
+  replay = null;
+  rpCaption(t('back on the finished game', '已回到终局'));
+  rpSync();
+  draw();
+}
+function rpCaption(html) {
+  const el = document.getElementById('rpCap');
+  if (el) el.innerHTML = html;
+}
+function rpSync() {
+  const range = document.getElementById('rpRange');
+  if (!range) return;
+  range.max = gameRecord.length;
+  range.value = replay ? replay.at : gameRecord.length;
+}
+
+/* The demonstration. Each step sets the view and hands the next one to a timer,
+   so it can be interrupted at any point by touching the scrubber. */
+function rpTurn() {
+  const d = reviewData && reviewData.decisive;
+  if (!d) return;
+  rpStop();
+  const m = d.m;
+  const before = boardBefore(m.n);
+  const yours = { r: m.r, c: m.c, p: m.p };
+
+  const step = (fn, ms) => { rpTimer = setTimeout(fn, ms); };
+  const show = (bd, marks, cap) => { replay = { bd, at: m.n - 1, marks }; rpCaption(cap); rpSync(); draw(); };
+
+  // 1 — the position as it stood, one move short
+  show(before.map(row => [...row]), [],
+       t('The board just before move ', '第 ') + m.n + t('.', ' 手之前的局面。'));
+
+  step(() => {
+    // 2 — the stone you actually put down
+    const bd = before.map(row => [...row]);
+    bd[yours.r][yours.c] = yours.p;
+    show(bd, [{ r: yours.r, c: yours.c, kind: 'was' }],
+         (d.mine ? t('You played ', '你下了 ') : sideName(m.p) + t(' played ', ' 下了 ')) +
+         '<span class="rp-was">' + m.at + '</span>.');
+
+    if (!d.better) { step(() => rpCaption(t('He did not name a better point.', '他没有指出更好的一点。')), 1500); return; }
+
+    step(() => {
+      // 3 — and the one he wanted there instead
+      const bd2 = before.map(row => [...row]);
+      bd2[d.better[0]][d.better[1]] = yours.p;
+      show(bd2, [{ r: d.better[0], c: d.better[1], kind: 'better' }],
+           '<span class="rp-better">' + COLS[d.better[1]] + (N - d.better[0]) + '</span>' +
+           t(' was the move.', ' 才是这一手。'));
+
+      // 4 — and how it reads from there, played out by this page's own search
+      const line = [];
+      const sim = bd2.map(row => [...row]);
+      let turn = yours.p === 1 ? 2 : 1, last = d.better;
+      for (let i = 0; i < 6; i++) {
+        if (isWinMove(sim, last[0], last[1], sim[last[0]][last[1]])) break;
+        const mv = bestOn(sim, turn, 2);
+        if (!mv) break;
+        sim[mv[0]][mv[1]] = turn;
+        line.push({ r: mv[0], c: mv[1], p: turn, i: i + 1 });
+        last = mv; turn = turn === 1 ? 2 : 1;
+      }
+      const bd3 = bd2.map(row => [...row]);
+      const marks = [{ r: d.better[0], c: d.better[1], kind: 'better' }];
+      let k = 0;
+      const next = () => {
+        if (k >= line.length) {
+          rpCaption(t('— that is the engine reading it out, not a promise.',
+                      '——这是引擎的推演，并非定论。'));
+          return;
+        }
+        const mv = line[k++];
+        bd3[mv.r][mv.c] = mv.p;
+        marks.push({ r: mv.r, c: mv.c, kind: 'branch', i: mv.i });
+        replay = { bd: bd3.map(row => [...row]), at: m.n - 1, marks: marks.slice() };
+        rpCaption(t('and it would have gone on like this…', '接下来大致会这样走……'));
+        draw();
+        step(next, 620);
+      };
+      step(next, 1400);
+    }, 1700);
+  }, 1600);
+}
+
+function renderReplayUI() {
+  const card = document.getElementById('replayCard');
+  if (!card) return;
+  const on = gameOver && gameRecord.length > 0 && !remoteMode;
+  card.style.display = on ? '' : 'none';
+  if (!on) return;
+  const showBtn = document.getElementById('rpShow');
+  const canDemo = !!(reviewData && reviewData.decisive);
+  showBtn.style.display = canDemo ? '' : 'none';
+  showBtn.textContent = t('▶ show that move', '▶ 演示这一手');
+  document.getElementById('rpExit').textContent = t('✕ back to the game', '✕ 回到终局');
+  rpSync();
+  if (!replay) rpCaption(t('drag to walk back through the game', '拖动滑块，回看每一手'));
+}
+
+/* Markers only the rewind draws: where you were, what you played, what he
+   wanted there, and the numbered continuation. */
+function drawReplayMarks() {
+  if (!replay || !replay.marks.length) return;
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `bold ${Math.max(9, CELL * 0.34)}px Consolas, monospace`;
+  for (const mk of replay.marks) {
+    const x = PAD + mk.c * CELL, y = PAD + mk.r * CELL;
+    if (mk.kind === 'here') {
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = Math.max(1.2, CELL * 0.05);
+      ctx.beginPath(); ctx.arc(x, y, CELL * 0.5, 0, Math.PI * 2); ctx.stroke();
+    } else if (mk.kind === 'was') {
+      ctx.strokeStyle = '#ff9ec4'; ctx.lineWidth = Math.max(1.6, CELL * 0.08);
+      ctx.beginPath(); ctx.arc(x, y, CELL * 0.52, 0, Math.PI * 2); ctx.stroke();
+      const q = CELL * 0.26;                       // struck through: this is the one to unlearn
+      ctx.beginPath();
+      ctx.moveTo(x - q, y - q); ctx.lineTo(x + q, y + q);
+      ctx.moveTo(x + q, y - q); ctx.lineTo(x - q, y + q);
+      ctx.stroke();
+    } else if (mk.kind === 'better') {
+      ctx.strokeStyle = '#7ee0ff'; ctx.lineWidth = Math.max(1.6, CELL * 0.08);
+      ctx.beginPath(); ctx.arc(x, y, CELL * 0.52, 0, Math.PI * 2); ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.fillText(String(mk.i), x, y + 1);
+    }
+  }
+  ctx.restore();
 }
 
 /* ── Firebase remote play ─────────────────────── */
