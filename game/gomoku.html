@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gomoku // houfu.xyz</title>
+  <meta name="description" content="Free browser gomoku (5-in-a-row): play a minimax AI, a friend online, or watch it play itself. An old fisherman reads every move — a fish on the line for a good one, an old tin for a blunder — and reviews the whole game at the end.">
+
+  <!-- The page has been shareable for a while and previewed as a blank card. -->
+  <meta property="og:title"       content="Gomoku // the guru is watching">
+  <meta property="og:description" content="5-in-a-row against a minimax AI, a friend online, or itself. An old fisherman on the bank reads every move and reviews the game when it ends.">
+  <meta property="og:url"         content="https://lifegameproject.com/game/gomoku.html">
+  <meta property="og:type"        content="website">
+  <meta property="og:image"       content="https://lifegameproject.com/game/gomoku-og.png">
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="Gomoku // the guru is watching">
+  <meta name="twitter:description" content="5-in-a-row against a minimax AI, a friend online, or itself. An old fisherman reads every move.">
+  <meta name="twitter:image"       content="https://lifegameproject.com/game/gomoku-og.png">
+
   <!-- Two stones was the icon when the page was two stones. It is his page now. -->
   <link rel="icon" type="image/png" href="/game/guru-favicon.png?v=1">
   <link rel="apple-touch-icon" href="/game/guru-icon-180.png?v=1">
@@ -267,6 +280,12 @@
     }
     .guru-shout.bad .gs-seal { background: #4a4640; color: #cfc8bb; }
     .gs-gloss { font-size: 0.6rem; color: #a89ec4; letter-spacing: 0.6px; margin-top: 2px; }
+    /* Ink on paper only reads if the paper goes quiet. The shout is nowrap and
+       runs the width of the panel, so without this it lands on a live paragraph
+       and neither can be read. Quick to hush, slow to come back — the words
+       return as the ink lifts, instead of snapping on the moment it clears. */
+    .comment-body { transition: opacity 0.5s ease; }
+    .oracle-card.hushed .comment-body { opacity: 0.1; transition: opacity 0.16s ease; }
     .oracle-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; width: 168px; }
     .oracle-side .btn { white-space: nowrap; }
     .oracle-side .btn { margin: 0; }
@@ -2012,7 +2031,7 @@ function humanSide() {
   return null;                                    // two humans, or none — nobody to console
 }
 
-let _lastPraise = -9, _lastScold = -9, _shoutTimer = 0;
+let _lastPraise = -9, _lastScold = -9, _shoutTimer = 0, _hushTimer = 0;
 function judgeMove(r, c, p, q) {
   // A blunder outranks whatever else the move was doing. Leaving the other side
   // an open four is a lost game however good the shape you just built is, and
@@ -2068,7 +2087,12 @@ function guruShout(kind) {
   el.innerHTML = '<div class="gs-cn">' + s.cn + '<span class="gs-seal">' + s.seal + '</span></div>' +
                  (lang === 'zh' ? '' : '<div class="gs-gloss">' + escHtml(s.en) + '</div>');
   el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
-  clearTimeout(_shoutTimer);
+  // hush the paragraph he is shouting over, and let it back in a little before
+  // the ink lifts so the two cross rather than swap
+  const card = document.getElementById('oracleCard');
+  if (card) card.classList.add('hushed');
+  clearTimeout(_shoutTimer); clearTimeout(_hushTimer);
+  _hushTimer = setTimeout(() => { if (card) card.classList.remove('hushed'); }, 1700);
   _shoutTimer = setTimeout(() => el.classList.remove('go'), 2200);
 }
 
