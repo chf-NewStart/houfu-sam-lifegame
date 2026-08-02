@@ -870,9 +870,10 @@ function placeStone(r, c) {
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
     // The last stone of the game gets the hardest blow he has.
-    if (quality) { _lastPraise = moveCount; guruShout('five'); fishRain(); }
+    if (quality) { _lastPraise = moveCount; guruShout('five'); }
     const you = humanSide();
     showQuote(you == null ? 'calm' : wr.player === you ? 'win' : 'lose');
+    endFall(you != null && wr.player === you);
     renderReplayUI();
     reviewGame(wr.player);
     draw(); renderPanel(); return;
@@ -1662,10 +1663,8 @@ function waveRing(gx, gy, rr, strength) {
    the trees behind him, turning over as they come, landing flat and floating
    rather than going under, with the rain that brought them down. One word
    picks between them. */
-const WIN_FALL = 'leaf';
-
 let rain = [], rainStruck = false;
-const RAIN_SINK = 620, LEAF_FLOAT = 1500;
+const LEAF_FLOAT = 1500;
 const LEAF_TINTS = [
   { ink: '#cdd2ba', wash: 'rgba(205,210,186,0.34)', rib: '#e6e9d8' },  // silvered underside
   { ink: '#b5c095', wash: 'rgba(181,192,149,0.32)', rib: '#cfd8b4' },  // still green
@@ -1687,7 +1686,15 @@ function waveSlope(x, y, b) {
   return [waveCur[i + 1] - waveCur[i - 1], waveCur[i + waveW] - waveCur[i - waveW]];
 }
 
-function fishRain() {
+/* How a game ends, either way. Rain comes down and brings the willow leaves
+   with it — that much happens whoever won, because the weather does not care
+   and neither, particularly, does he.
+
+   Winning adds the carp, and they come UP. Falling out of the sky was always
+   the wrong way round: the board is water, he has spent the whole game taking
+   things out of it, and a fish that leaps breaks the surface twice — once
+   going and once coming back — which is two rings a falling one never makes. */
+function endFall(won) {
   if (REDUCED.matches || !CELL || !canvas) return;
   const b = canvas.getBoundingClientRect();
   const now = performance.now();
@@ -1695,42 +1702,47 @@ function fishRain() {
   const py = () => b.top + PAD + CELL * (Math.random() * (N - 1));
   rain = []; rainStruck = false;
 
-  if (WIN_FALL === 'fish') {
-    for (let i = 0; i < 24; i++) rain.push({
-      kind: 'fish', x: px(), drift: (Math.random() - 0.5) * 46,
-      y0: -70 - Math.random() * 220, land: py(),
-      t0: now + i * 74 + Math.random() * 90, dur: 900 * (0.82 + Math.random() * 0.4),
-      size: CELL * (0.62 + Math.random() * 0.5),
-      rot: (Math.random() - 0.5) * 1.4,
-      spin: (Math.random() < 0.5 ? -1 : 1) * (1.1 + Math.random() * 1.7), hit: false,
-    });
-  } else {
-    // The rain first and heaviest — it is what has brought the leaves down.
-    for (let i = 0; i < 40; i++) rain.push({
-      kind: 'drop', x: px(), drift: 5, y0: -60 - Math.random() * 180, land: py(),
-      t0: now + Math.random() * 1500, dur: 380 + Math.random() * 170,
-      size: CELL * (0.26 + Math.random() * 0.22), hit: false,
-    });
-    for (let i = 0; i < 15; i++) rain.push({
-      kind: 'leaf', x: px(), drift: (Math.random() - 0.5) * 90,
-      y0: -80 - Math.random() * 260, land: py(),
-      t0: now + i * 118 + Math.random() * 260, dur: 1700 * (0.8 + Math.random() * 0.5),
-      size: CELL * (0.42 + Math.random() * 0.3),
-      rot: (Math.random() - 0.5) * 2.4,
-      spin: (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.8),
-      sway: 16 + Math.random() * 30, swayF: 5 + Math.random() * 5, phase: Math.random() * 6.28,
-      tint: LEAF_TINTS[(Math.random() * LEAF_TINTS.length) | 0], hit: false,
-      bow: (Math.random() < 0.5 ? -1 : 1) * (0.05 + Math.random() * 0.15),
-      // where it ends up once it is floating, and how it got there
-      fx: 0, fy: 0, vx: 0, vy: 0,
-      cx: (Math.random() - 0.5) * 5, cy: (Math.random() - 0.5) * 5,   // the slow set of the water
-      turn: (Math.random() < 0.5 ? -1 : 1) * (0.05 + Math.random() * 0.16),
+  // the rain first and heaviest — it is what has brought the leaves down
+  for (let i = 0; i < 40; i++) rain.push({
+    kind: 'drop', x: px(), drift: 5, y0: -60 - Math.random() * 180, land: py(),
+    t0: now + Math.random() * 1500, dur: 380 + Math.random() * 170,
+    size: CELL * (0.26 + Math.random() * 0.22), hit: false,
+  });
+  for (let i = 0; i < 15; i++) rain.push({
+    kind: 'leaf', x: px(), drift: (Math.random() - 0.5) * 90,
+    y0: -80 - Math.random() * 260, land: py(),
+    t0: now + i * 118 + Math.random() * 260, dur: 1700 * (0.8 + Math.random() * 0.5),
+    size: CELL * (0.42 + Math.random() * 0.3),
+    rot: (Math.random() - 0.5) * 2.4,
+    spin: (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.8),
+    sway: 16 + Math.random() * 30, swayF: 5 + Math.random() * 5, phase: Math.random() * 6.28,
+    tint: LEAF_TINTS[(Math.random() * LEAF_TINTS.length) | 0], hit: false,
+    bow: (Math.random() < 0.5 ? -1 : 1) * (0.05 + Math.random() * 0.15),
+    // where it ends up once it is floating, and how it got there
+    fx: 0, fy: 0, vx: 0, vy: 0,
+    cx: (Math.random() - 0.5) * 5, cy: (Math.random() - 0.5) * 5,   // the slow set of the water
+    turn: (Math.random() < 0.5 ? -1 : 1) * (0.05 + Math.random() * 0.16),
+  });
+  if (!won) { ensureAnim(); return; }
+
+  for (let i = 0; i < 9; i++) {
+    const y0 = py();
+    rain.push({
+      kind: 'leap', x: px(), y0,
+      // clipped so it never clears the top of the board and ends up leaping
+      // through the panel he is sitting in
+      apex: Math.min(CELL * (2.0 + Math.random() * 2.2), Math.max(CELL * 0.9, y0 - b.top - CELL * 0.4)),
+      drift: (Math.random() < 0.5 ? -1 : 1) * CELL * (0.8 + Math.random() * 1.6),
+      t0: now + 120 + i * 165 + Math.random() * 190,
+      dur: 860 + Math.random() * 380,
+      size: CELL * (0.5 + Math.random() * 0.32),
+      hit: false, left: false,
     });
   }
   ensureAnim();
 }
 
-function fallLife(f) { return f.dur + (f.kind === 'leaf' ? LEAF_FLOAT : f.kind === 'drop' ? 40 : RAIN_SINK); }
+function fallLife(f) { return f.dur + (f.kind === 'leaf' ? LEAF_FLOAT : 40); }
 
 function drawRain() {
   if (!flyCtx || !rain.length) return;
@@ -1741,6 +1753,36 @@ function drawRain() {
     const e = now - f.t0;
     if (e < 0) continue;
     const u = Math.min(1, e / f.dur);
+
+    if (f.kind === 'leap') {
+      const lx = f.x + f.drift * u;
+      const ly = f.y0 - f.apex * 4 * u * (1 - u);      // out and back on one arc
+      const cc = Math.round((lx - b.left - PAD) / CELL), rr = Math.round((ly - b.top - PAD) / CELL);
+      const inBoard = rr >= 0 && rr < N && cc >= 0 && cc < N;
+      if (!f.left) {                                   // breaking out
+        f.left = true;
+        const c0 = Math.round((f.x - b.left - PAD) / CELL), r0 = Math.round((f.y0 - b.top - PAD) / CELL);
+        if (r0 >= 0 && r0 < N && c0 >= 0 && c0 < N) waveSplash(r0, c0, 0.55, false);
+        splash('fish', true);
+      }
+      if (u >= 1 && !f.hit) {                          // and going back in
+        f.hit = true;
+        if (inBoard) { waveSplash(rr, cc, 0.7, false); knock(rr, cc, 0.22); }
+        plip(0.06 + Math.random() * 0.03);
+      }
+      if (u >= 1) continue;                            // it is under; the rings say the rest
+      // nose along the way it is travelling — drawFish faces left, so point it
+      // down the velocity and mirror when it is going right, or it swims upside down
+      const vx = f.drift, vy = -f.apex * 4 * (1 - 2 * u);
+      g.save();
+      g.globalAlpha = Math.min(1, u * 12, (1 - u) * 12 + 0.35);
+      g.translate(lx, ly);
+      g.rotate(Math.atan2(vy, vx) + Math.PI);
+      if (vx > 0) g.scale(1, -1);
+      drawFish(g, f.size);
+      g.restore();
+      continue;
+    }
     // A fish drops. Rain drops harder. A leaf does neither — it is held up by
     // the air the whole way down, so it comes at nearly one speed and spends
     // the time turning over instead.
@@ -1758,10 +1800,9 @@ function drawRain() {
            each ring against water that is still. A leaf lands flat and barely
            disturbs anything; rain is a great many very small rings. */
         if (f.kind === 'drop') waveSplash(r, c, 0.13, false);
-        else if (f.kind === 'leaf') { waveSplash(r, c, 0.2, false); knock(r, c, 0.07); }
-        else { waveSplash(r, c, 0.34, false); knock(r, c, 0.16); }
+        else { waveSplash(r, c, 0.2, false); knock(r, c, 0.07); }
       }
-      if (f.kind !== 'drop' || Math.random() < 0.5) plip(f.kind === 'fish' ? 0.055 + Math.random() * 0.03 : 0.022 + Math.random() * 0.02);
+      if (f.kind !== 'drop' || Math.random() < 0.5) plip(0.022 + Math.random() * 0.02);
       if (!rainStruck && f.kind !== 'drop') {
         // The board used to take one hard knock a game, off the tomato thrown
         // for winning. The tomato is gone and the shake was worth keeping.
@@ -1782,9 +1823,9 @@ function drawRain() {
       continue;
     }
 
-    const done = u >= 1 ? Math.min(1, (e - f.dur) / (f.kind === 'leaf' ? LEAF_FLOAT : RAIN_SINK)) : 0;
+    const done = u >= 1 ? Math.min(1, (e - f.dur) / LEAF_FLOAT) : 0;
     let fy = y;
-    if (f.kind === 'leaf' && u >= 1) {
+    if (u >= 1) {
       // Floating. It is carried by whatever the surface is doing under it —
       // and the surface is busy, because it is raining on it. Damped so the
       // leaf carries a little way past each ring instead of twitching on it.
@@ -1798,22 +1839,14 @@ function drawRain() {
       f.rot += f.turn * dt;                       // and turning slowly as it goes
       x += f.fx; fy += f.fy;
     }
+    // it floats rather than sinks, and goes on turning where it lies
     g.save();
-    if (f.kind === 'leaf') {
-      // it floats rather than sinks, and goes on turning where it lies
-      g.globalAlpha = done > 0.55 ? 1 - (done - 0.55) / 0.45 : 1;
-      g.translate(x, fy);
-      g.rotate(f.rot + Math.sin(f.phase + u * f.swayF) * 0.85 * (1 - done) + u * f.spin);
-      // turning over on the way down: edge-on for a moment, then flat again
-      g.scale(1, Math.max(0.18, Math.abs(Math.cos(f.phase + u * f.swayF * 1.25)) * (1 - done) + done));
-      drawLeaf(g, f.size, f.tint, f.bow);
-    } else {
-      g.globalAlpha = 1 - done;
-      g.translate(x, y + done * CELL * 0.5);
-      g.rotate(f.rot + f.spin * u);
-      g.scale(1, 1 - 0.35 * done);
-      drawFish(g, f.size);
-    }
+    g.globalAlpha = done > 0.55 ? 1 - (done - 0.55) / 0.45 : 1;
+    g.translate(x, fy);
+    g.rotate(f.rot + Math.sin(f.phase + u * f.swayF) * 0.85 * (1 - done) + u * f.spin);
+    // turning over on the way down: edge-on for a moment, then flat again
+    g.scale(1, Math.max(0.18, Math.abs(Math.cos(f.phase + u * f.swayF * 1.25)) * (1 - done) + done));
+    drawLeaf(g, f.size, f.tint, f.bow);
     g.restore();
   }
 }
@@ -3871,6 +3904,7 @@ function applyState(moves) {
       _remoteOver = true; scores[winner.player]++;
       log(winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！'), winner.player === 1 ? 'lwin' : 'lwin-r');
       showQuote(winner.player === myColor ? 'win' : 'lose');
+      endFall(winner.player === myColor);
       // each side asks with its own key and is reviewed from its own seat
       reviewGame(winner.player);
     }
@@ -3918,7 +3952,7 @@ function onPlay(snap) {
   _prevLen = moves.length;
   applyState(moves);
   if (fresh) {
-    if (gameOver) { _lastPraise = moveCount; guruShout('five'); fishRain(); }
+    if (gameOver) { _lastPraise = moveCount; guruShout('five'); }
     else judgeMove(fresh.r, fresh.c, fresh.p, fresh.q);
   }
 }
