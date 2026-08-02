@@ -256,6 +256,12 @@
     }
     .comment-body.waiting { color: #6d6685; font-style: italic; }
     .oracle-legend { font-size: 0.66rem; color: #6d6685; margin-top: 7px; letter-spacing: 0.3px; }
+    /* the way in to the coordinates, and back out again */
+    .detail-tog {
+      background: none; border: 0; padding: 2px 0 0; margin-top: 4px; cursor: pointer;
+      font-family: Consolas, monospace; font-size: 0.68rem; color: #8f7fc0; letter-spacing: 0.4px;
+    }
+    .detail-tog:hover { color: #b9a8dc; text-decoration: underline; }
 
     /* A line from the classics, written by hand. The gloss underneath is the
        translation and the source — the point is that you can read it, not only
@@ -593,7 +599,7 @@ function newGame() {
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
   drop = null; jolts.clear();
-  rpStop(); replay = null; reviewData = null;
+  rpStop(); replay = null; reviewData = null; reviewOpen = false;
   renderReplayUI();
   showQuote('open');                             // he opens the game with a line
   log(t('── new game ──', '── 新游戏 ──'), 'lround');
@@ -739,7 +745,7 @@ function placeStone(r, c) {
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
     // The last stone of the game gets the hardest blow he has.
-    if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'fish', 1.5); guruShout('five'); }
+    if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'tomato', 1.5); guruShout('five'); }
     const you = humanSide();
     showQuote(you == null ? 'calm' : wr.player === you ? 'win' : 'lose');
     renderReplayUI();
@@ -1007,13 +1013,19 @@ function inkCurve(g, p0, p1, p2, p3, w0, w1, w2) { inkStroke(g, cubicPts(p0, p1,
 
 /* A carp, facing left, drawn in a unit box roughly x∈[-1,1] y∈[-0.6,0.6] and
    scaled by the caller. Outline strokes over a pale wash — the wash is what
-   stops it reading as a hole cut in the board when it lands over stones. */
+   stops it reading as a hole cut in the board when it lands over stones.
+
+   Gold, because it is a 锦鲤 and not supper: the fish is the thing you want
+   him to throw, and it should look like it the moment it lands, before you
+   have read a word. */
 function drawFish(g, s) {
-  g.fillStyle = 'rgba(244,238,226,0.17)';
+  g.fillStyle = 'rgba(232,178,72,0.20)';
   g.beginPath();
   g.ellipse(-0.06 * s, 0.01 * s, 0.74 * s, 0.28 * s, -0.05, 0, Math.PI * 2);
   g.fill();
-  g.fillStyle = '#f4eee1';
+  g.shadowColor = 'rgba(240,196,99,0.75)';
+  g.shadowBlur = s * 0.22;
+  g.fillStyle = '#f2c463';
   // back and belly — the two strokes that make the body
   inkCurve(g, [-0.92*s, 0.03*s], [-0.55*s, -0.34*s], [0.16*s, -0.33*s], [0.66*s, -0.09*s], 0.014*s, 0.085*s, 0.030*s);
   inkCurve(g, [-0.92*s, 0.08*s], [-0.50*s,  0.36*s], [0.16*s,  0.32*s], [0.66*s,  0.11*s], 0.014*s, 0.072*s, 0.028*s);
@@ -1028,8 +1040,44 @@ function drawFish(g, s) {
   inkCurve(g, [-0.60*s, -0.20*s], [-0.52*s, -0.06*s], [-0.52*s, 0.08*s], [-0.58*s, 0.21*s], 0.012*s, 0.026*s, 0.012*s);
   inkCurve(g, [-0.94*s, 0.05*s], [-0.86*s, 0.12*s], [-0.80*s, 0.14*s], [-0.72*s, 0.13*s], 0.010*s, 0.024*s, 0.008*s);
   g.beginPath(); g.arc(-0.74*s, -0.09*s, 0.060*s, 0, Math.PI*2); g.fill();
+  g.shadowBlur = 0;
   g.fillStyle = '#14120f';
   g.beginPath(); g.arc(-0.745*s, -0.09*s, 0.028*s, 0, Math.PI*2); g.fill();
+}
+
+/* And for winning: a tomato, which is what this arcade throws. Same ink, same
+   brush, but a mass rather than an outline — a tomato has no line worth
+   drawing, only a shoulder and a shine. */
+function drawTomato(g, s) {
+  g.shadowColor = 'rgba(226,59,46,0.7)';
+  g.shadowBlur = s * 0.26;
+  g.fillStyle = '#d8433a';
+  g.beginPath();
+  g.ellipse(0, 0.06 * s, 0.74 * s, 0.66 * s, 0, 0, Math.PI * 2);
+  g.fill();
+  g.shadowBlur = 0;
+  // the ripening shoulder, and the shine off it
+  g.fillStyle = 'rgba(240,151,58,0.55)';
+  g.beginPath();
+  g.ellipse(-0.16 * s, -0.18 * s, 0.42 * s, 0.30 * s, -0.4, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = 'rgba(255,236,214,0.75)';
+  g.beginPath();
+  g.ellipse(-0.30 * s, -0.30 * s, 0.15 * s, 0.09 * s, -0.5, 0, Math.PI * 2);
+  g.fill();
+  // calyx: five sepals laid on in one stroke each, and the stalk
+  g.fillStyle = '#6f9c46';
+  for (const a of [-2.36, -1.86, -1.30, -0.86, -0.30]) {
+    const dx = Math.cos(a), dy = Math.sin(a);
+    inkCurve(g,
+      [0, -0.42 * s],
+      [dx * 0.26 * s, -0.46 * s + dy * 0.18 * s],
+      [dx * 0.50 * s, -0.40 * s + dy * 0.26 * s],
+      [dx * 0.66 * s, -0.30 * s + dy * 0.30 * s],
+      0.09 * s, 0.05 * s, 0.008 * s);
+  }
+  inkCurve(g, [0, -0.44 * s], [0.04 * s, -0.62 * s], [-0.04 * s, -0.76 * s], [0.06 * s, -0.92 * s],
+           0.07 * s, 0.05 * s, 0.03 * s);
 }
 
 /* And the boot, which is what you actually catch most days. A boot has no
@@ -1077,7 +1125,7 @@ function dropShape() {
   if (!drop) return null;
   const el = performance.now() - drop.t0;
   const fish = drop.kind === 'fish';
-  const size = CELL * (fish ? 1.5 : 1.35);        // half-width, so a fish spans ~3 cells
+  const size = CELL * (fish ? 1.5 : drop.kind === 'tomato' ? 1.15 : 1.35);   // half-width
   // keep it wholly on the board even when the move was played in a corner
   const lo = PAD + size * 0.9, hi = PAD + (N - 1) * CELL - size * 0.9;
   const x = Math.max(lo, Math.min(hi, PAD + drop.c * CELL));
@@ -1099,12 +1147,12 @@ function dropShape() {
     alpha = Math.max(0, 1 - (el - 2400) / 550);
   }
   // the fish is not dead yet
-  if (drop.kind === 'fish' && el > 700) {
+  if (fish && el > 700) {
     const flop = Math.exp(-(((el - 900) / 260) ** 2)) + Math.exp(-(((el - 1650) / 260) ** 2));
     rot += Math.sin(el / 42) * 0.16 * flop;
     dy -= Math.abs(Math.sin(el / 42)) * CELL * 0.22 * flop;
   }
-  return { x, y, dy, rot, sx, sy, alpha, size, fish };
+  return { x, y, dy, rot, sx, sy, alpha, size, fish, kind: drop.kind };
 }
 
 function drawShock() {
@@ -1138,7 +1186,9 @@ function drawDrop() {
   ctx.translate(d.x, d.y + d.dy);
   ctx.rotate(d.rot);
   ctx.scale(d.sx, d.sy);
-  if (d.fish) drawFish(ctx, d.size); else drawBoot(ctx, d.size);
+  if (d.kind === 'fish') drawFish(ctx, d.size);
+  else if (d.kind === 'tomato') drawTomato(ctx, d.size);
+  else drawBoot(ctx, d.size);
   ctx.restore();
 }
 
@@ -1251,7 +1301,7 @@ function throwOnBoard(r, c, kind, force) {
     t0: performance.now(), r, c, kind, dur: 2960,
     // a wet boot lands heavier than a fish, and the last stone of a game
     // heavier than either
-    force: (force || 1) * (kind === 'fish' ? 0.9 : 1.1),
+    force: (force || 1) * (kind === 'fish' ? 0.9 : kind === 'tomato' ? 0.8 : 1.1),
     tilt: (kind === 'fish' ? -0.10 : 0.16) + (Math.random() - 0.5) * 0.2,
     spin: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random()),
   };
@@ -1278,7 +1328,7 @@ function splash(kind) {
   // Every drop follows a click, so the context is unlocked by then — but a tab
   // restored from the background can still come back suspended.
   if (ac.state === 'suspended') ac.resume().catch(() => {});
-  const wet = kind === 'fish';
+  const wet = kind !== 'boot';
   const t0 = ac.currentTime + 0.26;                 // it has to fall first
   const body = ac.createOscillator(), bg = ac.createGain();
   body.type = 'sine';
@@ -2110,8 +2160,28 @@ function moveByNumber(n) { return gameRecord.find(m => m.n === n) || null; }
 function validateReview(raw) {
   const pick = (o) => (o && typeof o === 'object') ? o : {};
   const str = (v) => typeof v === 'string' ? v.trim() : '';
-  const out = { turning: null, decisive: null, lesson: null };
+  const out = { gist: null, turning: null, decisive: null, lesson: null };
   const you = humanSide();
+
+  // The opening line is meant to be plain words — no coordinates, no move
+  // numbers. He is told that and usually obliges. When he does not, the
+  // sentence is REJECTED rather than repaired: cutting "M11" out of "joining
+  // the pair at M11" leaves "joining the pair at," which is worse than saying
+  // nothing. His closing lesson is general by nature, so it stands in instead;
+  // if that names points too there is no plain line, and the detail opens on
+  // its own rather than hiding behind a summary that does not exist.
+  const named = (v) => /\b[A-HJ-P]\s?\d{1,2}\b/i.test(v) || /\bmove\s*\d+\b/i.test(v) || /第\s*\d+\s*手/.test(v);
+  const plainPair = (o) => {
+    const en = str(o.en), zh = str(o.zh);
+    if ((!en && !zh) || named(en) || named(zh)) return null;
+    return { en, zh };
+  };
+  out.gist = plainPair(pick(raw.gist));
+  if (!out.gist) {
+    out.gist = plainPair(pick(raw.lesson));
+    // promoted, so it must not also appear as the last bullet of the detail
+    if (out.gist) out.lessonIsGist = true;
+  }
 
   const T = pick(raw.turning), D = pick(raw.decisive), L = pick(raw.lesson);
   const tm = moveByNumber(+T.n);
@@ -2129,11 +2199,14 @@ function validateReview(raw) {
     }
     out.decisive = { m: dm, better, en: str(D.en), zh: str(D.zh), mine: you != null && dm.p === you };
   }
-  if (str(L.en) || str(L.zh)) out.lesson = { en: str(L.en), zh: str(L.zh) };
-  return (out.turning || out.decisive || out.lesson) ? out : null;
+  if (!out.lessonIsGist && (str(L.en) || str(L.zh))) out.lesson = { en: str(L.en), zh: str(L.zh) };
+  return (out.gist || out.turning || out.decisive || out.lesson) ? out : null;
 }
 
 function sideName(p) { return p === 1 ? t('Lime', '青柠') : t('Tomato', '番茄'); }
+
+let reviewOpen = false;
+function toggleReviewDetail() { reviewOpen = !reviewOpen; renderReview(); renderReplayUI(); draw(); }
 
 function renderReview() {
   const body = document.getElementById('aiCommentBody');
@@ -2170,11 +2243,27 @@ function renderReview() {
     html += line(head, said(t(d.decisive.en, d.decisive.zh)));
   }
   if (d.lesson) html += line(said(t(d.lesson.en, d.lesson.zh)));
-  body.innerHTML = html;
-  voiceMarks = marks;
+
+  // What he says out loud is the plain sentence. Move numbers, coordinates and
+  // the rings on the board are all one click further in — they are the answer
+  // to "show me", and until someone asks, they are clutter over a finished
+  // game. Falls back to the detail when he gave no plain sentence.
+  const gist = d.gist ? said(t(d.gist.en, d.gist.zh)) : '';
+  if (gist && !reviewOpen) {
+    body.innerHTML = '<div class="oline"><span class="odot">&bull;</span><span>' + gist + '</span></div>' +
+      '<button type="button" class="detail-tog" onclick="toggleReviewDetail()">' +
+      t('▸ show me where', '▸ 具体在哪一手') + '</button>';
+    voiceMarks = [];
+  } else {
+    body.innerHTML = (gist ? '<div class="oline"><span class="odot">&bull;</span><span>' + gist + '</span></div>' : '') +
+      html +
+      (gist ? '<button type="button" class="detail-tog" onclick="toggleReviewDetail()">' +
+              t('▾ that is enough', '▾ 收起') + '</button>' : '');
+    voiceMarks = marks;
+  }
   const legend = document.getElementById('oracleLegend');
   if (legend) {
-    legend.hidden = !marks.length;
+    legend.hidden = !voiceMarks.length;
     legend.textContent = t('the coloured points above are ringed on the board · a solid ring is an empty point, a dashed collar is a stone already played',
                            '上文彩色坐标已在棋盘标出 · 实线圈为空点，虚线圈为已落的子');
   }
@@ -2223,9 +2312,13 @@ function reviewGame(winner){
         { role: 'system', content:
           'You are an old master of gomoku, sat by the water with a rod, reviewing a game that has just ended. ' +
           'Reply with JSON only, in exactly this shape:\n' +
-          '{"turning":{"n":<move number>,"en":"...","zh":"..."},' +
+          '{"gist":{"en":"...","zh":"..."},' +
+          '"turning":{"n":<move number>,"en":"...","zh":"..."},' +
           '"decisive":{"n":<move number>,"better":"<coordinate>","en":"...","zh":"..."},' +
           '"lesson":{"en":"...","zh":"..."}}\n' +
+          'gist is the whole review in ONE plain sentence a beginner could act on — what you kept doing ' +
+          'wrong, in ordinary words. It must contain NO coordinates and NO move numbers at all; it is the ' +
+          'line shown before anyone asks for detail. ' +
           'turning.n is the move where the game really turned. decisive.n is the single move that lost it, ' +
           'and decisive.better is the coordinate that should have been played on that move instead — it must be ' +
           'a point that is still EMPTY at that stage of the move list. Every "n" must be a move number that ' +
@@ -2254,6 +2347,7 @@ function reviewGame(winner){
     body.classList.remove('waiting');
     if (card) card.classList.remove('speaking');
     reviewData = raw ? validateReview(raw) : null;
+    reviewOpen = false;
     if (!reviewData) { body.textContent = t('no review this time: he could not make it out', '无法复盘：他没看明白'); return; }
     renderReview();
   }).catch(e => {
@@ -2405,7 +2499,11 @@ function rpTurn() {
 function renderReplayUI() {
   const card = document.getElementById('replayCard');
   if (!card) return;
-  const on = gameOver && gameRecord.length > 0 && !remoteMode;
+  // With a review on screen the rewind is part of the detail; without one
+  // (no key, or he could not make it out) the scrubber is all there is, so it
+  // stands on its own.
+  const on = gameOver && gameRecord.length > 0 && !remoteMode &&
+             (!reviewData || !reviewData.gist || reviewOpen);
   card.style.display = on ? '' : 'none';
   if (!on) return;
   const showBtn = document.getElementById('rpShow');
@@ -2537,7 +2635,7 @@ function onPlay(snap) {
   _prevLen = moves.length;
   applyState(moves);
   if (fresh) {
-    if (gameOver) { _lastPraise = moveCount; throwOnBoard(fresh.r, fresh.c, 'fish', 1.5); guruShout('five'); }
+    if (gameOver) { _lastPraise = moveCount; throwOnBoard(fresh.r, fresh.c, 'tomato', 1.5); guruShout('five'); }
     else judgeMove(fresh.r, fresh.c, fresh.p, fresh.q);
   }
 }
