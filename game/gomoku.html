@@ -260,6 +260,7 @@
     .guru-shout.bad .gs-seal { background: #4a4640; color: #cfc8bb; }
     .gs-gloss { font-size: 0.6rem; color: #a89ec4; letter-spacing: 0.6px; margin-top: 2px; }
     .oracle-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; width: 168px; }
+    .oracle-side .btn { white-space: nowrap; }
     .oracle-side .btn { margin: 0; }
     .oracle-side .remote-row { margin: 0; }
     /* Handwriting looked the part and read badly: at this size Caveat's
@@ -305,8 +306,11 @@
     }
     @media (max-width: 700px) {
       .oracle-row { flex-wrap: wrap; }
-      .oracle-side { width: 100%; flex-direction: row; }
-      .oracle-side .btn { flex: 1; }
+      /* Four buttons will not sit in one row on a phone without shrinking to
+         initials, so they go two by two. */
+      .oracle-side { width: 100%; flex-direction: row; flex-wrap: wrap; }
+      .oracle-side .btn { flex: 1 1 calc(50% - 3px); }
+      .oracle-side .remote-row { flex: 1 1 100%; }
       /* keep the bubble inside the card on a phone */
       .guru-shout { left: 56px; padding: 4px 9px 6px; }
       .gs-cn { font-size: 1.35rem; }
@@ -354,6 +358,7 @@
       <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
       <button class="btn" id="guruSfxBtn" onclick="toggleGuruSfx()"></button>
       <button class="btn" id="newBtn" onclick="requestNewGame()" data-en="⟳ New Game" data-zh="⟳ 新游戏">⟳ New Game</button>
+      <button class="btn" id="undoBtn" onclick="undoMove()" data-en="↩ Undo" data-zh="↩ 悔棋" disabled>↩ Undo</button>
       <div class="remote-row" id="dsKeyRow" style="display:none">
         <input class="join-input" id="dsKeyInput" type="password" placeholder="DeepSeek key (sk-…)">
         <button class="btn" style="flex:0 0 auto" onclick="saveDsKey()" data-en="Save" data-zh="保存">Save</button>
@@ -446,7 +451,6 @@
     <div class="pcard">
       <div class="pcard-title" data-en="// game" data-zh="// 游戏">// game</div>
       <div class="brow">
-        <button class="btn" id="undoBtn"   onclick="undoMove()"       data-en="↩ Undo"     data-zh="↩ 悔棋"   disabled>↩ Undo</button>
         <button class="btn" id="resignBtn" onclick="resign()"       data-en="⚑ Resign"   data-zh="⚑ 认输">⚑ Resign</button>
         <button class="btn" id="pauseBtn"  onclick="togglePause()"  style="display:none" data-en="⏸ Pause" data-zh="⏸ 暂停">⏸ Pause</button>
         <button class="btn" id="coachBtn" onclick="toggleCoach()" data-en="◎ Coach" data-zh="◎ 教练">◎ Coach</button>
