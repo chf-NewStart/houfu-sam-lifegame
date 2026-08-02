@@ -708,7 +708,7 @@ function newGame() {
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
-  drop = null; ripple = null; lifts = []; jolts.clear(); setLineLive(false);
+  drop = null; ripple = null; lifts = []; rain = []; jolts.clear(); setLineLive(false);
   if (waveCur) { waveCur.fill(0); wavePrev.fill(0); waveLive = 0; waveAge = 0; waveUntil = 0; }
   rpStop(); replay = null; reviewData = null; reviewOpen = false;
   renderReplayUI();
@@ -870,7 +870,7 @@ function placeStone(r, c) {
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
     // The last stone of the game gets the hardest blow he has.
-    if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'tomato', 1.5); guruShout('five'); }
+    if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'tomato', 1.5); guruShout('five'); fishRain(); }
     const you = humanSide();
     showQuote(you == null ? 'calm' : wr.player === you ? 'win' : 'lose');
     renderReplayUI();
@@ -1470,6 +1470,7 @@ function drawDrop() {
   sizeFlyLayer();
   flyCtx.clearRect(0, 0, flyW, flyH);
   drawLifts();
+  drawRain();
   const d = dropShape();
   if (!d) return;
   const g = flyCtx;
@@ -1617,13 +1618,14 @@ function animFrame(now) {
   if (drop && now - drop.t0 > drop.dur) drop = null;
   if (ripple && now - ripple.t0 > ripple.dur) ripple = null;
   if (lifts.length) lifts = lifts.filter(l => now - l.t0 <= LIFT);
+  if (rain.length) rain = rain.filter(f => now - f.t0 <= f.dur + RAIN_SINK);
   // dir 'out' is a catch and has a line; a thrown tin arrives without one.
   // Asked off the drop's direction, not its per-frame tip, so the handover
   // happens on the frame the catch starts rather than one frame late.
   setLineLive(!!(drop && drop.dir === 'out') || lifts.length > 0);
   draw();
   drawDrop();          // on its own layer, over the whole page
-  if (drop || ripple || waveLive || lifts.length || jolts.size) ensureAnim();
+  if (drop || ripple || waveLive || lifts.length || rain.length || jolts.size) ensureAnim();
 }
 
 /* A block is not a catch. Nothing is thrown for one: the stone you just put
@@ -1704,6 +1706,72 @@ function waveRing(gx, gy, rr, strength) {
     const xx = (gx + Math.cos(a) * rr) | 0, yy = (gy + Math.sin(a) * rr) | 0;
     if (xx < 1 || yy < 1 || xx >= waveW - 1 || yy >= waveW - 1) continue;
     wavePrev[yy * waveW + xx] -= strength;
+  }
+}
+
+/* ── Raining fish ─────────────────────────────────
+   The board has been a pool all along — a stone dropped on it makes rings, a
+   good move is a fish pulled out of it. Winning is the one moment it gives
+   everything back at once: they come down out of the dark, and because what
+   they are landing on is water, every one of them breaks the surface where it
+   hits and the rings run out from there. It is only worth doing on a board
+   that already knows how to be wet. */
+let rain = [];
+const RAIN_FALL = 900, RAIN_SINK = 620;
+function fishRain() {
+  if (REDUCED.matches || !CELL || !canvas) return;
+  const b = canvas.getBoundingClientRect();
+  const now = performance.now();
+  rain = [];
+  for (let i = 0; i < 24; i++) {
+    const x = b.left + PAD + CELL * (Math.random() * (N - 1));
+    rain.push({
+      x, drift: (Math.random() - 0.5) * 46,
+      y0: -70 - Math.random() * 220,
+      land: b.top + PAD + CELL * (Math.random() * (N - 1)),
+      t0: now + i * 74 + Math.random() * 90,
+      dur: RAIN_FALL * (0.82 + Math.random() * 0.4),
+      size: CELL * (0.62 + Math.random() * 0.5),
+      rot: (Math.random() - 0.5) * 1.4,
+      spin: (Math.random() < 0.5 ? -1 : 1) * (1.1 + Math.random() * 1.7),
+      hit: false,
+    });
+  }
+  ensureAnim();
+}
+
+function drawRain() {
+  if (!flyCtx || !rain.length) return;
+  const g = flyCtx, b = canvas.getBoundingClientRect(), now = performance.now();
+  for (const f of rain) {
+    const e = now - f.t0;
+    if (e < 0) continue;
+    const u = Math.min(1, e / f.dur);
+    const fall = u * u;                                   // it accelerates, like a thing falling
+    const y = f.y0 + (f.land - f.y0) * fall;
+    const x = f.x + f.drift * u;
+    if (u >= 1 && !f.hit) {
+      f.hit = true;
+      const c = Math.round((x - b.left - PAD) / CELL), r = Math.round((y - b.top - PAD) / CELL);
+      if (r >= 0 && r < N && c >= 0 && c < N) {
+        /* Both gentler than a single catch, and not for the frame budget —
+           the whole rain costs about 1.2ms a frame, which is nothing. It is
+           that two dozen splashes at catching strength wash into one churn:
+           what makes it worth looking at is reading each ring against water
+           that is still, and there is no still water left at full strength. */
+        waveSplash(r, c, 0.34, false);
+        knock(r, c, 0.16);                                // the stones feel it land
+      }
+      plip(0.055 + Math.random() * 0.03);
+    }
+    const sunk = u >= 1 ? Math.min(1, (e - f.dur) / RAIN_SINK) : 0;
+    g.save();
+    g.globalAlpha = 1 - sunk;
+    g.translate(x, y + sunk * CELL * 0.5);                // and then it goes under
+    g.rotate(f.rot + f.spin * u * (u < 1 ? 1 : 1));
+    g.scale(1, 1 - 0.35 * sunk);
+    drawFish(g, f.size);
+    g.restore();
   }
 }
 
@@ -1922,6 +1990,29 @@ function splash(kind, leaving) {
   const ng = ac.createGain(); ng.gain.value = wet ? 0.17 : 0.10;
   noise.connect(f).connect(ng).connect(ac.destination);
   noise.start(t0);
+}
+
+/* One small fish going in. splash() is a whole event — it schedules itself for
+   the moment a thrown thing arrives and plays at a fixed level, and two dozen
+   of those at once is not rain, it is a wall. This is just the tick, quiet,
+   and it sounds when it is called. Two dozen of them, spread over two seconds
+   and each at a slightly different pitch, is a shower. */
+function plip(gain) {
+  if (!guruSfx) return;
+  const ac = audioCtx();
+  if (!ac) return;
+  if (ac.state === 'suspended') ac.resume().catch(() => {});
+  const t0 = ac.currentTime;
+  const o = ac.createOscillator(), g = ac.createGain();
+  const f0 = 820 + Math.random() * 950;
+  o.type = 'sine';
+  o.frequency.setValueAtTime(f0, t0);
+  o.frequency.exponentialRampToValueAtTime(f0 * 0.32, t0 + 0.07);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.10);
+  o.connect(g).connect(ac.destination);
+  o.start(t0); o.stop(t0 + 0.13);
 }
 /* A block does not land, it rings — a struck bowl by the water rather than a
    fish on a board. Two partials a fifth apart, no attack transient, and a tail
@@ -3790,7 +3881,7 @@ function onPlay(snap) {
   _prevLen = moves.length;
   applyState(moves);
   if (fresh) {
-    if (gameOver) { _lastPraise = moveCount; throwOnBoard(fresh.r, fresh.c, 'tomato', 1.5); guruShout('five'); }
+    if (gameOver) { _lastPraise = moveCount; throwOnBoard(fresh.r, fresh.c, 'tomato', 1.5); guruShout('five'); fishRain(); }
     else judgeMove(fresh.r, fresh.c, fresh.p, fresh.q);
   }
 }
