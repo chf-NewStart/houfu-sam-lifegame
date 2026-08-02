@@ -47,6 +47,10 @@
     .header .sub { color: #666; font-size: 0.74rem; line-height: 1.7; letter-spacing: 0.3px; }
     .lang-btn { position: absolute; top: 0; right: 0; background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; transition: background 0.1s; }
     .lang-btn:hover { background: rgba(29,185,84,0.1); }
+    /* The arcade is a room in a larger house, and there was no door back to it:
+       every game page has "← arcade" and the arcade itself had nowhere to go. */
+    .home-link { display: inline-block; margin-top: 10px; font-size: 0.72rem; color: #1db954; text-decoration: none; letter-spacing: 0.3px; }
+    .home-link:hover { text-decoration: underline; }
 
     .grid { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 
@@ -114,6 +118,16 @@
 .card.glow-gomoku:hover .gwater{ filter:saturate(1.05) brightness(1); }
 .glow-gomoku .gband{ background:transparent; }   /* transparent spacer; water shows through the band */
 .glow-gomoku .gsrc{ display:none; }
+/* The card is already a pool you can poke. He fishes it — sat at the edge of
+   the thumbnail band, on the surface the ripples run across, which is exactly
+   what he does inside the game. */
+.glow-gomoku .gguru{
+  position:absolute; right:16px; top:52px; width:60px; height:60px; z-index:2;
+  image-rendering:pixelated; pointer-events:none;
+  filter:drop-shadow(0 0 10px rgba(168,120,210,.55));
+  transition:transform .25s ease; }
+.card.glow-gomoku:hover .gguru{ transform:translateY(-3px); }
+@media (prefers-reduced-motion: reduce){ .card.glow-gomoku:hover .gguru{ transform:none; } }
 
 /* ===== Game of Life — live Conway sim in the card BODY (screenshot stays in the band) ===== */
 .card.glow-life:hover{ border-color:#1f7a4a; box-shadow:0 0 22px -8px rgba(29,185,84,.5); }
@@ -226,6 +240,7 @@
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   <img class="hero-logo" src="/game/icon.png?v=3" alt="GAME LIFE — browser game arcade" width="1032" height="616">
   <div class="sub" id="pgSub">&gt;_ game arcade · hand-coded browser games · RL agents in training</div>
+  <a class="home-link" href="https://houfu72.com" data-en="← houfu72.com" data-zh="← 回到主页 houfu72.com">← houfu72.com</a>
 </div>
 
 <div class="section-label" data-en="// playable now" data-zh="// 可以游玩">// playable now</div>
@@ -296,15 +311,17 @@
     <div class="ribbon p12" data-en="1–2UP" data-zh="1–2UP">1–2UP</div>
     <canvas class="gwater" aria-hidden="true"></canvas>
     <div class="card-thumb gband" aria-hidden="true"></div>
+    <img class="gguru" src="/sprites/guru.png?v=1" alt="" width="60" height="60" aria-hidden="true">
     <img class="gsrc" src="/game/thumbs/gomoku.jpg?v=3" alt="Gomoku board" width="440" height="240">
     <div class="card-icon">[⬡]</div>
     <div class="card-title" data-en="gomoku.exe" data-zh="五子棋.exe">gomoku.exe</div>
-    <div class="card-desc" data-en="Classic 5-in-a-row. Beat a minimax AI, watch AI-vs-AI, or play a friend online." data-zh="经典五子棋。挑战极小化极大 AI、观看 AI 对战，或与好友联机对弈。">Classic 5-in-a-row. Beat a minimax AI, watch AI-vs-AI, or play a friend online.</div>
+    <div class="card-desc" data-en="Classic 5-in-a-row against a minimax AI, a friend online, or itself. An old fisherman watches from the bank: a fish on your line for a good move, an old tin for a bad one, and a review of the whole game when it ends." data-zh="经典五子棋，可对战极小化极大 AI、联机好友，或看它自弈。一位老渔翁在岸边观棋：好棋钓上一尾鱼，恶手钓上一只空罐，终局还为你复盘。">Classic 5-in-a-row against a minimax AI, a friend online, or itself. An old fisherman watches from the bank: a fish on your line for a good move, an old tin for a bad one, and a review of the whole game when it ends.</div>
     <div class="card-tags">
       <span class="tag green" data-en="strategy" data-zh="策略">strategy</span>
       <span class="tag" data-en="minimax AI" data-zh="极大极小AI">minimax AI</span>
       <span class="tag" data-en="online" data-zh="联机">online</span>
-      <span class="tag red" data-en="RL soon" data-zh="RL敬请期待">RL soon</span>
+      <span class="tag" data-en="the guru" data-zh="观棋老者">the guru</span>
+      <span class="tag red" data-en="train an RL agent" data-zh="训练RL智能体">train an RL agent</span>
     </div>
     <div class="card-footer">
       <span class="card-meta" data-en="JS · alpha-beta pruning" data-zh="JS · α-β剪枝">JS · alpha-beta pruning</span>
