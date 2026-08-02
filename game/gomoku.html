@@ -2138,7 +2138,9 @@ const SHOUTS = {
    here, and that stamp stops being a font — everything else is untouched, so a
    half-finished set is not a broken one. Named by code point because a URL is
    a poor place for a Chinese filename. */
-const SEAL_ART = new Set(['守', '全', '形', '胜', '终', '妙', '漏', '恶', '缓']);
+/* All ten of them now. The set is closed, but the fallback stays: it costs
+   nothing and an eleventh shout would otherwise arrive with no stamp. */
+const SEAL_ART = new Set(['守', '全', '形', '胜', '终', '妙', '漏', '恶', '缓', '好']);
 function sealHtml(ch) {
   if (!SEAL_ART.has(ch)) return '<span class="gs-seal">' + ch + '</span>';
   const f = '/game/seals/seal-' + ch.codePointAt(0).toString(16) + '.png';
