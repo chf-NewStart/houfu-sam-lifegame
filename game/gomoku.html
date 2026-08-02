@@ -3113,22 +3113,50 @@ const DS_MODES = [
   { model: 'deepseek-v4-flash', thinking: { type: 'enabled'  }, reasoning_effort: 'high' },
 ];
 
+/* "Load failed" is all Safari says when a request never leaves the phone, and
+   it is what a person actually saw here instead of a review. Three things
+   follow from that. A request that never lands is a blip, so the same rung is
+   worth trying again before dropping to a slower one — moving down the ladder
+   answers the wrong question. A request that never returns has to end by
+   itself, or the guru reads the game forever. And neither "Load failed" nor
+   "Failed to fetch" means anything to anyone, so neither is shown. */
+const DS_TIMEOUT = 60000;
+function dsNetMessage(e) {
+  const m = (e && e.message) || '';
+  if (e && e.name === 'AbortError') return t('DeepSeek took too long', 'DeepSeek 响应太慢');
+  if (e instanceof TypeError || /load failed|failed to fetch|networkerror|network request/i.test(m))
+    return t('could not reach DeepSeek — check your connection', '连不上 DeepSeek — 请检查网络');
+  return m || 'network';
+}
+function dsFetch(mode, messages) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), DS_TIMEOUT);
+  return fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    signal: ctl.signal,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dsKey() },
+    body: JSON.stringify(Object.assign({
+      max_tokens: 8000,
+      response_format: { type: 'json_object' },
+      messages,
+    }, mode)),
+  }).finally(() => clearTimeout(timer));
+}
+
 async function dsAsk(messages) {
   let last = null;
   for (let i = 0; i < DS_MODES.length; i++) {
     const isLast = i === DS_MODES.length - 1;
-    let res;
-    try {
-      res = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dsKey() },
-        body: JSON.stringify(Object.assign({
-          max_tokens: 8000,
-          response_format: { type: 'json_object' },
-          messages,
-        }, DS_MODES[i])),
-      });
-    } catch (e) { last = e; if (isLast) break; continue; }
+    let res = null, netErr = null;
+    for (let attempt = 0; attempt < 2 && !res; attempt++) {
+      try { res = await dsFetch(DS_MODES[i], messages); netErr = null; }
+      catch (e) {
+        netErr = e;
+        if (e && e.name === 'AbortError') break;       // it had its minute; do not sit through another
+        if (!attempt) await new Promise(r => setTimeout(r, 700));
+      }
+    }
+    if (!res) { last = netErr; if (isLast) break; continue; }
     if (res.status === 401) throw new Error(t('key rejected — tap below to re-enter it', '密钥被拒——点击下方重新输入'));
     if (res.status === 402) throw new Error(t('DeepSeek balance is empty', 'DeepSeek 余额不足'));
     if (res.ok) {
@@ -3147,6 +3175,9 @@ async function dsAsk(messages) {
 }
 
 let _reviewWait = 0;
+// The winner is not passed around anywhere else once the game is over, so the
+// retry has to remember which game it is asking about.
+function retryReview() { if (gameOver) reviewGame(winResult ? winResult.player : null); }
 function reviewGame(winner){
   if (remoteMode || !engineVoiceOn || !dsKey()) return;
   if (!gameRecord.length) return;
@@ -3247,14 +3278,24 @@ function reviewGame(winner){
     if (card) card.classList.remove('speaking');
     reviewData = raw ? validateReview(raw) : null;
     reviewOpen = false;
-    if (!reviewData) { body.textContent = t('no review this time: he could not make it out', '无法复盘：他没看明白'); return; }
+    if (!reviewData) {
+      // Same dead end as a failed request, and it deserves the same way out.
+      body.innerHTML = escHtml(t('no review this time: he could not make it out', '无法复盘：他没看明白')) + ' ' +
+        '<button type="button" class="detail-tog" onclick="retryReview()">' +
+        t('↻ ask him again', '↻ 再问一次') + '</button>';
+      return;
+    }
     renderReview();
   }).catch(e => {
     clearTimeout(_reviewWait);
     if (seq !== commentSeq) return;
     body.classList.remove('waiting');
     if (card) card.classList.remove('speaking');
-    body.textContent = t('no review this time: ', '无法复盘：') + (e && e.message ? e.message : 'network');
+    // A lost review used to be lost for good — the game is over, so there is no
+    // second move to trigger another. One tap asks him again.
+    body.innerHTML = escHtml(t('no review this time: ', '无法复盘：') + dsNetMessage(e)) + ' ' +
+      '<button type="button" class="detail-tog" onclick="retryReview()">' +
+      t('↻ ask him again', '↻ 再问一次') + '</button>';
     if (e && /rejected|被拒/.test(e.message || '')) document.getElementById('dsKeyRow').style.display = 'flex';
   });
 }
