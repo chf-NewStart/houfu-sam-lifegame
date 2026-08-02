@@ -1385,19 +1385,106 @@ function rippleAt(r, c, mag, stopped) {
   const face = document.getElementById('oracleFace');
   if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
   if (REDUCED.matches) return;
-  ripple = { t0: performance.now(), r, c, mag: mag || 1, dur: 1800, stopped: stopped || [] };
+  ripple = { t0: performance.now(), r, c, mag: mag || 1, dur: 2100, stopped: stopped || [] };
+  ripInit();
+  ripSplash(mag || 1);
   ensureAnim();
 }
 
+/* The rings are the arcade card's water, not three drawn circles. The gomoku
+   card on the front page solves a height field — the classic wave equation on
+   a coarse grid — and renders it by displacing the pixels underneath, so what
+   you see is the board REFRACTED rather than something painted over it. Same
+   solver here, with two differences forced by where it runs:
+
+   it is local, a square of about nine cells around the stone, because a block
+   is a focused thing and because warping a 760px board every frame is a lot of
+   pixels for a ripple; and it works at a fixed small resolution rather than the
+   board's, since water is low-frequency and nobody can see the difference —
+   which keeps the cost the same whether the board is 373px on a phone or 760
+   on a desktop. */
+const RIP_PX = 176;                     // working resolution of the lens
+const RIP_SIM = 0.5;                    // solver grid relative to that
+let ripSrc = null, ripSrcCtx = null, ripOut = null, ripOutCtx = null;
+let ripCur = null, ripPrev = null, ripImg = null, ripSW = 0, ripSH = 0, ripMask = null;
+
+function ripInit() {
+  if (ripSrc) return;
+  ripSrc = document.createElement('canvas'); ripSrc.width = ripSrc.height = RIP_PX;
+  ripSrcCtx = ripSrc.getContext('2d', { willReadFrequently: true });
+  ripOut = document.createElement('canvas'); ripOut.width = ripOut.height = RIP_PX;
+  ripOutCtx = ripOut.getContext('2d');
+  ripSW = ripSH = Math.round(RIP_PX * RIP_SIM);
+  ripCur = new Float32Array(ripSW * ripSH);
+  ripPrev = new Float32Array(ripSW * ripSH);
+  ripImg = ripOutCtx.createImageData(RIP_PX, RIP_PX);
+  // A round falloff to zero at the rim. Without it the wave reflects off the
+  // edges of the lens and the square it works in becomes visible as a seam
+  // across the board — which is the one thing that would give the trick away.
+  // Constant for the life of the page, so it is built once.
+  ripMask = new Float32Array(RIP_PX * RIP_PX);
+  const mid = (RIP_PX - 1) / 2;
+  for (let y = 0; y < RIP_PX; y++) {
+    for (let x = 0; x < RIP_PX; x++) {
+      const d = Math.hypot(x - mid, y - mid) / mid;
+      ripMask[y * RIP_PX + x] = d >= 0.96 ? 0 : d <= 0.62 ? 1 : (0.96 - d) / 0.34;
+    }
+  }
+}
+function ripPoke(cx, cy, strength, radius) {
+  for (let y = -radius; y <= radius; y++) {
+    const yy = cy + y; if (yy < 1 || yy >= ripSH - 1) continue;
+    for (let x = -radius; x <= radius; x++) {
+      const xx = cx + x; if (xx < 1 || xx >= ripSW - 1) continue;
+      const d = Math.hypot(x, y); if (d > radius) continue;
+      ripPrev[yy * ripSW + xx] -= strength * Math.cos((d / radius) * Math.PI * 0.5);
+    }
+  }
+}
+function ripRing(cx, cy, rr, strength) {
+  const steps = Math.max(12, (2 * Math.PI * rr) | 0);
+  for (let s = 0; s < steps; s++) {
+    const a = s / steps * Math.PI * 2;
+    const xx = (cx + Math.cos(a) * rr) | 0, yy = (cy + Math.sin(a) * rr) | 0;
+    if (xx < 1 || yy < 1 || xx >= ripSW - 1 || yy >= ripSH - 1) continue;
+    ripPrev[yy * ripSW + xx] -= strength;
+  }
+}
+/* Much gentler than the card's numbers, and for a reason: the card refracts a
+   PHOTOGRAPH, so displacement alone carries the effect. This board is #0e0e0e,
+   where displacing black over black shows nothing and the lighting term is
+   doing all the work — at the card's strength every wavefront blows out to
+   white and the board turns to television snow. Small slopes, faint light. */
+function ripSplash(mag) {
+  ripCur.fill(0); ripPrev.fill(0);
+  const c = ripSW >> 1;
+  ripPoke(c, c, 4.2 * mag, 8);          // wide and shallow: a sharp poke turns
+  ripRing(c, c, 9, 2.4 * mag);          // the stone under it into a broken square
+  ripRing(c, c, 16, 1.4 * mag);
+}
+function ripStep() {
+  const c = ripCur, p = ripPrev, W = ripSW;
+  for (let y = 1; y < ripSH - 1; y++) {
+    let i = y * W + 1;
+    for (let x = 1; x < W - 1; x++, i++) {
+      c[i] = (((p[i - 1] + p[i + 1] + p[i - W] + p[i + W]) * 0.5) - c[i]) * 0.984;
+    }
+  }
+  const t = ripPrev; ripPrev = ripCur; ripCur = t;
+}
+
+/* Grab the board under the stone, bend it, put it back. */
 function drawRipple() {
   if (!ripple) return;
   const el = performance.now() - ripple.t0;
   if (el > ripple.dur) return;
   const x = PAD + ripple.c * CELL, y = PAD + ripple.r * CELL;
-  ctx.save();
-  // the line that was cut, held for a moment under the rings
+
+  // The stones the block cut, collared — drawn BEFORE the water so the rings
+  // pass over them too.
   const hold = Math.max(0, 1 - el / 1250);
   if (hold > 0 && ripple.stopped.length) {
+    ctx.save();
     ctx.globalAlpha = hold * 0.85;
     ctx.strokeStyle = '#bfe6ff';
     ctx.lineWidth = Math.max(1.4, CELL * 0.055);
@@ -1408,19 +1495,49 @@ function drawRipple() {
       ctx.stroke();
     }
     ctx.setLineDash([]);
+    ctx.restore();
   }
-  // three rings off the stone, each a beat behind the last
-  for (let i = 0; i < 3; i++) {
-    const u = (el - i * 280) / 1150;
-    if (u <= 0 || u >= 1) continue;
-    ctx.globalAlpha = (1 - u) * 0.6 * (1 - i * 0.2);
-    ctx.strokeStyle = '#bfe6ff';
-    ctx.lineWidth = Math.max(1, CELL * 0.085 * (1 - u));
-    ctx.beginPath();
-    ctx.arc(x, y, CELL * (0.44 + u * 3.1 * ripple.mag), 0, Math.PI * 2);
-    ctx.stroke();
+
+  ripInit();
+  const side = Math.min(CSIZE, CELL * 9);
+  const sx = Math.max(0, Math.min(CSIZE - side, x - side / 2));
+  const sy = Math.max(0, Math.min(CSIZE - side, y - side / 2));
+  // pull the region in at the lens's own resolution, whatever the board's is
+  ripSrcCtx.clearRect(0, 0, RIP_PX, RIP_PX);
+  ripSrcCtx.drawImage(canvas, sx * DPR, sy * DPR, side * DPR, side * DPR, 0, 0, RIP_PX, RIP_PX);
+  let bg;
+  try { bg = ripSrcCtx.getImageData(0, 0, RIP_PX, RIP_PX).data; } catch (e) { return; }
+
+  ripStep();
+  const field = ripPrev, data = ripImg.data, inv = 1 / RIP_SIM;
+  const fade = Math.max(0, Math.min(1, (ripple.dur - el) / 500));
+  for (let py = 0; py < RIP_PX; py++) {
+    const fy = py * RIP_SIM, s0 = fy | 0, r0 = s0 * ripSW;
+    const ym = s0 > 0 ? s0 - 1 : s0, yp = s0 + 1 < ripSH ? s0 + 1 : s0;
+    for (let px = 0; px < RIP_PX; px++) {
+      const fx = px * RIP_SIM, x0 = fx | 0;
+      const xm = x0 > 0 ? x0 - 1 : x0, xp = x0 + 1 < ripSW ? x0 + 1 : x0;
+      const m = ripMask[py * RIP_PX + px] * fade;
+      const dhx = (field[r0 + xp] - field[r0 + xm]) * m;
+      const dhy = (field[yp * ripSW + x0] - field[ym * ripSW + x0]) * m;
+      let bx = px + ((dhx * 2.0 * inv) | 0), by = py + ((dhy * 2.0 * inv) | 0);
+      if (bx < 0) bx = 0; else if (bx >= RIP_PX) bx = RIP_PX - 1;
+      if (by < 0) by = 0; else if (by >= RIP_PX) by = RIP_PX - 1;
+      const bi = (by * RIP_PX + bx) * 4;
+      // a cold light on the wavefront, weighted to the blue end — it is water,
+      // and on a board this dark a neutral highlight just reads as static
+      const lit = (-dhx - dhy) * 9;
+      let spec = (dhx * dhx + dhy * dhy) * 9; if (spec > 13) spec = 13;
+      const oi = (py * RIP_PX + px) * 4;
+      const r = bg[bi] + lit * 0.7 + spec * 0.55, g = bg[bi + 1] + lit * 0.9 + spec * 0.9, b = bg[bi + 2] + lit + spec * 1.3;
+      data[oi]     = r < 0 ? 0 : r > 255 ? 255 : r;
+      data[oi + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
+      data[oi + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+      data[oi + 3] = 255;
+    }
   }
-  ctx.restore();
+  ripOutCtx.putImageData(ripImg, 0, 0);
+  ctx.drawImage(ripOut, 0, 0, RIP_PX, RIP_PX, sx, sy, side, side);
 }
 
 function throwOnBoard(r, c, kind, force) {
@@ -1485,23 +1602,48 @@ function splash(kind) {
 /* A block does not land, it rings — a struck bowl by the water rather than a
    fish on a board. Two partials a fifth apart, no attack transient, and a tail
    long enough that the rings on the board are still going when it fades. */
+/* A block does not land, it rings — and what rings is a 梵鐘, not a kitchen
+   bowl. A temple bell is not one note: it is a low hum that outlasts
+   everything, a strike tone an octave over it, and a handful of partials that
+   are deliberately NOT harmonic — that inharmonicity is the whole character of
+   cast bronze, and a stack of neat harmonics just sounds like an organ. The
+   mallet gets its own short thump underneath. */
 function plink() {
   if (!guruSfx) return;
   const ac = audioCtx();
   if (!ac) return;
   if (ac.state === 'suspended') ac.resume().catch(() => {});
   const t0 = ac.currentTime;
-  [[784, 0.075], [1176, 0.032], [1568, 0.014]].forEach(([f, g0], i) => {
+  const out = ac.createGain();
+  out.gain.value = 0.9;
+  out.connect(ac.destination);
+  // [frequency, peak, seconds to silence] — hum, prime, tierce, quint, nominal,
+  // and two upper partials that die away first, as they do on a real bell.
+  const PARTIALS = [
+    [ 82, 0.075, 5.0], [164, 0.060, 3.4], [197, 0.030, 2.2],
+    [246, 0.024, 1.8], [328, 0.030, 1.5], [443, 0.014, 0.9], [592, 0.009, 0.6],
+  ];
+  for (const [f, peak, life] of PARTIALS) {
     const o = ac.createOscillator(), g = ac.createGain();
     o.type = 'sine';
     o.frequency.setValueAtTime(f, t0);
-    o.frequency.linearRampToValueAtTime(f * 0.995, t0 + 1.1);
+    // bronze goes very slightly flat as it rings down
+    o.frequency.linearRampToValueAtTime(f * 0.997, t0 + life);
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(g0, t0 + 0.012 + i * 0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.1 - i * 0.22);
-    o.connect(g).connect(ac.destination);
-    o.start(t0); o.stop(t0 + 1.2);
-  });
+    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + life);
+    o.connect(g).connect(out);
+    o.start(t0); o.stop(t0 + life + 0.05);
+  }
+  // the beam hitting the bronze
+  const len = Math.floor(ac.sampleRate * 0.05);
+  const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+  for (let n = 0; n < len; n++) d[n] = (Math.random() * 2 - 1) * Math.pow(1 - n / len, 2.5);
+  const noise = ac.createBufferSource(); noise.buffer = buf;
+  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 340; bp.Q.value = 1.1;
+  const ng = ac.createGain(); ng.gain.value = 0.09;
+  noise.connect(bp).connect(ng).connect(out);
+  noise.start(t0);
 }
 
 function toggleGuruSfx() {
@@ -2475,6 +2617,34 @@ function reviewGame(winner){
     (m.alt ? '   [it also weighed ' + m.alt + (m.forced ? '; search saw a forced win' : '') + ']' : '')
   ).join('\n');
 
+  // Which way it went, from the human's side. Without this the prompt below
+  // asks for "the move that lost it" whatever happened, and a won game comes
+  // back as a telling-off.
+  const you = humanSide();
+  const outcome = winner == null ? 'draw' : you == null ? 'neutral' : winner === you ? 'won' : 'lost';
+  const ASK = {
+    won:
+      'THEY WON THIS GAME. It is not a post-mortem of a defeat and you must not write one — do not tell them ' +
+      'what they did wrong as though they had lost. gist is how the win was actually built: what they were ' +
+      'doing that worked, and the one place it nearly slipped away from them. turning.n is the move where it ' +
+      'swung their way. decisive.n is the move that settled it. decisive.better must be an empty string. ' +
+      'lesson is the thing worth keeping from a game they won.',
+    lost:
+      'They lost this game. gist is what they kept doing wrong and what they should have been doing instead. ' +
+      'turning.n is the move where the game really turned against them. decisive.n is the single move that ' +
+      'lost it, and decisive.better is the coordinate that should have been played on that move instead — it ' +
+      'must be a point that is still EMPTY at that stage of the move list. lesson is the one thing to carry ' +
+      'into the next game.',
+    neutral:
+      'Neither side here is the reader; review it as a spectator. gist is what decided the game. turning.n is ' +
+      'where it turned, decisive.n is the move that settled it, decisive.better is the coordinate the losing ' +
+      'side should have played there instead (a point still EMPTY at that stage) or an empty string. ' +
+      'lesson is what the game teaches.',
+    draw:
+      'Nobody won. gist is where each side went wrong. turning.n is where it went flat, decisive.n is the ' +
+      'move that let the win slip, decisive.better is what should have been played there (a point still ' +
+      'EMPTY at that stage) or an empty string. lesson is what to do differently.',
+  };
   const info = [
     'A finished game of gomoku on a 15x15 board. Columns are A-P with I skipped, rows 15 at the top down to 1.',
     who(1) + ' played first as L; ' + who(2) + ' played T.',
@@ -2483,6 +2653,7 @@ function reviewGame(winner){
     moves,
     '',
     winner ? (engineName(winner) + ' won.') : 'The game ended without a winner.',
+    you ? ('You are addressing ' + engineName(you) + ' — that is the human reading this.') : '',
   ].join('\n');
 
   fetch('https://api.deepseek.com/chat/completions', {
@@ -2501,17 +2672,13 @@ function reviewGame(winner){
           '"turning":{"n":<move number>,"en":"...","zh":"..."},' +
           '"decisive":{"n":<move number>,"better":"<coordinate>","en":"...","zh":"..."},' +
           '"lesson":{"en":"...","zh":"..."}}\n' +
-          'gist is the review in TWO OR THREE plain sentences: tell them what actually happened in this ' +
-          'game — the shape it took, what they kept doing, how the other side got on top of it, and what ' +
-          'they should have been doing instead. Concrete about the play, but in ordinary words: it must ' +
-          'contain NO coordinates and NO move numbers at all, because it is what is shown before anyone ' +
-          'asks for detail. Say "the top edge", "the pair in the middle", "your line across the bottom" ' +
-          'rather than naming points. ' +
-          'turning.n is the move where the game really turned. decisive.n is the single move that lost it, ' +
-          'and decisive.better is the coordinate that should have been played on that move instead — it must be ' +
-          'a point that is still EMPTY at that stage of the move list. Every "n" must be a move number that ' +
-          'appears in the list you are given. Never mention a coordinate that is not in the list except ' +
-          'decisive.better. Do not restate the move number or the coordinate inside the sentences — they are ' +
+          ASK[outcome] + ' ' +
+          'gist is TWO OR THREE plain sentences about what actually happened in this game — the shape it ' +
+          'took, concrete about the play, but in ordinary words. It must contain NO coordinates and NO move ' +
+          'numbers at all, because it is what is shown before anyone asks for detail: say "the top edge", ' +
+          '"the pair in the middle", "your line across the bottom" rather than naming points. ' +
+          'Every "n" must be a move number that appears in the list you are given. Never mention a ' +
+          'coordinate that is not in the list except decisive.better. Do not restate the move number or the coordinate inside the sentences — they are ' +
           'printed separately; each sentence gives only the reasoning, one sentence, no more. ' +
           '"en" is English, "zh" is the same thing in Chinese (简体) — not a translation of the wording, the same ' +
           'thought said naturally in each. Address the human as "you" / "你". ' +
