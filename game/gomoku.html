@@ -870,7 +870,7 @@ function placeStone(r, c) {
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
     // The last stone of the game gets the hardest blow he has.
-    if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'tomato', 1.5); guruShout('five'); fishRain(); }
+    if (quality) { _lastPraise = moveCount; guruShout('five'); fishRain(); }
     const you = humanSide();
     showQuote(you == null ? 'calm' : wr.player === you ? 'win' : 'lose');
     renderReplayUI();
@@ -1106,11 +1106,11 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
   if (j) ctx.restore();
 }
 
-/* ── What he throws you ───────────────────────────
-   He is a fisherman, so a good move lands you a gold 锦鲤, a won game lands you
-   a tomato out of the arcade's own hero card, and a bad move lands you the tin
-   he dragged up instead. It leaves his hand, arcs across the page, lies on the
-   board a couple of seconds, and is gone. Drawn as ink, not as sprites: a
+/* ── What comes up on the line ────────────────────
+   He is a fisherman, so a good move puts a gold 锦鲤 on the line and a bad one
+   the tin he dragged up instead. It breaks the surface at the point you played,
+   swings in towards him, and is gone. Nothing is thrown at the board: a win
+   rains fish, which is its own thing further down. Drawn as ink, not as sprites: a
    tapered brush stroke has a width profile, so inkStroke() walks the curve and
    fills an outline rather than calling stroke() with one flat width, which is
    the whole difference between a brush mark and a wire. Bone white, because
@@ -1243,60 +1243,13 @@ function drawCan(g, s) {
   inkCurve(g, [ 0.36 * s, -0.10 * s], [ 0.66 * s,  0.02 * s], [ 0.54 * s, 0.28 * s], [ 0.72 * s, 0.54 * s], 0.012 * s, 0.030 * s, 0.008 * s);
 }
 
-/* The tomato is not drawn here — it is the arcade's own, lifted glyph for
-   glyph from the hero card on the front page, where a rain of these piles up
-   under the cursor. Braille cells in a monospace face, sized by measuring the
-   first row rather than by guessing a font size, and coloured out of the same
-   ripening run: green through orange to red. A win gets a ripe one. */
-const TOMATO_ART = [
-  '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
-  '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
-  '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠻⣶⡆⠀⠿⠀⣶⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
-  '⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣴⠾⠛⢹⣶⡤⢶⣿⡟⠶⠦⠄⠀⠀⠀⠀⠀⠀⠀⠀',
-  '⠀⠀⠀⠀⠀⣠⣶⣤⣤⣤⣤⣴⠂⠸⠋⢀⣄⡉⠓⠀⠲⣶⣾⣿⣷⣄⠀⠀⠀⠀',
-  '⠀⠀⠀⢀⣾⡿⠋⠁⣠⣤⣿⡟⢀⣠⣾⣿⣿⣿⣷⣶⣤⣼⣿⣿⣿⣿⣆⠀⠀⠀',
-  '⠀⠀⠀⣾⡟⠀⣰⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀',
-  '⠀⠀⢸⡿⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀',
-  '⠀⠀⢸⡇⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀',
-  '⠀⠀⢸⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀',
-  '⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀',
-  '⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀',
-  '⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀',
-  '⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀',
-  '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
-];
-const TOMATO_RIPE = ['#f0973a', '#e8a13a', '#e23b2e', '#cf3027'];
-
-function drawTomatoArt(g, s, tint) {
-  const target = s * 2.1;
-  g.font = '20px Consolas, "Courier New", monospace';
-  const w20 = g.measureText(TOMATO_ART[0]).width || 1;
-  const fs = target * 20 / w20;
-  g.font = fs + 'px Consolas, "Courier New", monospace';
-  g.textAlign = 'left';
-  g.textBaseline = 'middle';
-  const lh = fs * 0.92;                       // the hero card's line-height
-  const x = -target / 2, y0 = -(TOMATO_ART.length - 1) * lh / 2;
-  g.shadowColor = tint;
-  g.shadowBlur = fs * 0.5;
-  g.fillStyle = tint;
-  for (let i = 0; i < TOMATO_ART.length; i++) g.fillText(TOMATO_ART[i], x, y0 + i * lh);
-  g.shadowBlur = 0;
-  g.textAlign = 'center';
-  g.textBaseline = 'alphabetic';
-}
-
-/* Where it lands, how hard, and what it does when it gets there.
-     0–FLY      in the air, thrown from where he is sitting
-     FLY+80     contact, squashed
-     ...+80     one small bounce
-     ..–2400    lying there (a fish flops twice; a tin does not)
-     2400–2950  fading out
-   Everything is in VIEWPORT coordinates, because the arc starts at the guru —
+/* Where it comes up, and what it does on the way.
+     0–REEL     on the line, swinging in towards him and shrinking
+     REEL–      gone from the water; a fish flops twice on the way, a tin does not
+   Everything is in VIEWPORT coordinates, because the arc ends at the guru —
    who lives in a card above the board, outside the board canvas entirely — and
-   ends on an intersection. Recomputed every frame from the two elements' own
-   rectangles, so the throw survives a scroll mid-flight. */
-const FLY = 520;      // a thrown thing crossing the page
+   starts on an intersection. Recomputed every frame from the two elements' own
+   rectangles, so a catch survives a scroll mid-flight. */
 const REEL = 1150;    // and a hooked one being brought in, which is slower work
 function boardPoint(r, c, size) {
   const b = canvas.getBoundingClientRect();
@@ -1379,15 +1332,13 @@ function dropShape() {
   if (!drop) return null;
   const el = performance.now() - drop.t0;
   const fish = drop.kind === 'fish';
-  const size = CELL * (fish ? 1.5 : drop.kind === 'tomato' ? 1.35 : 1.2);   // half-width
+  const size = CELL * (fish ? 1.5 : 1.2);   // half-width
   const land = boardPoint(drop.r, drop.c, size);
-  let x = land.x, y = land.y;
-  let dy = 0, rot = drop.tilt, sx = 1, sy = 1, alpha = 1;
   // Out of the water, towards him. He is a fisherman and the board is water:
   // a fish is not something he lobs at you, it is something he lands. It comes
   // up off the point you played, still fighting the line, and gets smaller as
   // it goes, because it is going away from you and towards him.
-  if (drop.dir === 'out') {
+  {
     const u = Math.min(1, el / REEL);
     const p = reel(land, u);
     // Hanging: once it is clear of the water it turns head-up towards the rod,
@@ -1402,38 +1353,10 @@ function dropShape() {
       rot: drop.tilt + d * p.e + Math.sin(el / 46) * 0.38 * (1 - u) * (1 - u),
       sx: 1 - 0.34 * p.e, sy: 1 - 0.34 * p.e,
       alpha: u > 0.84 ? Math.max(0, 1 - (u - 0.84) / 0.16) : 1,
-      size, fish, kind: drop.kind, flying: true, tip: p.tip,
+      size, fish, kind: drop.kind, tip: p.tip,
     };
   }
 
-  if (el < FLY) {
-    // a thrown arc, not a drop: straight-line travel with a lob on top of it,
-    // tumbling the whole way and only settling upright as it arrives
-    const from = guruPoint(land);
-    const u = el / FLY, v = 1 - u;
-    x = from.x + (land.x - from.x) * u;
-    y = from.y + (land.y - from.y) * (u * u * 0.55 + u * 0.45);
-    dy = -Math.sin(u * Math.PI) * Math.max(70, Math.abs(land.y - from.y) * 0.34);
-    rot = drop.tilt + v * drop.spin;
-    sx = sy = 0.72 + 0.28 * u;                     // it is further away at the start
-    alpha = Math.min(1, el / 70);
-  } else if (el < FLY + 80) {                      // contact
-    const u = (el - FLY) / 80;
-    dy = -Math.sin(u * Math.PI) * CELL * 0.55;
-    sy = 1 - 0.22 * Math.sin((1 - u) * Math.PI * 0.5); sx = 2 - sy;
-  } else if (el < FLY + 160) {
-    const u = (el - FLY - 80) / 80;
-    dy = -Math.sin(u * Math.PI) * CELL * 0.16;
-  } else if (el > 2400) {
-    alpha = Math.max(0, 1 - (el - 2400) / 550);
-  }
-  // the fish is not dead yet
-  if (fish && el > 700) {
-    const flop = Math.exp(-(((el - 900) / 260) ** 2)) + Math.exp(-(((el - 1650) / 260) ** 2));
-    rot += Math.sin(el / 42) * 0.16 * flop;
-    dy -= Math.abs(Math.sin(el / 42)) * CELL * 0.22 * flop;
-  }
-  return { x, y, dy, rot, sx, sy, alpha, size, fish, kind: drop.kind, flying: el < FLY };
 }
 
 function drawShock() {
@@ -1475,24 +1398,20 @@ function drawDrop() {
   if (!d) return;
   const g = flyCtx;
   g.save();
-  // A contact shadow, on the board where it is going to land: tight and dark
-  // once it is down, wide and faint while it is still in the air. No shadow at
-  // all during the throw — it is nowhere near the board yet.
-  if (!d.flying) {
-    const air = Math.min(1, Math.abs(d.dy) / (CELL * 3));
-    g.globalAlpha = d.alpha * (0.44 - 0.30 * air);
-    g.fillStyle = '#000';
-    g.beginPath();
-    g.ellipse(d.x, d.y + d.size * 0.30, d.size * (0.72 + 0.5 * air), d.size * 0.15, 0, 0, Math.PI * 2);
-    g.fill();
-  }
+  // a contact shadow on the water it is leaving: tight and dark at the surface,
+  // wide and faint as it rises away
+  const air = Math.min(1, Math.abs(d.dy) / (CELL * 3));
+  g.globalAlpha = d.alpha * (0.44 - 0.30 * air);
+  g.fillStyle = '#000';
+  g.beginPath();
+  g.ellipse(d.x, d.y + d.size * 0.30, d.size * (0.72 + 0.5 * air), d.size * 0.15, 0, 0, Math.PI * 2);
+  g.fill();
   if (d.tip) drawLine(g, d.tip, d.x, d.y + d.dy, d.alpha);
   g.globalAlpha = d.alpha;
   g.translate(d.x, d.y + d.dy);
   g.rotate(d.rot);
   g.scale(d.sx, d.sy);
   if (d.kind === 'fish') drawFish(g, d.size);
-  else if (d.kind === 'tomato') drawTomatoArt(g, d.size, TOMATO_RIPE[2]);
   else drawCan(g, d.size);
   g.restore();
 }
@@ -1606,13 +1525,6 @@ function animFrame(now) {
   animRaf = 0;
   const dt = Math.min(0.05, Math.max(0, (now - animLast) / 1000));
   animLast = now;
-  // the moment it actually touches the board, not the moment it was thrown
-  if (drop && !drop.hit && now - drop.t0 >= FLY) {
-    drop.hit = now;
-    knock(drop.r, drop.c, drop.force);
-    const wrap = document.getElementById('boardWrap');
-    if (wrap) { wrap.classList.remove('slam'); void wrap.offsetWidth; wrap.classList.add('slam'); }
-  }
   stepJolts(dt);
   waveTick(now);
   if (drop && now - drop.t0 > drop.dur) drop = null;
@@ -1656,8 +1568,8 @@ function rippleAt(r, c, mag, stopped) {
    Rippling on every stone was tried and it is too much — sixty moves in a
    game, most of them the engine's, and the water never gets to be still, so
    the one moment that is meant to feel calm reads as more of the same. It is a
-   signature, not a surface: 妙 gets the gold fish, a win gets the tomato, a bad
-   move gets the tin, and 挡 — the quiet one, the move that takes nothing —
+   signature, not a surface: 妙 gets the gold fish, a bad move gets the tin, a
+   win gets the sky falling in, and 挡 — the quiet one, the move that takes nothing —
    gets water, spreading in slow motion. The solver is stepped at half rate
    while it does, which is the only honest way to slow water down: you cannot
    fake it by scaling the picture.
@@ -1716,13 +1628,13 @@ function waveRing(gx, gy, rr, strength) {
    they are landing on is water, every one of them breaks the surface where it
    hits and the rings run out from there. It is only worth doing on a board
    that already knows how to be wet. */
-let rain = [];
+let rain = [], rainStruck = false;
 const RAIN_FALL = 900, RAIN_SINK = 620;
 function fishRain() {
   if (REDUCED.matches || !CELL || !canvas) return;
   const b = canvas.getBoundingClientRect();
   const now = performance.now();
-  rain = [];
+  rain = []; rainStruck = false;
   for (let i = 0; i < 24; i++) {
     const x = b.left + PAD + CELL * (Math.random() * (N - 1));
     rain.push({
@@ -1763,6 +1675,14 @@ function drawRain() {
         knock(r, c, 0.16);                                // the stones feel it land
       }
       plip(0.055 + Math.random() * 0.03);
+      // The board used to take one hard knock a game, off the tomato thrown for
+      // winning. The tomato is gone and the shake was worth keeping, so the
+      // first fish down carries it.
+      if (!rainStruck) {
+        rainStruck = true;
+        const wrap = document.getElementById('boardWrap');
+        if (wrap) { wrap.classList.remove('slam'); void wrap.offsetWidth; wrap.classList.add('slam'); }
+      }
     }
     const sunk = u >= 1 ? Math.min(1, (e - f.dur) / RAIN_SINK) : 0;
     g.save();
@@ -1884,10 +1804,10 @@ function drawRipple() {
   ctx.restore();
 }
 
-/* Two directions, and which one a thing takes says what it is. The fish and
-   the tin come OUT — they were in the water, you hooked them, he lands them.
-   The tomato goes IN, because a tomato is not a catch: it is thrown to you for
-   winning. */
+/* Everything he brings up comes OUT of the water: it was in there, you hooked
+   it, he lands it. Nothing is thrown at the board any more — a win rains fish
+   instead of lobbing a tomato, and with the tomato went the only inbound
+   flight this ever had. */
 /* ── Taking one back ──────────────────────────────
    Undo is a catch as well. The stone does not vanish off the board, he lifts
    it out — same arc as the fish, same shrink away towards his hand, and the
@@ -1924,27 +1844,21 @@ function liftShape(l) {
 }
 
 function throwOnBoard(r, c, kind, force) {
-  const out = kind !== 'tomato';
-  splash(kind, out);                // a catch is heard leaving; a throw, arriving
+  splash(kind);
   const face = document.getElementById('oracleFace');
   if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
   if (REDUCED.matches) return;      // the shout still lands; nothing sails across the board
-  const mag = (force || 1) * (kind === 'fish' ? 0.9 : kind === 'tomato' ? 0.8 : 1.0);
+  const mag = (force || 1) * (kind === 'fish' ? 0.9 : 1.0);
   drop = {
-    t0: performance.now(), r, c, kind, dir: out ? 'out' : 'in',
-    dur: out ? REEL + 120 : 2960 + FLY - 260,
-    force: mag,
-    tilt: (kind === 'fish' ? -0.10 : kind === 'tomato' ? 0 : 0.20) + (Math.random() - 0.5) * 0.24,
+    t0: performance.now(), r, c, kind, dur: REEL + 120, force: mag,
+    tilt: (kind === 'fish' ? -0.10 : 0.20) + (Math.random() - 0.5) * 0.24,
     spin: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random()),
+    hit: performance.now(),
   };
-  if (out) {
-    // Everything happens at the near end now: the surface breaks at the point
-    // you played and the stones around it feel it. Marked as already hit, so
-    // the frame loop does not fire the same blow again on arrival.
-    drop.hit = drop.t0;
-    knock(r, c, mag * 0.62);
-    waveSplash(r, c, mag * 0.8, false);
-  }
+  // It all happens at the near end: the surface breaks at the point you played
+  // and the stones around it feel it go.
+  knock(r, c, mag * 0.62);
+  waveSplash(r, c, mag * 0.8, false);
   ensureAnim();
 }
 
@@ -1961,7 +1875,7 @@ function audioCtx() {
   }
   return _ac || null;
 }
-function splash(kind, leaving) {
+function splash(kind) {
   if (!guruSfx) return;
   const ac = audioCtx();
   if (!ac) return;
@@ -1969,7 +1883,7 @@ function splash(kind, leaving) {
   // restored from the background can still come back suspended.
   if (ac.state === 'suspended') ac.resume().catch(() => {});
   const wet = kind !== 'can';
-  const t0 = ac.currentTime + (leaving ? 0 : FLY / 1000);   // a thrown thing has to arrive first
+  const t0 = ac.currentTime;
   const body = ac.createOscillator(), bg = ac.createGain();
   body.type = 'sine';
   body.frequency.setValueAtTime(wet ? 190 : 130, t0);
@@ -3881,7 +3795,7 @@ function onPlay(snap) {
   _prevLen = moves.length;
   applyState(moves);
   if (fresh) {
-    if (gameOver) { _lastPraise = moveCount; throwOnBoard(fresh.r, fresh.c, 'tomato', 1.5); guruShout('five'); fishRain(); }
+    if (gameOver) { _lastPraise = moveCount; guruShout('five'); fishRain(); }
     else judgeMove(fresh.r, fresh.c, fresh.p, fresh.q);
   }
 }
