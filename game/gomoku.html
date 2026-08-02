@@ -872,15 +872,29 @@ function draw() {
   // which is fine as decoration and useless as a reference. They are a
   // reference now: the oracle names squares and you have to find them.
   ctx.fillStyle = '#6f6a7d';
-  const lblFont = Math.max(9, CELL * 0.30);
+  // The row numbers are right-aligned, so what has to fit in the left margin
+  // is the whole of "15" — and it did not. The offset was worked out from the
+  // cell size alone, which on a phone put the label's right edge 8px from the
+  // canvas and its left edge three pixels PAST it: the leading 1 was sliced
+  // off and every row from 10 up read as L5, L4, L3. Measure the widest label,
+  // and shrink the type until it fits the margin with room to clear the stone.
+  let lblFont = Math.max(8, Math.min(13, CELL * 0.30));
   ctx.font = `${lblFont}px Consolas, monospace`;
-  // far enough out to clear the widest stone, but never so far it walks off
-  // the top of the canvas on a narrow phone
-  const off = Math.min(CELL * 0.47 + 5, PAD - lblFont * 0.8);
+  let lblW = ctx.measureText(String(N)).width;
+  const room = PAD - CELL * 0.40 - 4;              // margin, less the stone, less a gap
+  while (lblFont > 6.5 && lblW > room) {
+    lblFont -= 0.5;
+    ctx.font = `${lblFont}px Consolas, monospace`;
+    lblW = ctx.measureText(String(N)).width;
+  }
+  // Columns hang above the board; rows sit beside it. Different constraints —
+  // one is bounded by the type's height, the other by its width.
+  const offY = Math.min(CELL * 0.47 + 5, PAD - lblFont * 0.95);
+  const offX = Math.max(CELL * 0.40 + 3, Math.min(CELL * 0.47 + 5, PAD - lblW - 2));
   ctx.textAlign = 'center';
-  for (let i = 0; i < N; i++) ctx.fillText(COLS[i], PAD + i*CELL, PAD - off);
+  for (let i = 0; i < N; i++) ctx.fillText(COLS[i], PAD + i*CELL, PAD - offY);
   ctx.textAlign = 'right';
-  for (let i = 0; i < N; i++) ctx.fillText(String(N - i), PAD - off, PAD + i*CELL + 4);
+  for (let i = 0; i < N; i++) ctx.fillText(String(N - i), PAD - offX, PAD + i*CELL + lblFont * 0.36);
   ctx.textAlign = 'center';
 
   if (coachMode && !replay) drawCoachHints();
@@ -1427,13 +1441,16 @@ function rippleAt(r, c, mag, stopped) {
    It is drawn at the solver's own resolution and scaled up with smoothing on.
    Water has no fine detail to lose, the cost stops depending on how big the
    board is, and the upscale does the softening for free. */
-const WAVE_MAX = 116;
+// Floor as well as ceiling: the grid used to be derived from the board size
+// alone, so a phone got 62 cells across and the rings came out visibly
+// stepped. The cost is trivial either way.
+const WAVE_MIN = 96, WAVE_MAX = 168;
 let waveW = 0, waveCur = null, wavePrev = null;
 let waveCv = null, waveCtx = null, waveImg = null;
 let waveAcc = 0, waveSlowUntil = 0, waveLive = 0, waveAge = 0, waveUntil = 0;
 
 function waveInit() {
-  const w = Math.max(56, Math.min(WAVE_MAX, Math.round(CSIZE / 6)));
+  const w = Math.max(WAVE_MIN, Math.min(WAVE_MAX, Math.round(CSIZE / 5)));
   if (w === waveW && waveCur) return;
   waveW = w;
   waveCur = new Float32Array(w * w);
