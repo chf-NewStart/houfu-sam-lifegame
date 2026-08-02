@@ -181,8 +181,14 @@
     .prompt-msg { color: #ddd; font-size: 0.86rem; margin-bottom: 16px; line-height: 1.55; }
     .prompt-btns { display: flex; gap: 10px; } .prompt-btns .btn { flex: 1; }
 
-    /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch */
-  html, body, button, a, input, select, label { touch-action: manipulation; }
+    /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch.
+     The BOARD needs this more than anything else on the page and was the one
+     thing missing from the list: touch-action is not inherited, so the canvas
+     was left on `auto`, and a browser on auto has to wait out the double-tap
+     window before it knows a tap was not a zoom. Placing a stone takes two
+     quick taps on the same point by design, which is precisely the gesture it
+     was waiting for — so taps went missing, in about one attempt in three. */
+  html, body, canvas, button, a, input, select, label { touch-action: manipulation; }
 
   /* touch: no tap-highlight flash, no double-tap text selection (inputs stay editable) */
   body{-webkit-tap-highlight-color:transparent;}
@@ -611,7 +617,7 @@ function newGame() {
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
   drop = null; ripple = null; jolts.clear();
-  if (waveCur) { waveCur.fill(0); wavePrev.fill(0); waveLive = 0; waveAge = 0; }
+  if (waveCur) { waveCur.fill(0); wavePrev.fill(0); waveLive = 0; waveAge = 0; waveUntil = 0; }
   rpStop(); replay = null; reviewData = null; reviewOpen = false;
   renderReplayUI();
   showQuote('open');                             // he opens the game with a line
@@ -736,7 +742,6 @@ function placeStone(r, c) {
   board[r][c] = curP;
   lastMove = [r, c];
   moveCount++;
-  waveDrop(r, c);              // every stone disturbs the surface a little
   const col = COLS[c], row = N - r;
   log(`${moveCount}. ${t(curP===1?'Lime':'Tomato', curP===1?'青柠':'番茄')} ${col}${row}`, 'lmove');
   gameRecord.push({
@@ -1373,7 +1378,6 @@ function animFrame(now) {
   if (drop && !drop.hit && now - drop.t0 >= FLY) {
     drop.hit = now;
     knock(drop.r, drop.c, drop.force);
-    waveSplash(drop.r, drop.c, drop.force);
     const wrap = document.getElementById('boardWrap');
     if (wrap) { wrap.classList.remove('slam'); void wrap.offsetWidth; wrap.classList.add('slam'); }
   }
@@ -1401,7 +1405,7 @@ function rippleAt(r, c, mag, stopped) {
   ensureAnim();
 }
 
-/* ── The board sits on water ──────────────────────
+/* ── The water a block makes ──────────────────────
    The gomoku card on the front page solves a height field — the classic wave
    equation on a coarse grid — and that solver runs here too. What it drives is
    different, and the difference matters: the card REFRACTS its background,
@@ -1410,11 +1414,15 @@ function rippleAt(r, c, mag, stopped) {
    rendered as light on a surface instead — crests catch a cold light, troughs
    go dark, and the board itself stays exactly where it is, sharp, underneath.
 
-   One field, the whole board, always there. Every stone that lands sends a
-   small ring out across it. A move worth remarking on sends a bigger one, and
-   sends it in slow motion — the solver is stepped at half rate for a moment,
-   which is the only honest way to slow water down: you cannot fake it by
-   scaling the picture.
+   The field covers the whole board, but only ONE thing disturbs it: a block.
+   Rippling on every stone was tried and it is too much — sixty moves in a
+   game, most of them the engine's, and the water never gets to be still, so
+   the one moment that is meant to feel calm reads as more of the same. It is a
+   signature, not a surface: 妙 gets the gold fish, a win gets the tomato, a bad
+   move gets the tin, and 挡 — the quiet one, the move that takes nothing —
+   gets water, spreading in slow motion. The solver is stepped at half rate
+   while it does, which is the only honest way to slow water down: you cannot
+   fake it by scaling the picture.
 
    It is drawn at the solver's own resolution and scaled up with smoothing on.
    Water has no fine detail to lose, the cost stops depending on how big the
@@ -1422,7 +1430,7 @@ function rippleAt(r, c, mag, stopped) {
 const WAVE_MAX = 116;
 let waveW = 0, waveCur = null, wavePrev = null;
 let waveCv = null, waveCtx = null, waveImg = null;
-let waveAcc = 0, waveSlowUntil = 0, waveLive = 0, waveAge = 0;
+let waveAcc = 0, waveSlowUntil = 0, waveLive = 0, waveAge = 0, waveUntil = 0;
 
 function waveInit() {
   const w = Math.max(56, Math.min(WAVE_MAX, Math.round(CSIZE / 6)));
@@ -1460,16 +1468,6 @@ function waveRing(gx, gy, rr, strength) {
   }
 }
 
-/* Every stone disturbs it a little. */
-function waveDrop(r, c) {
-  if (REDUCED.matches || !CELL) return;
-  waveInit();
-  const [gx, gy] = waveCell(r, c);
-  wavePoke(gx, gy, 4.4, 2);
-  waveLive = 1; waveAge = 0;
-  ensureAnim();
-}
-/* And a move he has something to say about disturbs it properly, slowly. */
 function waveSplash(r, c, mag) {
   if (REDUCED.matches || !CELL) return;
   waveInit();
@@ -1477,7 +1475,14 @@ function waveSplash(r, c, mag) {
   wavePoke(gx, gy, 7.5 * mag, 3);
   waveRing(gx, gy, 4, 3.4 * mag);
   waveRing(gx, gy, 7, 1.8 * mag);
-  waveSlowUntil = performance.now() + 1400;
+  // A ring in a closed pool does not die of damping alone — it reflects off
+  // the edges and keeps handing its energy back, so waiting for the water to
+  // go quiet by itself took eight seconds with the animation loop running
+  // throughout. It gets a lifetime instead, and is faded out over the last of
+  // it so it goes still rather than simply vanishing.
+  const now = performance.now();
+  waveSlowUntil = now + 1400;
+  waveUntil = now + 3800;
   waveLive = 1; waveAge = 0;
   ensureAnim();
 }
@@ -1487,7 +1492,7 @@ function waveStep() {
   for (let y = 1; y < W - 1; y++) {
     let i = y * W + 1;
     for (let x = 1; x < W - 1; x++, i++) {
-      c[i] = (((p[i - 1] + p[i + 1] + p[i - W] + p[i + W]) * 0.5) - c[i]) * 0.986;
+      c[i] = (((p[i - 1] + p[i + 1] + p[i - W] + p[i + W]) * 0.5) - c[i]) * 0.982;
     }
   }
   const t = wavePrev; wavePrev = waveCur; waveCur = t;
@@ -1513,13 +1518,17 @@ function waveTick(now) {
   const slow = now < waveSlowUntil;
   waveAcc += slow ? 0.5 : 1;
   while (waveAcc >= 1) { waveStep(); waveAge++; waveAcc -= 1; }
-  if (!slow && waveStill()) { waveLive = 0; wavePrev.fill(0); waveCur.fill(0); }
+  if ((now > waveUntil) || (!slow && waveStill())) {
+    waveLive = 0; wavePrev.fill(0); waveCur.fill(0);
+  }
 }
 
 /* Light on a surface: crests take a cold highlight, troughs darken. Nothing is
    displaced — the board is on top of the water, not under it. */
 function drawWave() {
   if (!waveLive || !waveCur) return;
+  const env = Math.max(0, Math.min(1, (waveUntil - performance.now()) / 900));
+  if (env <= 0) return;
   const f = wavePrev, W = waveW, data = waveImg.data;
   for (let y = 0; y < W; y++) {
     const ym = y > 0 ? y - 1 : y, yp = y < W - 1 ? y + 1 : y;
@@ -1527,7 +1536,7 @@ function drawWave() {
       const xm = x > 0 ? x - 1 : x, xp = x < W - 1 ? x + 1 : x;
       const dhx = f[y * W + xp] - f[y * W + xm];
       const dhy = f[yp * W + x] - f[ym * W + x];
-      const lit = (-dhx - dhy) * 78;             // light from the upper left
+      const lit = (-dhx - dhy) * 78 * env;       // light from the upper left
       const o = (y * W + x) * 4;
       if (lit >= 0) {
         data[o] = 186; data[o + 1] = 222; data[o + 2] = 255;
