@@ -1,6 +1,6 @@
 /* Life Game service worker — offline app shell.
    Bump CACHE on each release so clients pick up new files. */
-const CACHE = 'lifegame-v38';
+const CACHE = 'lifegame-v39';
 const CORE = [
   '/',
   '/index.html',

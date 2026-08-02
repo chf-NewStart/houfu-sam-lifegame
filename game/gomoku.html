@@ -3241,10 +3241,22 @@ function validateReview(raw) {
   }
 
   const T = pick(raw.turning), D = pick(raw.decisive), L = pick(raw.lesson);
-  const tm = moveByNumber(+T.n);
+  /* The last move of a finished game is the five, and it is sitting on the
+     board being looked at. Told to leave it alone, he still reached for it —
+     it is the most conspicuous move in the list — and named it as BOTH the
+     turning point and the decisive one, which is the same nothing said twice.
+     This page knows which move ended the game, so it does not have to take his
+     word for it: that move is refused for either, and the two must differ. */
+  const lastN = gameRecord.length ? gameRecord[gameRecord.length - 1].n : 0;
+  const endsIt = (n) => n === lastN || !!(winMove && n === winMove.n);
+
+  const dm0 = moveByNumber(+D.n);
+  const dm = dm0 && !endsIt(dm0.n) ? dm0 : null;
+
+  const tm0 = moveByNumber(+T.n);
+  const tm = tm0 && !endsIt(tm0.n) && !(dm && tm0.n === dm.n) ? tm0 : null;
   if (tm && (str(T.en) || str(T.zh))) out.turning = { m: tm, en: str(T.en), zh: str(T.zh) };
 
-  const dm = moveByNumber(+D.n);
   if (dm && (str(D.en) || str(D.zh))) {
     let better = coordToRC(D.better);
     // It has to be a point that was actually free at the time, and not simply
@@ -3287,8 +3299,6 @@ function renderReview() {
   };
   let html = '';
   const C_TURN = '#ffd166', C_WAS = '#ff9ec4', C_BETTER = '#7ee0ff', C_WIN = '#8affc0';
-  // Whether the move he singled out is the one that actually finished it.
-  const decisiveIsWin = !!(winMove && d.decisive && d.decisive.m.n === winMove.n);
   if (d.turning) {
     const m = d.turning.m;
     html += line(t('It turned at move ', '转折在第 ') + m.n + t('', ' 手') + t(', ', '，') + sideName(m.p) + ' ' +
@@ -3299,13 +3309,13 @@ function renderReview() {
     const who = d.decisive.mine ? t('you played', '你下在') : sideName(m.p) + t(' played', '下在');
     let head = t('Move ', '第 ') + m.n + t(' — ', ' 手 — ') + who + ' ' + coord([m.r, m.c], C_WAS) + t('.', '。');
     if (d.decisive.better) head += ' ' + coord(d.decisive.better, C_BETTER) + t(' was the move.', ' 才是这一手。');
-    if (decisiveIsWin) head += t(' That was the five.', ' 五子连珠。');
     html += line(head, said(t(d.decisive.en, d.decisive.zh)));
   }
-  // The stone that finished it, named outright. He picks whichever move he
-  // thinks decided the game and it is often not the last one — but the hand
-  // that actually won is a fact, not an opinion, and it should be said.
-  if (winMove && !decisiveIsWin) {
+  /* The stone that finished it, named outright and exactly once. It cannot
+     arrive as his decisive move any more — validateReview refuses that — and
+     it should not, because which hand won is a fact off the record rather than
+     an opinion he has to be asked for. */
+  if (winMove) {
     const w = winMove, you = humanSide();
     const who = you != null && w.p === you ? t('you played', '你下在') : sideName(w.p) + t(' played', '下在');
     html += line(t('Move ', '第 ') + w.n + t(' — ', ' 手 — ') + who + ' ' +
@@ -3452,9 +3462,11 @@ function reviewMessages(winner, you) {
     won:
       'THEY WON THIS GAME. It is not a post-mortem of a defeat and you must not write one — do not tell them ' +
       'what they did wrong as though they had lost. gist is how the win was actually built: what they were ' +
-      'doing that worked, and the one place it nearly slipped away from them. turning.n is the move where it ' +
-      'swung their way. decisive.n is the move that settled it. decisive.better must be an empty string. ' +
-      'lesson is the thing worth keeping from a game they won.',
+      'doing that worked, and the one place it nearly slipped away from them. turning.n is the earlier move ' +
+      'where the game swung their way — where the other side lost the initiative. decisive.n is the move that ' +
+      'made the win UNAVOIDABLE: the one after which it could no longer be stopped. That is earlier than the ' +
+      'five and it is the one worth pointing at, because the five itself is already on the board in front of ' +
+      'them. decisive.better must be an empty string. lesson is the thing worth keeping from a game they won.',
     lost:
       'They lost this game. gist is what they kept doing wrong and what they should have been doing instead. ' +
       'turning.n is the move where the game really turned against them. decisive.n is the single move that ' +
@@ -3494,7 +3506,10 @@ function reviewMessages(winner, you) {
           'took, concrete about the play, but in ordinary words. It must contain NO coordinates and NO move ' +
           'numbers at all, because it is what is shown before anyone asks for detail: say "the top edge", ' +
           '"the pair in the middle", "your line across the bottom" rather than naming points. ' +
-          'Every "n" must be a move number that appears in the list you are given. Never mention a ' +
+          'Every "n" must be a move number that appears in the list you are given. The LAST move in that ' +
+          'list is the one that ended the game: it is on the board and it explains itself, so neither "n" ' +
+          'may be that move. turning.n and decisive.n must be two DIFFERENT moves — naming the same one ' +
+          'twice says nothing twice. Never mention a ' +
           'coordinate that is not in the list except decisive.better. Do not restate the move number or the coordinate inside the sentences — they are ' +
           'printed separately; each sentence gives only the reasoning, one sentence, no more. ' +
           '"en" is English, "zh" is the same thing in Chinese (简体) — not a translation of the wording, the same ' +
