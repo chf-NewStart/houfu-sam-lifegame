@@ -1214,7 +1214,8 @@ function drawTomatoArt(g, s, tint) {
    who lives in a card above the board, outside the board canvas entirely — and
    ends on an intersection. Recomputed every frame from the two elements' own
    rectangles, so the throw survives a scroll mid-flight. */
-const FLY = 520;
+const FLY = 520;      // a thrown thing crossing the page
+const REEL = 1150;    // and a hooked one being brought in, which is slower work
 function boardPoint(r, c, size) {
   const b = canvas.getBoundingClientRect();
   const lo = PAD + size * 0.9, hi = PAD + (N - 1) * CELL - size * 0.9;
@@ -1230,6 +1231,48 @@ function pointOnBoard(r, c) {
   const b = canvas.getBoundingClientRect();
   return { x: b.left + PAD + c * CELL, y: b.top + PAD + r * CELL };
 }
+/* The tip of his rod, measured off the sprite: the pale grey line runs down
+   column 28 of 32 and stops at row 8. Everything he lands is on a line from
+   here, and that is the whole shape of the movement. */
+function rodTip(fallback) {
+  const el = document.getElementById('oracleFace');
+  if (!el) return { x: fallback.x, y: fallback.y - CELL * 9 };
+  const b = el.getBoundingClientRect();
+  if (!b.width) return { x: fallback.x, y: fallback.y - CELL * 9 };
+  return { x: b.left + b.width * 0.88, y: b.top + b.height * 0.25 };
+}
+
+/* A thing on a line does not travel in a straight line towards the man
+   holding it. It hangs at the end of the line and SWINGS, on an arc about the
+   rod tip, and the arc shortens as he takes it in — that is all reeling is.
+   The straight dash it used to do was the giveaway: nothing about it said
+   fishing, only "object moves from A to B".
+
+   And it does not come in smoothly either. It comes in pulls, so the swing
+   carries a little surge that dies away as the thing gets close. */
+function reel(from, u) {
+  const tip = rodTip(from);
+  const dx = from.x - tip.x, dy = from.y - tip.y;
+  const r0 = Math.hypot(dx, dy) || 1;
+  const a0 = Math.atan2(dy, dx);
+  const a1 = Math.PI * 0.60;                       // hanging under the tip at the end
+  const e = u * u * (3 - 2 * u);                   // it resists, then comes
+  const surge = Math.max(0, Math.min(1, e + 0.055 * Math.sin(u * Math.PI * 3) * (1 - u)));
+  const a = a0 + (a1 - a0) * surge;
+  const r = r0 * (1 - 0.82 * e);
+  return { x: tip.x + Math.cos(a) * r, y: tip.y + Math.sin(a) * r, tip, e };
+}
+
+// the line itself, taut from the rod to whatever is on the end of it
+function drawLine(g, tip, x, y, alpha) {
+  g.save();
+  g.globalAlpha = alpha * 0.5;
+  g.strokeStyle = '#cfe4f2';
+  g.lineWidth = 1;
+  g.beginPath(); g.moveTo(tip.x, tip.y); g.lineTo(x, y); g.stroke();
+  g.restore();
+}
+
 function guruPoint(fallback) {
   const el = document.getElementById('oracleFace');
   if (!el) return { x: fallback.x, y: fallback.y - CELL * 9 };
@@ -1251,17 +1294,22 @@ function dropShape() {
   // up off the point you played, still fighting the line, and gets smaller as
   // it goes, because it is going away from you and towards him.
   if (drop.dir === 'out') {
-    const from = guruPoint(land);
-    const u = Math.min(1, el / FLY);
-    const ease = 1 - (1 - u) * (1 - u);            // the yank first, then the travel
-    x = land.x + (from.x - land.x) * ease;
-    y = land.y + (from.y - land.y) * ease;
-    dy = -Math.sin(u * Math.PI) * Math.max(50, Math.abs(land.y - from.y) * 0.22);
-    // still on the hook: thrashing as it breaks the surface, tiring as it goes
-    rot = drop.tilt + Math.sin(el / 44) * 0.42 * (1 - u) + u * drop.spin * 0.25;
-    sx = sy = 1 - 0.34 * ease;
-    alpha = u > 0.72 ? Math.max(0, 1 - (u - 0.72) / 0.28) : 1;
-    return { x, y, dy, rot, sx, sy, alpha, size, fish, kind: drop.kind, flying: true };
+    const u = Math.min(1, el / REEL);
+    const p = reel(land, u);
+    // Hanging: once it is clear of the water it turns head-up towards the rod,
+    // the way anything on a line does. Blended through the shortest way round
+    // so it never spins the long way to get there.
+    const hang = Math.atan2(p.tip.y - p.y, p.tip.x - p.x) + Math.PI;
+    let d = hang - drop.tilt;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    return {
+      x: p.x, y: p.y, dy: 0,
+      rot: drop.tilt + d * p.e + Math.sin(el / 46) * 0.38 * (1 - u) * (1 - u),
+      sx: 1 - 0.34 * p.e, sy: 1 - 0.34 * p.e,
+      alpha: u > 0.84 ? Math.max(0, 1 - (u - 0.84) / 0.16) : 1,
+      size, fish, kind: drop.kind, flying: true, tip: p.tip,
+    };
   }
 
   if (el < FLY) {
@@ -1343,6 +1391,7 @@ function drawDrop() {
     g.ellipse(d.x, d.y + d.size * 0.30, d.size * (0.72 + 0.5 * air), d.size * 0.15, 0, 0, Math.PI * 2);
     g.fill();
   }
+  if (d.tip) drawLine(g, d.tip, d.x, d.y + d.dy, d.alpha);
   g.globalAlpha = d.alpha;
   g.translate(d.x, d.y + d.dy);
   g.rotate(d.rot);
@@ -1359,6 +1408,7 @@ function drawLifts() {
   for (const l of lifts) {
     const s = liftShape(l);
     if (!s) continue;
+    drawLine(g, s.tip, s.x, s.y, s.alpha);
     g.save();
     g.globalAlpha = s.alpha;
     g.fillStyle = s.colour;
@@ -1678,7 +1728,7 @@ function drawRipple() {
    surface closes over where it was. Two stones come up when you undo against
    the engine (its reply and then your own), most recent first, one behind the
    other, because that is the order they went in. */
-const LIFT = 560, LIFT_STAGGER = 130;
+const LIFT = 980, LIFT_STAGGER = 190;
 let lifts = [];
 
 function liftStones(list) {
@@ -1696,16 +1746,13 @@ function liftStones(list) {
 function liftShape(l) {
   const el = performance.now() - l.t0;
   if (el < 0 || el > LIFT) return null;
-  const from = pointOnBoard(l.r, l.c);
-  const to = guruPoint(from);
   const u = el / LIFT;
-  const ease = 1 - (1 - u) * (1 - u);
+  const p = reel(pointOnBoard(l.r, l.c), u);
   return {
-    x: from.x + (to.x - from.x) * ease,
-    y: from.y + (to.y - from.y) * ease - Math.sin(u * Math.PI) * Math.max(40, Math.abs(to.y - from.y) * 0.18),
-    r: CELL * 0.40 * (1 - 0.36 * ease),
-    alpha: u > 0.70 ? Math.max(0, 1 - (u - 0.70) / 0.30) : 1,
-    wet: Math.max(0, 1 - u / 0.35),          // it comes up streaming
+    x: p.x, y: p.y, tip: p.tip,
+    r: CELL * 0.40 * (1 - 0.36 * p.e),
+    alpha: u > 0.80 ? Math.max(0, 1 - (u - 0.80) / 0.20) : 1,
+    wet: Math.max(0, 1 - u / 0.30),          // it comes up streaming
     colour: l.p === 1 ? '#1db954' : '#f44336',
   };
 }
@@ -1719,7 +1766,7 @@ function throwOnBoard(r, c, kind, force) {
   const mag = (force || 1) * (kind === 'fish' ? 0.9 : kind === 'tomato' ? 0.8 : 1.0);
   drop = {
     t0: performance.now(), r, c, kind, dir: out ? 'out' : 'in',
-    dur: out ? FLY + 140 : 2960 + FLY - 260,
+    dur: out ? REEL + 120 : 2960 + FLY - 260,
     force: mag,
     tilt: (kind === 'fish' ? -0.10 : kind === 'tomato' ? 0 : 0.20) + (Math.random() - 0.5) * 0.24,
     spin: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random()),
@@ -3411,7 +3458,16 @@ function onPlay(snap) {
     if (moves.length === _prevLen + 1 && nm && board && board[nm[0]] && board[nm[0]][nm[1]] === 0 && praiseWatch(who)) {
       fresh = { r: nm[0], c: nm[1], p: who, q: moveQuality(nm[0], nm[1], who) };
     }
-  } else if (moves.length < _prevLen) { log(t('↩ undo', '↩ 悔棋'), 'lround'); }
+  } else if (moves.length < _prevLen) {
+    // A remote undo takes its stones off the same way a local one does. The
+    // authoritative list is the shorter one, so what is going is whatever the
+    // old list had past its end — and in a remote game that is always exactly
+    // one stone, because the two sides take back one move each, not a pair.
+    liftStones(_remoteMoves.slice(moves.length).map((m, i) => ({
+      r: m[0], c: m[1], p: (moves.length + i) % 2 === 0 ? 1 : 2,
+    })));
+    log(t('↩ undo', '↩ 悔棋'), 'lround');
+  }
   _prevLen = moves.length;
   applyState(moves);
   if (fresh) {
