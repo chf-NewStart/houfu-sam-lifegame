@@ -628,7 +628,7 @@ function newGame() {
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
-  drop = null; ripple = null; jolts.clear();
+  drop = null; ripple = null; lifts = []; jolts.clear();
   if (waveCur) { waveCur.fill(0); wavePrev.fill(0); waveLive = 0; waveAge = 0; waveUntil = 0; }
   rpStop(); replay = null; reviewData = null; reviewOpen = false;
   renderReplayUI();
@@ -732,6 +732,9 @@ function undoMove() {
   // first. That is how the review came to say "move 19, Lime J8" about a point
   // holding a red stone. It is also what the whole prompt is built from, so the
   // review was reasoning about a game nobody played.
+  // The entries about to be dropped, in the order they were played — he fishes
+  // those stones back out rather than having them simply vanish.
+  liftStones(gameRecord.slice(moveCount));
   gameRecord.length = Math.min(gameRecord.length, moveCount);
   winMove = null;
   gameOver  = false;
@@ -1220,6 +1223,13 @@ function boardPoint(r, c, size) {
     y: b.top + Math.max(PAD + size * 0.6, Math.min(PAD + (N - 1) * CELL - size * 0.5, PAD + r * CELL)),
   };
 }
+// The exact point, unclamped — boardPoint() keeps a big object wholly on the
+// board, which is right for a fish and wrong for a stone that has to leave
+// from precisely where it sat.
+function pointOnBoard(r, c) {
+  const b = canvas.getBoundingClientRect();
+  return { x: b.left + PAD + c * CELL, y: b.top + PAD + r * CELL };
+}
 function guruPoint(fallback) {
   const el = document.getElementById('oracleFace');
   if (!el) return { x: fallback.x, y: fallback.y - CELL * 9 };
@@ -1317,6 +1327,7 @@ function drawDrop() {
   if (!flyCtx) return;
   sizeFlyLayer();
   flyCtx.clearRect(0, 0, flyW, flyH);
+  drawLifts();
   const d = dropShape();
   if (!d) return;
   const g = flyCtx;
@@ -1340,6 +1351,27 @@ function drawDrop() {
   else if (d.kind === 'tomato') drawTomatoArt(g, d.size, TOMATO_RIPE[2]);
   else drawCan(g, d.size);
   g.restore();
+}
+
+function drawLifts() {
+  if (!flyCtx || !lifts.length) return;
+  const g = flyCtx;
+  for (const l of lifts) {
+    const s = liftShape(l);
+    if (!s) continue;
+    g.save();
+    g.globalAlpha = s.alpha;
+    g.fillStyle = s.colour;
+    g.beginPath(); g.arc(s.x, s.y, s.r, 0, Math.PI * 2); g.fill();
+    // the water still on it, coming off as it rises
+    if (s.wet > 0) {
+      g.globalAlpha = s.alpha * s.wet * 0.75;
+      g.strokeStyle = '#bfe6ff';
+      g.lineWidth = Math.max(1, s.r * 0.16);
+      g.beginPath(); g.arc(s.x, s.y, s.r * (1.15 + (1 - s.wet) * 0.7), 0.5, 2.7); g.stroke();
+    }
+    g.restore();
+  }
 }
 
 /* ── The knock ────────────────────────────────────
@@ -1440,9 +1472,10 @@ function animFrame(now) {
   waveTick(now);
   if (drop && now - drop.t0 > drop.dur) drop = null;
   if (ripple && now - ripple.t0 > ripple.dur) ripple = null;
+  if (lifts.length) lifts = lifts.filter(l => now - l.t0 <= LIFT);
   draw();
   drawDrop();          // on its own layer, over the whole page
-  if (drop || ripple || waveLive || jolts.size) ensureAnim();
+  if (drop || ripple || waveLive || lifts.length || jolts.size) ensureAnim();
 }
 
 /* A block is not a catch. Nothing is thrown for one: the stone you just put
@@ -1639,6 +1672,44 @@ function drawRipple() {
    the tin come OUT — they were in the water, you hooked them, he lands them.
    The tomato goes IN, because a tomato is not a catch: it is thrown to you for
    winning. */
+/* ── Taking one back ──────────────────────────────
+   Undo is a catch as well. The stone does not vanish off the board, he lifts
+   it out — same arc as the fish, same shrink away towards his hand, and the
+   surface closes over where it was. Two stones come up when you undo against
+   the engine (its reply and then your own), most recent first, one behind the
+   other, because that is the order they went in. */
+const LIFT = 560, LIFT_STAGGER = 130;
+let lifts = [];
+
+function liftStones(list) {
+  if (!list.length) return;
+  const t0 = performance.now();
+  // most recent first: the last stone played is the first one back out
+  list.slice().reverse().forEach((m, i) => {
+    const delay = i * LIFT_STAGGER;
+    if (!REDUCED.matches) lifts.push({ t0: t0 + delay, r: m.r, c: m.c, p: m.p });
+    setTimeout(() => { surface(); waveSplash(m.r, m.c, 0.5, false); }, delay);
+  });
+  ensureAnim();
+}
+
+function liftShape(l) {
+  const el = performance.now() - l.t0;
+  if (el < 0 || el > LIFT) return null;
+  const from = pointOnBoard(l.r, l.c);
+  const to = guruPoint(from);
+  const u = el / LIFT;
+  const ease = 1 - (1 - u) * (1 - u);
+  return {
+    x: from.x + (to.x - from.x) * ease,
+    y: from.y + (to.y - from.y) * ease - Math.sin(u * Math.PI) * Math.max(40, Math.abs(to.y - from.y) * 0.18),
+    r: CELL * 0.40 * (1 - 0.36 * ease),
+    alpha: u > 0.70 ? Math.max(0, 1 - (u - 0.70) / 0.30) : 1,
+    wet: Math.max(0, 1 - u / 0.35),          // it comes up streaming
+    colour: l.p === 1 ? '#1db954' : '#f44336',
+  };
+}
+
 function throwOnBoard(r, c, kind, force) {
   const out = kind !== 'tomato';
   splash(kind, out);                // a catch is heard leaving; a throw, arriving
@@ -1752,6 +1823,41 @@ function plink() {
   const ng = ac.createGain(); ng.gain.value = 0.09;
   noise.connect(bp).connect(ng).connect(out);
   noise.start(t0);
+}
+
+/* Something breaking the surface from underneath. It is a splash run
+   backwards: where a thing landing is a slap that drops in pitch and dies, a
+   thing coming UP is a body of water closing behind it — pitch rising, not
+   falling — with the spray on top rather than underneath. */
+function surface() {
+  if (!guruSfx) return;
+  const ac = audioCtx();
+  if (!ac) return;
+  if (ac.state === 'suspended') ac.resume().catch(() => {});
+  const t0 = ac.currentTime;
+  // the pop of the water closing: pitch sweeps UP, which is what makes it read
+  // as emerging rather than landing
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(110, t0);
+  o.frequency.exponentialRampToValueAtTime(460, t0 + 0.085);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+  o.connect(g).connect(ac.destination);
+  o.start(t0); o.stop(t0 + 0.2);
+  // and the spray coming off it, bright and short, after the pop rather than with it
+  const len = Math.floor(ac.sampleRate * 0.14);
+  const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    const u = i / len;
+    d[i] = (Math.random() * 2 - 1) * Math.min(1, u * 6) * Math.pow(1 - u, 2.2);
+  }
+  const noise = ac.createBufferSource(); noise.buffer = buf;
+  const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1600;
+  const ng = ac.createGain(); ng.gain.value = 0.13;
+  noise.connect(hp).connect(ng).connect(ac.destination);
+  noise.start(t0 + 0.02);
 }
 
 function toggleGuruSfx() {
