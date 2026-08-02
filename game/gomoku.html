@@ -604,7 +604,7 @@ function newGame() {
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
-  drop = null; jolts.clear();
+  drop = null; ripple = null; jolts.clear();
   rpStop(); replay = null; reviewData = null; reviewOpen = false;
   renderReplayUI();
   showQuote('open');                             // he opens the game with a line
@@ -894,6 +894,7 @@ function draw() {
     }
   }
   drawReplayMarks();
+  drawRipple();
 
   drawAim();
 }
@@ -1368,9 +1369,58 @@ function animFrame(now) {
   }
   stepJolts(dt);
   if (drop && now - drop.t0 > drop.dur) drop = null;
+  if (ripple && now - ripple.t0 > ripple.dur) ripple = null;
   draw();
   drawDrop();          // on its own layer, over the whole page
-  if (drop || jolts.size) ensureAnim();
+  if (drop || ripple || jolts.size) ensureAnim();
+}
+
+/* A block is not a catch. Nothing is thrown for one: the stone you just put
+   down rings out instead, the way a dropped pebble does — and the opponent
+   stones it stopped light up with it, so the word 好挡 comes with its own
+   evidence. You can see what was cut, and disagree if he is wrong. */
+let ripple = null;
+function rippleAt(r, c, mag, stopped) {
+  plink();
+  const face = document.getElementById('oracleFace');
+  if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
+  if (REDUCED.matches) return;
+  ripple = { t0: performance.now(), r, c, mag: mag || 1, dur: 1800, stopped: stopped || [] };
+  ensureAnim();
+}
+
+function drawRipple() {
+  if (!ripple) return;
+  const el = performance.now() - ripple.t0;
+  if (el > ripple.dur) return;
+  const x = PAD + ripple.c * CELL, y = PAD + ripple.r * CELL;
+  ctx.save();
+  // the line that was cut, held for a moment under the rings
+  const hold = Math.max(0, 1 - el / 1250);
+  if (hold > 0 && ripple.stopped.length) {
+    ctx.globalAlpha = hold * 0.85;
+    ctx.strokeStyle = '#bfe6ff';
+    ctx.lineWidth = Math.max(1.4, CELL * 0.055);
+    ctx.setLineDash([CELL * 0.16, CELL * 0.12]);
+    for (const [rr, cc] of ripple.stopped) {
+      ctx.beginPath();
+      ctx.arc(PAD + cc * CELL, PAD + rr * CELL, CELL * 0.47, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+  // three rings off the stone, each a beat behind the last
+  for (let i = 0; i < 3; i++) {
+    const u = (el - i * 280) / 1150;
+    if (u <= 0 || u >= 1) continue;
+    ctx.globalAlpha = (1 - u) * 0.6 * (1 - i * 0.2);
+    ctx.strokeStyle = '#bfe6ff';
+    ctx.lineWidth = Math.max(1, CELL * 0.085 * (1 - u));
+    ctx.beginPath();
+    ctx.arc(x, y, CELL * (0.44 + u * 3.1 * ripple.mag), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function throwOnBoard(r, c, kind, force) {
@@ -1432,6 +1482,28 @@ function splash(kind) {
   noise.connect(f).connect(ng).connect(ac.destination);
   noise.start(t0);
 }
+/* A block does not land, it rings — a struck bowl by the water rather than a
+   fish on a board. Two partials a fifth apart, no attack transient, and a tail
+   long enough that the rings on the board are still going when it fades. */
+function plink() {
+  if (!guruSfx) return;
+  const ac = audioCtx();
+  if (!ac) return;
+  if (ac.state === 'suspended') ac.resume().catch(() => {});
+  const t0 = ac.currentTime;
+  [[784, 0.075], [1176, 0.032], [1568, 0.014]].forEach(([f, g0], i) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f, t0);
+    o.frequency.linearRampToValueAtTime(f * 0.995, t0 + 1.1);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(g0, t0 + 0.012 + i * 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.1 - i * 0.22);
+    o.connect(g).connect(ac.destination);
+    o.start(t0); o.stop(t0 + 1.2);
+  });
+}
+
 function toggleGuruSfx() {
   guruSfx = !guruSfx;
   try { localStorage.setItem('gomoku_sfx', guruSfx ? '1' : '0'); } catch (e) {}
@@ -1450,19 +1522,50 @@ function renderGuruSfxUI() {
    does not actually justify.
 
    Call it while the point is still EMPTY; localThreat plays the stone itself. */
+// The best SINGLE line through a point, and the stones that make it up.
+// localThreat() sums all four directions, which is the right measure for
+// ordering candidate moves but the wrong one for saying what a move IS: three
+// unrelated threats crossing at a point add up past the score of a four, and
+// the guru would announce 好挡 with no four anywhere on the board. A claim
+// about one line has to be measured on one line.
+function bestLine(bd, r, c, player) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  bd[r][c] = player;
+  let best = 0, cells = null;
+  for (const [dr, dc] of dirs) {
+    const run = [[r, c]];
+    let len = 1, er = r + dr, ec = c + dc;
+    while (er >= 0 && er < N && ec >= 0 && ec < N && bd[er][ec] === player) { run.push([er, ec]); len++; er += dr; ec += dc; }
+    const oa = er >= 0 && er < N && ec >= 0 && ec < N && bd[er][ec] === 0;
+    let pr = r - dr, pc = c - dc;
+    while (pr >= 0 && pr < N && pc >= 0 && pc < N && bd[pr][pc] === player) { run.push([pr, pc]); len++; pr -= dr; pc -= dc; }
+    const ob = pr >= 0 && pr < N && pc >= 0 && pc < N && bd[pr][pc] === 0;
+    const v = runScore(len, (ob ? 1 : 0) + (oa ? 1 : 0));
+    if (v > best) { best = v; cells = run; }
+  }
+  bd[r][c] = 0;
+  return { score: best, cells: cells || [[r, c]] };
+}
+
 function moveQuality(r, c, p) {
   const opp = p === 1 ? 2 : 1;
-  const mine = localThreat(board, r, c, p);
-  const deny = localThreat(board, r, c, opp);
-  let tier = 0, kind = 'three';
-  if (deny >= 1000000)      { tier = 3; kind = 'block';  }   // stopped a five outright
-  else if (mine >= 100000)  { tier = 3; kind = 'four';   }   // open four — already over
-  else if (mine >= 10000)   { tier = 3; kind = 'double'; }   // two open threes at once
-  else if (mine >= 5000 && deny >= 5000) { tier = 3; kind = 'both'; }
-  else if (deny >= 12000)   { tier = 2; kind = 'block';  }   // stopped a four
-  else if (mine >= 5000)    { tier = 2; kind = 'three';  }   // made an open three
-  else if (mine >= 250 && deny >= 400) { tier = 1; kind = 'shape'; }
-  return { tier, kind, mine, deny };
+  const mineSum = localThreat(board, r, c, p);      // across every direction
+  const denySum = localThreat(board, r, c, opp);
+  const mineL = bestLine(board, r, c, p);           // and the best of them alone
+  const denyL = bestLine(board, r, c, opp);
+  const mine = mineL.score, deny = denyL.score;
+  // `stopped` is the opponent's own stones in the line this move cut — the
+  // evidence for the word 好挡, marked on the board so it can be checked.
+  const stopped = denyL.cells.filter(([a, b]) => !(a === r && b === c));
+  let tier = 0, kind = 'three', line = null;
+  if (deny >= 1000000)      { tier = 3; kind = 'block'; line = stopped; }  // stopped a five outright
+  else if (mine >= 100000)  { tier = 3; kind = 'four';   }                 // open four — already over
+  else if (mineSum >= 10000 && mine >= 5000) { tier = 3; kind = 'double'; } // two open threes at once
+  else if (mine >= 5000 && deny >= 5000) { tier = 3; kind = 'both'; line = stopped; }
+  else if (deny >= 12000)   { tier = 2; kind = 'block'; line = stopped; }  // stopped a four
+  else if (mine >= 5000)    { tier = 2; kind = 'three';  }                 // made an open three
+  else if (mineSum >= 250 && denySum >= 400) { tier = 1; kind = 'shape'; }
+  return { tier, kind, mine, deny, line };
 }
 
 /* And what he thinks of a bad one, judged AFTER the stone is down: the question
@@ -1524,7 +1627,8 @@ function judgeMove(r, c, p, q) {
   if (q.tier === 1 && moveCount - _lastPraise < 7) return;
   if (q.tier === 2 && moveCount - _lastPraise < 3) return;
   _lastPraise = moveCount;
-  throwOnBoard(r, c, 'fish', q.tier === 3 ? 1.25 : q.tier === 2 ? 0.95 : 0.7);
+  if (q.kind === 'block') rippleAt(r, c, q.tier === 3 ? 1.15 : 0.9, q.line);
+  else throwOnBoard(r, c, 'fish', q.tier === 3 ? 1.25 : q.tier === 2 ? 0.95 : 0.7);
   guruShout(q.kind);
   if (q.tier === 3) showQuote(q.kind === 'block' ? 'defend' : 'attack');
 }
@@ -2740,7 +2844,7 @@ function onPlay(snap) {
   const s = v.s || 0;
   const moves = v.moves ? (Array.isArray(v.moves) ? v.moves : Object.values(v.moves)) : [];
   if (s !== _fbSession) {
-    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; _lastScold = -9; drop = null; jolts.clear();
+    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; _lastScold = -9; drop = null; ripple = null; jolts.clear();
     showQuote('open');
     log(t('── new game ──', '── 新游戏 ──'), 'lround');
   }
