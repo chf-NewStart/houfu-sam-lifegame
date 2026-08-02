@@ -62,8 +62,14 @@
     /* Rewind */
     .rp-card { max-width: 100%; margin-top: 8px; }
     .rp-row { display: flex; gap: 7px; align-items: center; }
-    .rp-nudge { flex: 0 0 auto; padding: 6px 12px; }
-    #rpRange { flex: 1; min-width: 0; accent-color: #e8b04a; background: transparent; height: 22px; }
+    /* Both of these need a descendant selector to beat `.btn { flex: 1 }`,
+       which is defined further down the sheet at the same specificity — the
+       arrows were taking a third of the row each and squeezing the slider into
+       the middle. And the three buttons underneath share the row evenly rather
+       than going two-then-one, which is what the guru's own controls do. */
+    .rp-row .rp-nudge { flex: 0 0 auto; padding: 6px 16px; }
+    .rp-card .brow .btn { flex: 1 1 0; }
+    #rpRange { flex: 1 1 auto; min-width: 0; accent-color: #e8b04a; background: transparent; height: 22px; }
     .rp-cap { font-size: 0.68rem; color: #8a8299; margin-top: 7px; min-height: 1.4em; line-height: 1.5; }
     .rp-cap b { color: #e8b04a; font-weight: normal; }
     .rp-cap .rp-was { color: #ff9ec4; }
@@ -605,6 +611,7 @@ function newGame() {
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
   drop = null; ripple = null; jolts.clear();
+  if (waveCur) { waveCur.fill(0); wavePrev.fill(0); waveLive = 0; waveAge = 0; }
   rpStop(); replay = null; reviewData = null; reviewOpen = false;
   renderReplayUI();
   showQuote('open');                             // he opens the game with a line
@@ -729,6 +736,7 @@ function placeStone(r, c) {
   board[r][c] = curP;
   lastMove = [r, c];
   moveCount++;
+  waveDrop(r, c);              // every stone disturbs the surface a little
   const col = COLS[c], row = N - r;
   log(`${moveCount}. ${t(curP===1?'Lime':'Tomato', curP===1?'青柠':'番茄')} ${col}${row}`, 'lmove');
   gameRecord.push({
@@ -893,6 +901,7 @@ function draw() {
       }
     }
   }
+  drawWave();
   drawReplayMarks();
   drawRipple();
 
@@ -1364,15 +1373,17 @@ function animFrame(now) {
   if (drop && !drop.hit && now - drop.t0 >= FLY) {
     drop.hit = now;
     knock(drop.r, drop.c, drop.force);
+    waveSplash(drop.r, drop.c, drop.force);
     const wrap = document.getElementById('boardWrap');
     if (wrap) { wrap.classList.remove('slam'); void wrap.offsetWidth; wrap.classList.add('slam'); }
   }
   stepJolts(dt);
+  waveTick(now);
   if (drop && now - drop.t0 > drop.dur) drop = null;
   if (ripple && now - ripple.t0 > ripple.dur) ripple = null;
   draw();
   drawDrop();          // on its own layer, over the whole page
-  if (drop || ripple || jolts.size) ensureAnim();
+  if (drop || ripple || waveLive || jolts.size) ensureAnim();
 }
 
 /* A block is not a catch. Nothing is thrown for one: the stone you just put
@@ -1386,158 +1397,173 @@ function rippleAt(r, c, mag, stopped) {
   if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
   if (REDUCED.matches) return;
   ripple = { t0: performance.now(), r, c, mag: mag || 1, dur: 2100, stopped: stopped || [] };
-  ripInit();
-  ripSplash(mag || 1);
+  waveSplash(r, c, mag || 1);
   ensureAnim();
 }
 
-/* The rings are the arcade card's water, not three drawn circles. The gomoku
-   card on the front page solves a height field — the classic wave equation on
-   a coarse grid — and renders it by displacing the pixels underneath, so what
-   you see is the board REFRACTED rather than something painted over it. Same
-   solver here, with two differences forced by where it runs:
+/* ── The board sits on water ──────────────────────
+   The gomoku card on the front page solves a height field — the classic wave
+   equation on a coarse grid — and that solver runs here too. What it drives is
+   different, and the difference matters: the card REFRACTS its background,
+   which reads as looking down through water at something underneath. A stone
+   is not dropped under the water, it is dropped ON it. So the field is
+   rendered as light on a surface instead — crests catch a cold light, troughs
+   go dark, and the board itself stays exactly where it is, sharp, underneath.
 
-   it is local, a square of about nine cells around the stone, because a block
-   is a focused thing and because warping a 760px board every frame is a lot of
-   pixels for a ripple; and it works at a fixed small resolution rather than the
-   board's, since water is low-frequency and nobody can see the difference —
-   which keeps the cost the same whether the board is 373px on a phone or 760
-   on a desktop. */
-const RIP_PX = 176;                     // working resolution of the lens
-const RIP_SIM = 0.5;                    // solver grid relative to that
-let ripSrc = null, ripSrcCtx = null, ripOut = null, ripOutCtx = null;
-let ripCur = null, ripPrev = null, ripImg = null, ripSW = 0, ripSH = 0, ripMask = null;
+   One field, the whole board, always there. Every stone that lands sends a
+   small ring out across it. A move worth remarking on sends a bigger one, and
+   sends it in slow motion — the solver is stepped at half rate for a moment,
+   which is the only honest way to slow water down: you cannot fake it by
+   scaling the picture.
 
-function ripInit() {
-  if (ripSrc) return;
-  ripSrc = document.createElement('canvas'); ripSrc.width = ripSrc.height = RIP_PX;
-  ripSrcCtx = ripSrc.getContext('2d', { willReadFrequently: true });
-  ripOut = document.createElement('canvas'); ripOut.width = ripOut.height = RIP_PX;
-  ripOutCtx = ripOut.getContext('2d');
-  ripSW = ripSH = Math.round(RIP_PX * RIP_SIM);
-  ripCur = new Float32Array(ripSW * ripSH);
-  ripPrev = new Float32Array(ripSW * ripSH);
-  ripImg = ripOutCtx.createImageData(RIP_PX, RIP_PX);
-  // A round falloff to zero at the rim. Without it the wave reflects off the
-  // edges of the lens and the square it works in becomes visible as a seam
-  // across the board — which is the one thing that would give the trick away.
-  // Constant for the life of the page, so it is built once.
-  ripMask = new Float32Array(RIP_PX * RIP_PX);
-  const mid = (RIP_PX - 1) / 2;
-  for (let y = 0; y < RIP_PX; y++) {
-    for (let x = 0; x < RIP_PX; x++) {
-      const d = Math.hypot(x - mid, y - mid) / mid;
-      ripMask[y * RIP_PX + x] = d >= 0.96 ? 0 : d <= 0.62 ? 1 : (0.96 - d) / 0.34;
-    }
-  }
+   It is drawn at the solver's own resolution and scaled up with smoothing on.
+   Water has no fine detail to lose, the cost stops depending on how big the
+   board is, and the upscale does the softening for free. */
+const WAVE_MAX = 116;
+let waveW = 0, waveCur = null, wavePrev = null;
+let waveCv = null, waveCtx = null, waveImg = null;
+let waveAcc = 0, waveSlowUntil = 0, waveLive = 0, waveAge = 0;
+
+function waveInit() {
+  const w = Math.max(56, Math.min(WAVE_MAX, Math.round(CSIZE / 6)));
+  if (w === waveW && waveCur) return;
+  waveW = w;
+  waveCur = new Float32Array(w * w);
+  wavePrev = new Float32Array(w * w);
+  waveCv = document.createElement('canvas');
+  waveCv.width = waveCv.height = w;
+  waveCtx = waveCv.getContext('2d');
+  waveImg = waveCtx.createImageData(w, w);
 }
-function ripPoke(cx, cy, strength, radius) {
+// board point -> field cell
+function waveCell(r, c) {
+  return [Math.round((PAD + c * CELL) / CSIZE * (waveW - 1)),
+          Math.round((PAD + r * CELL) / CSIZE * (waveW - 1))];
+}
+function wavePoke(gx, gy, strength, radius) {
   for (let y = -radius; y <= radius; y++) {
-    const yy = cy + y; if (yy < 1 || yy >= ripSH - 1) continue;
+    const yy = gy + y; if (yy < 1 || yy >= waveW - 1) continue;
     for (let x = -radius; x <= radius; x++) {
-      const xx = cx + x; if (xx < 1 || xx >= ripSW - 1) continue;
+      const xx = gx + x; if (xx < 1 || xx >= waveW - 1) continue;
       const d = Math.hypot(x, y); if (d > radius) continue;
-      ripPrev[yy * ripSW + xx] -= strength * Math.cos((d / radius) * Math.PI * 0.5);
+      wavePrev[yy * waveW + xx] -= strength * Math.cos((d / radius) * Math.PI * 0.5);
     }
   }
 }
-function ripRing(cx, cy, rr, strength) {
+function waveRing(gx, gy, rr, strength) {
   const steps = Math.max(12, (2 * Math.PI * rr) | 0);
   for (let s = 0; s < steps; s++) {
     const a = s / steps * Math.PI * 2;
-    const xx = (cx + Math.cos(a) * rr) | 0, yy = (cy + Math.sin(a) * rr) | 0;
-    if (xx < 1 || yy < 1 || xx >= ripSW - 1 || yy >= ripSH - 1) continue;
-    ripPrev[yy * ripSW + xx] -= strength;
+    const xx = (gx + Math.cos(a) * rr) | 0, yy = (gy + Math.sin(a) * rr) | 0;
+    if (xx < 1 || yy < 1 || xx >= waveW - 1 || yy >= waveW - 1) continue;
+    wavePrev[yy * waveW + xx] -= strength;
   }
-}
-/* Much gentler than the card's numbers, and for a reason: the card refracts a
-   PHOTOGRAPH, so displacement alone carries the effect. This board is #0e0e0e,
-   where displacing black over black shows nothing and the lighting term is
-   doing all the work — at the card's strength every wavefront blows out to
-   white and the board turns to television snow. Small slopes, faint light. */
-function ripSplash(mag) {
-  ripCur.fill(0); ripPrev.fill(0);
-  const c = ripSW >> 1;
-  ripPoke(c, c, 4.2 * mag, 8);          // wide and shallow: a sharp poke turns
-  ripRing(c, c, 9, 2.4 * mag);          // the stone under it into a broken square
-  ripRing(c, c, 16, 1.4 * mag);
-}
-function ripStep() {
-  const c = ripCur, p = ripPrev, W = ripSW;
-  for (let y = 1; y < ripSH - 1; y++) {
-    let i = y * W + 1;
-    for (let x = 1; x < W - 1; x++, i++) {
-      c[i] = (((p[i - 1] + p[i + 1] + p[i - W] + p[i + W]) * 0.5) - c[i]) * 0.984;
-    }
-  }
-  const t = ripPrev; ripPrev = ripCur; ripCur = t;
 }
 
-/* Grab the board under the stone, bend it, put it back. */
+/* Every stone disturbs it a little. */
+function waveDrop(r, c) {
+  if (REDUCED.matches || !CELL) return;
+  waveInit();
+  const [gx, gy] = waveCell(r, c);
+  wavePoke(gx, gy, 4.4, 2);
+  waveLive = 1; waveAge = 0;
+  ensureAnim();
+}
+/* And a move he has something to say about disturbs it properly, slowly. */
+function waveSplash(r, c, mag) {
+  if (REDUCED.matches || !CELL) return;
+  waveInit();
+  const [gx, gy] = waveCell(r, c);
+  wavePoke(gx, gy, 7.5 * mag, 3);
+  waveRing(gx, gy, 4, 3.4 * mag);
+  waveRing(gx, gy, 7, 1.8 * mag);
+  waveSlowUntil = performance.now() + 1400;
+  waveLive = 1; waveAge = 0;
+  ensureAnim();
+}
+
+function waveStep() {
+  const c = waveCur, p = wavePrev, W = waveW;
+  for (let y = 1; y < W - 1; y++) {
+    let i = y * W + 1;
+    for (let x = 1; x < W - 1; x++, i++) {
+      c[i] = (((p[i - 1] + p[i + 1] + p[i - W] + p[i + W]) * 0.5) - c[i]) * 0.986;
+    }
+  }
+  const t = wavePrev; wavePrev = waveCur; waveCur = t;
+}
+// Summed over every fifth cell, so the figure scales with the grid — the
+// threshold has to scale with it too. A fixed one left the pool "moving"
+// forever on a residue nobody could see, with the animation loop running
+// behind it for as long as the page was open.
+function waveEnergy() {
+  let e = 0;
+  for (let i = 0; i < wavePrev.length; i += 5) { const v = wavePrev[i]; e += v < 0 ? -v : v; }
+  return e;
+}
+// Not for the first breath, though. A poke touches a dozen cells, so the
+// summed energy STARTS near zero and grows as the ring spreads — testing it
+// immediately killed every ripple on the frame it was born.
+function waveStill() { return waveAge > 45 && waveEnergy() < wavePrev.length * 0.002; }
+
+/* Advance the water. Called once per animation frame, and half as often while
+   a big ring is still spreading. */
+function waveTick(now) {
+  if (!waveLive || !waveCur) return;
+  const slow = now < waveSlowUntil;
+  waveAcc += slow ? 0.5 : 1;
+  while (waveAcc >= 1) { waveStep(); waveAge++; waveAcc -= 1; }
+  if (!slow && waveStill()) { waveLive = 0; wavePrev.fill(0); waveCur.fill(0); }
+}
+
+/* Light on a surface: crests take a cold highlight, troughs darken. Nothing is
+   displaced — the board is on top of the water, not under it. */
+function drawWave() {
+  if (!waveLive || !waveCur) return;
+  const f = wavePrev, W = waveW, data = waveImg.data;
+  for (let y = 0; y < W; y++) {
+    const ym = y > 0 ? y - 1 : y, yp = y < W - 1 ? y + 1 : y;
+    for (let x = 0; x < W; x++) {
+      const xm = x > 0 ? x - 1 : x, xp = x < W - 1 ? x + 1 : x;
+      const dhx = f[y * W + xp] - f[y * W + xm];
+      const dhy = f[yp * W + x] - f[ym * W + x];
+      const lit = (-dhx - dhy) * 78;             // light from the upper left
+      const o = (y * W + x) * 4;
+      if (lit >= 0) {
+        data[o] = 186; data[o + 1] = 222; data[o + 2] = 255;
+        data[o + 3] = lit > 168 ? 168 : lit;
+      } else {
+        data[o] = 4; data[o + 1] = 10; data[o + 2] = 20;
+        const a = -lit * 0.8;
+        data[o + 3] = a > 130 ? 130 : a;
+      }
+    }
+  }
+  waveCtx.putImageData(waveImg, 0, 0);
+  const sm = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(waveCv, 0, 0, W, W, 0, 0, CSIZE, CSIZE);
+  ctx.imageSmoothingEnabled = sm;
+}
+
+/* The stones a block cut, collared for as long as the bell rings. */
 function drawRipple() {
   if (!ripple) return;
   const el = performance.now() - ripple.t0;
-  if (el > ripple.dur) return;
-  const x = PAD + ripple.c * CELL, y = PAD + ripple.r * CELL;
-
-  // The stones the block cut, collared — drawn BEFORE the water so the rings
-  // pass over them too.
   const hold = Math.max(0, 1 - el / 1250);
-  if (hold > 0 && ripple.stopped.length) {
-    ctx.save();
-    ctx.globalAlpha = hold * 0.85;
-    ctx.strokeStyle = '#bfe6ff';
-    ctx.lineWidth = Math.max(1.4, CELL * 0.055);
-    ctx.setLineDash([CELL * 0.16, CELL * 0.12]);
-    for (const [rr, cc] of ripple.stopped) {
-      ctx.beginPath();
-      ctx.arc(PAD + cc * CELL, PAD + rr * CELL, CELL * 0.47, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.setLineDash([]);
-    ctx.restore();
+  if (hold <= 0 || !ripple.stopped.length) return;
+  ctx.save();
+  ctx.globalAlpha = hold * 0.85;
+  ctx.strokeStyle = '#bfe6ff';
+  ctx.lineWidth = Math.max(1.4, CELL * 0.055);
+  ctx.setLineDash([CELL * 0.16, CELL * 0.12]);
+  for (const [rr, cc] of ripple.stopped) {
+    ctx.beginPath();
+    ctx.arc(PAD + cc * CELL, PAD + rr * CELL, CELL * 0.47, 0, Math.PI * 2);
+    ctx.stroke();
   }
-
-  ripInit();
-  const side = Math.min(CSIZE, CELL * 9);
-  const sx = Math.max(0, Math.min(CSIZE - side, x - side / 2));
-  const sy = Math.max(0, Math.min(CSIZE - side, y - side / 2));
-  // pull the region in at the lens's own resolution, whatever the board's is
-  ripSrcCtx.clearRect(0, 0, RIP_PX, RIP_PX);
-  ripSrcCtx.drawImage(canvas, sx * DPR, sy * DPR, side * DPR, side * DPR, 0, 0, RIP_PX, RIP_PX);
-  let bg;
-  try { bg = ripSrcCtx.getImageData(0, 0, RIP_PX, RIP_PX).data; } catch (e) { return; }
-
-  ripStep();
-  const field = ripPrev, data = ripImg.data, inv = 1 / RIP_SIM;
-  const fade = Math.max(0, Math.min(1, (ripple.dur - el) / 500));
-  for (let py = 0; py < RIP_PX; py++) {
-    const fy = py * RIP_SIM, s0 = fy | 0, r0 = s0 * ripSW;
-    const ym = s0 > 0 ? s0 - 1 : s0, yp = s0 + 1 < ripSH ? s0 + 1 : s0;
-    for (let px = 0; px < RIP_PX; px++) {
-      const fx = px * RIP_SIM, x0 = fx | 0;
-      const xm = x0 > 0 ? x0 - 1 : x0, xp = x0 + 1 < ripSW ? x0 + 1 : x0;
-      const m = ripMask[py * RIP_PX + px] * fade;
-      const dhx = (field[r0 + xp] - field[r0 + xm]) * m;
-      const dhy = (field[yp * ripSW + x0] - field[ym * ripSW + x0]) * m;
-      let bx = px + ((dhx * 2.0 * inv) | 0), by = py + ((dhy * 2.0 * inv) | 0);
-      if (bx < 0) bx = 0; else if (bx >= RIP_PX) bx = RIP_PX - 1;
-      if (by < 0) by = 0; else if (by >= RIP_PX) by = RIP_PX - 1;
-      const bi = (by * RIP_PX + bx) * 4;
-      // a cold light on the wavefront, weighted to the blue end — it is water,
-      // and on a board this dark a neutral highlight just reads as static
-      const lit = (-dhx - dhy) * 9;
-      let spec = (dhx * dhx + dhy * dhy) * 9; if (spec > 13) spec = 13;
-      const oi = (py * RIP_PX + px) * 4;
-      const r = bg[bi] + lit * 0.7 + spec * 0.55, g = bg[bi + 1] + lit * 0.9 + spec * 0.9, b = bg[bi + 2] + lit + spec * 1.3;
-      data[oi]     = r < 0 ? 0 : r > 255 ? 255 : r;
-      data[oi + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
-      data[oi + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
-      data[oi + 3] = 255;
-    }
-  }
-  ripOutCtx.putImageData(ripImg, 0, 0);
-  ctx.drawImage(ripOut, 0, 0, RIP_PX, RIP_PX, sx, sy, side, side);
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 function throwOnBoard(r, c, kind, force) {
@@ -1751,10 +1777,13 @@ function humanSide() {
 
 let _lastPraise = -9, _lastScold = -9, _shoutTimer = 0;
 function judgeMove(r, c, p, q) {
-  // A blunder outranks whatever the move was also trying to do — you do not get
-  // a fish for building a nice shape while five is sitting on the board.
+  // A blunder outranks whatever else the move was doing. Leaving the other side
+  // an open four is a lost game however good the shape you just built is, and
+  // being handed a fish for it is worse than useless — so anything above the
+  // "this stone is doing nothing" tier wins outright, and only that bottom tier
+  // gives way to a move that genuinely achieved something.
   const bad = moveBlunder(p, q);
-  if (bad.tier === 3 || (bad.tier && !q.tier)) {
+  if (bad.tier >= 2 || (bad.tier && !q.tier)) {
     if (bad.tier === 1 && moveCount - _lastScold < 8) return;
     if (bad.tier === 2 && moveCount - _lastScold < 4) return;
     _lastScold = moveCount;
@@ -3148,7 +3177,7 @@ function init() {
   newGame();
 }
 
-window.addEventListener('resize', () => { computeLayout(); sizeFlyLayer(); draw(); });
+window.addEventListener('resize', () => { computeLayout(); sizeFlyLayer(); waveInit(); draw(); });
 document.addEventListener('DOMContentLoaded', init);
 
 /* remember the language across the whole arcade */
