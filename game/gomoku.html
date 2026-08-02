@@ -880,7 +880,9 @@ function myTurn() {
 
 function commit(r, c) {
   aimCell = null;
-  if (remoteMode) fbSendMove(r, c);   // Firebase echoes back → placeStone fires on both sides
+  // Firebase echoes back and the board is rebuilt in applyState — placeStone
+  // never runs on this path, so anything it records has to be recorded there.
+  if (remoteMode) fbSendMove(r, c);
   else placeStone(r, c);
 }
 
@@ -3179,7 +3181,7 @@ let _reviewWait = 0;
 // retry has to remember which game it is asking about.
 function retryReview() { if (gameOver) reviewGame(winResult ? winResult.player : null); }
 function reviewGame(winner){
-  if (remoteMode || !engineVoiceOn || !dsKey()) return;
+  if (!engineVoiceOn || !dsKey()) return;
   if (!gameRecord.length) return;
 
   const seq = ++commentSeq;
@@ -3190,17 +3192,26 @@ function reviewGame(winner){
   const card = body.closest('.oracle-card');
   if (card) card.classList.add('speaking');
 
-  const who = p => engineName(p) + ' (' + (playerTypes[p] === 'human' ? 'the human' :
-               playerTypes[p] === 'random' ? 'random' : 'the engine') + ')';
+  // Which way it went, from the reader's side — needed before the sides can be
+  // named, because who they are is mostly which one of them is reading.
+  const you = humanSide();
+  /* One way of saying who each side is, whatever kind of game it was. In a room
+     both sides are people, and playerTypes still holds whatever this browser
+     happens to be set to locally — which is not what is happening — so a remote
+     game is answered first and never asks it. */
+  const kind = p => remoteMode ? 'a person'
+                  : playerTypes[p] === 'human' ? 'a person'
+                  : playerTypes[p] === 'random' ? 'random moves'
+                  : 'the engine';
+  const who = p => engineName(p) + ' (' +
+    (p === you ? 'you, the person reading this' : 'the opponent, ' + kind(p)) + ')';
   const moves = gameRecord.map(m =>
     m.n + '. ' + engineName(m.p) + ' ' + m.at +
     (m.alt ? '   [it also weighed ' + m.alt + (m.forced ? '; search saw a forced win' : '') + ']' : '')
   ).join('\n');
 
-  // Which way it went, from the human's side. Without this the prompt below
-  // asks for "the move that lost it" whatever happened, and a won game comes
-  // back as a telling-off.
-  const you = humanSide();
+  // Without this the prompt below asks for "the move that lost it" whatever
+  // happened, and a won game comes back as a telling-off.
   const outcome = winner == null ? 'draw' : you == null ? 'neutral' : winner === you ? 'won' : 'lost';
   const ASK = {
     won:
@@ -3482,7 +3493,7 @@ function renderReplayUI() {
   // With a review on screen the rewind is part of the detail; without one
   // (no key, or he could not make it out) the scrubber is all there is, so it
   // stands on its own.
-  const on = gameOver && gameRecord.length > 0 && !remoteMode &&
+  const on = gameOver && gameRecord.length > 0 &&
              (!reviewData || !reviewData.gist || reviewOpen);
   card.style.display = on ? '' : 'none';
   if (!on) return;
@@ -3563,17 +3574,27 @@ function updateUndoBtn() { document.getElementById('undoBtn').disabled = remoteM
 
 /* Rebuild the whole board from the authoritative move list — one source of truth,
    so an undo is simply a shorter list and both sides converge. */
+/* A remote board is rebuilt from the move list rather than played through
+   placeStone, and the record the review reads was only ever written by
+   placeStone — which is why a game against a person ended with nothing to
+   review. It is written here too now, from the same list the board comes from,
+   so the two cannot disagree. There are no bracketed engine scores in it: a
+   person's move has no search behind it to report. */
 function applyState(moves) {
   _remoteMoves = moves.slice();
   board = Array.from({ length: N }, () => new Array(N).fill(0));
   curP = 1; moveCount = 0; lastMove = null; gameOver = false; winResult = null; hoverCell = null;
+  gameRecord = []; winMove = null;
   let winner = null;
   for (const m of moves) {
     const r = m[0], c = m[1];
     if (r == null || c == null || board[r][c] !== 0) continue;
+    const mover = curP;
     board[r][c] = curP; lastMove = [r, c]; moveCount++;
+    const at = COLS[c] + (N - r);
+    gameRecord.push({ n: moveCount, p: mover, at, r, c, alt: null, forced: false });
     const wr = checkWin(board, r, c);
-    if (wr) { winner = wr; winResult = wr; gameOver = true; break; }
+    if (wr) { winner = wr; winResult = wr; gameOver = true; winMove = { n: moveCount, p: mover, r, c, at }; break; }
     curP = curP === 1 ? 2 : 1;
   }
   const wb = document.getElementById('winBanner');
@@ -3582,6 +3603,8 @@ function applyState(moves) {
       _remoteOver = true; scores[winner.player]++;
       log(winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！'), winner.player === 1 ? 'lwin' : 'lwin-r');
       showQuote(winner.player === myColor ? 'win' : 'lose');
+      // each side asks with its own key and is reviewed from its own seat
+      reviewGame(winner.player);
     }
     wb.className = 'win-banner ' + (winner.player === 1 ? 'win-g' : 'win-r');
     wb.textContent = winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！');
@@ -3589,7 +3612,7 @@ function applyState(moves) {
   } else {
     _remoteOver = false; wb.className = 'win-banner'; document.getElementById('newBtn').className = 'btn';
   }
-  updateUndoBtn(); draw(); renderPanel();
+  updateUndoBtn(); draw(); renderPanel(); renderReplayUI();
 }
 
 function onPlay(snap) {
@@ -3598,6 +3621,8 @@ function onPlay(snap) {
   const moves = v.moves ? (Array.isArray(v.moves) ? v.moves : Object.values(v.moves)) : [];
   if (s !== _fbSession) {
     _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; _lastScold = -9; drop = null; ripple = null; jolts.clear();
+    // the previous game's review would otherwise sit there over a fresh board
+    commentSeq++; voiceMarks = []; rpStop(); replay = null; reviewData = null; reviewOpen = false; renderReplayUI();
     showQuote('open');
     log(t('── new game ──', '── 新游戏 ──'), 'lround');
   }
