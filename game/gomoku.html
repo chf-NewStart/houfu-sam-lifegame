@@ -163,6 +163,10 @@
     .emoji-bar { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
     .emoji-bar button { flex: 1 1 auto; min-width: 36px; background: #0d0d0d; border: 1px solid #1e1e1e; font-size: 1.1rem; padding: 5px 0; cursor: pointer; border-radius: 4px; transition: all 0.1s; }
     .emoji-bar button:hover { border-color: #1db954; background: rgba(29,185,84,0.08); }
+    /* He throws from where he is sitting, and the board is a separate canvas
+       further down the page — so the thing in the air is drawn on a layer over
+       the whole viewport, and only the landing belongs to the board. */
+    #flyLayer { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
     .react-float { position: fixed; left: 50%; top: 40%; transform: translate(-50%,-50%); font-size: 4rem; pointer-events: none; opacity: 0; z-index: 300; }
     .react-float.go { animation: reactPop 1.8s ease-out forwards; }
     @keyframes reactPop { 0%{opacity:0;transform:translate(-50%,-30%) scale(.4);} 16%{opacity:1;transform:translate(-50%,-50%) scale(1.15);} 70%{opacity:1;transform:translate(-50%,-60%) scale(1);} 100%{opacity:0;transform:translate(-50%,-140%) scale(1);} }
@@ -231,7 +235,7 @@
       font-size: 2.1rem; line-height: 1.15; letter-spacing: 0.04em;
       color: #f4eee1; text-shadow: 0 0 14px rgba(0,0,0,0.9);
     }
-    /* a boot is not written in the same ink as a fish */
+    /* a tin is not written in the same ink as a fish */
     .guru-shout.bad .gs-cn { color: #a9a191; }
     /* 朱文印, stamped after the last stroke and sitting a little off square */
     .gs-seal {
@@ -472,6 +476,7 @@
   </div>
 </div>
 
+<canvas id="flyLayer" aria-hidden="true"></canvas>
 <div id="reactFloat" class="react-float" aria-hidden="true"></div>
 <div id="prompt" class="prompt-modal" style="display:none">
   <div class="prompt-box">
@@ -890,7 +895,6 @@ function draw() {
   drawReplayMarks();
 
   drawAim();
-  drawDrop();          // whatever he threw is lying on top of all of it
 }
 
 /* The aimed point: a ring on the intersection, and the coordinate printed in
@@ -965,9 +969,10 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
 }
 
 /* ── What he throws you ───────────────────────────
-   He is a fisherman, so a good move lands you a fish and a bad one lands you
-   the boot he pulled up instead — it falls out of the sky onto the board, lies
-   there a couple of seconds, and is gone. Drawn as ink, not as sprites: a
+   He is a fisherman, so a good move lands you a gold 锦鲤, a won game lands you
+   a tomato out of the arcade's own hero card, and a bad move lands you the tin
+   he dragged up instead. It leaves his hand, arcs across the page, lies on the
+   board a couple of seconds, and is gone. Drawn as ink, not as sprites: a
    tapered brush stroke has a width profile, so inkStroke() walks the curve and
    fills an outline rather than calling stroke() with one flat width, which is
    the whole difference between a brush mark and a wire. Bone white, because
@@ -1045,103 +1050,156 @@ function drawFish(g, s) {
   g.beginPath(); g.arc(-0.745*s, -0.09*s, 0.028*s, 0, Math.PI*2); g.fill();
 }
 
-/* And for winning: a tomato, which is what this arcade throws. Same ink, same
-   brush, but a mass rather than an outline — a tomato has no line worth
-   drawing, only a shoulder and a shine. */
-function drawTomato(g, s) {
-  g.shadowColor = 'rgba(226,59,46,0.7)';
-  g.shadowBlur = s * 0.26;
-  g.fillStyle = '#d8433a';
+/* And what he actually pulls up most days: a tin, down there long enough to
+   have gone soft at the edges and grown a bit of weed. A boot is the joke
+   everybody makes; a can is the thing that is really in the water. Painted as
+   a mass with a few strokes over it — at two cells wide an outline of a
+   cylinder is just a rectangle. */
+function drawCan(g, s) {
+  const L = -0.46 * s, R = 0.46 * s, TOP = -0.62 * s, BOT = 0.66 * s, RY = 0.17 * s;
+  g.fillStyle = '#7f8a90';
   g.beginPath();
-  g.ellipse(0, 0.06 * s, 0.74 * s, 0.66 * s, 0, 0, Math.PI * 2);
+  g.moveTo(L, TOP);
+  g.lineTo(L, BOT);
+  g.bezierCurveTo(L, BOT + RY * 1.5, R, BOT + RY * 1.5, R, BOT);
+  g.lineTo(R, TOP);
+  g.closePath();
   g.fill();
-  g.shadowBlur = 0;
-  // the ripening shoulder, and the shine off it
-  g.fillStyle = 'rgba(240,151,58,0.55)';
+  // the lit side, and the dent that says it has been stepped on
+  g.fillStyle = 'rgba(206,216,222,0.40)';
   g.beginPath();
-  g.ellipse(-0.16 * s, -0.18 * s, 0.42 * s, 0.30 * s, -0.4, 0, Math.PI * 2);
+  g.moveTo(L, TOP); g.lineTo(-0.16 * s, TOP); g.lineTo(-0.16 * s, BOT * 0.96);
+  g.bezierCurveTo(-0.30 * s, BOT + RY, L, BOT + RY * 0.6, L, BOT);
+  g.closePath();
   g.fill();
-  g.fillStyle = 'rgba(255,236,214,0.75)';
+  g.fillStyle = 'rgba(38,44,48,0.5)';
   g.beginPath();
-  g.ellipse(-0.30 * s, -0.30 * s, 0.15 * s, 0.09 * s, -0.5, 0, Math.PI * 2);
+  g.moveTo(0.10 * s, -0.30 * s);
+  g.bezierCurveTo(0.34 * s, -0.16 * s, 0.28 * s, 0.10 * s, 0.06 * s, 0.20 * s);
+  g.bezierCurveTo(0.26 * s, 0.02 * s, 0.28 * s, -0.14 * s, 0.10 * s, -0.30 * s);
+  g.closePath();
   g.fill();
-  // calyx: five sepals laid on in one stroke each, and the stalk
-  g.fillStyle = '#6f9c46';
-  for (const a of [-2.36, -1.86, -1.30, -0.86, -0.30]) {
-    const dx = Math.cos(a), dy = Math.sin(a);
-    inkCurve(g,
-      [0, -0.42 * s],
-      [dx * 0.26 * s, -0.46 * s + dy * 0.18 * s],
-      [dx * 0.50 * s, -0.40 * s + dy * 0.26 * s],
-      [dx * 0.66 * s, -0.30 * s + dy * 0.30 * s],
-      0.09 * s, 0.05 * s, 0.008 * s);
-  }
-  inkCurve(g, [0, -0.44 * s], [0.04 * s, -0.62 * s], [-0.04 * s, -0.76 * s], [0.06 * s, -0.92 * s],
-           0.07 * s, 0.05 * s, 0.03 * s);
+  // rim, the dark inside, and the lid peeled back off it
+  g.fillStyle = '#aab4b9';
+  g.beginPath(); g.ellipse(0, TOP, 0.46 * s, RY, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#394348';
+  g.beginPath(); g.ellipse(0, TOP, 0.36 * s, RY * 0.64, 0, 0, Math.PI * 2); g.fill();
+  // the lid, still hinged on the right of the rim and standing up off it
+  g.fillStyle = '#c2ccd1';
+  g.beginPath();
+  g.moveTo(0.30 * s, TOP - RY * 0.25);
+  g.bezierCurveTo(0.44 * s, -1.02 * s, 0.86 * s, -0.94 * s, 0.80 * s, -0.62 * s);
+  g.bezierCurveTo(0.72 * s, -0.74 * s, 0.50 * s, -0.72 * s, 0.42 * s, TOP - RY * 0.1);
+  g.closePath();
+  g.fill();
+  g.fillStyle = 'rgba(60,70,76,0.45)';
+  inkCurve(g, [0.34 * s, TOP - RY * 0.3], [0.48 * s, -0.90 * s], [0.74 * s, -0.88 * s], [0.78 * s, -0.66 * s],
+           0.010 * s, 0.022 * s, 0.010 * s);
+  // two label bands, worn through
+  g.fillStyle = 'rgba(232,240,244,0.45)';
+  inkCurve(g, [L, -0.16 * s], [-0.1 * s, -0.12 * s], [0.1 * s, -0.20 * s], [R, -0.16 * s], 0.014 * s, 0.030 * s, 0.014 * s);
+  inkCurve(g, [L,  0.30 * s], [-0.1 * s,  0.34 * s], [0.1 * s,  0.26 * s], [R,  0.30 * s], 0.014 * s, 0.026 * s, 0.014 * s);
+  // and the weed it came up wearing
+  g.fillStyle = 'rgba(146,168,124,0.88)';
+  inkCurve(g, [-0.30 * s, TOP + RY], [-0.66 * s, -0.44 * s], [-0.56 * s, -0.02 * s], [-0.80 * s, 0.32 * s], 0.014 * s, 0.038 * s, 0.008 * s);
+  inkCurve(g, [ 0.36 * s, -0.10 * s], [ 0.66 * s,  0.02 * s], [ 0.54 * s, 0.28 * s], [ 0.72 * s, 0.54 * s], 0.012 * s, 0.030 * s, 0.008 * s);
 }
 
-/* And the boot, which is what you actually catch most days. A boot has no
-   outline worth drawing at three cells wide — it is a mass, so it is painted
-   as one, in ink with the life taken out of it. */
-function drawBoot(g, s) {
-  g.fillStyle = '#7d7669';
-  g.beginPath();
-  g.moveTo(0.04 * s, -0.88 * s);
-  g.lineTo(0.54 * s, -0.86 * s);
-  g.bezierCurveTo(0.62 * s, -0.40 * s, 0.64 * s, 0.02 * s, 0.68 * s, 0.30 * s);
-  g.lineTo(-0.82 * s, 0.30 * s);
-  g.bezierCurveTo(-0.96 * s, 0.26 * s, -0.94 * s, 0.06 * s, -0.78 * s, 0.01 * s);
-  g.bezierCurveTo(-0.44 * s, -0.08 * s, -0.06 * s, -0.14 * s, 0.04 * s, -0.32 * s);
-  g.closePath();
-  g.fill();
-  // the sole, and the welt above it
-  g.fillStyle = '#4f4a42';
-  g.beginPath();
-  g.moveTo(-0.86 * s, 0.28 * s);
-  g.lineTo(0.72 * s, 0.28 * s);
-  g.lineTo(0.70 * s, 0.44 * s);
-  g.bezierCurveTo(0.10 * s, 0.50 * s, -0.60 * s, 0.50 * s, -0.88 * s, 0.42 * s);
-  g.closePath();
-  g.fill();
-  g.fillStyle = '#a9a191';
-  // cuff, instep seam, two eyelet ties
-  inkCurve(g, [0.02*s, -0.74*s], [0.20*s, -0.68*s], [0.40*s, -0.70*s], [0.56*s, -0.74*s], 0.012*s, 0.034*s, 0.012*s);
-  inkCurve(g, [-0.74*s, 0.02*s], [-0.40*s, -0.08*s], [-0.06*s, -0.14*s], [0.05*s, -0.30*s], 0.010*s, 0.026*s, 0.010*s);
-  for (const ly of [-0.56, -0.38]) {
-    inkCurve(g, [0.12*s, ly*s], [0.24*s, (ly-0.05)*s], [0.36*s, (ly+0.05)*s], [0.48*s, ly*s], 0.008*s, 0.020*s, 0.008*s);
-  }
-  // and the weed that came up with it, because it has been down there a while
-  g.fillStyle = 'rgba(150,160,132,0.75)';
-  inkCurve(g, [0.20*s, -0.86*s], [0.14*s, -1.02*s], [0.32*s, -1.06*s], [0.30*s, -1.22*s], 0.008*s, 0.020*s, 0.006*s);
-  inkCurve(g, [0.44*s, -0.84*s], [0.52*s, -0.98*s], [0.66*s, -0.92*s], [0.74*s, -1.04*s], 0.008*s, 0.018*s, 0.005*s);
+/* The tomato is not drawn here — it is the arcade's own, lifted glyph for
+   glyph from the hero card on the front page, where a rain of these piles up
+   under the cursor. Braille cells in a monospace face, sized by measuring the
+   first row rather than by guessing a font size, and coloured out of the same
+   ripening run: green through orange to red. A win gets a ripe one. */
+const TOMATO_ART = [
+  '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
+  '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
+  '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠻⣶⡆⠀⠿⠀⣶⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
+  '⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣴⠾⠛⢹⣶⡤⢶⣿⡟⠶⠦⠄⠀⠀⠀⠀⠀⠀⠀⠀',
+  '⠀⠀⠀⠀⠀⣠⣶⣤⣤⣤⣤⣴⠂⠸⠋⢀⣄⡉⠓⠀⠲⣶⣾⣿⣷⣄⠀⠀⠀⠀',
+  '⠀⠀⠀⢀⣾⡿⠋⠁⣠⣤⣿⡟⢀⣠⣾⣿⣿⣿⣷⣶⣤⣼⣿⣿⣿⣿⣆⠀⠀⠀',
+  '⠀⠀⠀⣾⡟⠀⣰⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀',
+  '⠀⠀⢸⡿⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀',
+  '⠀⠀⢸⡇⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀',
+  '⠀⠀⢸⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀',
+  '⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀',
+  '⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀',
+  '⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀',
+  '⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀',
+  '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
+];
+const TOMATO_RIPE = ['#f0973a', '#e8a13a', '#e23b2e', '#cf3027'];
+
+function drawTomatoArt(g, s, tint) {
+  const target = s * 2.1;
+  g.font = '20px Consolas, "Courier New", monospace';
+  const w20 = g.measureText(TOMATO_ART[0]).width || 1;
+  const fs = target * 20 / w20;
+  g.font = fs + 'px Consolas, "Courier New", monospace';
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  const lh = fs * 0.92;                       // the hero card's line-height
+  const x = -target / 2, y0 = -(TOMATO_ART.length - 1) * lh / 2;
+  g.shadowColor = tint;
+  g.shadowBlur = fs * 0.5;
+  g.fillStyle = tint;
+  for (let i = 0; i < TOMATO_ART.length; i++) g.fillText(TOMATO_ART[i], x, y0 + i * lh);
+  g.shadowBlur = 0;
+  g.textAlign = 'center';
+  g.textBaseline = 'alphabetic';
 }
 
 /* Where it lands, how hard, and what it does when it gets there.
-     0–260ms   falling, tumbling
-     260–420ms one bounce, squashed on contact
-     420–2400  lying there (a fish flops twice; a boot does not)
-     2400–2950 fading out */
+     0–FLY      in the air, thrown from where he is sitting
+     FLY+80     contact, squashed
+     ...+80     one small bounce
+     ..–2400    lying there (a fish flops twice; a tin does not)
+     2400–2950  fading out
+   Everything is in VIEWPORT coordinates, because the arc starts at the guru —
+   who lives in a card above the board, outside the board canvas entirely — and
+   ends on an intersection. Recomputed every frame from the two elements' own
+   rectangles, so the throw survives a scroll mid-flight. */
+const FLY = 520;
+function boardPoint(r, c, size) {
+  const b = canvas.getBoundingClientRect();
+  const lo = PAD + size * 0.9, hi = PAD + (N - 1) * CELL - size * 0.9;
+  return {
+    x: b.left + Math.max(lo, Math.min(hi, PAD + c * CELL)),
+    y: b.top + Math.max(PAD + size * 0.6, Math.min(PAD + (N - 1) * CELL - size * 0.5, PAD + r * CELL)),
+  };
+}
+function guruPoint(fallback) {
+  const el = document.getElementById('oracleFace');
+  if (!el) return { x: fallback.x, y: fallback.y - CELL * 9 };
+  const b = el.getBoundingClientRect();
+  if (!b.width) return { x: fallback.x, y: fallback.y - CELL * 9 };
+  return { x: b.left + b.width * 0.72, y: b.top + b.height * 0.42 };
+}
+
 function dropShape() {
   if (!drop) return null;
   const el = performance.now() - drop.t0;
   const fish = drop.kind === 'fish';
-  const size = CELL * (fish ? 1.5 : drop.kind === 'tomato' ? 1.15 : 1.35);   // half-width
-  // keep it wholly on the board even when the move was played in a corner
-  const lo = PAD + size * 0.9, hi = PAD + (N - 1) * CELL - size * 0.9;
-  const x = Math.max(lo, Math.min(hi, PAD + drop.c * CELL));
-  const y = Math.max(PAD + size * 0.6, Math.min(PAD + (N - 1) * CELL - size * 0.5, PAD + drop.r * CELL));
+  const size = CELL * (fish ? 1.5 : drop.kind === 'tomato' ? 1.35 : 1.2);   // half-width
+  const land = boardPoint(drop.r, drop.c, size);
+  let x = land.x, y = land.y;
   let dy = 0, rot = drop.tilt, sx = 1, sy = 1, alpha = 1;
-  if (el < 260) {                                  // fall: accelerating, tumbling
-    const u = el / 260;
-    dy = -(1 - u * u) * CELL * 6;
-    rot = drop.tilt + (1 - u) * drop.spin;
-    alpha = Math.min(1, el / 90);
-  } else if (el < 340) {                           // contact
-    const u = (el - 260) / 80;
+  if (el < FLY) {
+    // a thrown arc, not a drop: straight-line travel with a lob on top of it,
+    // tumbling the whole way and only settling upright as it arrives
+    const from = guruPoint(land);
+    const u = el / FLY, v = 1 - u;
+    x = from.x + (land.x - from.x) * u;
+    y = from.y + (land.y - from.y) * (u * u * 0.55 + u * 0.45);
+    dy = -Math.sin(u * Math.PI) * Math.max(70, Math.abs(land.y - from.y) * 0.34);
+    rot = drop.tilt + v * drop.spin;
+    sx = sy = 0.72 + 0.28 * u;                     // it is further away at the start
+    alpha = Math.min(1, el / 70);
+  } else if (el < FLY + 80) {                      // contact
+    const u = (el - FLY) / 80;
     dy = -Math.sin(u * Math.PI) * CELL * 0.55;
     sy = 1 - 0.22 * Math.sin((1 - u) * Math.PI * 0.5); sx = 2 - sy;
-  } else if (el < 420) {
-    const u = (el - 340) / 80;
+  } else if (el < FLY + 160) {
+    const u = (el - FLY - 80) / 80;
     dy = -Math.sin(u * Math.PI) * CELL * 0.16;
   } else if (el > 2400) {
     alpha = Math.max(0, 1 - (el - 2400) / 550);
@@ -1152,7 +1210,7 @@ function dropShape() {
     rot += Math.sin(el / 42) * 0.16 * flop;
     dy -= Math.abs(Math.sin(el / 42)) * CELL * 0.22 * flop;
   }
-  return { x, y, dy, rot, sx, sy, alpha, size, fish, kind: drop.kind };
+  return { x, y, dy, rot, sx, sy, alpha, size, fish, kind: drop.kind, flying: el < FLY };
 }
 
 function drawShock() {
@@ -1169,27 +1227,48 @@ function drawShock() {
   ctx.restore();
 }
 
+const flyCanvas = document.getElementById('flyLayer');
+const flyCtx = flyCanvas ? flyCanvas.getContext('2d') : null;
+let flyW = 0, flyH = 0;
+function sizeFlyLayer() {
+  if (!flyCanvas) return;
+  const w = window.innerWidth, h = window.innerHeight;
+  if (w === flyW && h === flyH) return;
+  flyW = w; flyH = h;
+  flyCanvas.width = Math.round(w * DPR);
+  flyCanvas.height = Math.round(h * DPR);
+  flyCanvas.style.width = w + 'px';
+  flyCanvas.style.height = h + 'px';
+  flyCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+
 function drawDrop() {
+  if (!flyCtx) return;
+  sizeFlyLayer();
+  flyCtx.clearRect(0, 0, flyW, flyH);
   const d = dropShape();
   if (!d) return;
-  ctx.save();
-  ctx.globalAlpha = d.alpha;
-  // A contact shadow: tight and dark once it is down, wide and faint while it
-  // is still in the air.
-  const air = Math.min(1, Math.abs(d.dy) / (CELL * 3));
-  ctx.globalAlpha = d.alpha * (0.44 - 0.30 * air);
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.ellipse(d.x, d.y + d.size * 0.30, d.size * (0.72 + 0.5 * air), d.size * 0.15, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = d.alpha;
-  ctx.translate(d.x, d.y + d.dy);
-  ctx.rotate(d.rot);
-  ctx.scale(d.sx, d.sy);
-  if (d.kind === 'fish') drawFish(ctx, d.size);
-  else if (d.kind === 'tomato') drawTomato(ctx, d.size);
-  else drawBoot(ctx, d.size);
-  ctx.restore();
+  const g = flyCtx;
+  g.save();
+  // A contact shadow, on the board where it is going to land: tight and dark
+  // once it is down, wide and faint while it is still in the air. No shadow at
+  // all during the throw — it is nowhere near the board yet.
+  if (!d.flying) {
+    const air = Math.min(1, Math.abs(d.dy) / (CELL * 3));
+    g.globalAlpha = d.alpha * (0.44 - 0.30 * air);
+    g.fillStyle = '#000';
+    g.beginPath();
+    g.ellipse(d.x, d.y + d.size * 0.30, d.size * (0.72 + 0.5 * air), d.size * 0.15, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.globalAlpha = d.alpha;
+  g.translate(d.x, d.y + d.dy);
+  g.rotate(d.rot);
+  g.scale(d.sx, d.sy);
+  if (d.kind === 'fish') drawFish(g, d.size);
+  else if (d.kind === 'tomato') drawTomatoArt(g, d.size, TOMATO_RIPE[2]);
+  else drawCan(g, d.size);
+  g.restore();
 }
 
 /* ── The knock ────────────────────────────────────
@@ -1280,7 +1359,7 @@ function animFrame(now) {
   const dt = Math.min(0.05, Math.max(0, (now - animLast) / 1000));
   animLast = now;
   // the moment it actually touches the board, not the moment it was thrown
-  if (drop && !drop.hit && now - drop.t0 >= 260) {
+  if (drop && !drop.hit && now - drop.t0 >= FLY) {
     drop.hit = now;
     knock(drop.r, drop.c, drop.force);
     const wrap = document.getElementById('boardWrap');
@@ -1289,6 +1368,7 @@ function animFrame(now) {
   stepJolts(dt);
   if (drop && now - drop.t0 > drop.dur) drop = null;
   draw();
+  drawDrop();          // on its own layer, over the whole page
   if (drop || jolts.size) ensureAnim();
 }
 
@@ -1298,18 +1378,18 @@ function throwOnBoard(r, c, kind, force) {
   if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
   if (REDUCED.matches) return;      // the shout still lands; nothing sails across the board
   drop = {
-    t0: performance.now(), r, c, kind, dur: 2960,
-    // a wet boot lands heavier than a fish, and the last stone of a game
+    t0: performance.now(), r, c, kind, dur: 2960 + FLY - 260,
+    // a tin lands heavier than a fish, and the last stone of a game
     // heavier than either
-    force: (force || 1) * (kind === 'fish' ? 0.9 : kind === 'tomato' ? 0.8 : 1.1),
-    tilt: (kind === 'fish' ? -0.10 : 0.16) + (Math.random() - 0.5) * 0.2,
+    force: (force || 1) * (kind === 'fish' ? 0.9 : kind === 'tomato' ? 0.8 : 1.0),
+    tilt: (kind === 'fish' ? -0.10 : kind === 'tomato' ? 0 : 0.20) + (Math.random() - 0.5) * 0.24,
     spin: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random()),
   };
   ensureAnim();
 }
 
 /* ── The sound of it landing ──────────────────────
-   A fish hitting a wooden board is a wet slap with a body to it; a boot is the
+   A fish hitting a wooden board is a wet slap with a body to it; a tin is the
    same event with the life taken out — lower, duller, no splash. Synthesised
    rather than shipped as two files, so it is forty lines against a download. */
 let guruSfx = (() => { try { return localStorage.getItem('gomoku_sfx') !== '0'; } catch (e) { return true; } })();
@@ -1328,8 +1408,8 @@ function splash(kind) {
   // Every drop follows a click, so the context is unlocked by then — but a tab
   // restored from the background can still come back suspended.
   if (ac.state === 'suspended') ac.resume().catch(() => {});
-  const wet = kind !== 'boot';
-  const t0 = ac.currentTime + 0.26;                 // it has to fall first
+  const wet = kind !== 'can';
+  const t0 = ac.currentTime + FLY / 1000;           // it has to get there first
   const body = ac.createOscillator(), bg = ac.createGain();
   body.type = 'sine';
   body.frequency.setValueAtTime(wet ? 190 : 130, t0);
@@ -1432,7 +1512,7 @@ function judgeMove(r, c, p, q) {
     if (bad.tier === 1 && moveCount - _lastScold < 8) return;
     if (bad.tier === 2 && moveCount - _lastScold < 4) return;
     _lastScold = moveCount;
-    throwOnBoard(r, c, 'boot', bad.tier === 3 ? 1.2 : 0.85);
+    throwOnBoard(r, c, 'can', bad.tier === 3 ? 1.2 : 0.85);
     guruShout(bad.kind);
     if (bad.tier === 3) showQuote('lose');
     return;
@@ -1462,7 +1542,7 @@ const SHOUTS = {
   block:  { cn: '好挡！',     en: 'well blocked',               seal: '守' },
   three:  { cn: '好棋！',     en: 'good move',                  seal: '好' },
   shape:  { cn: '有形！',     en: 'good shape',                 seal: '形' },
-  // and the three he says with a boot in his hand
+  // and the three he says with a tin in his hand
   leak:   { cn: '漏着！',     en: 'you left it open',           seal: '漏', bad: 1 },
   bad:    { cn: '恶手！',     en: 'that one costs you',         seal: '恶', bad: 1 },
   slow:   { cn: '缓手…',     en: 'a stone with nothing to do',  seal: '缓', bad: 1 },
@@ -2753,7 +2833,7 @@ function init() {
   newGame();
 }
 
-window.addEventListener('resize', () => { computeLayout(); draw(); });
+window.addEventListener('resize', () => { computeLayout(); sizeFlyLayer(); draw(); });
 document.addEventListener('DOMContentLoaded', init);
 
 /* remember the language across the whole arcade */
