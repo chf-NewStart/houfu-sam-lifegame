@@ -304,6 +304,12 @@
        楷书 webfont. The rubbing is kept as an alpha mask and painted, which is
        why the same file serves the red stamp and the grey one he uses for a
        tin. Characters with no rubbing yet keep the font and look as they did. */
+    /* A stamped seal carries no text node at all — see sealHtml. It used to,
+       hidden with `color: transparent`, and that rule lost to `.guru-shout.bad
+       .gs-seal` above, which is one class more specific and sets a colour: the
+       three grey seals were drawing the 楷书 glyph underneath the 篆书 one.
+       Kept as a guard in case text ever comes back, but nothing depends on it
+       winning a specificity argument now. */
     .gs-seal.art { color: transparent; }
     .gs-seal.art::before {
       content: ''; position: absolute; inset: 15%;
@@ -2144,7 +2150,11 @@ const SEAL_ART = new Set(['守', '全', '形', '胜', '终', '妙', '漏', '恶'
 function sealHtml(ch) {
   if (!SEAL_ART.has(ch)) return '<span class="gs-seal">' + ch + '</span>';
   const f = '/game/seals/seal-' + ch.codePointAt(0).toString(16) + '.png';
-  return '<span class="gs-seal art" style="--seal:url(' + f + ')" aria-label="' + ch + '">' + ch + '</span>';
+  // No text inside it. The stamp is the ::before, and a character left in here
+  // shows through from under it the moment any rule out-specifies the one
+  // hiding it — which is exactly what happened to the three grey seals. The
+  // label keeps it readable to a screen reader without drawing anything.
+  return '<span class="gs-seal art" style="--seal:url(' + f + ')" role="img" aria-label="' + ch + '"></span>';
 }
 
 function guruShout(kind) {
