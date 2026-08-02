@@ -231,6 +231,22 @@
       display: block; width: 64px; height: 64px; image-rendering: pixelated;
       filter: drop-shadow(0 0 8px rgba(168,120,210,0.5));
     }
+    /* The sprite used to carry its own line, baked straight down column 28.
+       The canvas draws a line too, from the rod tip to whatever is on the end
+       of it — so the moment a catch swung off to one side you saw both: his,
+       hanging vertical, and the real one, slanted. The sprite he wears here has
+       no line; this is it, in the same place and the same two pixels wide, and
+       it gets out of the way when the canvas takes the line over. */
+    .oracle-facewrap::after {
+      content: ''; position: absolute; pointer-events: none;
+      left: 87.5%;            /* column 28 of 32 */
+      top: 25%;               /* row 8, where the rod tip is */
+      width: 3.125%;          /* one sprite pixel */
+      height: 59.375%;        /* down to row 27 */
+      background: #767688;
+      transition: opacity 90ms linear;
+    }
+    .oracle-facewrap.linelive::after { opacity: 0; }
     .oracle-card.speaking .oracle-face { animation: guru-breathe 2.6s ease-in-out infinite; }
     @keyframes guru-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
     /* the cast: he leans back off the rod, then swings it out over the board */
@@ -370,7 +386,7 @@
 <div class="oracle-card" id="oracleCard">
   <div class="oracle-row">
     <div class="oracle-facewrap">
-      <img class="oracle-face" id="oracleFace" src="../sprites/guru.png" alt="" width="64" height="64">
+      <img class="oracle-face" id="oracleFace" src="../sprites/guru-noline.png" alt="" width="64" height="64">
       <div class="guru-shout" id="guruShout" aria-live="polite"></div>
     </div>
     <div style="flex:1;min-width:0">
@@ -649,7 +665,7 @@ function newGame() {
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
-  drop = null; ripple = null; lifts = []; jolts.clear();
+  drop = null; ripple = null; lifts = []; jolts.clear(); setLineLive(false);
   if (waveCur) { waveCur.fill(0); wavePrev.fill(0); waveLive = 0; waveAge = 0; waveUntil = 0; }
   rpStop(); replay = null; reviewData = null; reviewOpen = false;
   renderReplayUI();
@@ -1284,6 +1300,18 @@ function reel(from, u) {
   return { x: tip.x + Math.cos(a) * r, y: tip.y + Math.sin(a) * r, tip, e };
 }
 
+/* Only ever one line. The resting one is a CSS rule on the facewrap and the
+   live one is drawn below; this hands over between them. Compared before
+   touching the DOM because it is asked on every frame and the answer almost
+   never changes. */
+let _lineLive = false;
+function setLineLive(on) {
+  if (on === _lineLive) return;
+  _lineLive = on;
+  const w = document.querySelector('.oracle-facewrap');
+  if (w) w.classList.toggle('linelive', on);
+}
+
 // the line itself, taut from the rod to whatever is on the end of it
 function drawLine(g, tip, x, y, alpha) {
   g.save();
@@ -1544,6 +1572,10 @@ function animFrame(now) {
   if (drop && now - drop.t0 > drop.dur) drop = null;
   if (ripple && now - ripple.t0 > ripple.dur) ripple = null;
   if (lifts.length) lifts = lifts.filter(l => now - l.t0 <= LIFT);
+  // dir 'out' is a catch and has a line; a thrown tin arrives without one.
+  // Asked off the drop's direction, not its per-frame tip, so the handover
+  // happens on the frame the catch starts rather than one frame late.
+  setLineLive(!!(drop && drop.dir === 'out') || lifts.length > 0);
   draw();
   drawDrop();          // on its own layer, over the whole page
   if (drop || ripple || waveLive || lifts.length || jolts.size) ensureAnim();
