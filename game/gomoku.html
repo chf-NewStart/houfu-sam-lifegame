@@ -3092,24 +3092,25 @@ function renderReview() {
   draw();
 }
 
-/* The review is the only place this page asks a model to think, and it is one
-   call at the end of a game — so it runs on the strong model with reasoning at
-   its full extent instead of the fast path with thinking switched off.
+/* This ran on deepseek-v4-pro with reasoning at full extent for a while. It
+   worked — and it took about a minute. A minute is far too long to sit in
+   front of a finished board waiting to be told about it; the review is meant
+   to be the thing waiting for you when the game ends, not an errand. So the
+   fast path is the top rung again, and the answer arrives while you are still
+   looking at the last stone.
 
-   The list is a ladder, not a preference. An account without access to the pro
-   model answers 400/404, and the point of the rungs below is that such a key
-   still gets a review rather than an error where the review used to be. Only
-   401 and 402 stop it outright: those are about the key, and no other model
-   will fix them.
+   The list is a ladder, not a preference. If the first rung hiccups or comes
+   back with nothing to say, the one below thinks about it rather than giving
+   up — a slow review still beats none. Only 401 and 402 stop it outright:
+   those are about the key, and no other model will fix them.
 
-   max_tokens went from 900 to 8000 with the same edit and for the same reason.
-   900 was sized for an answer written straight out; a thought-about answer
-   spends a budget on reasoning first, and a truncated reply is not a short
-   review — it is invalid JSON and no review at all. */
+   max_tokens stays at 8000 rather than going back to the old 900. It is a
+   ceiling, not a spend — nothing is charged for headroom — and the lower one
+   would truncate the rung that does think, turning it into invalid JSON and
+   no review at all. That was always the real trap here. */
 const DS_MODES = [
-  { model: 'deepseek-v4-pro',   thinking: { type: 'enabled'  }, reasoning_effort: 'max'  },
-  { model: 'deepseek-v4-flash', thinking: { type: 'enabled'  }, reasoning_effort: 'high' },
   { model: 'deepseek-v4-flash', thinking: { type: 'disabled' } },
+  { model: 'deepseek-v4-flash', thinking: { type: 'enabled'  }, reasoning_effort: 'high' },
 ];
 
 async function dsAsk(messages) {
