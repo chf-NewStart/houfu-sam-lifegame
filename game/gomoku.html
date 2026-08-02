@@ -39,6 +39,19 @@
     #boardCanvas { display: block; cursor: crosshair; }
     #boardCanvas.thinking { cursor: wait; }
 
+    /* The table takes the landing. The stones take it too, but that is drawn
+       per-stone on the canvas — see knock(). Down first, then settle. */
+    @keyframes board-slam {
+      0%   { transform: translate3d(0, 0, 0); }
+      10%  { transform: translate3d(0, 4px, 0); }
+      28%  { transform: translate3d(-3px, -2px, 0); }
+      46%  { transform: translate3d(3px, 2px, 0); }
+      64%  { transform: translate3d(-2px, -1px, 0); }
+      82%  { transform: translate3d(1px, 1px, 0); }
+      100% { transform: translate3d(0, 0, 0); }
+    }
+    #boardWrap.slam { animation: board-slam 0.4s ease-out; }
+
 
     /* Coord labels */
     .col-labels, .row-labels { position: absolute; font-size: 9px; color: #2a2a2a; user-select: none; pointer-events: none; }
@@ -266,7 +279,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       .oracle-card.speaking .oracle-face { animation: none; }
-      .oracle-face.casting, .guru-quote.fresh .gq-text { animation: none; }
+      .oracle-face.casting, #boardWrap.slam, .guru-quote.fresh .gq-text { animation: none; }
       /* the shout still has to appear and leave, just without the pounce */
       .guru-shout.go { animation: shout-fade 2.2s linear forwards; }
       @keyframes shout-fade { 0%,90% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: visible; } }
@@ -544,7 +557,7 @@ function newGame() {
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
-  drop = null;
+  drop = null; jolts.clear();
   showQuote('open');                             // he opens the game with a line
   log(t('── new game ──', '── 新游戏 ──'), 'lround');
   draw();
@@ -685,7 +698,7 @@ function placeStone(r, c) {
     wb.textContent = winner;
     document.getElementById('newBtn').className = 'btn ' + (wr.player === 1 ? 'glow-g' : 'glow-r');
     // The last stone of the game gets the hardest blow he has.
-    if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'fish'); guruShout('five'); }
+    if (quality) { _lastPraise = moveCount; throwOnBoard(r, c, 'fish', 1.5); guruShout('five'); }
     const you = humanSide();
     showQuote(you == null ? 'calm' : wr.player === you ? 'win' : 'lose');
     reviewGame(wr.player);
@@ -771,6 +784,7 @@ function draw() {
 
   if (coachMode) drawCoachHints();
   drawVoiceMarks();
+  drawShock();
 
   // Hover ghost
   if (hoverCell) {
@@ -799,6 +813,22 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
   const radius = CELL * 0.40;
   const color = player === 1 ? '#1db954' : '#f44336';
 
+  // A stone knocked off its point is drawn where it currently is, stretched
+  // along the way it is travelling — a hard disc that only translates reads as
+  // sliding; the squash is what makes it read as struck.
+  const j = ghost ? null : jolts.get(joltKey(r, c));
+  if (j) {
+    const sp = Math.hypot(j.vx, j.vy);
+    const q = Math.min(0.20, sp / (CELL * 34));
+    ctx.save();
+    ctx.translate(x + j.ox, y + j.oy);
+    if (q > 0.004) {
+      const a = Math.atan2(j.vy, j.vx);
+      ctx.rotate(a); ctx.scale(1 + q, 1 - q); ctx.rotate(-a);
+    }
+    ctx.translate(-x, -y);
+  }
+
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
     // #ff6b5b lifted Tomato's luminance only 1.38x against Lime's 2.11x, so a
@@ -819,6 +849,8 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fill();
   }
+
+  if (j) ctx.restore();
 }
 
 /* ── What he throws you ───────────────────────────
@@ -831,7 +863,7 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
    this board is #0e0e0e and 墨 on it would be invisible — the same inversion a
    碑帖 rubbing makes.
    Nothing here touches board state; a drop is purely something draw() reads. */
-let drop = null, dropRaf = 0;
+let drop = null;
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function cubicPts(p0, p1, p2, p3, n) {
@@ -970,6 +1002,20 @@ function dropShape() {
   return { x, y, dy, rot, sx, sy, alpha, size, fish };
 }
 
+function drawShock() {
+  if (!drop || !drop.hit) return;
+  const u = (performance.now() - drop.hit) / 340;
+  if (u >= 1) return;
+  ctx.save();
+  ctx.globalAlpha = (1 - u) * 0.5;
+  ctx.strokeStyle = '#cfc6b4';
+  ctx.lineWidth = Math.max(1.4, CELL * 0.10 * (1 - u));
+  ctx.beginPath();
+  ctx.arc(PAD + drop.c * CELL, PAD + drop.r * CELL, CELL * (0.3 + u * 3.0), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawDrop() {
   const d = dropShape();
   if (!d) return;
@@ -991,24 +1037,120 @@ function drawDrop() {
   ctx.restore();
 }
 
-function dropFrame() {
-  if (!drop) { dropRaf = 0; return; }
-  if (performance.now() - drop.t0 > drop.dur) { drop = null; dropRaf = 0; draw(); return; }
-  draw();
-  dropRaf = requestAnimationFrame(dropFrame);
+/* ── The knock ────────────────────────────────────
+   Something heavy lands on the board and the stones nearest it are thrown off
+   their points. They are not free bodies — a stone belongs to an intersection
+   and has to end up back on it — so each one is a mass on a damped spring
+   anchored to its own point: shoved outward it flies, swings back through
+   home, rings a few times and settles. On the way out they shoulder each
+   other, so a knock travels through a cluster instead of every stone moving
+   as though it were alone on the board.
+
+   Nothing here touches board[]. A jolt is an offset that draw() reads and the
+   game never sees; undo, the win check and the engine all work on the same
+   grid they always did. */
+const JOLT_W = 15.5;      // rad/s — two and a half swings a second
+const JOLT_Z = 0.14;      // damping ratio: it rings, but not for long
+const JOLT_REACH = 5.5;   // cells; past this the blow is not worth drawing
+let jolts = new Map(), animRaf = 0, animLast = 0;
+const joltKey = (r, c) => r * N + c;
+
+function ensureAnim() {
+  if (animRaf) return;
+  animLast = performance.now();
+  animRaf = requestAnimationFrame(animFrame);
 }
 
-function throwOnBoard(r, c, kind) {
+function knock(r0, c0, force) {
+  const lo = Math.ceil(JOLT_REACH);
+  for (let r = Math.max(0, r0 - lo); r <= Math.min(N - 1, r0 + lo); r++) {
+    for (let c = Math.max(0, c0 - lo); c <= Math.min(N - 1, c0 + lo); c++) {
+      if (board[r][c] === 0) continue;
+      const dr = r - r0, dc = c - c0, d = Math.hypot(dr, dc);
+      if (d > JOLT_REACH) continue;
+      // A stone directly under the impact has no direction to be pushed in, so
+      // it gets one — otherwise the one stone you actually hit is the only one
+      // that does not move.
+      const a = d < 0.001 ? Math.random() * Math.PI * 2 : Math.atan2(dr, dc);
+      const v = CELL * 11 * force * Math.exp(-d * 0.5);
+      const k = joltKey(r, c);
+      const j = jolts.get(k) || { ox: 0, oy: 0, vx: 0, vy: 0 };
+      j.vx += Math.cos(a) * v; j.vy += Math.sin(a) * v;
+      jolts.set(k, j);
+    }
+  }
+  ensureAnim();
+}
+
+function stepJolts(dt) {
+  if (!jolts.size) return;
+  // Fixed substeps: a spring this stiff integrated at a dropped frame's dt
+  // gains energy instead of losing it, and the stones walk off the board.
+  const steps = Math.max(1, Math.min(20, Math.ceil(dt * 180)));
+  const h = dt / steps;
+  const k2 = JOLT_W * JOLT_W, dz = 2 * JOLT_Z * JOLT_W;
+  const touch = CELL * 0.82;                 // two stones this close are touching
+  const live = [...jolts.entries()];
+  for (let n = 0; n < steps; n++) {
+    for (const [, j] of live) {
+      j.vx += (-k2 * j.ox - dz * j.vx) * h;
+      j.vy += (-k2 * j.oy - dz * j.vy) * h;
+      j.ox += j.vx * h;
+      j.oy += j.vy * h;
+    }
+    // shoulder each other — positional only, the springs supply the recovery
+    for (let i = 0; i < live.length; i++) {
+      const ki = live[i][0], a = live[i][1];
+      const ax = PAD + (ki % N) * CELL + a.ox, ay = PAD + ((ki / N) | 0) * CELL + a.oy;
+      for (let m = i + 1; m < live.length; m++) {
+        const kj = live[m][0], b = live[m][1];
+        const bx = PAD + (kj % N) * CELL + b.ox, by = PAD + ((kj / N) | 0) * CELL + b.oy;
+        const dx = bx - ax, dy = by - ay, d2 = dx * dx + dy * dy;
+        if (d2 <= 0.0001 || d2 >= touch * touch) continue;
+        const d = Math.sqrt(d2), push = (touch - d) / 2, nx = dx / d, ny = dy / d;
+        a.ox -= nx * push; a.oy -= ny * push;
+        b.ox += nx * push; b.oy += ny * push;
+      }
+    }
+  }
+  // retire the ones that have come to rest, or the loop never stops
+  for (const [k, j] of jolts) {
+    if (Math.abs(j.ox) < 0.3 && Math.abs(j.oy) < 0.3 &&
+        Math.hypot(j.vx, j.vy) < CELL * 0.2) jolts.delete(k);
+  }
+}
+
+function animFrame(now) {
+  animRaf = 0;
+  const dt = Math.min(0.05, Math.max(0, (now - animLast) / 1000));
+  animLast = now;
+  // the moment it actually touches the board, not the moment it was thrown
+  if (drop && !drop.hit && now - drop.t0 >= 260) {
+    drop.hit = now;
+    knock(drop.r, drop.c, drop.force);
+    const wrap = document.getElementById('boardWrap');
+    if (wrap) { wrap.classList.remove('slam'); void wrap.offsetWidth; wrap.classList.add('slam'); }
+  }
+  stepJolts(dt);
+  if (drop && now - drop.t0 > drop.dur) drop = null;
+  draw();
+  if (drop || jolts.size) ensureAnim();
+}
+
+function throwOnBoard(r, c, kind, force) {
   splash(kind);
   const face = document.getElementById('oracleFace');
   if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
   if (REDUCED.matches) return;      // the shout still lands; nothing sails across the board
   drop = {
     t0: performance.now(), r, c, kind, dur: 2960,
+    // a wet boot lands heavier than a fish, and the last stone of a game
+    // heavier than either
+    force: (force || 1) * (kind === 'fish' ? 0.9 : 1.1),
     tilt: (kind === 'fish' ? -0.10 : 0.16) + (Math.random() - 0.5) * 0.2,
     spin: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random()),
   };
-  if (!dropRaf) dropRaf = requestAnimationFrame(dropFrame);
+  ensureAnim();
 }
 
 /* ── The sound of it landing ──────────────────────
@@ -1135,7 +1277,7 @@ function judgeMove(r, c, p, q) {
     if (bad.tier === 1 && moveCount - _lastScold < 8) return;
     if (bad.tier === 2 && moveCount - _lastScold < 4) return;
     _lastScold = moveCount;
-    throwOnBoard(r, c, 'boot');
+    throwOnBoard(r, c, 'boot', bad.tier === 3 ? 1.2 : 0.85);
     guruShout(bad.kind);
     if (bad.tier === 3) showQuote('lose');
     return;
@@ -1146,7 +1288,7 @@ function judgeMove(r, c, p, q) {
   if (q.tier === 1 && moveCount - _lastPraise < 7) return;
   if (q.tier === 2 && moveCount - _lastPraise < 3) return;
   _lastPraise = moveCount;
-  throwOnBoard(r, c, 'fish');
+  throwOnBoard(r, c, 'fish', q.tier === 3 ? 1.25 : q.tier === 2 ? 0.95 : 0.7);
   guruShout(q.kind);
   if (q.tier === 3) showQuote(q.kind === 'block' ? 'defend' : 'attack');
 }
@@ -1988,7 +2130,7 @@ function onPlay(snap) {
   const s = v.s || 0;
   const moves = v.moves ? (Array.isArray(v.moves) ? v.moves : Object.values(v.moves)) : [];
   if (s !== _fbSession) {
-    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; _lastScold = -9; drop = null;
+    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; _lastScold = -9; drop = null; jolts.clear();
     showQuote('open');
     log(t('── new game ──', '── 新游戏 ──'), 'lround');
   }
@@ -2007,7 +2149,7 @@ function onPlay(snap) {
   _prevLen = moves.length;
   applyState(moves);
   if (fresh) {
-    if (gameOver) { _lastPraise = moveCount; throwOnBoard(fresh.r, fresh.c, 'fish'); guruShout('five'); }
+    if (gameOver) { _lastPraise = moveCount; throwOnBoard(fresh.r, fresh.c, 'fish', 1.5); guruShout('five'); }
     else judgeMove(fresh.r, fresh.c, fresh.p, fresh.q);
   }
 }
