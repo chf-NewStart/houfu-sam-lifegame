@@ -286,15 +286,32 @@
     }
     /* a tin is not written in the same ink as a fish */
     .guru-shout.bad .gs-cn { color: #a9a191; }
-    /* 朱文印, stamped after the last stroke and sitting a little off square */
+    /* 白文印 — the character cut out of the stone, so it reads light on the
+       red — stamped after the last stroke and sitting a little off square.
+       (This said 朱文 for a long time, which is the opposite: red strokes on a
+       light ground. The colours were always 白文; only the note was wrong.) */
     .gs-seal {
       display: inline-block; vertical-align: 0.55em; margin-left: 8px;
       font-family: 'Ma Shan Zheng', STKaiti, KaiTi, '楷体', serif;
       font-size: 0.72rem; line-height: 1.5; width: 1.5em; height: 1.5em;
       text-align: center; color: #fff1e8; background: #b3352a;
       transform: rotate(-4deg); border-radius: 1px;
+      position: relative;
     }
     .guru-shout.bad .gs-seal { background: #4a4640; color: #cfc8bb; }
+    /* A seal is carved, not written, and 篆书 is what it is carved in — so the
+       ones we have a rubbing for are stamped from it rather than set in a
+       楷书 webfont. The rubbing is kept as an alpha mask and painted, which is
+       why the same file serves the red stamp and the grey one he uses for a
+       tin. Characters with no rubbing yet keep the font and look as they did. */
+    .gs-seal.art { color: transparent; }
+    .gs-seal.art::before {
+      content: ''; position: absolute; inset: 15%;
+      background: #fff1e8;
+      -webkit-mask: var(--seal) center/contain no-repeat;
+              mask: var(--seal) center/contain no-repeat;
+    }
+    .guru-shout.bad .gs-seal.art::before { background: #cfc8bb; }
     .gs-gloss { font-size: 0.6rem; color: #a89ec4; letter-spacing: 0.6px; margin-top: 2px; }
     /* Ink on paper only reads if the paper goes quiet. The shout is nowrap and
        runs the width of the panel, so without this it lands on a live paragraph
@@ -2117,12 +2134,23 @@ const SHOUTS = {
   bad:    { cn: '恶手！',     en: 'that one costs you',         seal: '恶', bad: 1 },
   slow:   { cn: '缓手…',     en: 'a stone with nothing to do',  seal: '缓', bad: 1 },
 };
+/* Which of his seals we have a real rubbing for. Add a file, add the character
+   here, and that stamp stops being a font — everything else is untouched, so a
+   half-finished set is not a broken one. Named by code point because a URL is
+   a poor place for a Chinese filename. */
+const SEAL_ART = new Set(['守', '全', '形', '胜', '终']);
+function sealHtml(ch) {
+  if (!SEAL_ART.has(ch)) return '<span class="gs-seal">' + ch + '</span>';
+  const f = '/game/seals/seal-' + ch.codePointAt(0).toString(16) + '.png';
+  return '<span class="gs-seal art" style="--seal:url(' + f + ')" aria-label="' + ch + '">' + ch + '</span>';
+}
+
 function guruShout(kind) {
   const s = SHOUTS[kind] || SHOUTS.three;
   const el = document.getElementById('guruShout');
   if (!el) return;
   el.classList.toggle('bad', !!s.bad);
-  el.innerHTML = '<div class="gs-cn">' + s.cn + '<span class="gs-seal">' + s.seal + '</span></div>' +
+  el.innerHTML = '<div class="gs-cn">' + s.cn + sealHtml(s.seal) + '</div>' +
                  (lang === 'zh' ? '' : '<div class="gs-gloss">' + escHtml(s.en) + '</div>');
   el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
   // hush the paragraph he is shouting over, and let it back in a little before
