@@ -141,7 +141,13 @@
     @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
 
     @media (max-width: 700px) {
-      .layout { flex-direction: column; }
+      /* `align-items: flex-start` up there is about the ROW layout: it keeps
+         the board and the panel aligned at the top rather than stretching to
+         match heights. Once the layout stacks, that same property means the
+         horizontal axis — so every card shrank to the width of its own text
+         and sat in a column about 60% of the screen, next to a full-width
+         board. Stacked, they stretch. */
+      .layout { flex-direction: column; align-items: stretch; }
       .panel-col { min-width: 0; }   /* stacked: full width, no floor needed */
     }
 
@@ -1909,6 +1915,33 @@ const GURU_QUOTES = [
   { tx: '致人而不致于人', lang: 'zh-Hans', tags: ['attack', 'win'],
     en: 'Bring the opponent to you; never be brought to him.', zh: '调动对手，而不被对手调动。',
     src: '《孙子兵法·虚实》', srcEn: 'Sunzi, The Art of War' },
+  { tx: '入界宜缓', lang: 'zh-Hans', tags: ['attack', 'calm'],
+    en: 'Go into their country slowly.', zh: '进入对方阵地，宜缓不宜急。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '彼强自保', lang: 'zh-Hans', tags: ['defend'],
+    en: 'Where they are strong, look to your own.', zh: '对方强处，先顾自身。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '势孤取和', lang: 'zh-Hans', tags: ['defend', 'lose'],
+    en: 'When your stones stand alone, take the peace.', zh: '孤立无援时，求和为上。',
+    src: '《围棋十诀》', srcEn: 'Ten Rules of Weiqi, Tang' },
+  { tx: '胜固欣然，败亦可喜', lang: 'zh-Hans', tags: ['win', 'lose'],
+    en: 'Winning is a pleasure — and losing is not without one either.', zh: '赢了自然高兴，输了也别有滋味。',
+    src: '苏轼《观棋》', srcEn: 'Su Shi, “Watching a Game”' },
+  { tx: '知止不殆', lang: 'zh-Hans', tags: ['win', 'calm'],
+    en: 'Know where to stop and you come to no harm.', zh: '懂得适可而止，就不会有危险。',
+    src: '《道德经》四十四章', srcEn: 'Dao De Jing, ch. 44' },
+  { tx: '合抱之木，生于毫末', lang: 'zh-Hans', tags: ['open', 'attack'],
+    en: 'The tree you cannot get your arms around grew from a shoot.', zh: '合抱的大树，是从细芽长起来的。',
+    src: '《道德经》六十四章', srcEn: 'Dao De Jing, ch. 64' },
+  { tx: '过犹不及', lang: 'zh-Hans', tags: ['lose', 'calm'],
+    en: 'Too far is as wrong as not far enough.', zh: '做过了头，和做得不够一样不好。',
+    src: '《论语·先进》', srcEn: 'Analects, Book 11' },
+  { tx: '先为不可胜', lang: 'zh-Hans', tags: ['defend', 'win'],
+    en: 'First make yourself impossible to beat.', zh: '先让自己立于不败之地。',
+    src: '《孙子兵法·军形》', srcEn: 'Sunzi, The Art of War' },
+  { tx: '千古无同局', lang: 'zh-Hans', tags: ['open'],
+    en: 'In all of history, no two games alike.', zh: '自古以来，没有两局棋是一样的。',
+    src: '棋谚', srcEn: 'a players’ saying' },
   { tx: '闲敲棋子落灯花', lang: 'zh-Hans', tags: ['open', 'calm'],
     en: 'Idly I tap a stone — and the lamp-wick blooms and falls.', zh: '闲来轻敲棋子，灯花簌簌落下。',
     src: '赵师秀《约客》', srcEn: 'Zhao Shixiu, “Waiting for a Guest”' },
@@ -1936,17 +1969,48 @@ const GURU_QUOTES = [
   { tx: '閑さや岩にしみ入る蝉の声', lang: 'ja', tags: ['calm', 'open'],
     en: 'Such stillness — the cicadas’ cry sinks into the rock.', zh: '寂静啊——蝉声渗入岩石。',
     src: '松尾芭蕉『奥の細道』', srcEn: 'Bashō, The Narrow Road to the Deep North' },
+  { tx: '実るほど頭を垂れる稲穂かな', lang: 'ja', tags: ['win'],
+    en: 'The riper the ear of rice, the lower it bows.', zh: '稻穗越饱满，头垂得越低。',
+    src: '日本の諺', srcEn: 'Japanese proverb' },
+  { tx: '七転び八起き', lang: 'ja', tags: ['lose'],
+    en: 'Fall down seven times, get up eight.', zh: '跌倒七次，站起来八次。',
+    src: '日本の諺', srcEn: 'Japanese proverb' },
+  { tx: '初心忘るべからず', lang: 'ja', tags: ['open', 'calm'],
+    en: 'Never forget how it felt to be a beginner.', zh: '莫忘初心。',
+    src: '世阿弥『風姿花伝』', srcEn: 'Zeami, Fūshikaden' },
 ];
 
 function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+/* He has a memory. Picking at random out of a pool of five or six meant the
+   same line three games running, which is the fastest way to make a man who
+   quotes the classics sound like a fortune cookie machine. He keeps the last
+   dozen or so he has used and takes something else — across reloads too,
+   because starting the page again is exactly when you would notice. Only when
+   a pool is genuinely exhausted does he start forgetting, and then he forgets
+   the oldest half rather than repeating what he just said. */
 let _lastQuote = null;
+const SEEN_MAX = 14;
+let _seen = (() => {
+  try { const v = JSON.parse(localStorage.getItem('gomoku_quotes_seen')); return Array.isArray(v) ? v : []; }
+  catch (e) { return []; }
+})();
+
 function showQuote(tag) {
   const pool = GURU_QUOTES.filter(q => q.tags.indexOf(tag) >= 0);
   const list = pool.length ? pool : GURU_QUOTES;
-  let q = list[(Math.random() * list.length) | 0];
-  for (let i = 0; i < 8 && list.length > 1 && q === _lastQuote; i++) q = list[(Math.random() * list.length) | 0];
+  let fresh = list.filter(q => _seen.indexOf(q.tx) < 0);
+  if (!fresh.length) {
+    _seen = _seen.slice(Math.ceil(_seen.length / 2));
+    fresh = list.filter(q => _seen.indexOf(q.tx) < 0);
+    if (!fresh.length) fresh = list.filter(q => q !== _lastQuote);
+    if (!fresh.length) fresh = list;
+  }
+  const q = fresh[(Math.random() * fresh.length) | 0];
   _lastQuote = q;
+  _seen.push(q.tx);
+  while (_seen.length > SEEN_MAX) _seen.shift();
+  try { localStorage.setItem('gomoku_quotes_seen', JSON.stringify(_seen)); } catch (e) {}
   renderQuote();
 }
 function renderQuote() {
