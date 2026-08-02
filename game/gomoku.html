@@ -3092,6 +3092,60 @@ function renderReview() {
   draw();
 }
 
+/* The review is the only place this page asks a model to think, and it is one
+   call at the end of a game — so it runs on the strong model with reasoning at
+   its full extent instead of the fast path with thinking switched off.
+
+   The list is a ladder, not a preference. An account without access to the pro
+   model answers 400/404, and the point of the rungs below is that such a key
+   still gets a review rather than an error where the review used to be. Only
+   401 and 402 stop it outright: those are about the key, and no other model
+   will fix them.
+
+   max_tokens went from 900 to 8000 with the same edit and for the same reason.
+   900 was sized for an answer written straight out; a thought-about answer
+   spends a budget on reasoning first, and a truncated reply is not a short
+   review — it is invalid JSON and no review at all. */
+const DS_MODES = [
+  { model: 'deepseek-v4-pro',   thinking: { type: 'enabled'  }, reasoning_effort: 'max'  },
+  { model: 'deepseek-v4-flash', thinking: { type: 'enabled'  }, reasoning_effort: 'high' },
+  { model: 'deepseek-v4-flash', thinking: { type: 'disabled' } },
+];
+
+async function dsAsk(messages) {
+  let last = null;
+  for (let i = 0; i < DS_MODES.length; i++) {
+    const isLast = i === DS_MODES.length - 1;
+    let res;
+    try {
+      res = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dsKey() },
+        body: JSON.stringify(Object.assign({
+          max_tokens: 8000,
+          response_format: { type: 'json_object' },
+          messages,
+        }, DS_MODES[i])),
+      });
+    } catch (e) { last = e; if (isLast) break; continue; }
+    if (res.status === 401) throw new Error(t('key rejected — tap below to re-enter it', '密钥被拒——点击下方重新输入'));
+    if (res.status === 402) throw new Error(t('DeepSeek balance is empty', 'DeepSeek 余额不足'));
+    if (res.ok) {
+      const j = await res.json();
+      const msg = (j.choices && j.choices[0] && j.choices[0].message) || {};
+      // Thinking ran to the end of the budget and left nothing for the answer.
+      // A shallower rung fits; treat it as this rung failing, not as a review.
+      if ((msg.content || '').trim() || isLast) return j;
+      last = new Error('DeepSeek returned no answer');
+      continue;
+    }
+    last = new Error('DeepSeek ' + res.status);
+    if (isLast) break;
+  }
+  throw last || new Error('DeepSeek');
+}
+
+let _reviewWait = 0;
 function reviewGame(winner){
   if (remoteMode || !engineVoiceOn || !dsKey()) return;
   if (!gameRecord.length) return;
@@ -3150,15 +3204,16 @@ function reviewGame(winner){
     you ? ('You are addressing ' + engineName(you) + ' — that is the human reading this.') : '',
   ].join('\n');
 
-  fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dsKey() },
-    body: JSON.stringify({
-      model: 'deepseek-v4-flash',
-      thinking: { type: 'disabled' },
-      max_tokens: 900,
-      response_format: { type: 'json_object' },
-      messages: [
+  // Thinking at full extent is not quick. He is animated while he reads, but a
+  // wait this much longer than the old one needs saying, or it reads as stuck.
+  clearTimeout(_reviewWait);
+  _reviewWait = setTimeout(() => {
+    if (seq === commentSeq && body.dataset.live) {
+      body.textContent = t('still reading it through…', '还在细看这盘棋…');
+    }
+  }, 9000);
+
+  dsAsk([
         { role: 'system', content:
           'You are an old master of gomoku, sat by the water with a rod, reviewing a game that has just ended. ' +
           'Reply with JSON only, in exactly this shape:\n' +
@@ -3178,14 +3233,8 @@ function reviewGame(winner){
           'thought said naturally in each. Address the human as "you" / "你". ' +
           'Calm, unhurried, a little wry; never grand, never a lecture. No emoji.' },
         { role: 'user', content: info }
-      ]
-    })
-  }).then(res => {
-    if (res.status === 401) throw new Error(t('key rejected — tap below to re-enter it', '密钥被拒——点击下方重新输入'));
-    if (res.status === 402) throw new Error(t('DeepSeek balance is empty', 'DeepSeek 余额不足'));
-    if (!res.ok) throw new Error('DeepSeek ' + res.status);
-    return res.json();
-  }).then(j => {
+  ]).then(j => {
+    clearTimeout(_reviewWait);
     if (seq !== commentSeq) return;
     const txt = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
     let raw = null;
@@ -3200,6 +3249,7 @@ function reviewGame(winner){
     if (!reviewData) { body.textContent = t('no review this time: he could not make it out', '无法复盘：他没看明白'); return; }
     renderReview();
   }).catch(e => {
+    clearTimeout(_reviewWait);
     if (seq !== commentSeq) return;
     body.classList.remove('waiting');
     if (card) card.classList.remove('speaking');
