@@ -1236,6 +1236,24 @@ function dropShape() {
   const land = boardPoint(drop.r, drop.c, size);
   let x = land.x, y = land.y;
   let dy = 0, rot = drop.tilt, sx = 1, sy = 1, alpha = 1;
+  // Out of the water, towards him. He is a fisherman and the board is water:
+  // a fish is not something he lobs at you, it is something he lands. It comes
+  // up off the point you played, still fighting the line, and gets smaller as
+  // it goes, because it is going away from you and towards him.
+  if (drop.dir === 'out') {
+    const from = guruPoint(land);
+    const u = Math.min(1, el / FLY);
+    const ease = 1 - (1 - u) * (1 - u);            // the yank first, then the travel
+    x = land.x + (from.x - land.x) * ease;
+    y = land.y + (from.y - land.y) * ease;
+    dy = -Math.sin(u * Math.PI) * Math.max(50, Math.abs(land.y - from.y) * 0.22);
+    // still on the hook: thrashing as it breaks the surface, tiring as it goes
+    rot = drop.tilt + Math.sin(el / 44) * 0.42 * (1 - u) + u * drop.spin * 0.25;
+    sx = sy = 1 - 0.34 * ease;
+    alpha = u > 0.72 ? Math.max(0, 1 - (u - 0.72) / 0.28) : 1;
+    return { x, y, dy, rot, sx, sy, alpha, size, fish, kind: drop.kind, flying: true };
+  }
+
   if (el < FLY) {
     // a thrown arc, not a drop: straight-line travel with a lob on top of it,
     // tumbling the whole way and only settling upright as it arrives
@@ -1438,7 +1456,7 @@ function rippleAt(r, c, mag, stopped) {
   if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
   if (REDUCED.matches) return;
   ripple = { t0: performance.now(), r, c, mag: mag || 1, dur: 2100, stopped: stopped || [] };
-  waveSplash(r, c, mag || 1);
+  waveSplash(r, c, mag || 1, true);
   ensureAnim();
 }
 
@@ -1508,7 +1526,7 @@ function waveRing(gx, gy, rr, strength) {
   }
 }
 
-function waveSplash(r, c, mag) {
+function waveSplash(r, c, mag, slow) {
   if (REDUCED.matches || !CELL) return;
   waveInit();
   const [gx, gy] = waveCell(r, c);
@@ -1521,8 +1539,10 @@ function waveSplash(r, c, mag) {
   // throughout. It gets a lifetime instead, and is faded out over the last of
   // it so it goes still rather than simply vanishing.
   const now = performance.now();
-  waveSlowUntil = now + 1400;
-  waveUntil = now + 3800;
+  // Only a block gets slow motion. A fish coming up is a quick sharp break of
+  // the surface, and the two have to stay tellable apart.
+  waveSlowUntil = slow === false ? 0 : now + 1400;
+  waveUntil = now + (slow === false ? 2400 : 3800);
   waveLive = 1; waveAge = 0;
   ensureAnim();
 }
@@ -1615,19 +1635,32 @@ function drawRipple() {
   ctx.restore();
 }
 
+/* Two directions, and which one a thing takes says what it is. The fish and
+   the tin come OUT — they were in the water, you hooked them, he lands them.
+   The tomato goes IN, because a tomato is not a catch: it is thrown to you for
+   winning. */
 function throwOnBoard(r, c, kind, force) {
-  splash(kind);
+  const out = kind !== 'tomato';
+  splash(kind, out);                // a catch is heard leaving; a throw, arriving
   const face = document.getElementById('oracleFace');
   if (face) { face.classList.remove('casting'); void face.offsetWidth; face.classList.add('casting'); }
   if (REDUCED.matches) return;      // the shout still lands; nothing sails across the board
+  const mag = (force || 1) * (kind === 'fish' ? 0.9 : kind === 'tomato' ? 0.8 : 1.0);
   drop = {
-    t0: performance.now(), r, c, kind, dur: 2960 + FLY - 260,
-    // a tin lands heavier than a fish, and the last stone of a game
-    // heavier than either
-    force: (force || 1) * (kind === 'fish' ? 0.9 : kind === 'tomato' ? 0.8 : 1.0),
+    t0: performance.now(), r, c, kind, dir: out ? 'out' : 'in',
+    dur: out ? FLY + 140 : 2960 + FLY - 260,
+    force: mag,
     tilt: (kind === 'fish' ? -0.10 : kind === 'tomato' ? 0 : 0.20) + (Math.random() - 0.5) * 0.24,
     spin: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random()),
   };
+  if (out) {
+    // Everything happens at the near end now: the surface breaks at the point
+    // you played and the stones around it feel it. Marked as already hit, so
+    // the frame loop does not fire the same blow again on arrival.
+    drop.hit = drop.t0;
+    knock(r, c, mag * 0.62);
+    waveSplash(r, c, mag * 0.8, false);
+  }
   ensureAnim();
 }
 
@@ -1644,7 +1677,7 @@ function audioCtx() {
   }
   return _ac || null;
 }
-function splash(kind) {
+function splash(kind, leaving) {
   if (!guruSfx) return;
   const ac = audioCtx();
   if (!ac) return;
@@ -1652,7 +1685,7 @@ function splash(kind) {
   // restored from the background can still come back suspended.
   if (ac.state === 'suspended') ac.resume().catch(() => {});
   const wet = kind !== 'can';
-  const t0 = ac.currentTime + FLY / 1000;           // it has to get there first
+  const t0 = ac.currentTime + (leaving ? 0 : FLY / 1000);   // a thrown thing has to arrive first
   const body = ac.createOscillator(), bg = ac.createGain();
   body.type = 'sine';
   body.frequency.setValueAtTime(wet ? 190 : 130, t0);
