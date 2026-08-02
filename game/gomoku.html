@@ -1161,6 +1161,28 @@ function inkCurve(g, p0, p1, p2, p3, w0, w1, w2) { inkStroke(g, cubicPts(p0, p1,
    Gold, because it is a 锦鲤 and not supper: the fish is the thing you want
    him to throw, and it should look like it the moment it lands, before you
    have read a word. */
+/* A leaf, drawn in the same unit box as the carp and in the same hand: a wash
+   under two outline strokes, a midrib, and four veins off it. Facing left like
+   the fish so a falling one can be turned to any angle and still read.
+   No glow — a leaf is not a catch, it does not gleam. */
+function drawLeaf(g, s, tint) {
+  g.fillStyle = tint.wash;
+  g.beginPath();
+  g.ellipse(0, 0, 0.72 * s, 0.30 * s, -0.06, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = tint.ink;
+  // the two edges, meeting at the tip and again at the stem
+  inkCurve(g, [-0.92*s, 0.02*s], [-0.40*s, -0.42*s], [0.30*s, -0.34*s], [0.86*s, 0.00*s], 0.010*s, 0.055*s, 0.010*s);
+  inkCurve(g, [-0.92*s, 0.02*s], [-0.40*s,  0.44*s], [0.30*s,  0.36*s], [0.86*s, 0.00*s], 0.010*s, 0.050*s, 0.010*s);
+  // stem, and the midrib running the length of it
+  inkCurve(g, [0.86*s, 0.00*s], [1.02*s, 0.04*s], [1.14*s, 0.10*s], [1.24*s, 0.20*s], 0.026*s, 0.020*s, 0.008*s);
+  inkCurve(g, [-0.86*s, 0.02*s], [-0.36*s, 0.02*s], [0.30*s, 0.01*s], [0.86*s, 0.00*s], 0.008*s, 0.026*s, 0.010*s);
+  for (const [x, d] of [[-0.52, 1], [-0.52, -1], [-0.06, 1], [-0.06, -1]]) {
+    inkCurve(g, [x*s, 0.01*s], [(x+0.16)*s, d*0.13*s], [(x+0.34)*s, d*0.21*s], [(x+0.44)*s, d*0.24*s],
+             0.008*s, 0.018*s, 0.006*s);
+  }
+}
+
 function drawFish(g, s) {
   g.fillStyle = 'rgba(232,178,72,0.20)';
   g.beginPath();
@@ -1530,7 +1552,7 @@ function animFrame(now) {
   if (drop && now - drop.t0 > drop.dur) drop = null;
   if (ripple && now - ripple.t0 > ripple.dur) ripple = null;
   if (lifts.length) lifts = lifts.filter(l => now - l.t0 <= LIFT);
-  if (rain.length) rain = rain.filter(f => now - f.t0 <= f.dur + RAIN_SINK);
+  if (rain.length) rain = rain.filter(f => now - f.t0 <= fallLife(f));
   // dir 'out' is a catch and has a line; a thrown tin arrives without one.
   // Asked off the drop's direction, not its per-frame tip, so the handover
   // happens on the frame the catch starts rather than one frame late.
@@ -1628,29 +1650,62 @@ function waveRing(gx, gy, rr, strength) {
    they are landing on is water, every one of them breaks the surface where it
    hits and the rings run out from there. It is only worth doing on a board
    that already knows how to be wet. */
+/* What comes down when you win. 'fish' is the loud reading of it — the pool
+   handing back everything it was ever asked for. 'leaf' is the quiet one, and
+   the one that suits a man who has been sitting by water all game: leaves off
+   the trees behind him, turning over as they come, landing flat and floating
+   rather than going under, with the rain that brought them down. One word
+   picks between them. */
+const WIN_FALL = 'leaf';
+
 let rain = [], rainStruck = false;
-const RAIN_FALL = 900, RAIN_SINK = 620;
+const RAIN_SINK = 620, LEAF_FLOAT = 1500;
+const LEAF_TINTS = [
+  { ink: '#c8863c', wash: 'rgba(200,134,60,0.16)' },   // turned
+  { ink: '#b8613a', wash: 'rgba(184,97,58,0.16)' },    // further gone
+  { ink: '#9aa361', wash: 'rgba(154,163,97,0.15)' },   // still green at the stem
+  { ink: '#d8a45a', wash: 'rgba(216,164,90,0.16)' },
+];
+
 function fishRain() {
   if (REDUCED.matches || !CELL || !canvas) return;
   const b = canvas.getBoundingClientRect();
   const now = performance.now();
+  const px = () => b.left + PAD + CELL * (Math.random() * (N - 1));
+  const py = () => b.top + PAD + CELL * (Math.random() * (N - 1));
   rain = []; rainStruck = false;
-  for (let i = 0; i < 24; i++) {
-    const x = b.left + PAD + CELL * (Math.random() * (N - 1));
-    rain.push({
-      x, drift: (Math.random() - 0.5) * 46,
-      y0: -70 - Math.random() * 220,
-      land: b.top + PAD + CELL * (Math.random() * (N - 1)),
-      t0: now + i * 74 + Math.random() * 90,
-      dur: RAIN_FALL * (0.82 + Math.random() * 0.4),
+
+  if (WIN_FALL === 'fish') {
+    for (let i = 0; i < 24; i++) rain.push({
+      kind: 'fish', x: px(), drift: (Math.random() - 0.5) * 46,
+      y0: -70 - Math.random() * 220, land: py(),
+      t0: now + i * 74 + Math.random() * 90, dur: 900 * (0.82 + Math.random() * 0.4),
       size: CELL * (0.62 + Math.random() * 0.5),
       rot: (Math.random() - 0.5) * 1.4,
-      spin: (Math.random() < 0.5 ? -1 : 1) * (1.1 + Math.random() * 1.7),
-      hit: false,
+      spin: (Math.random() < 0.5 ? -1 : 1) * (1.1 + Math.random() * 1.7), hit: false,
+    });
+  } else {
+    // The rain first and heaviest — it is what has brought the leaves down.
+    for (let i = 0; i < 40; i++) rain.push({
+      kind: 'drop', x: px(), drift: 5, y0: -60 - Math.random() * 180, land: py(),
+      t0: now + Math.random() * 1500, dur: 380 + Math.random() * 170,
+      size: CELL * (0.26 + Math.random() * 0.22), hit: false,
+    });
+    for (let i = 0; i < 15; i++) rain.push({
+      kind: 'leaf', x: px(), drift: (Math.random() - 0.5) * 90,
+      y0: -80 - Math.random() * 260, land: py(),
+      t0: now + i * 118 + Math.random() * 260, dur: 1700 * (0.8 + Math.random() * 0.5),
+      size: CELL * (0.42 + Math.random() * 0.3),
+      rot: (Math.random() - 0.5) * 2.4,
+      spin: (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.8),
+      sway: 16 + Math.random() * 30, swayF: 5 + Math.random() * 5, phase: Math.random() * 6.28,
+      tint: LEAF_TINTS[(Math.random() * LEAF_TINTS.length) | 0], hit: false,
     });
   }
   ensureAnim();
 }
+
+function fallLife(f) { return f.dur + (f.kind === 'leaf' ? LEAF_FLOAT : f.kind === 'drop' ? 40 : RAIN_SINK); }
 
 function drawRain() {
   if (!flyCtx || !rain.length) return;
@@ -1659,38 +1714,64 @@ function drawRain() {
     const e = now - f.t0;
     if (e < 0) continue;
     const u = Math.min(1, e / f.dur);
-    const fall = u * u;                                   // it accelerates, like a thing falling
+    // A fish drops. Rain drops harder. A leaf does neither — it is held up by
+    // the air the whole way down, so it comes at nearly one speed and spends
+    // the time turning over instead.
+    const fall = f.kind === 'leaf' ? u * (0.74 + 0.26 * u) : u * u;
     const y = f.y0 + (f.land - f.y0) * fall;
-    const x = f.x + f.drift * u;
+    const x = f.x + f.drift * u +
+              (f.kind === 'leaf' ? f.sway * Math.sin(f.phase + u * f.swayF) : 0);
+
     if (u >= 1 && !f.hit) {
       f.hit = true;
       const c = Math.round((x - b.left - PAD) / CELL), r = Math.round((y - b.top - PAD) / CELL);
       if (r >= 0 && r < N && c >= 0 && c < N) {
-        /* Both gentler than a single catch, and not for the frame budget —
-           the whole rain costs about 1.2ms a frame, which is nothing. It is
-           that two dozen splashes at catching strength wash into one churn:
-           what makes it worth looking at is reading each ring against water
-           that is still, and there is no still water left at full strength. */
-        waveSplash(r, c, 0.34, false);
-        knock(r, c, 0.16);                                // the stones feel it land
+        /* All gentler than a catch. Two dozen splashes at catching strength
+           wash into one churn, and what makes it worth looking at is reading
+           each ring against water that is still. A leaf lands flat and barely
+           disturbs anything; rain is a great many very small rings. */
+        if (f.kind === 'drop') waveSplash(r, c, 0.13, false);
+        else if (f.kind === 'leaf') { waveSplash(r, c, 0.2, false); knock(r, c, 0.07); }
+        else { waveSplash(r, c, 0.34, false); knock(r, c, 0.16); }
       }
-      plip(0.055 + Math.random() * 0.03);
-      // The board used to take one hard knock a game, off the tomato thrown for
-      // winning. The tomato is gone and the shake was worth keeping, so the
-      // first fish down carries it.
-      if (!rainStruck) {
+      if (f.kind !== 'drop' || Math.random() < 0.5) plip(f.kind === 'fish' ? 0.055 + Math.random() * 0.03 : 0.022 + Math.random() * 0.02);
+      if (!rainStruck && f.kind !== 'drop') {
+        // The board used to take one hard knock a game, off the tomato thrown
+        // for winning. The tomato is gone and the shake was worth keeping.
         rainStruck = true;
         const wrap = document.getElementById('boardWrap');
         if (wrap) { wrap.classList.remove('slam'); void wrap.offsetWidth; wrap.classList.add('slam'); }
       }
     }
-    const sunk = u >= 1 ? Math.min(1, (e - f.dur) / RAIN_SINK) : 0;
+
+    if (f.kind === 'drop') {
+      if (u >= 1) continue;                              // it is in the water; the rings say the rest
+      g.save();
+      g.globalAlpha = 0.5;
+      g.strokeStyle = '#cfe4f2';
+      g.lineWidth = Math.max(1, CELL * 0.035);
+      g.beginPath(); g.moveTo(x, y - f.size * 2.2); g.lineTo(x, y); g.stroke();
+      g.restore();
+      continue;
+    }
+
+    const done = u >= 1 ? Math.min(1, (e - f.dur) / (f.kind === 'leaf' ? LEAF_FLOAT : RAIN_SINK)) : 0;
     g.save();
-    g.globalAlpha = 1 - sunk;
-    g.translate(x, y + sunk * CELL * 0.5);                // and then it goes under
-    g.rotate(f.rot + f.spin * u * (u < 1 ? 1 : 1));
-    g.scale(1, 1 - 0.35 * sunk);
-    drawFish(g, f.size);
+    if (f.kind === 'leaf') {
+      // it floats rather than sinks, and goes on turning a little where it lies
+      g.globalAlpha = done > 0.55 ? 1 - (done - 0.55) / 0.45 : 1;
+      g.translate(x, y + done * CELL * 0.10);
+      g.rotate(f.rot + Math.sin(f.phase + u * f.swayF) * 0.85 + u * f.spin);
+      // turning over on the way down: edge-on for a moment, then flat again
+      g.scale(1, Math.max(0.18, Math.abs(Math.cos(f.phase + u * f.swayF * 1.25)) * (1 - done) + done));
+      drawLeaf(g, f.size, f.tint);
+    } else {
+      g.globalAlpha = 1 - done;
+      g.translate(x, y + done * CELL * 0.5);
+      g.rotate(f.rot + f.spin * u);
+      g.scale(1, 1 - 0.35 * done);
+      drawFish(g, f.size);
+    }
     g.restore();
   }
 }
