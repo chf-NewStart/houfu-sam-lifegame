@@ -507,8 +507,10 @@
         <button class="btn" style="flex:0 0 auto" onclick="createRoom()" data-en="Create Room" data-zh="创建房间">Create Room</button>
         <span class="room-code-display"><span data-en="code:" data-zh="房间码:">code:</span><span id="roomCode" class="room-code">—</span></span>
       </div>
+      <button class="btn" id="shareRoomBtn" onclick="shareRoom()" style="display:none"
+              data-en="⧉ copy invite link" data-zh="⧉ 复制邀请链接">⧉ copy invite link</button>
       <div class="remote-row">
-        <input class="join-input" id="joinCode" placeholder="paste room code to join" maxlength="36">
+        <input class="join-input" id="joinCode" placeholder="paste the invite link or code" maxlength="120">
         <button class="btn" style="flex:0 0 auto" onclick="joinRoom()" data-en="Join" data-zh="加入">Join</button>
       </div>
       <div id="connStatus" class="conn-status"></div>
@@ -564,6 +566,8 @@ function applyLang() {
   document.getElementById('pgTitle').textContent = t('Gomoku', '五子棋');
   document.getElementById('pgSub').textContent   = t('5 in a row wins · 15×15 · click to place your stone', '五子连珠获胜 · 15×15棋盘 · 点击落子');
   document.getElementById('pgBack').textContent  = t('← arcade', '← 游戏厅');
+  // an input has no textContent to swap, so the placeholder is done by hand
+  document.getElementById('joinCode').placeholder = t('paste the invite link or code', '粘贴邀请链接或房间码');
   document.querySelectorAll('[data-en]').forEach(el => { el.textContent = t(el.dataset.en, el.dataset.zh); });
   updatePauseBtn();
   renderPanel();
@@ -3585,12 +3589,50 @@ function startRemoteListeners() {
 
 function fbSendMove(r, c) { gameRef('play').set({ s: _fbSession, moves: _remoteMoves.concat([[r, c]]) }); }
 
+/* Reading six characters down a phone to someone is not sharing a game, it is
+   dictation. The code still shows — it is the thing you say out loud when you
+   are in the same room — but the link is the thing you send. */
+function roomLink(code) {
+  return location.origin + location.pathname + '?room=' + encodeURIComponent(code);
+}
+let _shareTimer = 0;
+async function shareRoom() {
+  if (!_fbCode) return;
+  const btn = document.getElementById('shareRoomBtn');
+  const url = roomLink(_fbCode);
+  const say = (en, zh) => {
+    btn.textContent = t(en, zh);
+    clearTimeout(_shareTimer);
+    // back to the label the language switch would give it anyway
+    _shareTimer = setTimeout(() => { btn.textContent = t(btn.dataset.en, btn.dataset.zh); }, 1800);
+  };
+  // On a phone the share sheet is the whole point: it puts the link straight
+  // into whichever app you were going to send it in.
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: t('Gomoku', '五子棋'), text: t('Play me a game of gomoku', '来下一盘五子棋'), url });
+      return;
+    } catch (e) { if (e && e.name === 'AbortError') return; }   // they closed the sheet
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    say('✓ link copied', '✓ 链接已复制');
+  } catch (e) {
+    // no clipboard permission, or an insecure origin — put it somewhere selectable
+    const box = document.getElementById('joinCode');
+    box.value = url; box.select();
+    say('↓ copy it from the box', '↓ 从下方复制');
+  }
+}
+
 async function createRoom() {
   _fbCode = shortId(); _isHost = true; _curHost = 1; remoteMode = false; _fbSession = 0; _prevLen = 0; _remoteOver = false; _remoteMoves = [];
   computeMyColor();
   document.getElementById('roomCode').textContent = _fbCode;
-  setConnStatus(t('Waiting for opponent — share the code above', '等待对方加入，分享上方代码'));
-  showOverlay(t('Waiting for opponent…\nShare the room code on the right.', '等待对方加入…\n将房间码分享给对方。'));
+  const share = document.getElementById('shareRoomBtn');
+  if (share) { share.style.display = ''; share.textContent = t(share.dataset.en, share.dataset.zh); }
+  setConnStatus(t('Waiting for opponent — send them the link', '等待对方加入 — 把链接发给他'));
+  showOverlay(t('Waiting for opponent…\nSend them the invite link.', '等待对方加入…\n把邀请链接发给对方。'));
   await gameRef('meta').set({ created: Date.now() });
   await gameRef('host').set(1);
   await gameRef('play').set({ s: 0 });
@@ -3598,12 +3640,22 @@ async function createRoom() {
   if (_fbJoinCb) _fbJoinRef.off('value', _fbJoinCb);
   _fbJoinRef = gameRef('joined');
   _fbJoinCb = _fbJoinRef.on('value', snap => {
-    if (snap.val() && !remoteMode) { remoteMode = true; hideOverlay(); updatePauseBtn(); showRemoteUI(true); startRemoteListeners(); }
+    if (snap.val() && !remoteMode) {
+      remoteMode = true; hideOverlay(); updatePauseBtn(); showRemoteUI(true); startRemoteListeners();
+      const sb = document.getElementById('shareRoomBtn'); if (sb) sb.style.display = 'none';
+    }
   });
 }
 
-async function joinRoom() {
-  const code = document.getElementById('joinCode').value.trim().toUpperCase();
+/* Takes a code from the box, or one handed in from the ?room= link. Pasting a
+   whole invite link into the box works too — that is what people actually do
+   with a link, and asking them to trim it back down to six characters would
+   defeat the point of having sent one. */
+async function joinRoom(fromLink) {
+  let raw = (fromLink || document.getElementById('joinCode').value).trim();
+  const m = raw.match(/[?&]room=([^&#\s]+)/);
+  if (m) raw = decodeURIComponent(m[1]);
+  const code = raw.toUpperCase();
   if (!code) return;
   setConnStatus(t('Looking up room…', '查找房间…')); showOverlay(t('Connecting…', '连接中…'));
   const snap = await fbDb().ref(`games/${code}/meta`).once('value');
@@ -3645,6 +3697,18 @@ function init() {
   applyLang();
   rlInit();
   newGame();
+  joinFromLink();
+}
+
+/* An invite link opens straight into the game. The code stays in the URL on
+   purpose: a refresh — or a phone locking and coming back — rejoins the same
+   room instead of dropping you into a local game against nobody. */
+function joinFromLink() {
+  let code = null;
+  try { code = new URLSearchParams(location.search).get('room'); } catch (e) { return; }
+  if (!code) return;
+  document.getElementById('joinCode').value = code;
+  joinRoom(code);
 }
 
 window.addEventListener('resize', () => { computeLayout(); sizeFlyLayer(); waveInit(); draw(); });
