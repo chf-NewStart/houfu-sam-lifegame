@@ -341,6 +341,7 @@
     <div class="oracle-side">
       <button class="btn" id="aiVoiceBtn" onclick="toggleEngineVoice()"></button>
       <button class="btn" id="guruSfxBtn" onclick="toggleGuruSfx()"></button>
+      <button class="btn" id="newBtn" onclick="requestNewGame()" data-en="⟳ New Game" data-zh="⟳ 新游戏">⟳ New Game</button>
       <div class="remote-row" id="dsKeyRow" style="display:none">
         <input class="join-input" id="dsKeyInput" type="password" placeholder="DeepSeek key (sk-…)">
         <button class="btn" style="flex:0 0 auto" onclick="saveDsKey()" data-en="Save" data-zh="保存">Save</button>
@@ -366,6 +367,7 @@
       </div>
       <div class="rp-cap" id="rpCap"></div>
       <div class="brow">
+        <button class="btn" id="rpPlay" onclick="rpToggle()"></button>
         <button class="btn" id="rpShow" onclick="rpTurn()"></button>
         <button class="btn" id="rpExit" onclick="rpExit()"></button>
       </div>
@@ -432,7 +434,6 @@
     <div class="pcard">
       <div class="pcard-title" data-en="// game" data-zh="// 游戏">// game</div>
       <div class="brow">
-        <button class="btn" id="newBtn"    onclick="requestNewGame()" data-en="⟳ New Game" data-zh="⟳ 新游戏">⟳ New Game</button>
         <button class="btn" id="undoBtn"   onclick="undoMove()"       data-en="↩ Undo"     data-zh="↩ 悔棋"   disabled>↩ Undo</button>
         <button class="btn" id="resignBtn" onclick="resign()"       data-en="⚑ Resign"   data-zh="⚑ 认输">⚑ Resign</button>
         <button class="btn" id="pauseBtn"  onclick="togglePause()"  style="display:none" data-en="⏸ Pause" data-zh="⏸ 暂停">⏸ Pause</button>
@@ -2386,7 +2387,7 @@ function reviewGame(winner){
     body: JSON.stringify({
       model: 'deepseek-v4-flash',
       thinking: { type: 'disabled' },
-      max_tokens: 700,
+      max_tokens: 900,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content:
@@ -2396,9 +2397,12 @@ function reviewGame(winner){
           '"turning":{"n":<move number>,"en":"...","zh":"..."},' +
           '"decisive":{"n":<move number>,"better":"<coordinate>","en":"...","zh":"..."},' +
           '"lesson":{"en":"...","zh":"..."}}\n' +
-          'gist is the whole review in ONE plain sentence a beginner could act on — what you kept doing ' +
-          'wrong, in ordinary words. It must contain NO coordinates and NO move numbers at all; it is the ' +
-          'line shown before anyone asks for detail. ' +
+          'gist is the review in TWO OR THREE plain sentences: tell them what actually happened in this ' +
+          'game — the shape it took, what they kept doing, how the other side got on top of it, and what ' +
+          'they should have been doing instead. Concrete about the play, but in ordinary words: it must ' +
+          'contain NO coordinates and NO move numbers at all, because it is what is shown before anyone ' +
+          'asks for detail. Say "the top edge", "the pair in the middle", "your line across the bottom" ' +
+          'rather than naming points. ' +
           'turning.n is the move where the game really turned. decisive.n is the single move that lost it, ' +
           'and decisive.better is the coordinate that should have been played on that move instead — it must be ' +
           'a point that is still EMPTY at that stage of the move list. Every "n" must be a move number that ' +
@@ -2473,10 +2477,40 @@ function bestOn(bd, player, depth) {
   return bm;
 }
 
-function rpStop() { clearTimeout(rpTimer); rpTimer = 0; }
-
-function rpSeek(k) {
+let rpPlaying = false;
+// Two ways to stop: rpStop() is the one a person causes — grabbing the slider,
+// starting the demonstration — and it ends the playback too. rpClear() only
+// takes the timer, and is what the playback's own tick uses so that seeking
+// forward does not switch itself off on the way.
+function rpClear() { clearTimeout(rpTimer); rpTimer = 0; }
+function rpStop() { rpClear(); rpPlaying = false; rpSyncPlay(); }
+function rpSyncPlay() {
+  const b = document.getElementById('rpPlay');
+  if (b) b.textContent = rpPlaying ? t('⏸ pause', '⏸ 暂停') : t('▶ play it through', '▶ 从头播放');
+}
+/* Walk the whole game at reading speed. Starting from the end means starting
+   again — otherwise the button looks broken when the board is already at the
+   last move. */
+function rpToggle() {
+  if (rpPlaying) { rpStop(); return; }
   rpStop();
+  // From the end, "play" means play it again — otherwise the button looks
+  // broken on a board that is already showing the last move.
+  rpSeek((replay && replay.at < gameRecord.length) ? replay.at : 0);
+  rpPlaying = true;
+  rpSyncPlay();
+  const tick = () => {
+    if (!rpPlaying) return;
+    const at = replay ? replay.at : 0;
+    if (at >= gameRecord.length) { rpStop(); return; }
+    rpSeek(at + 1, true);
+    rpTimer = setTimeout(tick, 700);
+  };
+  rpTimer = setTimeout(tick, 700);
+}
+
+function rpSeek(k, fromPlayback) {
+  if (fromPlayback) rpClear(); else rpStop();
   const total = gameRecord.length;
   k = Math.max(0, Math.min(total, k | 0));
   const bd = boardBefore(k + 1);
@@ -2532,7 +2566,7 @@ function rpTurn() {
          (d.mine ? t('You played ', '你下了 ') : sideName(m.p) + t(' played ', ' 下了 ')) +
          '<span class="rp-was">' + m.at + '</span>.');
 
-    if (!d.better) { step(() => rpCaption(t('He did not name a better point.', '他没有指出更好的一点。')), 1500); return; }
+    if (!d.better) { step(() => rpCaption(t('He did not name a better point.', '他没有指出更好的一点。')), 1800); return; }
 
     step(() => {
       // 3 — and the one he wanted there instead
@@ -2543,10 +2577,14 @@ function rpTurn() {
            t(' was the move.', ' 才是这一手。'));
 
       // 4 — and how it reads from there, played out by this page's own search
+      // Run it out to a conclusion rather than stopping at an arbitrary
+      // count: the point of the variation is where it ENDS UP, and cutting
+      // it off mid-fight shows nothing. Twelve plies is the ceiling, not the
+      // target — it breaks the moment someone has five.
       const line = [];
       const sim = bd2.map(row => [...row]);
       let turn = yours.p === 1 ? 2 : 1, last = d.better;
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 12; i++) {
         if (isWinMove(sim, last[0], last[1], sim[last[0]][last[1]])) break;
         const mv = bestOn(sim, turn, 2);
         if (!mv) break;
@@ -2559,8 +2597,13 @@ function rpTurn() {
       let k = 0;
       const next = () => {
         if (k >= line.length) {
-          rpCaption(t('— that is the engine reading it out, not a promise.',
-                      '——这是引擎的推演，并非定论。'));
+          const won = line.length && isWinMove(bd3, line[line.length - 1].r, line[line.length - 1].c,
+                                               bd3[line[line.length - 1].r][line[line.length - 1].c]);
+          rpCaption(won
+            ? t('— and there it is, five. The engine\'s reading, not a promise.',
+                '——五子连珠。这是引擎的推演，并非定论。')
+            : t('— that is as far as it reads. Not a promise, just what it sees.',
+                '——推演至此。并非定论，只是它所见。'));
           return;
         }
         const mv = line[k++];
@@ -2569,11 +2612,11 @@ function rpTurn() {
         replay = { bd: bd3.map(row => [...row]), at: m.n - 1, marks: marks.slice() };
         rpCaption(t('and it would have gone on like this…', '接下来大致会这样走……'));
         draw();
-        step(next, 620);
+        step(next, 900);
       };
-      step(next, 1400);
-    }, 1700);
-  }, 1600);
+      step(next, 1900);
+    }, 2400);
+  }, 2200);
 }
 
 function renderReplayUI() {
@@ -2591,6 +2634,7 @@ function renderReplayUI() {
   showBtn.style.display = canDemo ? '' : 'none';
   showBtn.textContent = t('▶ show that move', '▶ 演示这一手');
   document.getElementById('rpExit').textContent = t('✕ back to the game', '✕ 回到终局');
+  rpSyncPlay();
   rpSync();
   if (!replay) rpCaption(t('drag to walk back through the game', '拖动滑块，回看每一手'));
 }
