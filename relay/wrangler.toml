@@ -1,0 +1,19 @@
+name = "gomoku-relay"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+# new_sqlite_classes, not new_classes: the Workers free plan only offers
+# Durable Objects with the SQLite storage backend, and the older key-value
+# backend needs a paid plan. Using the wrong one here is the difference
+# between this deploying for nothing and not deploying at all.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+# Uncomment once it works, so the relay only answers your own pages.
+# [vars]
+# ALLOW_ORIGINS = "https://lifegameproject.com,https://houfu72.com"

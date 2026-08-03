@@ -406,8 +406,11 @@
       @keyframes shout-fade { 0%,90% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: visible; } }
     }
   </style>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <!-- defer: on a network that drops gstatic these block parsing until the
+       connection gives up, which held the whole page back in China. Nothing
+       touches `firebase` until someone opens a room. -->
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -3873,7 +3876,77 @@ function fbDb() {
   if (!_fbDb) { firebase.initializeApp(firebaseConfig); _fbDb = firebase.database(); }
   return _fbDb;
 }
-function gameRef(sub) { return fbDb().ref(`games/${_fbCode}/${sub}`); }
+
+/* ── The relay ────────────────────────────────────
+   Firebase cannot be reached from mainland China — the SDK is on gstatic and
+   the database on firebaseio, and both are Google. So there is a second
+   transport: a Cloudflare Worker holding one Durable Object per room, which
+   China can reach. See relay/README.md; paste the deployed address here and
+   every room goes through it instead.
+
+   The game asks a room for very little — set, remove, once, on, off — so the
+   relay answers exactly that and nothing above this line had to change. Empty
+   means carry on with Firebase, which is what happens until the Worker is
+   actually deployed. */
+const RELAY = '';   // e.g. 'wss://gomoku-relay.yourname.workers.dev'
+
+const _rl = { sock: null, code: null, data: {}, ready: null, subs: new Map() };
+const rlSnap = (v) => ({ val: () => (v === undefined ? null : v), exists: () => v !== undefined && v !== null });
+
+function relayClose() {
+  if (_rl.sock) { try { _rl.sock.close(); } catch (e) {} }
+  _rl.sock = null; _rl.code = null; _rl.ready = null; _rl.data = {}; _rl.subs = new Map();
+}
+
+function relayOpen(code) {
+  if (_rl.code === code && _rl.ready) return _rl.ready;
+  relayClose();
+  _rl.code = code;
+  _rl.ready = new Promise((res, rej) => {
+    let ws;
+    try { ws = new WebSocket(RELAY.replace(/\/+$/, '') + '/room/' + encodeURIComponent(code)); }
+    catch (e) { rej(e); return; }
+    _rl.sock = ws;
+    // a blocked socket does not refuse, it hangs — the same way the database did
+    const timer = setTimeout(() => { try { ws.close(); } catch (e) {} rej(new Error('relay-timeout')); }, FB_TIMEOUT);
+    ws.onmessage = (ev) => {
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.t === 'init') { _rl.data = m.d || {}; clearTimeout(timer); res(_rl); return; }
+      if (m.t !== 'u') return;
+      if (m.v === null) delete _rl.data[m.p]; else _rl.data[m.p] = m.v;
+      const set = _rl.subs.get(m.p);
+      if (set) for (const cb of [...set]) cb(rlSnap(_rl.data[m.p]));
+    };
+    ws.onerror = () => { clearTimeout(timer); rej(new Error('relay-error')); };
+    ws.onclose = () => { clearTimeout(timer); rej(new Error('relay-closed')); };
+  });
+  return _rl.ready;
+}
+
+function relayRef(path) {
+  const parts = String(path).split('/');          // games/<code>/<key>
+  const code = parts[1], key = parts.slice(2).join('/');
+  const write = (v) => relayOpen(code).then(() => _rl.sock.send(JSON.stringify({ t: 'set', p: key, v })));
+  return {
+    set: write,
+    remove: () => write(null),
+    once: () => relayOpen(code).then(() => rlSnap(_rl.data[key])),
+    on: (_e, cb) => {
+      relayOpen(code).then(() => {
+        let set = _rl.subs.get(key);
+        if (!set) { set = new Set(); _rl.subs.set(key, set); }
+        set.add(cb);
+        cb(rlSnap(_rl.data[key]));                // Firebase fires once on attach; so does this
+      }).catch(() => {});
+      return cb;
+    },
+    off: (_e, cb) => { const set = _rl.subs.get(key); if (set) set.delete(cb); },
+  };
+}
+
+const onRelay = () => !!RELAY;
+function pathRef(path) { return onRelay() ? relayRef(path) : fbDb().ref(path); }
+function gameRef(sub) { return pathRef(`games/${_fbCode}/${sub}`); }
 
 function shortId() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no O/0, I/1
@@ -4067,7 +4140,7 @@ async function shareRoom() {
    nothing to stop it. A friend in Beijing sat looking at that. It cannot be
    made to work from here, but it can at least say what happened. */
 const FB_TIMEOUT = 12000;
-function fbReady() { return typeof firebase !== 'undefined' && !!firebase && !!firebase.database; }
+function fbReady() { return onRelay() || (typeof firebase !== 'undefined' && !!firebase && !!firebase.database); }
 function fbUnreachable(e) {
   hideOverlay();
   setConnStatus(!fbReady()
@@ -4126,7 +4199,7 @@ async function joinRoom(fromLink) {
   if (!fbReady()) return fbUnreachable();
   setConnStatus(t('Looking up room…', '查找房间…')); showOverlay(t('Connecting…', '连接中…'));
   let snap;
-  try { snap = await fbTry(fbDb().ref(`games/${code}/meta`).once('value')); }
+  try { snap = await fbTry(pathRef(`games/${code}/meta`).once('value')); }
   catch (e) { return fbUnreachable(e); }
   if (!snap.exists()) { hideOverlay(); setConnStatus(t('Room not found — check the code.', '未找到房间，请检查代码。'), 'err'); return; }
   _fbCode = code; _isHost = false; remoteMode = true; _fbSession = 0; _prevLen = 0; _remoteOver = false; _remoteMoves = [];
