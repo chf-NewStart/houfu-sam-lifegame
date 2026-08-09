@@ -64,6 +64,12 @@
     .recipe-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:0.68rem; color:#666; }
     .recipe-row select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.68rem; padding:4px; }
     .build-note { color:#555; font-size:0.64rem; margin-top:8px; line-height:1.6; }
+    .share-row { display:flex; align-items:center; gap:9px; margin-top:9px; flex-wrap:wrap; padding-top:8px; border-top:1px solid #1a1a1a; }
+    .share-msg { font-size:0.66rem; color:#1db954; }
+    .share-msg.err { color:#f44336; }
+    .import-row { display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap; }
+    .import-row input { flex:1; min-width:120px; background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.68rem; padding:5px 7px; }
+    .import-row input:focus { outline:none; border-color:#1db954; }
 
     /* field roster */
     .field-row { display:flex; gap:9px; align-items:center; padding:5px 4px; border-bottom:1px solid #161616; }
@@ -243,6 +249,14 @@
           </select>
         </div>
         <div class="build-note" data-en="&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser." data-zh="&gt; 第一回合还没有历史：「模仿对方上一步」视为合作，「反着来」视为背叛。你的策略会保存在本浏览器里。">&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser.</div>
+        <div class="share-row">
+          <button class="sm-btn" id="shareBtn" data-en="📋 copy share code" data-zh="📋 复制分享码">📋 copy share code</button>
+          <span class="share-msg" id="shareMsg"></span>
+        </div>
+        <div class="import-row">
+          <input id="importCode" spellcheck="false">
+          <button class="sm-btn" id="importBtn" data-en="↓ import" data-zh="↓ 导入">↓ import</button>
+        </div>
       </div>
     </div>
 
@@ -638,7 +652,12 @@ var TXT = {
   extinct:{en:'gen {g} — {name} went extinct',zh:'第 {g} 代 —— {name} 灭绝'},
   domin:{en:'gen {g} — {name} has taken over the whole population',zh:'第 {g} 代 —— {name} 占领了整个种群'},
   pause:{en:'❚❚ pause',zh:'❚❚ 暂停'}, play:{en:'▶ play',zh:'▶ 播放'},
-  myDefault:{en:'MY STRATEGY',zh:'我的策略'}
+  myDefault:{en:'MY STRATEGY',zh:'我的策略'},
+  shareCopied:{en:'copied! send the code to a friend.',zh:'已复制！把代码发给朋友吧。'},
+  shareFail:{en:'could not auto-copy — code is in the box below, copy it manually.',zh:'自动复制失败——代码已放入下方输入框，请手动复制。'},
+  importPh:{en:"paste a friend's code…",zh:'粘贴好友的代码…'},
+  importOk:{en:'imported “{name}”!',zh:'已导入「{name}」！'},
+  importFail:{en:'invalid code — check and try again.',zh:'代码无效——请检查后重试。'}
 };
 function L(obj){ return obj[lang]; }
 function fmt(t, map){ var s=L(t); for(var k in map){ s=s.split('{'+k+'}').join(map[k]); } return s; }
@@ -720,6 +739,54 @@ document.getElementById('recipeSel').onchange=function(){
 };
 var nameInput=document.getElementById('stratName');
 nameInput.oninput=function(){ playerName=nameInput.value; savePlayer(); refreshNames(); };
+
+// ───────────────────────── share / import ─────────────────────────
+function b64EncodeUnicode(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(m,p1){ return String.fromCharCode('0x'+p1); }));
+}
+function b64DecodeUnicode(str){
+  return decodeURIComponent(Array.prototype.map.call(atob(str), function(c){
+    return '%'+('00'+c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+}
+function encodeStrategyCode(){
+  try{ return b64EncodeUnicode(JSON.stringify({ v:1, n:playerName, r:playerRules })); }catch(e){ return null; }
+}
+function decodeStrategyCode(code){
+  try{
+    var obj=JSON.parse(b64DecodeUnicode(code.trim()));
+    if(!obj || !Array.isArray(obj.r) || !obj.r.length) return null;
+    var rules=obj.r.map(function(r){
+      if(!r || (r.c!=='always' && CONDS.indexOf(r.c)===-1) || ACTS.indexOf(r.a)===-1) throw 0;
+      var o={ c:r.c, a:r.a };
+      if(needsN[r.c]) o.n = Math.max(1, Math.min(50, r.n|0)) || 2;
+      if(needsP[r.c]) o.p = Math.max(1, Math.min(100, r.p|0)) || 50;
+      return o;
+    });
+    var name = typeof obj.n==='string' ? obj.n.slice(0,18) : '';
+    return { name:name, rules:rules };
+  }catch(e){ return null; }
+}
+document.getElementById('shareBtn').onclick=function(){
+  var code=encodeStrategyCode(), msg=document.getElementById('shareMsg');
+  if(!code){ msg.className='share-msg err'; msg.textContent=L(TXT.shareFail); return; }
+  var ok=function(){ msg.className='share-msg'; msg.textContent=L(TXT.shareCopied); };
+  var bad=function(){
+    var box=document.getElementById('importCode'); box.value=code; box.focus(); box.select();
+    msg.className='share-msg err'; msg.textContent=L(TXT.shareFail);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(ok, bad);
+  else bad();
+};
+document.getElementById('importBtn').onclick=function(){
+  var box=document.getElementById('importCode'), msg=document.getElementById('shareMsg');
+  var res=decodeStrategyCode(box.value);
+  if(!res){ msg.className='share-msg err'; msg.textContent=L(TXT.importFail); return; }
+  playerRules=res.rules; playerName=res.name;
+  savePlayer(); nameInput.value=playerName; renderRules(); refreshNames();
+  msg.className='share-msg'; msg.textContent=fmt(TXT.importOk,{name:playerName||L(TXT.myDefault)});
+  box.value='';
+};
 
 // ───────────────────────── field roster ─────────────────────────
 function renderField(){
@@ -1142,6 +1209,7 @@ document.getElementById('langBtn').onclick=function(){
   try{ localStorage.setItem('arcade_lang', lang); }catch(e){}
   applyLangAttrs(); renderRules(); renderEvoRosterKeepChecks(); refreshNames();
   nameInput.placeholder=L(TXT.myDefault);
+  document.getElementById('importCode').placeholder=L(TXT.importPh);
 };
 function renderEvoRosterKeepChecks(){
   var checked={}; document.querySelectorAll('#evoRoster input').forEach(function(c){ checked[c.value]=c.checked; });
@@ -1154,6 +1222,7 @@ try{ if(localStorage.getItem('arcade_lang')==='zh') lang='zh'; }catch(e){}
 applyLangAttrs();
 avatarFor('you', document.getElementById('myAvatar'));
 nameInput.value=playerName; nameInput.placeholder=L(TXT.myDefault);
+document.getElementById('importCode').placeholder=L(TXT.importPh);
 renderRules(); renderField(); fillPickers();
 document.getElementById('pickA').value='you'; document.getElementById('pickB').value='tft';
 renderEvoRoster(); evoReset();

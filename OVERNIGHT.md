@@ -8,12 +8,15 @@ Write tasks like you'd brief a contractor: what, where, and what "done" looks li
 
 ## Queue
 
-- [ ] Dilemma Lab (game/dilemma.html): add "share my strategy" — encode the
-      player's rule list + name into a short code string (base64 or similar) with
-      a copy button, and an import box that decodes a friend's code into the rule
-      builder. Bilingual labels like the rest of the page. Bump the index link
-      to ?v=b2.
-
 ## Done
 
 <!-- The builder moves finished tasks here with date + branch. -->
+
+- [x] Dilemma Lab (game/dilemma.html): add "share my strategy" — encode the
+      player's rule list + name into a short code string (base64 or similar) with
+      a copy button, and an import box that decodes a friend's code into the rule
+      builder. Bilingual labels like the rest of the page. Bump the index link
+      to ?v=b2. (2026-08-09, overnight/dilemma-share-strategy-2026-08-09; note: an
+      older PR #3 from 2026-07-18 attempted this same task but its branch has no
+      common history with current main and looks orphaned/unmergeable — worth
+      closing after review)
