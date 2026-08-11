@@ -14,6 +14,7 @@ What began as a Conway's Game of Life implementation grew into a terminal-themed
 |---|---|
 | **game_of_life.exe** | The original. Draw patterns, explore four cellular universes, turn them into music — sandbox, 11 leaderboard challenges, and a Music Box sequencer. *(details below)* |
 | **glyph_run.exe** | An arena survivor where you ARE a Chinese character — evolve 3,000 years back to your oracle-bone form, with a fresh daily oracle objective. Every monster, weapon and drop is a real ancient glyph. *(details below)* |
+| **dilemma_lab.exe** | Build an iterated-prisoner's-dilemma strategy, enter tournaments and Trust Trials, or play a strategy yourself by choosing cooperate/defect every round. |
 | **gomoku.exe** | Classic 5-in-a-row. Beat a minimax AI, learn with the tactical coach, watch AI-vs-AI, or play a friend online. |
 | **tether.exe** | Two players, one rope. Verlet rope physics, wind, ice, crumbling ledges — local or online co-op. |
 | **labyrinth.exe** | An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, a bigger maze every escape. |

@@ -113,8 +113,13 @@
     .bd-cell .w { color:#1db954; cursor:pointer; text-decoration:underline; }
 
     /* match stage */
+    .match-mode { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #181818; }
+    .match-mode .mode-note { color:#666; font-size:0.68rem; line-height:1.5; margin-left:4px; flex:1; min-width:220px; }
     .match-picks { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; font-size:0.72rem; color:#666; }
     .match-picks select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.72rem; padding:5px; }
+    .speed-controls { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .manual-player { display:none; color:#1db954; border:1px solid rgba(29,185,84,0.4); padding:5px 9px; letter-spacing:1px; }
+    .manual-rounds { display:none; align-items:center; gap:6px; }
     .stage { display:flex; align-items:center; justify-content:center; gap:14px; margin:10px 0 14px; flex-wrap:wrap; }
     .fighter { text-align:center; width:150px; }
     .fighter canvas { width:96px; height:96px; }
@@ -132,6 +137,33 @@
     .strips canvas { width:100%; display:block; background:#0a0a0a; border:1px solid #1a1a1a; }
     .match-result { display:none; text-align:center; padding:9px; margin:12px auto 0; max-width:640px; font-size:0.8rem; letter-spacing:1px; border:2px solid #555; color:#ccc; }
     .match-ctl { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+    .manual-choices { display:none; max-width:640px; margin:12px auto 0; padding:10px; border:1px solid #242424; background:#0c0c0c; text-align:center; }
+    .manual-choices.on { display:block; }
+    .manual-prompt { color:#999; font-size:0.7rem; line-height:1.5; margin-bottom:8px; }
+    .choice-row { display:flex; justify-content:center; gap:9px; }
+    .choice-btn { flex:1; max-width:220px; min-height:52px; background:#0a0a0a; font-family:inherit; cursor:pointer; letter-spacing:1px; border:1px solid #333; color:#aaa; }
+    .choice-btn .choice-key { display:inline-flex; width:25px; height:25px; align-items:center; justify-content:center; margin-right:7px; border:1px solid currentColor; font-size:0.8rem; }
+    .choice-btn.C { border-color:rgba(29,185,84,0.55); color:#1db954; }
+    .choice-btn.D { border-color:rgba(244,67,54,0.55); color:#f44336; }
+    .choice-btn.C:hover:not(:disabled), .choice-btn.C:focus-visible { background:rgba(29,185,84,0.11); border-color:#1db954; }
+    .choice-btn.D:hover:not(:disabled), .choice-btn.D:focus-visible { background:rgba(244,67,54,0.11); border-color:#f44336; }
+    .choice-btn:disabled { border-color:#242424; color:#3b3b3b; cursor:default; }
+    .manual-note { min-height:1.5em; margin-top:8px; color:#777; font-size:0.68rem; line-height:1.5; }
+    @media (max-width:520px){
+      .choice-row { flex-direction:column; }
+      .choice-btn { width:100%; max-width:none; }
+      .match-mode .mode-note { min-width:100%; }
+    }
+    @media (max-width:600px){
+      .stage { display:grid; grid-template-columns:minmax(0,1fr) 78px minmax(0,1fr); gap:4px; }
+      .fighter { width:auto; min-width:0; }
+      .fighter canvas { width:64px; height:64px; }
+      .fighter .fname { font-size:0.62rem; }
+      .vs-box { width:auto; min-width:0; }
+      .moves { gap:4px; }
+      .mv { width:34px; height:34px; font-size:1rem; }
+      .payline { font-size:0.64rem; }
+    }
 
     /* evolution */
     .evo-ctl { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
@@ -272,7 +304,7 @@
   <!-- mode tabs -->
   <div class="tab-row">
     <button class="tab sel" data-tab="tourney" data-en="tournament" data-zh="锦标赛">tournament</button>
-    <button class="tab" data-tab="match" data-en="watch a match" data-zh="观赛">watch a match</button>
+    <button class="tab" data-tab="match" data-en="single match" data-zh="单场对决">single match</button>
     <button class="tab" data-tab="evo" data-en="evolution" data-zh="演化">evolution</button>
     <button class="tab" data-tab="trials" data-en="trust trials" data-zh="信任试炼">trust trials</button>
   </div>
@@ -298,16 +330,27 @@
   <!-- MATCH -->
   <div class="tabpanel" id="panel-match">
     <div class="pcard">
-      <div class="pcard-title"><span data-en="// single match — watch it play out move by move" data-zh="// 单场对决 —— 一步步看它如何展开">// single match — watch it play out move by move</span></div>
+      <div class="pcard-title"><span data-en="// single match — watch two strategies or choose every round yourself" data-zh="// 单场对决 —— 观看策略交锋，或亲自决定每一回合">// single match — watch two strategies or choose every round yourself</span></div>
+      <div class="match-mode">
+        <button class="sm-btn sel" id="modeWatch" data-en="▶ watch simulation" data-zh="▶ 观看模拟">▶ watch simulation</button>
+        <button class="sm-btn" id="modeManual" data-en="◎ play each round" data-zh="◎ 逐回合亲自玩">◎ play each round</button>
+        <span class="mode-note" id="matchModeNote" data-en="Pick any two strategies and watch both decisions unfold." data-zh="任选两种策略，观看双方决策如何展开。">Pick any two strategies and watch both decisions unfold.</span>
+      </div>
       <div class="match-picks">
-        <select id="pickA"></select>
+        <span class="manual-player" id="manualPlayer" data-en="YOU // MANUAL" data-zh="你 // 手动">YOU // MANUAL</span>
+        <select id="pickA" class="watch-only"></select>
         <span data-en="vs" data-zh="对阵">vs</span>
         <select id="pickB"></select>
-        <span style="margin-left:8px" data-en="speed" data-zh="速度">speed</span>
-        <button class="sm-btn spd sel" data-spd="150">1×</button>
-        <button class="sm-btn spd" data-spd="40">4×</button>
-        <button class="sm-btn spd" data-spd="8">16×</button>
-        <button class="sm-btn spd" data-spd="0" data-en="instant" data-zh="瞬间">instant</button>
+        <span class="speed-controls" id="speedControls">
+          <span style="margin-left:8px" data-en="speed" data-zh="速度">speed</span>
+          <button class="sm-btn spd sel" data-spd="150">1×</button>
+          <button class="sm-btn spd" data-spd="40">4×</button>
+          <button class="sm-btn spd" data-spd="8">16×</button>
+          <button class="sm-btn spd" data-spd="0" data-en="instant" data-zh="瞬间">instant</button>
+        </span>
+        <label class="manual-rounds" id="manualRoundsWrap"><span data-en="match length" data-zh="对局长度">match length</span>
+          <select id="manualRounds"><option>10</option><option selected>20</option><option>50</option></select>
+        </label>
       </div>
       <div class="stage">
         <div class="fighter"><canvas id="favA" width="96" height="96"></canvas><div class="fname" id="fnameA"></div><div class="fscore" id="fscoreA">0</div></div>
@@ -324,9 +367,17 @@
         <div class="strip-label" id="stripLblB"></div>
         <canvas id="stripB" height="10"></canvas>
       </div>
+      <div class="manual-choices" id="manualChoices">
+        <div class="manual-prompt" data-en="Your move is secret and simultaneous. Choose C or D — keyboard shortcuts work too." data-zh="双方同时秘密出手。选择合作或背叛，也可直接按键盘 C / D。">Your move is secret and simultaneous. Choose C or D — keyboard shortcuts work too.</div>
+        <div class="choice-row">
+          <button class="choice-btn C" id="manualC" disabled><span class="choice-key">C</span><span data-en="COOPERATE" data-zh="合作">COOPERATE</span></button>
+          <button class="choice-btn D" id="manualD" disabled><span class="choice-key">D</span><span data-en="DEFECT" data-zh="背叛">DEFECT</span></button>
+        </div>
+        <div class="manual-note" id="manualNote"></div>
+      </div>
       <div class="match-result" id="matchResult"></div>
       <div class="match-ctl">
-        <button class="big-btn" id="runMatch" data-en="▶ fight" data-zh="▶ 开打">▶ fight</button>
+        <button class="big-btn" id="runMatch">▶ fight</button>
       </div>
     </div>
   </div>
@@ -638,7 +689,14 @@ var TXT = {
   extinct:{en:'gen {g} — {name} went extinct',zh:'第 {g} 代 —— {name} 灭绝'},
   domin:{en:'gen {g} — {name} has taken over the whole population',zh:'第 {g} 代 —— {name} 占领了整个种群'},
   pause:{en:'❚❚ pause',zh:'❚❚ 暂停'}, play:{en:'▶ play',zh:'▶ 播放'},
-  myDefault:{en:'MY STRATEGY',zh:'我的策略'}
+  myDefault:{en:'MY STRATEGY',zh:'我的策略'},
+  manualYou:{en:'YOU // MANUAL',zh:'你 // 手动'},
+  watchFight:{en:'▶ fight',zh:'▶ 开打'},
+  manualStart:{en:'▶ start manual match',zh:'▶ 开始手动对局'},
+  manualRestart:{en:'↺ restart manual match',zh:'↺ 重新开始手动对局'},
+  manualReady:{en:'Start the match, then choose C or D every round.',zh:'开始对局后，每一回合选择 C 或 D。'},
+  manualChoose:{en:'Choose your move for the next round.',zh:'请选择下一回合的行动。'},
+  manualDone:{en:'Match complete. Restart to try a different approach.',zh:'对局结束。重新开始，试试另一种思路。'}
 };
 function L(obj){ return obj[lang]; }
 function fmt(t, map){ var s=L(t); for(var k in map){ s=s.split('{'+k+'}').join(map[k]); } return s; }
@@ -797,18 +855,18 @@ function renderBreakdown(row){
     cell.appendChild(el('span','', sname(opp.id)));
     cell.appendChild(el('span','s', ''+Math.round(vsScore)));
     var w=el('span','w', L(TXT.watch));
-    w.onclick=function(ev){ ev.stopPropagation(); document.getElementById('pickA').value=row.id; document.getElementById('pickB').value=opp.id; selectTab('match'); startMatch(); };
+    w.onclick=function(ev){ ev.stopPropagation(); setMatchMode('watch'); document.getElementById('pickA').value=row.id; document.getElementById('pickB').value=opp.id; selectTab('match'); startMatch(); };
     cell.appendChild(w);
     grid.appendChild(cell);
   });
   bd.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
-// ───────────────────────── match viewer ─────────────────────────
-var speed=150, matchTimer=null, matchData=null, matchPos=0;
+// ───────────────────────── single match: watch or play every round ─────────────────────────
+var speed=150, matchTimer=null, matchData=null, matchPos=0, matchMode='watch', manualState=null;
 document.querySelectorAll('.spd').forEach(function(b){
   b.onclick=function(){ document.querySelectorAll('.spd').forEach(function(x){x.classList.remove('sel');}); b.classList.add('sel'); speed=b.dataset.spd|0;
-    if(matchData && matchTimer){ clearInterval(matchTimer); matchTimer=null; tickLoop(); } };
+    if(matchData && !matchData.manual && matchTimer){ clearInterval(matchTimer); matchTimer=null; tickLoop(); } };
 });
 function fillPickers(){
   ['pickA','pickB'].forEach(function(pid){
@@ -817,9 +875,48 @@ function fillPickers(){
     if(cur) sel.value=cur;
   });
 }
-document.getElementById('runMatch').onclick=startMatch;
+function setManualButtons(on){ document.getElementById('manualC').disabled=!on; document.getElementById('manualD').disabled=!on; }
+function refreshMatchMode(){
+  var manual=matchMode==='manual';
+  document.getElementById('modeWatch').classList.toggle('sel',!manual);
+  document.getElementById('modeManual').classList.toggle('sel',manual);
+  document.getElementById('pickA').style.display=manual?'none':'';
+  document.getElementById('manualPlayer').style.display=manual?'inline-block':'none';
+  document.getElementById('speedControls').style.display=manual?'none':'';
+  document.getElementById('manualRoundsWrap').style.display=manual?'inline-flex':'none';
+  document.getElementById('manualChoices').classList.toggle('on',manual);
+  document.getElementById('matchModeNote').innerHTML=manual
+    ? (lang==='en'?'You decide C or D each round; the opponent sees only your past moves.':'你每回合决定 C 或 D；对手只能看到你此前的行动。')
+    : (lang==='en'?'Pick any two strategies and watch both decisions unfold.':'任选两种策略，观看双方决策如何展开。');
+  document.getElementById('runMatch').innerHTML=manual
+    ? (manualState?L(TXT.manualRestart):L(TXT.manualStart)) : L(TXT.watchFight);
+  if(manual && !manualState) document.getElementById('manualNote').textContent=L(TXT.manualReady);
+}
+function setMatchMode(mode){
+  if(matchTimer){ clearInterval(matchTimer); matchTimer=null; }
+  matchMode=mode; manualState=null; matchData=null; matchPos=0; setManualButtons(false);
+  document.getElementById('matchResult').style.display='none';
+  document.getElementById('fscoreA').textContent='0'; document.getElementById('fscoreB').textContent='0';
+  document.getElementById('vsRound').textContent='— / —';
+  document.getElementById('mvA').className='mv'; document.getElementById('mvA').textContent='·';
+  document.getElementById('mvB').className='mv'; document.getElementById('mvB').textContent='·';
+  document.getElementById('payline').textContent='';
+  ['stripA','stripB'].forEach(function(id){ var cv=document.getElementById(id); cv.getContext('2d').clearRect(0,0,cv.width,cv.height); });
+  if(matchMode==='manual'){
+    var b=document.getElementById('pickB').value||'tft';
+    avatarFor('you',document.getElementById('favA')); avatarFor(b,document.getElementById('favB'));
+    document.getElementById('fnameA').innerHTML='<span style="color:'+SBY.you.color+'">'+L(TXT.manualYou)+'</span>';
+    document.getElementById('fnameB').innerHTML='<span style="color:'+SBY[b].color+'">'+sname(b)+'</span>';
+    document.getElementById('stripLblA').textContent=L(TXT.manualYou); document.getElementById('stripLblB').textContent=sname(b);
+  }
+  refreshMatchMode();
+}
+document.getElementById('modeWatch').onclick=function(){ setMatchMode('watch'); };
+document.getElementById('modeManual').onclick=function(){ setMatchMode('manual'); };
+document.getElementById('runMatch').onclick=function(){ if(matchMode==='manual') startManualMatch(); else startMatch(); };
 function startMatch(){
   if(matchTimer){ clearInterval(matchTimer); matchTimer=null; }
+  manualState=null; setManualButtons(false);
   var a=document.getElementById('pickA').value||'you', b=document.getElementById('pickB').value||'tft';
   var rounds=getRounds(), noise=getNoise();
   var rng=mulberry32((Math.random()*0xffffffff)>>>0);
@@ -835,6 +932,49 @@ function startMatch(){
   if(speed===0){ matchPos=rounds; drawMatchState(); finishMatch(); }
   else tickLoop();
 }
+function startManualMatch(){
+  if(matchTimer){ clearInterval(matchTimer); matchTimer=null; }
+  var b=document.getElementById('pickB').value||'tft', rounds=document.getElementById('manualRounds').value|0;
+  var rng=mulberry32((Math.random()*0xffffffff)>>>0);
+  manualState={ agent:makerFor(b)(), rng:rng, noise:getNoise()/100 };
+  matchData={ a:'you', b:b, m:{sa:0,sb:0,ha:[],hb:[]}, rounds:rounds, manual:true };
+  matchPos=0;
+  avatarFor('you',document.getElementById('favA')); avatarFor(b,document.getElementById('favB'));
+  document.getElementById('fnameA').innerHTML='<span style="color:'+SBY.you.color+'">'+L(TXT.manualYou)+'</span>';
+  document.getElementById('fnameB').innerHTML='<span style="color:'+SBY[b].color+'">'+sname(b)+'</span>';
+  document.getElementById('stripLblA').textContent=L(TXT.manualYou);
+  document.getElementById('stripLblB').textContent=sname(b);
+  document.getElementById('matchResult').style.display='none';
+  document.getElementById('manualNote').textContent=L(TXT.manualChoose);
+  setManualButtons(true); sizeStrips(rounds); refreshMatchMode();
+}
+function moveWord(m){ return m==='C'?(lang==='en'?'cooperated':'合作'):(lang==='en'?'defected':'背叛'); }
+function playManualRound(choice){
+  if(matchMode!=='manual'||!manualState||!matchData||matchPos>=matchData.rounds) return;
+  var m=matchData.m, r=matchPos, rng=manualState.rng;
+  var intendedYou=choice, intendedOpp=manualState.agent.move(r,m.hb,m.ha,rng);
+  var you=intendedYou, opp=intendedOpp;
+  if(manualState.noise>0){
+    if(rng()<manualState.noise) you=you==='C'?'D':'C';
+    if(rng()<manualState.noise) opp=opp==='C'?'D':'C';
+  }
+  m.ha.push(you); m.hb.push(opp);
+  var pay=PAY[you+opp]; m.sa+=pay[0]; m.sb+=pay[1]; matchPos++;
+  drawMatchState();
+  var note=(lang==='en'?'You ':'你')+moveWord(intendedYou)+' · '+sname(matchData.b)+' '+moveWord(intendedOpp);
+  if(you!==intendedYou||opp!==intendedOpp) note+=' · '+(lang==='en'?'noise flipped ':'失误翻转了')+(you!==intendedYou?(lang==='en'?'your move':'你的行动'):(lang==='en'?'their move':'对手行动'));
+  document.getElementById('manualNote').textContent=note;
+  if(matchPos>=matchData.rounds){ setManualButtons(false); document.getElementById('manualNote').textContent=L(TXT.manualDone); finishMatch(); }
+}
+document.getElementById('manualC').onclick=function(){ playManualRound('C'); };
+document.getElementById('manualD').onclick=function(){ playManualRound('D'); };
+document.addEventListener('keydown',function(e){
+  if(matchMode!=='manual'||!manualState||!document.getElementById('panel-match').classList.contains('sel')) return;
+  var tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  var k=e.key.toUpperCase(); if(k==='C'||k==='D'){ e.preventDefault(); playManualRound(k); }
+});
+document.getElementById('pickB').addEventListener('change',function(){ if(matchMode==='manual') setMatchMode('manual'); });
+document.getElementById('manualRounds').addEventListener('change',function(){ if(matchMode==='manual') setMatchMode('manual'); });
 function tickLoop(){
   if(!matchData) return;
   if(speed===0){ matchPos=matchData.rounds; drawMatchState(); finishMatch(); return; }
@@ -893,7 +1033,7 @@ function finishMatch(){
   var cb=Math.round(m.hb.filter(function(x){return x==='C';}).length/m.hb.length*100);
   var txt;
   if(m.sa===m.sb) txt=fmt(TXT.tie,{a:m.sa,b:m.sb});
-  else { var wid = m.sa>m.sb?a:b; txt=fmt(TXT.winner,{name:sname(wid), a:Math.max(m.sa,m.sb), b:Math.min(m.sa,m.sb)}); }
+  else { var wid = m.sa>m.sb?a:b; var winName=matchData.manual&&wid===a?L(TXT.manualYou):sname(wid); txt=fmt(TXT.winner,{name:winName, a:Math.max(m.sa,m.sb), b:Math.min(m.sa,m.sb)}); }
   txt+='<br><span style="font-size:0.68rem;color:#888">'+fmt(TXT.coopRate,{ca:ca,cb:cb});
   var maxPossible=matchData.rounds*3;
   if(m.sa<maxPossible*0.6 && m.sb<maxPossible*0.6) txt+=' · '+L(TXT.bothLose);
@@ -1135,6 +1275,20 @@ function refreshNames(){
   if(lastBoard) renderBoard();
   drawEvoSafe();
   renderTrial();
+  refreshMatchLanguage();
+}
+function refreshMatchLanguage(){
+  refreshMatchMode();
+  if(!matchData) return;
+  var a=matchData.a, b=matchData.b, nameA=matchData.manual?L(TXT.manualYou):sname(a);
+  document.getElementById('fnameA').innerHTML='<span style="color:'+SBY[a].color+'">'+nameA+'</span>';
+  document.getElementById('fnameB').innerHTML='<span style="color:'+SBY[b].color+'">'+sname(b)+'</span>';
+  document.getElementById('stripLblA').textContent=nameA; document.getElementById('stripLblB').textContent=sname(b);
+  drawMatchState();
+  if(matchData.manual){
+    document.getElementById('manualNote').textContent=matchPos>=matchData.rounds?L(TXT.manualDone):L(TXT.manualChoose);
+    if(matchPos>=matchData.rounds) finishMatch();
+  }
 }
 function drawEvoSafe(){ if(evoPop) drawEvo(); }
 document.getElementById('langBtn').onclick=function(){
@@ -1156,6 +1310,7 @@ avatarFor('you', document.getElementById('myAvatar'));
 nameInput.value=playerName; nameInput.placeholder=L(TXT.myDefault);
 renderRules(); renderField(); fillPickers();
 document.getElementById('pickA').value='you'; document.getElementById('pickB').value='tft';
+refreshMatchMode();
 renderEvoRoster(); evoReset();
 renderTrial();
 window.addEventListener('resize', function(){ if(matchData) sizeStrips(matchData.rounds); });
