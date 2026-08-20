@@ -64,6 +64,15 @@
     .recipe-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:0.68rem; color:#666; }
     .recipe-row select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.68rem; padding:4px; }
     .build-note { color:#555; font-size:0.64rem; margin-top:8px; line-height:1.6; }
+    .share-box { margin-top:10px; border-top:1px solid #1a1a1a; padding-top:9px; }
+    .share-title { color:#666; font-size:0.66rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+    .share-line { display:flex; gap:6px; margin-bottom:6px; }
+    .share-line input { flex:1; min-width:0; background:#0a0a0a; border:1px solid #232323; color:#999; font-family:inherit; font-size:0.68rem; padding:6px 7px; }
+    .share-line input:focus { outline:none; border-color:#1db954; }
+    .share-line input#shareCode { color:#e8b04a; cursor:text; }
+    .share-msg { font-size:0.66rem; min-height:1.3em; margin-top:2px; }
+    .share-msg.ok { color:#1db954; }
+    .share-msg.fail { color:#f44336; }
 
     /* field roster */
     .field-row { display:flex; gap:9px; align-items:center; padding:5px 4px; border-bottom:1px solid #161616; }
@@ -243,6 +252,18 @@
           </select>
         </div>
         <div class="build-note" data-en="&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser." data-zh="&gt; 第一回合还没有历史：「模仿对方上一步」视为合作，「反着来」视为背叛。你的策略会保存在本浏览器里。">&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser.</div>
+        <div class="share-box">
+          <div class="share-title" data-en="// share your strategy" data-zh="// 分享你的策略">// share your strategy</div>
+          <div class="share-line">
+            <input id="shareCode" readonly spellcheck="false" onfocus="this.select()">
+            <button class="sm-btn" id="shareCopyBtn" data-en="copy code" data-zh="复制代码">copy code</button>
+          </div>
+          <div class="share-line">
+            <input id="importCode" spellcheck="false">
+            <button class="sm-btn" id="importBtn" data-en="import ▸" data-zh="导入 ▸">import ▸</button>
+          </div>
+          <div class="share-msg" id="shareMsg"></div>
+        </div>
       </div>
     </div>
 
@@ -638,7 +659,13 @@ var TXT = {
   extinct:{en:'gen {g} — {name} went extinct',zh:'第 {g} 代 —— {name} 灭绝'},
   domin:{en:'gen {g} — {name} has taken over the whole population',zh:'第 {g} 代 —— {name} 占领了整个种群'},
   pause:{en:'❚❚ pause',zh:'❚❚ 暂停'}, play:{en:'▶ play',zh:'▶ 播放'},
-  myDefault:{en:'MY STRATEGY',zh:'我的策略'}
+  myDefault:{en:'MY STRATEGY',zh:'我的策略'},
+  sharePlaceholder:{en:'paste a friend’s code here',zh:'在此粘贴好友的代码'},
+  shareCopied:{en:'✓ copied to clipboard',zh:'✓ 已复制到剪贴板'},
+  shareCopyFail:{en:'✗ could not copy — code is selected, copy it manually',zh:'✗ 复制失败——代码已选中，请手动复制'},
+  importEmpty:{en:'paste a code first',zh:'请先粘贴代码'},
+  importSuccess:{en:'✓ loaded “{name}” ({n} rules)',zh:'✓ 已载入「{name}」（{n} 条规则）'},
+  importFail:{en:'✗ that code doesn’t look right — check it and try again',zh:'✗ 代码无法识别——请检查后重试'}
 };
 function L(obj){ return obj[lang]; }
 function fmt(t, map){ var s=L(t); for(var k in map){ s=s.split('{'+k+'}').join(map[k]); } return s; }
@@ -709,6 +736,7 @@ function renderRules(){
     }
     box.appendChild(row);
   });
+  updateShareCode();
 }
 document.getElementById('addRule').onclick=function(){
   playerRules.splice(playerRules.length-1,0,{c:'opp_last_d',a:'defect'}); savePlayer(); renderRules();
@@ -719,7 +747,63 @@ document.getElementById('recipeSel').onchange=function(){
   savePlayer(); renderRules(); this.value='';
 };
 var nameInput=document.getElementById('stratName');
-nameInput.oninput=function(){ playerName=nameInput.value; savePlayer(); refreshNames(); };
+nameInput.oninput=function(){ playerName=nameInput.value; savePlayer(); refreshNames(); updateShareCode(); };
+
+// ───────────────────────── share / import strategy codes ─────────────────────────
+// UTF-8-safe base64, so names in Chinese round-trip cleanly.
+function b64EncodeUnicode(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(_, hex){ return String.fromCharCode(parseInt(hex,16)); }));
+}
+function b64DecodeUnicode(str){
+  return decodeURIComponent(Array.prototype.map.call(atob(str), function(c){
+    return '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+}
+function buildShareCode(){
+  try{ return b64EncodeUnicode(JSON.stringify({ v:1, n:playerName, r:playerRules })); }
+  catch(e){ return ''; }
+}
+// throws on anything malformed; caller wraps in try/catch
+function parseShareCode(code){
+  var obj = JSON.parse(b64DecodeUnicode(code.trim()));
+  if(!obj || !Array.isArray(obj.r) || !obj.r.length) throw new Error('no rules');
+  var rules = obj.r.map(function(r){
+    // 'always' isn't in CONDS (it's the implicit trailing "otherwise" row, not a dropdown choice)
+    // but every real strategy ends with one, so it must still validate here.
+    var condOk = r && (CONDS.indexOf(r.c)!==-1 || r.c==='always');
+    if(!condOk || ACTS.indexOf(r.a)===-1) throw new Error('bad rule');
+    var o = { c:r.c, a:r.a };
+    if(needsN[r.c]) o.n = Math.max(1, Math.min(50, r.n|0)) || 2;
+    if(needsP[r.c]) o.p = Math.max(1, Math.min(100, r.p|0)) || 50;
+    return o;
+  });
+  return { name: (typeof obj.n==='string' ? obj.n.slice(0,18) : ''), rules: rules };
+}
+function updateShareCode(){ document.getElementById('shareCode').value = buildShareCode(); }
+function shareMsg(text, ok){
+  var m=document.getElementById('shareMsg'); m.textContent=text; m.className='share-msg '+(ok?'ok':'fail');
+}
+document.getElementById('shareCopyBtn').onclick=function(){
+  var inp=document.getElementById('shareCode');
+  inp.focus(); inp.select();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(inp.value).then(function(){ shareMsg(L(TXT.shareCopied), true); }, function(){ shareMsg(L(TXT.shareCopyFail), false); });
+  } else {
+    try{ document.execCommand('copy'); shareMsg(L(TXT.shareCopied), true); }
+    catch(e){ shareMsg(L(TXT.shareCopyFail), false); }
+  }
+};
+document.getElementById('importBtn').onclick=function(){
+  var raw=document.getElementById('importCode').value.trim();
+  if(!raw){ shareMsg(L(TXT.importEmpty), false); return; }
+  var parsed=null;
+  try{ parsed=parseShareCode(raw); }catch(e){ parsed=null; }
+  if(!parsed){ shareMsg(L(TXT.importFail), false); return; }
+  playerRules=parsed.rules; playerName=parsed.name;
+  savePlayer(); renderRules(); nameInput.value=playerName; refreshNames(); updateShareCode();
+  shareMsg(fmt(TXT.importSuccess,{name:playerName||L(TXT.myDefault), n:parsed.rules.length}), true);
+  document.getElementById('importCode').value='';
+};
 
 // ───────────────────────── field roster ─────────────────────────
 function renderField(){
@@ -1129,6 +1213,7 @@ function applyLangAttrs(){
   });
   document.getElementById('langBtn').textContent = lang==='en' ? '中文' : 'EN';
   document.documentElement.lang = lang==='en'?'en':'zh';
+  document.getElementById('importCode').placeholder = L(TXT.sharePlaceholder);
 }
 function refreshNames(){
   fillPickers(); renderField();
