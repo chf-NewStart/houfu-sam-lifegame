@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Go engine tests</title>
+</head>
+<body>
+  <main id="results">running…</main>
+  <script src="../game/go-engine.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const { GoGame, BLACK, WHITE, coordinate, starPoints } = GoEngine;
+    const tests = [];
+    function test(name, fn) { tests.push([name, fn]); }
+    function equal(actual, expected, message) {
+      if (actual !== expected) throw new Error((message ? message + ': ' : '') + `expected ${expected}, got ${actual}`);
+    }
+    function ok(value, message) { if (!value) throw new Error(message || 'expected truthy value'); }
+    function board(size, entries) {
+      const out = new Array(size * size).fill(0);
+      entries.forEach(([r, c, color]) => { out[r * size + c] = color; });
+      return out;
+    }
+
+    test('new game and coordinate helpers', () => {
+      const game = new GoGame({ size: 9 });
+      equal(game.board.length, 81);
+      equal(game.current, BLACK);
+      equal(coordinate(9, 8, 0), 'A1');
+      equal(coordinate(19, 0, 18), 'T19');
+      equal(starPoints(9).length, 5);
+      equal(starPoints(13).length, 5);
+      equal(starPoints(19).length, 9);
+    });
+
+    test('center, edge, and corner liberties', () => {
+      const center = GoGame.fromPosition({ size: 5, board: board(5, [[2, 2, BLACK]]) });
+      equal(center.groupAt(2, 2).liberties.length, 4);
+      const edge = GoGame.fromPosition({ size: 5, board: board(5, [[0, 2, BLACK]]) });
+      equal(edge.groupAt(0, 2).liberties.length, 3);
+      const corner = GoGame.fromPosition({ size: 5, board: board(5, [[0, 0, BLACK]]) });
+      equal(corner.groupAt(0, 0).liberties.length, 2);
+    });
+
+    test('friendly stones connect into one group', () => {
+      const game = new GoGame({ size: 5 });
+      ok(game.play(2, 2).ok);
+      ok(game.play(0, 0).ok);
+      ok(game.play(2, 3).ok);
+      const group = game.groupAt(2, 2);
+      equal(group.stones.length, 2);
+      equal(group.liberties.length, 6);
+    });
+
+    test('single stone capture', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [[1, 1, WHITE], [0, 1, BLACK], [1, 0, BLACK], [2, 1, BLACK]]),
+      });
+      const result = game.play(1, 2);
+      ok(result.ok);
+      equal(result.captured.length, 1);
+      equal(game.at(1, 1), 0);
+      equal(game.captures[BLACK], 1);
+    });
+
+    test('chain capture removes the whole group', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [
+          [1, 1, WHITE], [1, 2, WHITE],
+          [0, 1, BLACK], [0, 2, BLACK], [1, 0, BLACK], [1, 3, BLACK], [2, 1, BLACK],
+        ]),
+      });
+      const result = game.play(2, 2);
+      ok(result.ok);
+      equal(result.captured.length, 2);
+      equal(game.at(1, 1), 0);
+      equal(game.at(1, 2), 0);
+    });
+
+    test('one move can capture separate groups', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: WHITE,
+        board: board(5, [
+          [0, 1, BLACK], [1, 0, BLACK],
+          [0, 2, WHITE], [1, 1, WHITE], [2, 0, WHITE],
+        ]),
+      });
+      const result = game.play(0, 0);
+      ok(result.ok);
+      equal(result.captured.length, 2);
+      equal(game.at(0, 1), 0);
+      equal(game.at(1, 0), 0);
+    });
+
+    test('suicide is rejected without changing state', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: WHITE,
+        board: board(5, [[0, 1, BLACK], [1, 0, BLACK], [1, 2, BLACK], [2, 1, BLACK]]),
+      });
+      const before = JSON.stringify({ board: game.board, current: game.current, captures: game.captures, events: game.events });
+      const result = game.play(1, 1);
+      equal(result.ok, false);
+      equal(result.reason, 'suicide');
+      equal(JSON.stringify({ board: game.board, current: game.current, captures: game.captures, events: game.events }), before);
+    });
+
+    test('occupied point is rejected', () => {
+      const game = new GoGame({ size: 5 });
+      ok(game.play(2, 2).ok);
+      const result = game.play(2, 2);
+      equal(result.ok, false);
+      equal(result.reason, 'occupied');
+      equal(game.events.length, 1);
+    });
+
+    test('positional superko blocks immediate recapture', () => {
+      const initial = board(5, [
+        [0, 1, BLACK], [1, 0, BLACK], [2, 1, BLACK],
+        [1, 1, WHITE], [0, 2, WHITE], [2, 2, WHITE], [1, 3, WHITE],
+      ]);
+      const game = GoGame.fromPosition({ size: 5, current: BLACK, board: initial });
+      const capture = game.play(1, 2);
+      ok(capture.ok);
+      equal(capture.captured.length, 1);
+      const recapture = game.play(1, 1);
+      equal(recapture.ok, false);
+      equal(recapture.reason, 'superko');
+    });
+
+    test('ko recapture is legal after both sides change the board elsewhere', () => {
+      const initial = board(5, [
+        [0, 1, BLACK], [1, 0, BLACK], [2, 1, BLACK],
+        [1, 1, WHITE], [0, 2, WHITE], [2, 2, WHITE], [1, 3, WHITE],
+      ]);
+      const game = GoGame.fromPosition({ size: 5, current: BLACK, board: initial });
+      ok(game.play(1, 2).ok);
+      ok(game.play(4, 4).ok);
+      ok(game.play(4, 3).ok);
+      const recapture = game.play(1, 1);
+      ok(recapture.ok);
+      equal(recapture.captured.length, 1);
+    });
+
+    test('two passes enter scoring and resume returns to play', () => {
+      const game = new GoGame({ size: 9 });
+      ok(game.pass().ok);
+      equal(game.phase, 'playing');
+      const second = game.pass();
+      ok(second.ok);
+      equal(second.scoring, true);
+      equal(game.phase, 'scoring');
+      ok(game.resume(BLACK).ok);
+      equal(game.phase, 'playing');
+      equal(game.passes, 0);
+    });
+
+    test('a play resets the pass count', () => {
+      const game = new GoGame({ size: 9 });
+      ok(game.pass().ok);
+      ok(game.play(4, 4).ok);
+      equal(game.passes, 0);
+    });
+
+    test('area scoring distinguishes territory, neutral points, and komi', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        komi: 7.5,
+        board: board(5, [
+          [1, 2, BLACK], [2, 1, BLACK], [2, 3, BLACK], [3, 2, BLACK], [0, 0, WHITE],
+        ]),
+      });
+      const score = game.score([]);
+      equal(score.owner[2 * 5 + 2], BLACK);
+      ok(score.neutral.includes(0 * 5 + 1));
+      equal(score.territory[BLACK], 1);
+      equal(score.black, 5);
+      equal(score.white, 8.5);
+      equal(score.winner, WHITE);
+    });
+
+    test('dead marking toggles an entire connected group', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        board: board(5, [[2, 2, WHITE], [2, 3, WHITE], [1, 2, BLACK], [3, 2, BLACK]]),
+      });
+      const marked = game.toggleDead([], 2, 2);
+      equal(marked.length, 2);
+      const unmarked = game.toggleDead(marked, 2, 3);
+      equal(unmarked.length, 0);
+    });
+
+    test('replay validates player order and remains deterministic', () => {
+      const events = [
+        { t: 'play', r: 4, c: 4, by: BLACK },
+        { t: 'play', r: 3, c: 4, by: WHITE },
+        { t: 'pass', by: BLACK },
+      ];
+      const replay = GoGame.replay({ size: 9, komi: 7.5, events });
+      equal(replay.error, null);
+      equal(replay.game.events.length, 3);
+      equal(replay.game.boardKey(), GoGame.replay({ size: 9, events }).game.boardKey());
+      const bad = GoGame.replay({ size: 9, events: [{ t: 'play', r: 4, c: 4, by: WHITE }] });
+      equal(bad.error, 'wrong-player');
+      equal(bad.index, 0);
+    });
+
+    test('resignation records the winner', () => {
+      const game = new GoGame({ size: 9 });
+      const result = game.resign(BLACK);
+      ok(result.ok);
+      equal(game.phase, 'finished');
+      equal(game.result.winner, WHITE);
+    });
+
+    const failures = [];
+    const lines = [];
+    tests.forEach(([name, fn]) => {
+      try { fn(); lines.push('PASS  ' + name); }
+      catch (error) { failures.push({ name, error }); lines.push('FAIL  ' + name + ' — ' + error.message); }
+    });
+    const root = document.getElementById('results');
+    root.dataset.failures = String(failures.length);
+    root.dataset.tests = String(tests.length);
+    root.innerHTML = `<h1>${failures.length ? 'FAIL' : 'PASS'} — ${tests.length - failures.length}/${tests.length}</h1><pre>${lines.join('\n')}</pre>`;
+    document.title = failures.length ? 'FAIL Go engine tests' : 'PASS Go engine tests';
+  })();
+  </script>
+</body>
+</html>

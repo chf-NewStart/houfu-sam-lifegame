@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Qi · 棋 // Game Life</title>
+  <meta name="description" content="Qi is Game Life's board-game room: learn Go or play Gomoku with friends, locally or online.">
+  <meta name="theme-color" content="#07100c">
+  <meta property="og:title" content="Qi · 棋 // Game Life">
+  <meta property="og:description" content="One quiet table for board games. Learn Go, play Gomoku, and invite a friend.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lifegameproject.com/game/qi.html">
+  <meta property="og:image" content="https://lifegameproject.com/game/brand-og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Qi · 棋 // Game Life">
+  <meta name="twitter:description" content="Learn Go, play Gomoku, and share a board with a friend.">
+  <meta name="twitter:image" content="https://lifegameproject.com/game/brand-og.png">
+  <link rel="icon" type="image/png" href="/game/guru-favicon.png?v=2">
+  <link rel="apple-touch-icon" href="/game/guru-icon-180.png?v=2">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #060d09;
+      --panel: #0a1510;
+      --panel-raised: #0d1a14;
+      --line: #1d3428;
+      --line-bright: #315a43;
+      --text: #dce7e0;
+      --muted: #7d9688;
+      --dim: #718b7c;
+      --phosphor: #51e68e;
+      --jade: #4aa474;
+      --cyan: #63cfdb;
+      --amber: #e7b45b;
+      --ink: #030604;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); scroll-behavior: smooth; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 0 18px calc(42px + env(safe-area-inset-bottom));
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 18% -12%, rgba(66, 171, 109, .15), transparent 34rem),
+        radial-gradient(circle at 93% 32%, rgba(99, 207, 219, .07), transparent 30rem),
+        linear-gradient(180deg, #09130e 0, var(--bg) 38rem);
+      color: var(--text);
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      content: "";
+      pointer-events: none;
+      opacity: .18;
+      background-image:
+        linear-gradient(rgba(84, 140, 107, .08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(84, 140, 107, .06) 1px, transparent 1px);
+      background-size: 32px 32px;
+      -webkit-mask-image: linear-gradient(to bottom, #000, transparent 78%);
+      mask-image: linear-gradient(to bottom, #000, transparent 78%);
+    }
+
+    button, a { font: inherit; -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; }
+
+    .skip-link {
+      position: fixed;
+      top: -80px;
+      left: 16px;
+      z-index: 100;
+      padding: 9px 12px;
+      background: var(--phosphor);
+      color: #031008;
+      font-size: .76rem;
+      font-weight: 700;
+    }
+    .skip-link:focus { top: 12px; }
+
+    .shell { width: min(1040px, 100%); margin: 0 auto; }
+    .masthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 34px 0 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin-bottom: 9px;
+      color: var(--phosphor);
+      font-size: .66rem;
+      letter-spacing: 2.2px;
+      text-transform: uppercase;
+    }
+    h1 {
+      display: flex;
+      align-items: baseline;
+      gap: 13px;
+      margin: 0;
+      color: #f3f8f5;
+      font-size: clamp(2.25rem, 8vw, 4.65rem);
+      font-weight: 700;
+      line-height: .95;
+      letter-spacing: -.08em;
+    }
+    h1 span {
+      color: #789688;
+      font-family: "Noto Serif SC", "Songti SC", STSong, serif;
+      font-size: .62em;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+    .lede {
+      width: min(620px, 100%);
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: clamp(.78rem, 1.6vw, .9rem);
+      line-height: 1.75;
+    }
+
+    .head-actions { display: flex; gap: 7px; flex: 0 0 auto; }
+    .nav-btn {
+      min-height: 34px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      background: rgba(6, 13, 9, .78);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: .7rem;
+      text-decoration: none;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .nav-btn:hover, .nav-btn:focus-visible {
+      border-color: var(--phosphor);
+      outline: none;
+      background: rgba(81, 230, 142, .05);
+      color: var(--phosphor);
+    }
+
+    .collection-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 25px 0 13px;
+    }
+    .collection-label { color: #a9bbb1; font-size: .7rem; letter-spacing: 1.4px; text-transform: uppercase; }
+    .collection-count { color: var(--phosphor); font-size: .64rem; letter-spacing: 1.1px; }
+    .collection-count::before {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: var(--phosphor);
+      box-shadow: 0 0 11px var(--phosphor);
+      content: "";
+    }
+
+    .game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .game-card { min-width: 0; }
+    .game-link {
+      position: relative;
+      display: flex;
+      min-height: 100%;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: rgba(10, 21, 16, .9);
+      text-decoration: none;
+      isolation: isolate;
+      transition: border-color .18s, transform .18s, box-shadow .22s;
+    }
+    .game-link::before {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      content: "";
+      pointer-events: none;
+      opacity: 0;
+      background: linear-gradient(110deg, transparent 28%, rgba(100, 240, 157, .06) 48%, transparent 68%);
+      transform: translateX(-60%);
+      transition: opacity .2s, transform .48s ease-out;
+    }
+    .game-link:hover, .game-link:focus-visible {
+      z-index: 3;
+      border-color: var(--accent, var(--phosphor));
+      outline: none;
+      transform: translateY(-3px);
+      box-shadow: 0 18px 42px -28px var(--accent, var(--phosphor));
+    }
+    .game-link:hover::before, .game-link:focus-visible::before { opacity: 1; transform: translateX(62%); }
+    .game-link:focus-visible { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent, var(--phosphor)); }
+
+    .go-card { --accent: #54d68d; }
+    .gomoku-card { --accent: #e7b45b; }
+    .board-art {
+      position: relative;
+      aspect-ratio: 16 / 8.8;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+      background: #0b1812;
+    }
+    .board-art::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, transparent 60%, rgba(3, 8, 5, .5)),
+        repeating-linear-gradient(0deg, rgba(1, 5, 2, .12) 0 1px, transparent 1px 3px);
+    }
+    .board-art svg { display: block; width: 100%; height: 100%; }
+
+    .art-label {
+      position: absolute;
+      top: 12px;
+      left: 13px;
+      z-index: 1;
+      padding: 4px 6px;
+      border: 1px solid rgba(220, 235, 226, .2);
+      background: rgba(4, 10, 6, .78);
+      color: rgba(226, 239, 232, .72);
+      font-size: .58rem;
+      letter-spacing: 1.2px;
+    }
+    .art-status {
+      position: absolute;
+      right: 13px;
+      bottom: 11px;
+      z-index: 1;
+      color: var(--accent);
+      font-size: .58rem;
+      letter-spacing: 1px;
+    }
+
+    .card-body { display: flex; flex: 1; flex-direction: column; padding: 18px 19px 17px; }
+    .card-kicker { color: var(--accent); font-size: .61rem; letter-spacing: 1.5px; text-transform: uppercase; }
+    .card-title {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      margin: 9px 0 8px;
+      color: #edf5f0;
+      font-family: inherit;
+      font-size: clamp(1.38rem, 3vw, 1.78rem);
+      line-height: 1.1;
+    }
+    .card-title span { color: #849b8e; font-family: "Noto Serif SC", "Songti SC", STSong, serif; font-size: .72em; font-weight: 400; }
+    .card-copy { margin: 0; color: var(--muted); font-size: .76rem; line-height: 1.72; }
+    .tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 15px 0 18px; }
+    .tag { padding: 4px 7px; border: 1px solid #294338; color: #829b8e; font-size: .58rem; }
+    .tag.primary { border-color: color-mix(in srgb, var(--accent) 52%, transparent); color: var(--accent); }
+
+    .card-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--dim);
+      font-size: .62rem;
+    }
+    .launch { color: var(--accent); white-space: nowrap; }
+    .launch::after { display: inline-block; margin-left: 7px; content: "→"; transition: transform .16s; }
+    .game-link:hover .launch::after, .game-link:focus-visible .launch::after { transform: translateX(4px); }
+
+    .future-slot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 14px;
+      padding: 16px 18px;
+      border: 1px dashed #1c3127;
+      color: #789383;
+      font-size: .66rem;
+      line-height: 1.6;
+    }
+    .future-slot code { color: #8aa596; font-family: inherit; }
+    .future-mark { color: #708a7a; white-space: nowrap; }
+
+    .page-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid #14251c;
+      color: #6f897a;
+      font-size: .61rem;
+      line-height: 1.6;
+    }
+    .page-foot a { color: #6c8b79; text-underline-offset: 3px; }
+    .page-foot a:hover, .page-foot a:focus-visible { color: var(--phosphor); outline: none; }
+
+    @media (max-width: 720px) {
+      body { padding-right: 12px; padding-left: 12px; }
+      .masthead { display: block; padding-top: 24px; }
+      .head-actions { margin-top: 19px; }
+      .game-grid { grid-template-columns: 1fr; }
+      .board-art { aspect-ratio: 16 / 8; }
+    }
+
+    @media (max-width: 430px) {
+      h1 { font-size: 2.65rem; }
+      .collection-head, .card-foot, .future-slot, .page-foot { align-items: flex-start; }
+      .card-foot, .future-slot, .page-foot { flex-direction: column; }
+      .collection-label { max-width: 65%; }
+      .card-body { padding: 16px 15px 15px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      .game-link:hover, .game-link:focus-visible { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#games" data-en="Skip to the games" data-zh="跳到棋类游戏">Skip to the games</a>
+
+  <div class="shell">
+    <header class="masthead">
+      <div>
+        <div class="eyebrow" data-en="Game Life · board-game room" data-zh="游戏人生 · 棋类游戏室">Game Life · board-game room</div>
+        <h1>Qi <span>· 棋</span></h1>
+        <p class="lede" data-en="One quiet table for games of shape, territory, and patience. Learn the rules, read the board, then invite a friend when you are ready." data-zh="一张安静的棋桌，容纳形势、地盘与耐心的游戏。先学规则、读懂棋盘，准备好后再邀请好友对弈。">One quiet table for games of shape, territory, and patience. Learn the rules, read the board, then invite a friend when you are ready.</p>
+      </div>
+      <div class="head-actions">
+        <a class="nav-btn" href="/" data-en="← all games" data-zh="← 全部游戏">← all games</a>
+        <button class="nav-btn" id="langBtn" type="button" aria-label="Switch language">中文</button>
+      </div>
+    </header>
+
+    <main id="games">
+      <div class="collection-head">
+        <div class="collection-label" data-en="// choose a board" data-zh="// 选择棋盘">// choose a board</div>
+        <div class="collection-count" data-en="2 tables ready" data-zh="2 张棋桌已就绪">2 tables ready</div>
+      </div>
+
+      <div class="game-grid">
+        <article class="game-card go-card">
+          <a class="game-link" href="/game/go.html" aria-labelledby="goTitle">
+            <div class="board-art" aria-hidden="true">
+              <svg viewBox="0 0 520 286" role="presentation" focusable="false">
+                <defs>
+                  <linearGradient id="goBoardBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#244c38"/>
+                    <stop offset="1" stop-color="#10261b"/>
+                  </linearGradient>
+                  <radialGradient id="goBlack" cx="34%" cy="28%" r="70%">
+                    <stop offset="0" stop-color="#55625b"/>
+                    <stop offset=".35" stop-color="#1d2521"/>
+                    <stop offset="1" stop-color="#020403"/>
+                  </radialGradient>
+                  <radialGradient id="goWhite" cx="32%" cy="24%" r="72%">
+                    <stop offset="0" stop-color="#fffef8"/>
+                    <stop offset=".55" stop-color="#e9e6da"/>
+                    <stop offset="1" stop-color="#aaa99f"/>
+                  </radialGradient>
+                  <filter id="stoneShadow" x="-40%" y="-40%" width="180%" height="190%">
+                    <feDropShadow dx="0" dy="3" stdDeviation="2.4" flood-color="#000" flood-opacity=".52"/>
+                  </filter>
+                </defs>
+                <rect width="520" height="286" fill="url(#goBoardBg)"/>
+                <g stroke="#70987f" stroke-width="1.4" opacity=".72">
+                  <path d="M94 29V257M135 29V257M176 29V257M217 29V257M258 29V257M299 29V257M340 29V257M381 29V257M422 29V257"/>
+                  <path d="M94 29H422M94 57.5H422M94 86H422M94 114.5H422M94 143H422M94 171.5H422M94 200H422M94 228.5H422M94 257H422"/>
+                </g>
+                <g fill="#9fc5ae"><circle cx="176" cy="86" r="2.8"/><circle cx="340" cy="86" r="2.8"/><circle cx="258" cy="143" r="2.8"/><circle cx="176" cy="200" r="2.8"/><circle cx="340" cy="200" r="2.8"/></g>
+                <g filter="url(#stoneShadow)">
+                  <g fill="url(#goBlack)"><circle cx="176" cy="86" r="17"/><circle cx="217" cy="86" r="17"/><circle cx="135" cy="114.5" r="17"/><circle cx="135" cy="143" r="17"/><circle cx="176" cy="171.5" r="17"/><circle cx="340" cy="200" r="17"/></g>
+                  <g fill="url(#goWhite)"><circle cx="176" cy="114.5" r="17"/><circle cx="217" cy="114.5" r="17"/><circle cx="258" cy="114.5" r="17"/><circle cx="217" cy="143" r="17"/><circle cx="258" cy="143" r="17"/><circle cx="299" cy="171.5" r="17"/></g>
+                </g>
+                <circle cx="299" cy="143" r="7" fill="#51e68e" opacity=".2"/>
+                <circle cx="299" cy="143" r="3" fill="#51e68e"/>
+              </svg>
+              <span class="art-label">9×9 · TEACHING BOARD</span>
+              <span class="art-status">1 LIBERTY · ATARI</span>
+            </div>
+            <div class="card-body">
+              <div class="card-kicker" data-en="01 / territory" data-zh="01 / 地盘">01 / territory</div>
+              <h2 class="card-title" id="goTitle">Go <span>围棋</span></h2>
+              <p class="card-copy" data-en="Surround territory and keep your groups alive. Start on a friendly 9×9 board with visible liberties and coach notes, then move up to 13×13 or 19×19." data-zh="围住地盘并让棋群保持有气。从带有气数提示和教学说明的 9×9 棋盘开始，再进阶至 13×13 或 19×19。">Surround territory and keep your groups alive. Start on a friendly 9×9 board with visible liberties and coach notes, then move up to 13×13 or 19×19.</p>
+              <div class="tags">
+                <span class="tag primary" data-en="learn as you play" data-zh="边下边学">learn as you play</span>
+                <span class="tag" data-en="local + online" data-zh="本地 + 联机">local + online</span>
+                <span class="tag" data-en="1–2 players" data-zh="1–2 人">1–2 players</span>
+              </div>
+              <div class="card-foot">
+                <span data-en="groups · captures · area scoring" data-zh="棋群 · 提子 · 面积计分">groups · captures · area scoring</span>
+                <span class="launch" data-en="learn &amp; play" data-zh="学习并对弈">learn &amp; play</span>
+              </div>
+            </div>
+          </a>
+        </article>
+
+        <article class="game-card gomoku-card">
+          <a class="game-link" href="/game/gomoku.html" aria-labelledby="gomokuTitle">
+            <div class="board-art" aria-hidden="true">
+              <svg viewBox="0 0 520 286" role="presentation" focusable="false">
+                <defs>
+                  <linearGradient id="gomokuBoardBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#3d3323"/>
+                    <stop offset=".55" stop-color="#251f17"/>
+                    <stop offset="1" stop-color="#11130f"/>
+                  </linearGradient>
+                  <radialGradient id="gomokuBlack" cx="33%" cy="27%" r="72%">
+                    <stop offset="0" stop-color="#5b5a55"/>
+                    <stop offset=".32" stop-color="#242522"/>
+                    <stop offset="1" stop-color="#030403"/>
+                  </radialGradient>
+                  <radialGradient id="gomokuWhite" cx="31%" cy="24%" r="74%">
+                    <stop offset="0" stop-color="#fffdf5"/>
+                    <stop offset=".58" stop-color="#ddd8ca"/>
+                    <stop offset="1" stop-color="#969286"/>
+                  </radialGradient>
+                  <filter id="gomokuShadow" x="-40%" y="-40%" width="180%" height="190%">
+                    <feDropShadow dx="0" dy="3" stdDeviation="2.4" flood-color="#000" flood-opacity=".58"/>
+                  </filter>
+                </defs>
+                <rect width="520" height="286" fill="url(#gomokuBoardBg)"/>
+                <g stroke="#887658" stroke-width="1" opacity=".6">
+                  <path d="M88 23V263M112 23V263M136 23V263M160 23V263M184 23V263M208 23V263M232 23V263M256 23V263M280 23V263M304 23V263M328 23V263M352 23V263M376 23V263M400 23V263M424 23V263"/>
+                  <path d="M88 23H424M88 40.1H424M88 57.3H424M88 74.4H424M88 91.6H424M88 108.7H424M88 125.9H424M88 143H424M88 160.1H424M88 177.3H424M88 194.4H424M88 211.6H424M88 228.7H424M88 245.9H424M88 263H424"/>
+                </g>
+                <g fill="#b59e78"><circle cx="160" cy="74.4" r="2.5"/><circle cx="352" cy="74.4" r="2.5"/><circle cx="256" cy="143" r="2.5"/><circle cx="160" cy="211.6" r="2.5"/><circle cx="352" cy="211.6" r="2.5"/></g>
+                <g filter="url(#gomokuShadow)">
+                  <g fill="url(#gomokuBlack)"><circle cx="184" cy="177.3" r="10.2"/><circle cx="208" cy="160.1" r="10.2"/><circle cx="232" cy="143" r="10.2"/><circle cx="256" cy="125.9" r="10.2"/><circle cx="280" cy="108.7" r="10.2"/><circle cx="304" cy="177.3" r="10.2"/></g>
+                  <g fill="url(#gomokuWhite)"><circle cx="184" cy="160.1" r="10.2"/><circle cx="208" cy="143" r="10.2"/><circle cx="232" cy="125.9" r="10.2"/><circle cx="280" cy="125.9" r="10.2"/><circle cx="304" cy="143" r="10.2"/><circle cx="328" cy="160.1" r="10.2"/></g>
+                </g>
+                <path d="M280 89.5v12M274 95.5h12" stroke="#e7b45b" stroke-width="2" stroke-linecap="square"/>
+              </svg>
+              <span class="art-label">15×15 · THE GURU WATCHES</span>
+              <span class="art-status">FOUR IN A ROW · YOUR MOVE</span>
+            </div>
+            <div class="card-body">
+              <div class="card-kicker" data-en="02 / five in a row" data-zh="02 / 五子连珠">02 / five in a row</div>
+              <h2 class="card-title" id="gomokuTitle">Gomoku <span>五子棋</span></h2>
+              <p class="card-copy" data-en="Make five before your opponent does. Face a minimax AI, play a friend online, or let the old fisherman coach your moves and review the finished game." data-zh="抢先连成五子。可对战极小化极大 AI、联机好友，或让观棋老者点评每一步并在终局后复盘。">Make five before your opponent does. Face a minimax AI, play a friend online, or let the old fisherman coach your moves and review the finished game.</p>
+              <div class="tags">
+                <span class="tag primary" data-en="tactical coach" data-zh="战术指导">tactical coach</span>
+                <span class="tag" data-en="AI + online" data-zh="AI + 联机">AI + online</span>
+                <span class="tag" data-en="1–2 players" data-zh="1–2 人">1–2 players</span>
+              </div>
+              <div class="card-foot">
+                <span data-en="minimax · review · friend rooms" data-zh="极大极小 · 复盘 · 好友房间">minimax · review · friend rooms</span>
+                <span class="launch" data-en="play a match" data-zh="开始对局">play a match</span>
+              </div>
+            </div>
+          </a>
+        </article>
+      </div>
+
+      <aside class="future-slot" aria-label="Future board games">
+        <span data-en="This shelf is intentionally open: future board games will join the same room without moving these tables." data-zh="这里特意留有空位：未来的棋类游戏会加入同一房间，而现有棋桌不会搬家。">This shelf is intentionally open: future board games will join the same room without moving these tables.</span>
+        <span class="future-mark"><code>next_table</code> · READY</span>
+      </aside>
+    </main>
+
+    <footer class="page-foot">
+      <span data-en="No account · free to play · local games work offline after loading" data-zh="无需账号 · 免费游玩 · 本地游戏加载后可离线使用">No account · free to play · local games work offline after loading</span>
+      <a href="/privacy.html" data-en="privacy" data-zh="隐私">privacy</a>
+    </footer>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+    var lang = 'en';
+    var button = document.getElementById('langBtn');
+
+    function applyLanguage() {
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      document.querySelectorAll('[data-en][data-zh]').forEach(function (element) {
+        element.textContent = lang === 'zh' ? element.dataset.zh : element.dataset.en;
+      });
+      button.textContent = lang === 'zh' ? 'English' : '中文';
+      button.setAttribute('aria-label', lang === 'zh' ? 'Switch to English' : '切换为中文');
+    }
+
+    button.addEventListener('click', function () {
+      lang = lang === 'en' ? 'zh' : 'en';
+      try { localStorage.setItem('arcade_lang', lang); } catch (error) {}
+      applyLanguage();
+    });
+
+    try { if (localStorage.getItem('arcade_lang') === 'zh') lang = 'zh'; } catch (error) {}
+    applyLanguage();
+  })();
+  </script>
+</body>
+</html>

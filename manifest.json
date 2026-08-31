@@ -4,7 +4,7 @@
   "id": "/",
   "lang": "en",
   "dir": "ltr",
-  "description": "A small arcade of hand-coded browser games — Conway's Game of Life (draw, evolve, make music), Gomoku, an endless Labyrinth, a tomato-growing metabolism sim, co-op physics games and more. Free, offline, no ads.",
+  "description": "A small arcade of hand-coded browser games — Conway's Game of Life, Qi board games (Go and Gomoku), Glyph Run, co-op physics games and more. Free, offline, no ads.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -18,9 +18,9 @@
     { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [
-    { "src": "/screenshots/phone-1.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "The arcade — nine hand-coded browser games" },
+    { "src": "/screenshots/phone-1.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "The arcade — hand-coded browser games" },
     { "src": "/screenshots/phone-2.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Game of Life — draw patterns and watch them evolve" },
-    { "src": "/screenshots/phone-3.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Gomoku — beat a minimax AI or a friend online" },
+    { "src": "/screenshots/phone-3.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Qi: Gomoku — beat a minimax AI or a friend online" },
     { "src": "/screenshots/phone-4.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Labyrinth — an endless torch-lit descent" },
     { "src": "/screenshots/phone-5.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Grow a Tomato — a real plant-metabolism sim" },
     { "src": "/screenshots/phone-6.png", "sizes": "1290x2796", "type": "image/png", "form_factor": "narrow", "label": "Sudoku — one unique solution, notes and hints" },

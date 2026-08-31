@@ -2,7 +2,7 @@
 
 **[▶ Walk the floor at lifegameproject.com](https://lifegameproject.com)**
 
-What began as a Conway's Game of Life implementation grew into a terminal-themed arcade: a main floor of finished cabinets, a WIP lab of rough experiments, online co-op over Firebase, and an iOS shell. Everything is vanilla HTML/CSS/JS + canvas — one file per game, no frameworks, no build step.
+What began as a Conway's Game of Life implementation grew into a terminal-themed arcade: a main floor of finished cabinets, a WIP lab of rough experiments, online co-op over Firebase, and an iOS shell. Everything is vanilla HTML/CSS/JS + canvas — no frameworks and no web build step.
 
 ![Game of Life — draw, evolve, and turn patterns into music](demo/gif/hero.gif)
 
@@ -14,7 +14,7 @@ What began as a Conway's Game of Life implementation grew into a terminal-themed
 |---|---|
 | **game_of_life.exe** | The original. Draw patterns, explore four cellular universes, turn them into music — sandbox, 11 leaderboard challenges, and a Music Box sequencer. *(details below)* |
 | **glyph_run.exe** | An arena survivor where you ARE a Chinese character — evolve 3,000 years back to your oracle-bone form, with a fresh daily oracle objective. Every monster, weapon and drop is a real ancient glyph. *(details below)* |
-| **gomoku.exe** | Classic 5-in-a-row. Beat a minimax AI, learn with the tactical coach, watch AI-vs-AI, or play a friend online. |
+| **qi.exe · 棋** | The board-game room. **Go · 围棋** teaches groups, liberties, captures, superko, and area scoring on 9×9, 13×13, or 19×19. **Gomoku · 五子棋** offers a minimax AI, tactical coach, AI-vs-AI, and private friend rooms. |
 | **tether.exe** | Two players, one rope. Verlet rope physics, wind, ice, crumbling ledges — local or online co-op. |
 | **labyrinth.exe** | An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, a bigger maze every escape. |
 | **grow_a_tomato.exe** | Grow the biggest, sweetest tomato — powered by a real plant-metabolism model. |
@@ -54,7 +54,7 @@ Playable-but-rough experiments: **escape_grid.exe** (4 runners vs 1 hunter, Dijk
 
 ## Online co-op
 
-Gomoku, Tether, Keep-Up and Lander support remote play: create a room, share the code, play across devices. Realtime sync is Firebase RTDB — no accounts, no install.
+Qi's Go and Gomoku tables, plus Tether, Keep-Up and Lander, support remote play: create a room, share the code, play across devices. Go uses revision-checked room transactions and requires both players to agree on the final score. Realtime sync is Firebase RTDB — no accounts, no install.
 
 ---
 
@@ -75,7 +75,7 @@ Highlights: freehand drawing with zoom/pan, 8 classic patterns with drag-and-dro
 
 ## Tech notes
 
-- **Stack**: vanilla JS + canvas, one self-contained HTML file per game in `game/`. No dependencies, no build.
+- **Stack**: vanilla JS + canvas. Most games are self-contained HTML files in `game/`; Go keeps its deterministic rules engine and UI script separate so the engine can be tested. No framework or web build step.
 - **Deploy**: GitHub Pages from `main` → lifegameproject.com (HTML cached ~10 min; games carry a small build tag next to their back-link).
 - **iOS**: `app/` is a Capacitor shell that bundles a frozen copy of the site (`npm run ios` re-syncs `app/www` before archiving).
 - **Services**: Supabase (Life leaderboard/gallery), Firebase RTDB (remote play rooms).

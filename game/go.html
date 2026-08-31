@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Go · 围棋 // Game Life</title>
+  <meta name="description" content="Learn Go on a beginner-friendly 9×9 board, play together on one device, or invite a friend to a private online room.">
+  <meta name="theme-color" content="#08110d">
+  <meta property="og:title" content="Go · 围棋 // Game Life">
+  <meta property="og:description" content="Play and learn Go with a friend — local or online, with liberties, captures, ko, scoring, and teaching aids.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lifegameproject.com/game/go.html">
+  <link rel="icon" type="image/png" href="/game/guru-favicon.png?v=2">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07100c;
+      --panel: #0b1510;
+      --panel-2: #0f1c16;
+      --line: #20352a;
+      --line-soft: #15251d;
+      --lime: #38df7d;
+      --lime-dim: #1c8c4d;
+      --ivory: #f2efe3;
+      --ink: #050706;
+      --muted: #789183;
+      --text: #d5e0da;
+      --amber: #f1b84b;
+      --tomato: #ff6b59;
+      --cyan: #63cfdb;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 26px 18px 46px;
+      background:
+        radial-gradient(circle at 50% -20%, rgba(36, 113, 72, .16), transparent 42rem),
+        linear-gradient(180deg, #09130e, var(--bg) 34rem);
+      color: var(--text);
+      font-family: Consolas, "Courier New", monospace;
+    }
+    button, input { font: inherit; }
+    button, a, canvas { -webkit-tap-highlight-color: transparent; }
+    .skip-link { position: fixed; left: 12px; top: -70px; z-index: 500; background: var(--lime); color: #041009; padding: 8px 12px; }
+    .skip-link:focus { top: 12px; }
+    .page-head { max-width: 1120px; margin: 0 auto 18px; display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; }
+    .eyebrow { color: var(--lime); font-size: .68rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 7px; }
+    h1 { margin: 0; color: #f5faf7; font-size: clamp(1.65rem, 4.8vw, 2.45rem); letter-spacing: -.5px; }
+    .title-zh { color: #819b8d; font-weight: 400; }
+    .subtitle { margin: 7px 0 0; color: var(--muted); max-width: 700px; font-size: .84rem; line-height: 1.65; }
+    .head-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .back, .lang-btn { border: 1px solid var(--line); color: var(--muted); background: rgba(7, 16, 12, .76); text-decoration: none; padding: 7px 10px; font-size: .73rem; cursor: pointer; }
+    .back:hover, .lang-btn:hover, .back:focus-visible, .lang-btn:focus-visible { border-color: var(--lime); color: var(--lime); outline: none; }
+
+    .game-layout { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 720px) minmax(285px, 360px); gap: 18px; align-items: start; }
+    .board-panel, .card { border: 1px solid var(--line-soft); background: rgba(10, 20, 15, .9); box-shadow: 0 22px 60px rgba(0, 0, 0, .16); }
+    .board-panel { padding: 14px; min-width: 0; }
+    .status-strip { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 3px 12px; }
+    .turn-copy { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .turn-stone { width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto; box-shadow: inset -3px -4px 7px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.25); }
+    .turn-stone.black { background: radial-gradient(circle at 35% 28%, #424b46, #050706 62%); }
+    .turn-stone.white { background: radial-gradient(circle at 35% 28%, #fff, #d5d2c7 68%); box-shadow: inset -3px -4px 7px rgba(0,0,0,.15), 0 0 0 1px rgba(255,255,255,.45); }
+    .turn-title { color: #f0f6f2; font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .turn-sub { color: var(--muted); font-size: .68rem; margin-top: 2px; }
+    .mode-badge { color: var(--lime); border: 1px solid rgba(56, 223, 125, .35); background: rgba(56, 223, 125, .05); padding: 5px 8px; font-size: .64rem; white-space: nowrap; }
+    .board-shell { position: relative; width: 100%; border: 1px solid #294638; background: #11281e; overflow: hidden; }
+    #goBoard { display: block; width: 100%; height: auto; aspect-ratio: 1; cursor: crosshair; touch-action: manipulation; }
+    #goBoard:focus-visible { outline: 3px solid var(--lime); outline-offset: -4px; }
+    .board-overlay { position: absolute; inset: 0; display: none; place-items: center; background: rgba(3, 10, 6, .86); z-index: 4; padding: 30px; text-align: center; }
+    .board-overlay.show { display: grid; }
+    .overlay-inner { max-width: 360px; }
+    .overlay-mark { color: var(--lime); font-size: 1.7rem; margin-bottom: 10px; }
+    .overlay-title { color: #eff8f2; font-size: 1rem; line-height: 1.5; white-space: pre-line; }
+    .overlay-sub { color: var(--muted); font-size: .74rem; margin-top: 7px; line-height: 1.6; }
+    .board-note { display: flex; justify-content: space-between; gap: 10px; color: #60786b; font-size: .68rem; padding: 9px 2px 0; line-height: 1.45; }
+    .board-note strong { color: var(--lime); font-weight: 400; }
+    .actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 12px; }
+    .btn, .seg, .reaction {
+      border: 1px solid #294036;
+      color: #9bb0a5;
+      background: #0b1711;
+      padding: 9px 10px;
+      cursor: pointer;
+      transition: border-color .12s, color .12s, background .12s, transform .12s;
+    }
+    .btn:hover:not(:disabled), .seg:hover:not(:disabled), .reaction:hover:not(:disabled),
+    .btn:focus-visible, .seg:focus-visible, .reaction:focus-visible { border-color: var(--lime); color: var(--lime); outline: none; }
+    .btn:active:not(:disabled), .seg:active:not(:disabled) { transform: translateY(1px); }
+    .btn:disabled, .seg:disabled { opacity: .34; cursor: not-allowed; }
+    .btn.primary { border-color: var(--lime-dim); color: var(--lime); }
+    .btn.danger:hover:not(:disabled) { border-color: var(--tomato); color: var(--tomato); }
+    .btn.small { padding: 7px 8px; font-size: .7rem; }
+    .score-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 9px; }
+    .score-box { border: 1px solid var(--line-soft); background: rgba(5, 12, 8, .65); padding: 9px 11px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .score-name { font-size: .7rem; color: var(--muted); }
+    .score-name b { color: #dfe9e3; font-weight: 400; }
+    .score-value { color: #dfe9e3; font-size: .76rem; text-align: right; }
+
+    .side { display: grid; gap: 10px; }
+    .card { padding: 14px; }
+    .card-title { color: var(--lime); font-size: .67rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+    .segments { display: flex; gap: 5px; flex-wrap: wrap; }
+    .seg { flex: 1 1 72px; padding: 7px 6px; font-size: .7rem; }
+    .seg.active, .seg[aria-pressed="true"] { border-color: var(--lime); color: #06110a; background: var(--lime); }
+    .helper { color: #627a6d; font-size: .68rem; line-height: 1.55; margin-top: 8px; }
+    .learn-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; }
+    .switch-dot { width: 9px; height: 9px; border-radius: 50%; background: #3f5148; box-shadow: 0 0 0 3px rgba(63, 81, 72, .18); }
+    .learn-toggle[aria-pressed="true"] .switch-dot { background: var(--lime); box-shadow: 0 0 0 3px rgba(56, 223, 125, .16), 0 0 12px rgba(56, 223, 125, .6); }
+    .coach-note { margin-top: 9px; min-height: 54px; padding: 9px 10px; border-left: 2px solid var(--amber); background: rgba(241, 184, 75, .04); color: #a9b6af; font-size: .72rem; line-height: 1.55; }
+    .coach-note strong { color: var(--amber); font-weight: 400; }
+    .inspect { margin-top: 8px; color: var(--cyan); font-size: .68rem; min-height: 1.2em; }
+    details { margin-top: 10px; border-top: 1px solid var(--line-soft); padding-top: 9px; }
+    summary { color: #8da398; font-size: .7rem; cursor: pointer; }
+    .rules { padding: 5px 0 0 18px; color: #738a7d; font-size: .68rem; line-height: 1.55; }
+    .rules li { margin: 6px 0; }
+    .rules a { color: var(--lime); }
+
+    .room-actions, .join-row { display: flex; gap: 6px; }
+    .room-actions .btn { flex: 1; }
+    .join-row { margin-top: 7px; }
+    .join-row input { min-width: 0; flex: 1; background: #07100c; border: 1px solid #294036; color: #edf5f0; padding: 8px 9px; text-transform: uppercase; letter-spacing: 1.5px; }
+    .join-row input:focus { border-color: var(--lime); outline: none; }
+    .room-line { display: none; margin-top: 9px; border: 1px dashed #2e5140; background: #07110c; padding: 9px; }
+    .room-line.show { display: block; }
+    .room-code-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .room-code { color: var(--lime); font-size: 1.05rem; letter-spacing: 3px; user-select: all; }
+    .room-status { color: var(--muted); font-size: .68rem; margin-top: 6px; line-height: 1.45; }
+    .room-status.ok { color: var(--lime); }
+    .room-status.err { color: var(--tomato); }
+    .reactions { display: none; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 8px; }
+    .reactions.show { display: grid; }
+    .reaction { padding: 6px 2px; font-size: 1rem; }
+    .reaction-pop { position: fixed; left: 50%; top: 38%; z-index: 250; font-size: 4.5rem; pointer-events: none; opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+    .reaction-pop.go { animation: pop 1.6s ease-out; }
+    @keyframes pop { 0%{opacity:0;transform:translate(-50%,-30%) scale(.45)} 18%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 70%{opacity:1} 100%{opacity:0;transform:translate(-50%,-120%) scale(.9)} }
+
+    #scoringCard { display: none; border-color: rgba(241, 184, 75, .35); }
+    #scoringCard.show { display: block; }
+    .score-live { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .score-live > div { background: #08110d; border: 1px solid var(--line-soft); padding: 8px; font-size: .72rem; }
+    .score-live b { display: block; color: #edf4ef; font-size: 1rem; margin-top: 3px; }
+    .approval { margin: 8px 0; color: var(--muted); font-size: .68rem; line-height: 1.55; }
+    .approval .yes { color: var(--lime); }
+    .scoring-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+    .review-controls { display: grid; grid-template-columns: auto auto 1fr auto; gap: 5px; align-items: center; }
+    .review-controls input { width: 100%; accent-color: var(--lime); }
+    .review-caption { color: var(--muted); font-size: .66rem; margin-top: 6px; min-height: 1em; }
+    .log { max-height: 156px; overflow: auto; font-size: .66rem; line-height: 1.75; color: #71877b; }
+    .log div:last-child { color: #afc0b6; }
+    .empty-log { color: #475d51; }
+    .fineprint { max-width: 1120px; margin: 19px auto 0; color: #4f675a; font-size: .65rem; line-height: 1.6; }
+    .fineprint a { color: #749a84; }
+
+    .modal { position: fixed; inset: 0; z-index: 300; display: none; place-items: center; background: rgba(2, 7, 4, .78); padding: 20px; }
+    .modal.show { display: grid; }
+    .modal-box { width: min(390px, 100%); border: 1px solid rgba(56,223,125,.38); background: #09130e; box-shadow: 0 24px 80px rgba(0,0,0,.5); padding: 20px; }
+    .modal-message { color: #dce8e1; font-size: .84rem; line-height: 1.55; margin-bottom: 15px; }
+    .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .toast { position: fixed; left: 50%; bottom: 24px; z-index: 350; transform: translate(-50%, 18px); opacity: 0; pointer-events: none; padding: 9px 13px; background: #10221a; border: 1px solid var(--lime-dim); color: #dfe9e3; font-size: .73rem; transition: opacity .16s, transform .16s; max-width: calc(100vw - 32px); text-align: center; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
+
+    @media (max-width: 860px) {
+      body { padding: 18px 12px 38px; }
+      .game-layout { grid-template-columns: 1fr; max-width: 700px; }
+      .page-head { max-width: 700px; }
+      .side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .card.wide { grid-column: 1 / -1; }
+    }
+    @media (max-width: 560px) {
+      body { padding-left: 8px; padding-right: 8px; }
+      .page-head { display: block; padding: 0 5px; }
+      .head-actions { margin-top: 12px; }
+      .board-panel { padding: 8px; }
+      .status-strip { padding: 4px 3px 9px; }
+      .actions { grid-template-columns: repeat(2, 1fr); }
+      .side { grid-template-columns: 1fr; }
+      .card.wide { grid-column: auto; }
+      .turn-sub, .board-note, .helper, .coach-note, .inspect, .rules,
+      .room-status, .approval, .review-caption, .log { font-size: .76rem; }
+      .card-title { font-size: .72rem; }
+      .score-strip { gap: 5px; }
+      .score-box { padding: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script defer src="/game/go-engine.js"></script>
+  <script defer src="/game/go.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#gameControls" data-en="Skip to game controls" data-zh="跳到游戏控制">Skip to game controls</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow" data-en="Game Life · learn together" data-zh="游戏人生 · 一起学">Game Life · learn together</div>
+      <h1><span data-en="Go" data-zh="Go">Go</span> <span class="title-zh">· 围棋</span></h1>
+      <p class="subtitle" data-en="Surround territory, protect your groups, and learn why each move works. Start on 9×9, then invite a friend when you are ready." data-zh="围住地盘、保护棋群，并理解每一步的原理。从 9×9 开始，准备好后邀请好友对弈。">Surround territory, protect your groups, and learn why each move works. Start on 9×9, then invite a friend when you are ready.</p>
+    </div>
+    <div class="head-actions">
+      <a class="back" href="/game/qi.html" data-en="← Qi · board games" data-zh="← Qi · 棋类游戏">← Qi · board games</a>
+      <button class="lang-btn" id="langBtn" type="button">中文</button>
+    </div>
+  </header>
+
+  <main class="game-layout">
+    <section class="board-panel" aria-labelledby="turnTitle">
+      <div class="status-strip">
+        <div class="turn-copy">
+          <span class="turn-stone black" id="turnStone" aria-hidden="true"></span>
+          <div>
+            <div class="turn-title" id="turnTitle">Black to play</div>
+            <div class="turn-sub" id="turnSub">Tap an intersection to place a stone.</div>
+          </div>
+        </div>
+        <span class="mode-badge" id="modeBadge">LOCAL · 9×9</span>
+      </div>
+
+      <div class="board-shell" id="boardShell">
+        <canvas id="goBoard" width="720" height="720" tabindex="0" role="application" aria-label="9 by 9 Go board. Black to play."></canvas>
+        <div class="board-overlay" id="boardOverlay" role="status" aria-live="polite" aria-hidden="true">
+          <div class="overlay-inner">
+            <div class="overlay-mark">◉</div>
+            <div class="overlay-title" id="overlayTitle"></div>
+            <div class="overlay-sub" id="overlaySub"></div>
+          </div>
+        </div>
+      </div>
+      <div class="board-note" id="boardHelp">
+        <span data-en="Click a stone to inspect its group and liberties." data-zh="点击棋子可查看棋群与气。">Click a stone to inspect its group and liberties.</span>
+        <span><strong data-en="Keyboard" data-zh="键盘">Keyboard</strong>: <span data-en="arrows + Enter" data-zh="方向键 + 回车">arrows + Enter</span></span>
+      </div>
+
+      <div class="actions" id="gameControls">
+        <button class="btn primary" id="passBtn" type="button" data-en="Pass" data-zh="停一手">Pass</button>
+        <button class="btn" id="undoBtn" type="button" data-en="Undo" data-zh="悔棋">Undo</button>
+        <button class="btn" id="newBtn" type="button" data-en="New game" data-zh="新对局">New game</button>
+        <button class="btn danger" id="resignBtn" type="button" data-en="Resign" data-zh="认输">Resign</button>
+      </div>
+
+      <div class="score-strip" aria-label="Capture count">
+        <div class="score-box">
+          <div class="score-name">● <b data-en="Black" data-zh="黑棋">Black</b></div>
+          <div class="score-value"><span data-en="captures" data-zh="提子">captures</span> <b id="blackCaptures">0</b></div>
+        </div>
+        <div class="score-box">
+          <div class="score-name">○ <b data-en="White" data-zh="白棋">White</b></div>
+          <div class="score-value"><span data-en="captures" data-zh="提子">captures</span> <b id="whiteCaptures">0</b> · <span data-en="komi" data-zh="贴目">komi</span> 7.5</div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side" aria-label="Game options and learning tools">
+      <section class="card">
+        <div class="card-title" data-en="// board" data-zh="// 棋盘">// board</div>
+        <div class="segments" id="sizeButtons">
+          <button class="seg active" type="button" data-size="9" aria-pressed="true">9×9</button>
+          <button class="seg" type="button" data-size="13" aria-pressed="false">13×13</button>
+          <button class="seg" type="button" data-size="19" aria-pressed="false">19×19</button>
+        </div>
+        <p class="helper" data-en="9×9 is the clearest place to learn. Changing size starts a fresh local game." data-zh="9×9 最适合入门。更换棋盘大小会开始新的本地对局。">9×9 is the clearest place to learn. Changing size starts a fresh local game.</p>
+      </section>
+
+      <section class="card wide">
+        <div class="card-title" data-en="// learn while playing" data-zh="// 边下边学">// learn while playing</div>
+        <button class="btn learn-toggle" id="learnBtn" type="button" aria-pressed="true">
+          <span data-en="Teaching aids" data-zh="教学辅助">Teaching aids</span><span class="switch-dot" aria-hidden="true"></span>
+        </button>
+        <div class="coach-note" id="coachNote"><strong>LIBERTIES</strong> · Empty points touching a group keep it alive.</div>
+        <div class="inspect" id="inspectInfo"></div>
+        <details>
+          <summary data-en="Four rules you need" data-zh="只需掌握四条规则">Four rules you need</summary>
+          <ol class="rules">
+            <li data-en="Black and White alternate on line intersections. Connected stones share liberties." data-zh="黑白双方轮流在交叉点落子；相连棋子共享气。">Black and White alternate on line intersections. Connected stones share liberties.</li>
+            <li data-en="A group with no liberties is captured. You may not leave your own group with none." data-zh="没有气的棋群会被提走；不能让自己的棋群无气。">A group with no liberties is captured. You may not leave your own group with none.</li>
+            <li data-en="Superko prevents repeating an earlier board position." data-zh="全局同形规则禁止重复此前的棋盘局面。">Superko prevents repeating an earlier board position.</li>
+            <li data-en="After two passes, mark dead groups. Stones plus surrounded empty points score; White gets 7.5 komi." data-zh="双方连续停一手后，标记死棋。活棋数加围住的空点计分；白棋贴 7.5 目。">After two passes, mark dead groups. Stones plus surrounded empty points score; White gets 7.5 komi.</li>
+          </ol>
+          <p class="helper"><a href="https://usgo.org/content.aspx?actr=4&amp;club_id=454497&amp;module_id=550339&amp;page_id=22" target="_blank" rel="noopener" data-en="Learn more from the American Go Association ↗" data-zh="查看美国围棋协会入门资料 ↗">Learn more from the American Go Association ↗</a></p>
+        </details>
+      </section>
+
+      <section class="card wide">
+        <div class="card-title" data-en="// play with a friend" data-zh="// 与好友对弈">// play with a friend</div>
+        <div class="room-actions">
+          <button class="btn primary" id="createRoomBtn" type="button" data-en="Create room" data-zh="创建房间">Create room</button>
+          <button class="btn" id="leaveRoomBtn" type="button" data-en="Play locally" data-zh="本地对弈" disabled>Play locally</button>
+        </div>
+        <div class="join-row">
+          <input id="joinCode" maxlength="7" autocomplete="off" spellcheck="false" aria-label="Room code" data-en-placeholder="ROOM CODE" data-zh-placeholder="房间码" placeholder="ROOM CODE">
+          <button class="btn small" id="joinRoomBtn" type="button" data-en="Join" data-zh="加入">Join</button>
+        </div>
+        <div class="room-line" id="roomLine">
+          <div class="room-code-row">
+            <span class="room-code" id="roomCode">—</span>
+            <div>
+              <button class="btn small" id="copyRoomBtn" type="button" data-en="Copy invite" data-zh="复制邀请">Copy invite</button>
+              <button class="btn small" id="shareRoomBtn" type="button" data-en="Share" data-zh="分享">Share</button>
+            </div>
+          </div>
+          <div class="room-status" id="roomStatus"></div>
+          <div class="reactions" id="reactions" aria-label="Reactions">
+            <button class="reaction" type="button">👍</button><button class="reaction" type="button">🤔</button><button class="reaction" type="button">😅</button><button class="reaction" type="button">🔥</button><button class="reaction" type="button">👏</button><button class="reaction" type="button">🏳️</button>
+          </div>
+        </div>
+        <p class="helper" data-en="Invite rooms are for two trusted friends. Anyone with the link can attempt to join." data-zh="邀请房间适合两位互相信任的好友。拿到链接的人都可尝试加入。">Invite rooms are for two trusted friends. Anyone with the link can attempt to join.</p>
+      </section>
+
+      <section class="card wide" id="scoringCard">
+        <div class="card-title" data-en="// score together" data-zh="// 共同计分">// score together</div>
+        <div class="score-live">
+          <div><span data-en="Black area" data-zh="黑棋面积">Black area</span><b id="blackArea">0</b></div>
+          <div><span data-en="White + komi" data-zh="白棋 + 贴目">White + komi</span><b id="whiteArea">7.5</b></div>
+        </div>
+        <p class="helper" id="scoringHelp" data-en="Tap stones both players agree are dead. The whole connected group is marked." data-zh="点击双方认定的死棋；整块相连棋群会一起标记。">Tap stones both players agree are dead. The whole connected group is marked.</p>
+        <div class="approval" id="approvalLine"></div>
+        <div class="scoring-actions">
+          <button class="btn primary" id="acceptScoreBtn" type="button" data-en="Accept score" data-zh="同意结果">Accept score</button>
+          <button class="btn" id="resumeBtn" type="button" data-en="Resume play" data-zh="继续对弈">Resume play</button>
+        </div>
+      </section>
+
+      <section class="card wide">
+        <div class="card-title" data-en="// review" data-zh="// 复盘">// review</div>
+        <div class="review-controls">
+          <button class="btn small" id="reviewStart" type="button" aria-label="First move">|◀</button>
+          <button class="btn small" id="reviewPrev" type="button" aria-label="Previous move">◀</button>
+          <input id="reviewRange" type="range" min="0" max="0" value="0" aria-label="Move review">
+          <button class="btn small" id="reviewLive" type="button" data-en="Live" data-zh="当前">Live</button>
+        </div>
+        <div class="review-caption" id="reviewCaption" data-en="Play a move, then drag back through the game." data-zh="落子后可拖动滑块回看棋局。">Play a move, then drag back through the game.</div>
+      </section>
+
+      <section class="card wide">
+        <div class="card-title" data-en="// move log" data-zh="// 棋谱">// move log</div>
+        <div class="log" id="moveLog"><div class="empty-log" data-en="The first move will appear here." data-zh="第一手会显示在这里。">The first move will appear here.</div></div>
+      </section>
+    </aside>
+  </main>
+
+  <p class="fineprint" data-en="Rules: beginner area scoring, 7.5 komi, suicide prohibited, positional superko. Captures are shown for learning but are not added separately to area score. Online rooms use the arcade's Firebase room service and are intended for casual trusted-friend play." data-zh="规则：入门面积计分、贴 7.5 目、禁自杀、全局同形。提子数仅供学习参考，不另计入面积分。在线房间使用游戏厅的 Firebase 房间服务，适合可信好友间的休闲对弈。">Rules: beginner area scoring, 7.5 komi, suicide prohibited, positional superko. Captures are shown for learning but are not added separately to area score. Online rooms use the arcade's Firebase room service and are intended for casual trusted-friend play.</p>
+
+  <div class="modal" id="promptModal" role="dialog" aria-modal="true" aria-labelledby="promptMessage">
+    <div class="modal-box">
+      <div class="modal-message" id="promptMessage"></div>
+      <div class="modal-actions">
+        <button class="btn primary" id="promptYes" type="button" data-en="Yes" data-zh="同意">Yes</button>
+        <button class="btn" id="promptNo" type="button" data-en="No" data-zh="取消">No</button>
+      </div>
+    </div>
+  </div>
+  <div class="reaction-pop" id="reactionPop" aria-hidden="true"></div>
+  <div class="toast" id="toast"></div>
+  <div class="sr-only" id="liveRegion" aria-live="polite"></div>
+</body>
+</html>
