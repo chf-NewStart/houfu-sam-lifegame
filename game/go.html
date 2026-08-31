@@ -60,13 +60,30 @@
     .board-panel { padding: 14px; min-width: 0; }
     .status-strip { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 3px 12px; }
     .turn-copy { display: flex; align-items: center; gap: 9px; min-width: 0; }
-    .turn-stone { width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto; box-shadow: inset -3px -4px 7px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.25); }
-    .turn-stone.black { background: radial-gradient(circle at 35% 28%, #424b46, #050706 62%); }
-    .turn-stone.white { background: radial-gradient(circle at 35% 28%, #fff, #d5d2c7 68%); box-shadow: inset -3px -4px 7px rgba(0,0,0,.15), 0 0 0 1px rgba(255,255,255,.45); }
+    .turn-stone { position: relative; width: 22px; height: 22px; flex: 0 0 auto; overflow: hidden; image-rendering: pixelated; }
+    .turn-stone.black {
+      background: #111a18;
+      box-shadow: inset 4px 4px 0 #42534d, inset -4px -4px 0 #030706, 2px 2px 0 rgba(0,0,0,.45);
+      clip-path: polygon(18% 0, 64% 0, 64% 5%, 82% 5%, 82% 14%, 95% 14%, 95% 32%, 100% 32%, 100% 68%, 91% 68%, 91% 86%, 73% 86%, 73% 95%, 41% 95%, 41% 100%, 14% 100%, 14% 91%, 5% 91%, 5% 73%, 0 73%, 0 27%, 5% 27%, 5% 9%, 18% 9%);
+    }
+    .turn-stone.black::before { position: absolute; inset: 4px 7px 10px 4px; content: ""; background: #778f87; box-shadow: 5px 5px 0 #263630; }
+    .turn-stone.white {
+      background: #eadfc6;
+      box-shadow: inset 3px 3px 0 #fff8e5, inset -3px -4px 0 #9e8865, 2px 2px 0 rgba(0,0,0,.38);
+      clip-path: polygon(36% 0, 59% 0, 59% 5%, 73% 5%, 73% 9%, 82% 9%, 82% 18%, 91% 18%, 91% 27%, 100% 27%, 100% 50%, 95% 50%, 95% 64%, 86% 64%, 86% 73%, 73% 73%, 73% 82%, 64% 82%, 64% 91%, 59% 91%, 59% 100%, 41% 100%, 41% 91%, 36% 91%, 36% 82%, 27% 82%, 27% 73%, 14% 73%, 14% 64%, 5% 64%, 5% 50%, 0 50%, 0 27%, 9% 27%, 9% 18%, 18% 18%, 18% 9%, 36% 9%);
+    }
+    .turn-stone.white::before { position: absolute; inset: 2px; content: ""; opacity: .82; background: repeating-conic-gradient(from 242deg at 50% 84%, transparent 0 11deg, #9f8968 12deg 16deg, transparent 17deg 27deg); }
+    .turn-stone.white::after { position: absolute; right: 7px; bottom: 2px; left: 7px; height: 3px; content: ""; background: #b29a75; box-shadow: 2px -1px 0 #fff4d9; }
     .turn-title { color: #f0f6f2; font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .turn-sub { color: var(--muted); font-size: .68rem; margin-top: 2px; }
     .mode-badge { color: var(--lime); border: 1px solid rgba(56, 223, 125, .35); background: rgba(56, 223, 125, .05); padding: 5px 8px; font-size: .64rem; white-space: nowrap; }
-    .board-shell { position: relative; width: 100%; border: 1px solid #294638; background: #11281e; overflow: hidden; }
+    .mode-badge.thinking { color: var(--amber); border-color: rgba(241, 184, 75, .48); }
+    .board-shell {
+      position: relative; width: 100%; overflow: hidden;
+      border: 1px solid #426c69;
+      background: #102728;
+      box-shadow: inset 0 0 0 2px rgba(173, 224, 216, .08), 5px 5px 0 rgba(0, 0, 0, .25);
+    }
     #goBoard { display: block; width: 100%; height: auto; aspect-ratio: 1; cursor: crosshair; touch-action: manipulation; }
     #goBoard:focus-visible { outline: 3px solid var(--lime); outline-offset: -4px; }
     .board-overlay { position: absolute; inset: 0; display: none; place-items: center; background: rgba(3, 10, 6, .86); z-index: 4; padding: 30px; text-align: center; }
@@ -192,8 +209,8 @@
   </style>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script defer src="/game/go-engine.js"></script>
-  <script defer src="/game/go.js"></script>
+  <script defer src="/game/go-engine.js?v=45"></script>
+  <script defer src="/game/go.js?v=45"></script>
 </head>
 <body>
   <a class="skip-link" href="#gameControls" data-en="Skip to game controls" data-zh="跳到游戏控制">Skip to game controls</a>
@@ -201,7 +218,7 @@
     <div>
       <div class="eyebrow" data-en="Game Life · learn together" data-zh="游戏人生 · 一起学">Game Life · learn together</div>
       <h1><span data-en="Go" data-zh="Go">Go</span> <span class="title-zh">· 围棋</span></h1>
-      <p class="subtitle" data-en="Surround territory, protect your groups, and learn why each move works. Start on 9×9, then invite a friend when you are ready." data-zh="围住地盘、保护棋群，并理解每一步的原理。从 9×9 开始，准备好后邀请好友对弈。">Surround territory, protect your groups, and learn why each move works. Start on 9×9, then invite a friend when you are ready.</p>
+      <p class="subtitle" data-en="Surround territory, protect your groups, and learn why each move works. Practice on 9×9 against a beginner AI, share one device, or invite a friend to a private room." data-zh="围住地盘、保护棋群，并理解每一步的原理。在 9×9 棋盘上与入门 AI 练习、同机双人对弈，或邀请好友加入私密房间。">Surround territory, protect your groups, and learn why each move works. Practice on 9×9 against a beginner AI, share one device, or invite a friend to a private room.</p>
     </div>
     <div class="head-actions">
       <a class="back" href="/game/qi.html" data-en="← Qi · board games" data-zh="← Qi · 棋类游戏">← Qi · board games</a>
@@ -219,7 +236,7 @@
             <div class="turn-sub" id="turnSub">Tap an intersection to place a stone.</div>
           </div>
         </div>
-        <span class="mode-badge" id="modeBadge">LOCAL · 9×9</span>
+        <span class="mode-badge" id="modeBadge">VS BEGINNER AI · 9×9</span>
       </div>
 
       <div class="board-shell" id="boardShell">
@@ -258,13 +275,22 @@
 
     <aside class="side" aria-label="Game options and learning tools">
       <section class="card">
+        <div class="card-title" data-en="// opponent" data-zh="// 对手">// opponent</div>
+        <div class="segments" id="playerModeButtons">
+          <button class="seg active" type="button" data-mode="ai" aria-pressed="true" data-en="Beginner AI" data-zh="入门 AI">Beginner AI</button>
+          <button class="seg" type="button" data-mode="local" aria-pressed="false" data-en="Two players" data-zh="双人同屏">Two players</button>
+        </div>
+        <p class="helper" id="opponentHelp" data-en="You are Black. The learning-strength AI plays White and practices captures, atari defense, and safe shape — it is intentionally not a strong Go engine." data-zh="你执黑棋。入门 AI 执白，会练习提子、解打吃与安全棋形；它刻意不是高水平围棋引擎。">You are Black. The learning-strength AI plays White and practices captures, atari defense, and safe shape — it is intentionally not a strong Go engine.</p>
+      </section>
+
+      <section class="card">
         <div class="card-title" data-en="// board" data-zh="// 棋盘">// board</div>
         <div class="segments" id="sizeButtons">
           <button class="seg active" type="button" data-size="9" aria-pressed="true">9×9</button>
           <button class="seg" type="button" data-size="13" aria-pressed="false">13×13</button>
           <button class="seg" type="button" data-size="19" aria-pressed="false">19×19</button>
         </div>
-        <p class="helper" data-en="9×9 is the clearest place to learn. Changing size starts a fresh local game." data-zh="9×9 最适合入门。更换棋盘大小会开始新的本地对局。">9×9 is the clearest place to learn. Changing size starts a fresh local game.</p>
+        <p class="helper" data-en="The beginner AI practises on 9×9. Choosing 13×13 or 19×19 starts a fresh local two-player game." data-zh="入门 AI 在 9×9 棋盘上练习。选择 13×13 或 19×19 会开始新的本地双人对局。">The beginner AI practises on 9×9. Choosing 13×13 or 19×19 starts a fresh local two-player game.</p>
       </section>
 
       <section class="card wide">

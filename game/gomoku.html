@@ -53,7 +53,12 @@
     .panel-col { flex: 1; min-width: 250px; }
 
     /* Canvas wrapper */
-    #boardWrap { position: relative; display: inline-block; }
+    #boardWrap {
+      position: relative; display: inline-block; overflow: hidden;
+      border: 1px solid #38585b;
+      background: #13292c;
+      box-shadow: inset 0 0 0 2px rgba(183, 226, 220, .07), 5px 5px 0 rgba(0, 0, 0, .3);
+    }
     #boardCanvas { display: block; cursor: crosshair; }
     #boardCanvas.thinking { cursor: wait; }
 
@@ -484,8 +489,8 @@
     <div class="pcard">
       <div class="pcard-title" data-en="// score" data-zh="// 比分">// score</div>
       <div class="score-row">
-        <div class="sbox green"><div class="slabel" id="p1label">●&nbsp;<span data-en="Lime" data-zh="青柠">Lime</span></div><div class="sval" id="s1">0</div></div>
-        <div class="sbox red">  <div class="slabel" id="p2label">●&nbsp;<span data-en="Tomato" data-zh="番茄">Tomato</span></div><div class="sval" id="s2">0</div></div>
+        <div class="sbox green"><div class="slabel" id="p1label">◆&nbsp;<span data-en="Stone" data-zh="河石">Stone</span></div><div class="sval" id="s1">0</div></div>
+        <div class="sbox red">  <div class="slabel" id="p2label">◒&nbsp;<span data-en="Shell" data-zh="贝壳">Shell</span></div><div class="sval" id="s2">0</div></div>
       </div>
     </div>
 
@@ -493,7 +498,7 @@
       <div class="pcard-title" data-en="// players" data-zh="// 玩家设置">// players</div>
       <div class="player-row">
         <div class="player-slot">
-          <div class="slot-label green-t">● <span data-en="Lime" data-zh="青柠">Lime</span></div>
+          <div class="slot-label green-t">◆ <span data-en="Stone" data-zh="河石">Stone</span></div>
           <div class="tog-row">
             <button class="tog sel ptype-1" data-val="human"  onclick="setPlayerType(1,'human')"  data-en="Human"  data-zh="人">Human</button>
             <button class="tog     ptype-1" data-val="ai"     onclick="setPlayerType(1,'ai')"     data-en="AI"     data-zh="AI">AI</button>
@@ -501,7 +506,7 @@
           </div>
         </div>
         <div class="player-slot">
-          <div class="slot-label red-t">● <span data-en="Tomato" data-zh="番茄">Tomato</span></div>
+          <div class="slot-label red-t">◒ <span data-en="Shell" data-zh="贝壳">Shell</span></div>
           <div class="tog-row">
             <button class="tog     ptype-2" data-val="human"  onclick="setPlayerType(2,'human')"  data-en="Human"  data-zh="人">Human</button>
             <button class="tog sel ptype-2" data-val="ai"     onclick="setPlayerType(2,'ai')"     data-en="AI"     data-zh="AI">AI</button>
@@ -711,7 +716,7 @@ function newGame() {
   if (_cb) { delete _cb.dataset.live; _cb.classList.remove('waiting'); }
   renderEngineVoiceUI();
   _lastPraise = -9; _lastScold = -9;
-  drop = null; ripple = null; lifts = []; rain = []; jolts.clear(); setLineLive(false);
+  drop = null; ripple = null; placementRipples = []; lifts = []; rain = []; jolts.clear(); setLineLive(false);
   if (waveCur) { waveCur.fill(0); wavePrev.fill(0); waveLive = 0; waveAge = 0; waveUntil = 0; }
   rpStop(); replay = null; reviewData = null; reviewOpen = false;
   renderReplayUI();
@@ -812,7 +817,7 @@ function undoMove() {
   // had just been unplayed. moveCount then walked back over numbers already in
   // it, so the record ended up with two move 19s — one real, one from a line
   // that never happened — and moveByNumber() would hand back whichever came
-  // first. That is how the review came to say "move 19, Lime J8" about a point
+  // first. That is how the review came to name move 19 at J8 about a point
   // holding a red stone. It is also what the whole prompt is built from, so the
   // review was reasoning about a game nobody played.
   // The entries about to be dropped, in the order they were played — he fishes
@@ -850,8 +855,9 @@ function placeStone(r, c) {
   board[r][c] = curP;
   lastMove = [r, c];
   moveCount++;
+  placementRippleAt(r, c);
   const col = COLS[c], row = N - r;
-  log(`${moveCount}. ${t(curP===1?'Lime':'Tomato', curP===1?'青柠':'番茄')} ${col}${row}`, 'lmove');
+  log(`${moveCount}. ${t(curP===1?'Stone':'Shell', curP===1?'河石':'贝壳')} ${col}${row}`, 'lmove');
   gameRecord.push({
     n: moveCount, p: mover, at: col + row, r, c,
     alt: searchInfo ? [...searchInfo.scored].filter(x => x.s !== null)
@@ -866,7 +872,7 @@ function placeStone(r, c) {
     winMove = { n: moveCount, p: mover, r, c, at: col + row };
     gameOver = true;
     scores[wr.player]++;
-    const winner = wr.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！');
+    const winner = wr.player === 1 ? t('Stone wins!', '河石获胜！') : t('Shell wins!', '贝壳获胜！');
     log(winner, wr.player === 1 ? 'lwin' : 'lwin-r');
     const wb = document.getElementById('winBanner');
     wb.className = 'win-banner ' + (wr.player === 1 ? 'win-g' : 'win-r');
@@ -959,31 +965,34 @@ canvas.addEventListener('mouseleave', () => { hoverCell = null; draw(); });
 function draw() {
   ctx.clearRect(0, 0, CSIZE, CSIZE);
 
-  // Background
-  ctx.fillStyle = '#0e0e0e';
-  ctx.fillRect(0, 0, CSIZE, CSIZE);
+  drawStoneSlab();
 
-  // Grid lines
-  ctx.strokeStyle = '#242424';
-  ctx.lineWidth = 1;
+  // Grooves cut into the slab: their pale lower edge is the little submerged
+  // highlight that makes a line read as engraved instead of printed.
+  ctx.strokeStyle = 'rgba(3,15,18,.78)';
+  ctx.shadowColor = 'rgba(177,218,208,.18)';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = Math.max(.5, CELL * .018);
+  ctx.lineWidth = Math.max(.8, CELL * .032);
   for (let i = 0; i < N; i++) {
     const x = PAD + i * CELL, y = PAD + i * CELL;
     ctx.beginPath(); ctx.moveTo(x, PAD); ctx.lineTo(x, PAD + (N-1)*CELL); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(PAD + (N-1)*CELL, y); ctx.stroke();
   }
+  ctx.shadowColor = 'transparent';
+  ctx.shadowOffsetY = 0;
 
   // Star points
-  ctx.fillStyle = '#2a2a2a';
+  ctx.fillStyle = '#8baaa2';
   for (const [sr, sc] of STARS) {
-    ctx.beginPath();
-    ctx.arc(PAD + sc*CELL, PAD + sr*CELL, Math.max(2, CELL/14), 0, Math.PI*2);
-    ctx.fill();
+    const s = Math.max(3, Math.round(CELL * .14));
+    ctx.fillRect(Math.round(PAD + sc * CELL - s / 2), Math.round(PAD + sr * CELL - s / 2), s, s);
   }
 
   // Coord labels. These used to be #252525 on an #0e0e0e board — about 1.5:1,
   // which is fine as decoration and useless as a reference. They are a
   // reference now: the oracle names squares and you have to find them.
-  ctx.fillStyle = '#6f6a7d';
+  ctx.fillStyle = '#9eb9b4';
   // The row numbers are right-aligned, so what has to fit in the left margin
   // is the whole of "15" — and it did not. The offset was worked out from the
   // cell size alone, which on a phone put the label's right edge 8px from the
@@ -1032,11 +1041,57 @@ function draw() {
       }
     }
   }
+  drawWaterGlaze();
   drawWave();
+  drawPlacementRipples();
   drawReplayMarks();
   drawRipple();
 
   drawAim();
+}
+
+function drawStoneSlab() {
+  ctx.fillStyle = '#294347';
+  ctx.fillRect(0, 0, CSIZE, CSIZE);
+
+  // Fixed pixel chips keep the slab tactile without turning to static while
+  // a ripple animates.
+  ctx.save();
+  const chip = Math.max(2, Math.round(CELL * .09));
+  for (let i = 0; i < 148; i++) {
+    const x = Math.floor(((i * 79 + 11) % 113) / 113 * CSIZE / chip) * chip;
+    const y = Math.floor(((i * 43 + 29) % 109) / 109 * CSIZE / chip) * chip;
+    ctx.fillStyle = i % 4 ? 'rgba(166,198,187,.09)' : 'rgba(1,12,15,.2)';
+    ctx.fillRect(x, y, chip * (i % 6 === 0 ? 2 : 1), chip);
+  }
+  ctx.fillStyle = 'rgba(50,143,151,.1)';
+  for (let y = 0; y < CSIZE; y += chip * 8) {
+    const offset = ((y / chip) % 16) * chip;
+    for (let x = -offset; x < CSIZE; x += chip * 18) ctx.fillRect(x, y, chip * 7, chip * 2);
+  }
+  ctx.fillStyle = 'rgba(4,47,59,.12)';
+  ctx.fillRect(0, Math.floor(CSIZE * .72), CSIZE, Math.ceil(CSIZE * .28));
+  ctx.restore();
+}
+
+function drawWaterGlaze() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(127,205,203,.035)';
+  ctx.fillRect(0, 0, CSIZE, Math.round(CSIZE * .48));
+  ctx.fillStyle = 'rgba(3,59,72,.055)';
+  ctx.fillRect(0, Math.round(CSIZE * .66), CSIZE, Math.ceil(CSIZE * .34));
+  ctx.strokeStyle = 'rgba(205,239,235,.09)';
+  ctx.lineWidth = Math.max(1, Math.round(CELL * .026));
+  for (let band = 0; band < 3; band++) {
+    const y = Math.round(CSIZE * (.19 + band * .3));
+    ctx.beginPath(); ctx.moveTo(-CELL, y);
+    const step = Math.max(10, Math.round(CELL * .82));
+    for (let x = -CELL, i = 0; x <= CSIZE + CELL; x += step, i++) {
+      ctx.lineTo(Math.round(x), y + ((i + band) % 4 < 2 ? 0 : Math.max(1, Math.round(CELL * .075))));
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /* The aimed point: a ring on the intersection, and the coordinate printed in
@@ -1052,7 +1107,7 @@ function drawAim() {
   ctx.globalAlpha = 1;
   ctx.strokeStyle = col;
   ctx.lineWidth = Math.max(1.6, CELL * 0.07);
-  ctx.beginPath(); ctx.arc(x, y, CELL * 0.62, 0, Math.PI * 2); ctx.stroke();
+  strokeSegmentedOctagon(ctx, x, y, CELL * 0.62);
   // cross-hairs out to the margins, so the point is findable past a fingertip
   ctx.globalAlpha = 0.35;
   ctx.lineWidth = 1;
@@ -1063,6 +1118,21 @@ function drawAim() {
   ctx.moveTo(x + CELL * 0.7, y); ctx.lineTo(CSIZE, y);
   ctx.stroke();
   ctx.restore();
+}
+
+function strokeSegmentedOctagon(g, x, y, radius) {
+  const pts = [];
+  for (let i = 0; i < 8; i++) {
+    const a = -Math.PI / 8 + i * Math.PI / 4;
+    pts.push([Math.round(x + Math.cos(a) * radius), Math.round(y + Math.sin(a) * radius)]);
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = pts[i], b = pts[(i + 1) % 8];
+    g.beginPath();
+    g.moveTo(Math.round(a[0] * .86 + b[0] * .14), Math.round(a[1] * .86 + b[1] * .14));
+    g.lineTo(Math.round(a[0] * .14 + b[0] * .86), Math.round(a[1] * .14 + b[1] * .86));
+    g.stroke();
+  }
 }
 
 function drawStone(r, c, player, isWin, isLast, ghost) {
@@ -1086,28 +1156,110 @@ function drawStone(r, c, player, isWin, isLast, ghost) {
     ctx.translate(-x, -y);
   }
 
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-    // #ff6b5b lifted Tomato's luminance only 1.38x against Lime's 2.11x, so a
-  // completed red five was ~35% less salient than a green one. Pre-existing
-  // bug, unrelated to characters.
-  ctx.fillStyle = isWin ? (player === 1 ? '#4eff8a' : '#ff9a8a') : color;
+  drawNaturalPiece(ctx, x, y, radius, player, r * 31 + c * 17);
 
   if (isWin) {
-    ctx.shadowColor = color; ctx.shadowBlur = 12;
+    ctx.save();
+    ctx.strokeStyle = player === 1 ? '#4eff8a' : '#ff9a8a';
+    ctx.lineWidth = Math.max(1.4, CELL * .065);
+    strokeSegmentedOctagon(ctx, x, y, radius * 1.16);
+    ctx.restore();
   }
-  ctx.fill();
-  ctx.shadowBlur = 0;
 
   // Last move dot
   if (isLast && !isWin) {
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.28, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fill();
+    ctx.fillStyle = player === 1 ? 'rgba(241,237,218,.88)' : 'rgba(19,31,29,.72)';
+    const s = Math.max(3, Math.round(radius * .38));
+    ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s);
   }
 
   if (j) ctx.restore();
+}
+
+function naturalPebblePath(g, x, y, radius, seed) {
+  const shapes = [
+    [[-.52,-1],[.22,-1],[.22,-.94],[.62,-.94],[.62,-.78],[.84,-.78],[.84,-.5],[1,-.5],[1,.24],[.92,.24],[.92,.58],[.7,.58],[.7,.82],[.28,.82],[.28,.96],[-.44,.96],[-.44,.9],[-.72,.9],[-.72,.72],[-.92,.72],[-.92,.4],[-1,.4],[-1,-.34],[-.9,-.34],[-.9,-.68],[-.72,-.68],[-.72,-.9],[-.52,-.9]],
+    [[-.26,-1],[.48,-1],[.48,-.9],[.72,-.9],[.72,-.72],[.92,-.72],[.92,-.34],[1,-.34],[1,.4],[.86,.4],[.86,.7],[.58,.7],[.58,.9],[.14,.9],[.14,1],[-.58,1],[-.58,.9],[-.82,.9],[-.82,.66],[-.96,.66],[-.96,.2],[-1,.2],[-1,-.5],[-.86,-.5],[-.86,-.76],[-.58,-.76],[-.58,-.94],[-.26,-.94]],
+    [[-.62,-.94],[-.06,-.94],[-.06,-1],[.54,-1],[.54,-.84],[.78,-.84],[.78,-.62],[.94,-.62],[.94,-.16],[1,-.16],[1,.5],[.82,.5],[.82,.74],[.48,.74],[.48,.92],[-.14,.92],[-.14,1],[-.68,1],[-.68,.86],[-.9,.86],[-.9,.58],[-1,.58],[-1,-.18],[-.94,-.18],[-.94,-.56],[-.78,-.56],[-.78,-.82],[-.62,-.82]],
+  ];
+  const pts = shapes[Math.abs(seed) % shapes.length];
+  g.beginPath();
+  pts.forEach((p, i) => { const px = Math.round(x + p[0] * radius), py = Math.round(y + p[1] * radius); if (!i) g.moveTo(px, py); else g.lineTo(px, py); });
+  g.closePath();
+}
+
+function naturalShellPath(g, x, y, radius) {
+  const pts = [
+    [-.2,.96],[.2,.96],[.2,.86],[.4,.86],[.4,.7],[.6,.7],[.6,.52],[.78,.52],[.78,.3],[.94,.3],[.94,.04],[1,.04],
+    [1,-.2],[.92,-.2],[.92,-.44],[.78,-.44],[.78,-.6],[.6,-.6],[.6,-.74],[.38,-.74],[.38,-.86],[.14,-.86],[.14,-.98],
+    [-.12,-.98],[-.12,-.9],[-.36,-.9],[-.36,-.8],[-.58,-.8],[-.58,-.66],[-.76,-.66],[-.76,-.5],[-.9,-.5],[-.9,-.28],
+    [-1,-.28],[-1,.02],[-.94,.02],[-.94,.3],[-.8,.3],[-.8,.5],[-.62,.5],[-.62,.68],[-.42,.68],[-.42,.84],[-.2,.84],
+  ];
+  g.beginPath();
+  pts.forEach((p, i) => { const px = Math.round(x + p[0] * radius), py = Math.round(y + p[1] * radius); if (!i) g.moveTo(px, py); else g.lineTo(px, py); });
+  g.closePath();
+}
+
+function naturalPixelLine(g, x1, y1, x2, y2, size) {
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)) / size));
+  for (let i = 0; i <= steps; i++) {
+    const u = i / steps;
+    g.fillRect(Math.round((x1 + (x2 - x1) * u) / size) * size, Math.round((y1 + (y2 - y1) * u) / size) * size, size, size);
+  }
+}
+
+function drawNaturalPiece(g, x, y, radius, player, seed) {
+  g.save();
+  if (player === 1) {
+    const px = Math.max(1, Math.round(radius * .12));
+    naturalPebblePath(g, x, y + px, radius, seed);
+    g.fillStyle = 'rgba(1,5,5,.72)'; g.fill();
+    naturalPebblePath(g, x, y, radius, seed);
+    g.fillStyle = '#101817'; g.fill();
+    g.strokeStyle = '#020605';
+    g.lineWidth = Math.max(1, Math.round(CELL * .03)); g.stroke();
+    g.fillStyle = '#465650';
+    g.beginPath();
+    g.moveTo(Math.round(x - radius * .62), Math.round(y - radius * .58));
+    g.lineTo(Math.round(x - radius * .18), Math.round(y - radius * .78));
+    g.lineTo(Math.round(x + radius * .42), Math.round(y - radius * .62));
+    g.lineTo(Math.round(x + radius * .12), Math.round(y - radius * .28));
+    g.lineTo(Math.round(x - radius * .5), Math.round(y - radius * .2));
+    g.closePath(); g.fill();
+    g.fillStyle = '#273631';
+    g.beginPath();
+    g.moveTo(Math.round(x + radius * .14), Math.round(y - radius * .22));
+    g.lineTo(Math.round(x + radius * .72), Math.round(y - radius * .36));
+    g.lineTo(Math.round(x + radius * .68), Math.round(y + radius * .4));
+    g.lineTo(Math.round(x + radius * .18), Math.round(y + radius * .62));
+    g.closePath(); g.fill();
+    g.fillStyle = '#728a82';
+    g.fillRect(Math.round(x + radius * (seed % 2 ? -.5 : -.34)), Math.round(y - radius * .56), px, px);
+    g.fillStyle = '#17231f';
+    g.fillRect(Math.round(x - radius * .58), Math.round(y + radius * .34), px * 2, px);
+  } else {
+    const px = Math.max(1, Math.round(radius * .09));
+    naturalShellPath(g, x, y + px, radius);
+    g.fillStyle = 'rgba(48,33,20,.55)'; g.fill();
+    naturalShellPath(g, x, y, radius);
+    g.fillStyle = '#eadfc6'; g.fill();
+    g.strokeStyle = '#6f5a40';
+    g.lineWidth = Math.max(1, Math.round(CELL * .03)); g.stroke();
+    const hingeY = y + radius * .69;
+    g.fillStyle = '#a99572';
+    [[-.78,-.12],[-.58,-.55],[-.3,-.79],[0,-.9],[.3,-.79],[.58,-.55],[.78,-.12]].forEach((end) => {
+      naturalPixelLine(g, x, hingeY, x + radius * end[0], y + radius * end[1], px);
+    });
+    g.fillStyle = '#fff7df';
+    naturalPixelLine(g, x - px, hingeY - px, x - radius * .2, y - radius * .78, px);
+    g.fillStyle = '#c7b894';
+    g.fillRect(Math.round(x - radius * .28), Math.round(y + radius * .66), Math.max(px * 2, Math.round(radius * .56)), px * 2);
+    g.fillStyle = '#efd8c7';
+    g.fillRect(Math.round(x + radius * .45), Math.round(y - radius * .32), px * 2, px);
+    g.fillStyle = '#c8ddd4';
+    g.fillRect(Math.round(x - radius * .58), Math.round(y - radius * .25), px, px);
+  }
+  g.restore();
 }
 
 /* ── What comes up on the line ────────────────────
@@ -1399,9 +1551,7 @@ function drawShock() {
   ctx.globalAlpha = (1 - u) * 0.5;
   ctx.strokeStyle = '#cfc6b4';
   ctx.lineWidth = Math.max(1.4, CELL * 0.10 * (1 - u));
-  ctx.beginPath();
-  ctx.arc(PAD + drop.c * CELL, PAD + drop.r * CELL, CELL * (0.3 + u * 3.0), 0, Math.PI * 2);
-  ctx.stroke();
+  strokeSegmentedOctagon(ctx, PAD + drop.c * CELL, PAD + drop.r * CELL, CELL * (0.3 + u * 3.0));
   ctx.restore();
 }
 
@@ -1457,8 +1607,7 @@ function drawLifts() {
     drawLine(g, s.tip, s.x, s.y, s.alpha);
     g.save();
     g.globalAlpha = s.alpha;
-    g.fillStyle = s.colour;
-    g.beginPath(); g.arc(s.x, s.y, s.r, 0, Math.PI * 2); g.fill();
+    drawNaturalPiece(g, s.x, s.y, s.r, s.player, l.r * 31 + l.c * 17);
     // the water still on it, coming off as it rises
     if (s.wet > 0) {
       g.globalAlpha = s.alpha * s.wet * 0.75;
@@ -1563,13 +1712,46 @@ function animFrame(now) {
   if (ripple && now - ripple.t0 > ripple.dur) ripple = null;
   if (lifts.length) lifts = lifts.filter(l => now - l.t0 <= LIFT);
   if (rain.length) rain = rain.filter(f => now - f.t0 <= fallLife(f));
+  if (placementRipples.length) placementRipples = placementRipples.filter(p => now - p.t0 <= PLACEMENT_RIPPLE_LIFE);
   // dir 'out' is a catch and has a line; a thrown tin arrives without one.
   // Asked off the drop's direction, not its per-frame tip, so the handover
   // happens on the frame the catch starts rather than one frame late.
   setLineLive(!!(drop && drop.dir === 'out') || lifts.length > 0);
   draw();
   drawDrop();          // on its own layer, over the whole page
-  if (drop || ripple || waveLive || lifts.length || rain.length || jolts.size) ensureAnim();
+  if (drop || ripple || waveLive || lifts.length || rain.length || jolts.size || placementRipples.length) ensureAnim();
+}
+
+/* Every placed piece breaks the shallow surface once. These are analytic
+   rings rather than another full wave solve: two strokes for under a second
+   stay crisp on a phone, while tactical blocks retain the slower field-based
+   ripple below. */
+const PLACEMENT_RIPPLE_LIFE = 760;
+let placementRipples = [];
+function placementRippleAt(r, c) {
+  if (REDUCED.matches || !CELL) return;
+  placementRipples.push({ r, c, t0: performance.now() });
+  if (placementRipples.length > 3) placementRipples.shift();
+  ensureAnim();
+}
+
+function drawPlacementRipples() {
+  if (!placementRipples.length || REDUCED.matches) return;
+  const now = performance.now();
+  ctx.save();
+  for (const p of placementRipples) {
+    const u = Math.max(0, Math.min(1, (now - p.t0) / PLACEMENT_RIPPLE_LIFE));
+    const x = PAD + p.c * CELL, y = PAD + p.r * CELL;
+    ctx.lineWidth = Math.max(.75, CELL * .024) * (1 - u * .3);
+    for (let ring = 0; ring < 2; ring++) {
+      const ru = Math.max(0, Math.min(1, u * 1.24 - ring * .22));
+      if (!ru) continue;
+      ctx.globalAlpha = (1 - ru) * (ring ? .24 : .4);
+      ctx.strokeStyle = ring ? '#80c8d0' : '#d3eee9';
+      strokeSegmentedOctagon(ctx, x, y, CELL * (.46 + ru * 1.7));
+    }
+  }
+  ctx.restore();
 }
 
 /* A block is not a catch. Nothing is thrown for one: the stone you just put
@@ -1590,28 +1772,18 @@ function rippleAt(r, c, mag, stopped) {
 /* ── The water a block makes ──────────────────────
    The gomoku card on the front page solves a height field — the classic wave
    equation on a coarse grid — and that solver runs here too. What it drives is
-   different, and the difference matters: the card REFRACTS its background,
-   which reads as looking down through water at something underneath. A stone
-   is not dropped under the water, it is dropped ON it. So the field is
-   rendered as light on a surface instead — crests catch a cold light, troughs
-   go dark, and the board itself stays exactly where it is, sharp, underneath.
+   different, and the difference matters: the field becomes chunky bands of
+   light on the shallow surface above the slab. Crests catch a cold pixel,
+   troughs go dark, and the engraved board stays fixed underneath.
 
-   The field covers the whole board, but only ONE thing disturbs it: a block.
-   Rippling on every stone was tried and it is too much — sixty moves in a
-   game, most of them the engine's, and the water never gets to be still, so
-   the one moment that is meant to feel calm reads as more of the same. It is a
-   signature, not a surface: 妙 gets the gold fish, a bad move gets the tin, a
-   win gets the sky falling in, and 挡 — the quiet one, the move that takes nothing —
-   gets water, spreading in slow motion. The solver is stepped at half rate
-   while it does, which is the only honest way to slow water down: you cannot
-   fake it by scaling the picture.
+   The full field is reserved for a block or one of the fisherman's larger
+   disturbances. Ordinary moves use the short segmented octagons above, so
+   every placement touches the water without keeping the whole pool in motion.
+   妙 still gets the gold fish, a bad move the tin, and 挡 the slower field.
 
-   It is drawn at the solver's own resolution and scaled up with smoothing on.
-   Water has no fine detail to lose, the cost stops depending on how big the
-   board is, and the upscale does the softening for free. */
-// Floor as well as ceiling: the grid used to be derived from the board size
-// alone, so a phone got 62 cells across and the rings came out visibly
-// stepped. The cost is trivial either way.
+   It is drawn at the solver's own resolution, alpha-quantized, then scaled
+   with smoothing off. The visible square cells are part of the pixel style,
+   and the fixed resolution keeps the mobile cost bounded. */
 const WAVE_MIN = 96, WAVE_MAX = 168;
 let waveW = 0, waveCur = null, wavePrev = null;
 let waveCv = null, waveCtx = null, waveImg = null;
@@ -1911,8 +2083,7 @@ function waveTick(now) {
   }
 }
 
-/* Light on a surface: crests take a cold highlight, troughs darken. Nothing is
-   displaced — the board is on top of the water, not under it. */
+/* Light on the shallow surface: crests take a cold pixel, troughs darken. */
 function drawWave() {
   if (!waveLive || !waveCur) return;
   const env = Math.max(0, Math.min(1, (waveUntil - performance.now()) / 900));
@@ -1928,17 +2099,18 @@ function drawWave() {
       const o = (y * W + x) * 4;
       if (lit >= 0) {
         data[o] = 186; data[o + 1] = 222; data[o + 2] = 255;
-        data[o + 3] = lit > 168 ? 168 : lit;
+        const a = lit > 168 ? 168 : lit;
+        data[o + 3] = Math.round(a / 32) * 32;
       } else {
         data[o] = 4; data[o + 1] = 10; data[o + 2] = 20;
         const a = -lit * 0.8;
-        data[o + 3] = a > 130 ? 130 : a;
+        data[o + 3] = Math.round((a > 130 ? 130 : a) / 32) * 32;
       }
     }
   }
   waveCtx.putImageData(waveImg, 0, 0);
   const sm = ctx.imageSmoothingEnabled;
-  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = false;
   ctx.drawImage(waveCv, 0, 0, W, W, 0, 0, CSIZE, CSIZE);
   ctx.imageSmoothingEnabled = sm;
 }
@@ -1955,9 +2127,7 @@ function drawRipple() {
   ctx.lineWidth = Math.max(1.4, CELL * 0.055);
   ctx.setLineDash([CELL * 0.16, CELL * 0.12]);
   for (const [rr, cc] of ripple.stopped) {
-    ctx.beginPath();
-    ctx.arc(PAD + cc * CELL, PAD + rr * CELL, CELL * 0.47, 0, Math.PI * 2);
-    ctx.stroke();
+    strokeSegmentedOctagon(ctx, PAD + cc * CELL, PAD + rr * CELL, CELL * 0.5);
   }
   ctx.setLineDash([]);
   ctx.restore();
@@ -1998,7 +2168,7 @@ function liftShape(l) {
     r: CELL * 0.40 * (1 - 0.36 * p.e),
     alpha: u > 0.80 ? Math.max(0, 1 - (u - 0.80) / 0.20) : 1,
     wet: Math.max(0, 1 - u / 0.30),          // it comes up streaming
-    colour: l.p === 1 ? '#1db954' : '#f44336',
+    player: l.p,
   };
 }
 
@@ -2639,7 +2809,7 @@ function renderPanel() {
     tb.textContent = t('Game over · start new game', '游戏结束 · 开始新游戏');
   } else {
     tb.className = 'turn-bar' + (curP === 2 ? ' red-t' : '');
-    const whose = curP === 1 ? t('Lime', '青柠') : t('Tomato', '番茄');
+    const whose = curP === 1 ? t('Stone', '河石') : t('Shell', '贝壳');
     let who;
     if (remoteMode) who = curP === myColor ? t('You', '你') : t('Remote', '对方');
     else { const tp = playerTypes[curP]; who = tp==='human' ? t('You','你') : tp==='random' ? t('Random','随机') : 'AI'; }
@@ -2659,18 +2829,18 @@ function renderPanel() {
 
   const typeLabel = tp => tp==='human' ? t('Human','人') : tp==='random' ? t('Random','随机') : 'AI';
   if (remoteMode) {
-    document.getElementById('p1label').innerHTML = `●&nbsp;<span>${t('Lime','青柠')} (${myColor===1?t('You','你'):t('Remote','对方')})</span>`;
-    document.getElementById('p2label').innerHTML = `●&nbsp;<span>${t('Tomato','番茄')} (${myColor===2?t('You','你'):t('Remote','对方')})</span>`;
+    document.getElementById('p1label').innerHTML = `◆&nbsp;<span>${t('Stone','河石')} (${myColor===1?t('You','你'):t('Remote','对方')})</span>`;
+    document.getElementById('p2label').innerHTML = `◒&nbsp;<span>${t('Shell','贝壳')} (${myColor===2?t('You','你'):t('Remote','对方')})</span>`;
   } else {
-    document.getElementById('p1label').innerHTML = `●&nbsp;<span>${t('Lime','青柠')} (${typeLabel(playerTypes[1])})</span>`;
-    document.getElementById('p2label').innerHTML = `●&nbsp;<span>${t('Tomato','番茄')} (${typeLabel(playerTypes[2])})</span>`;
+    document.getElementById('p1label').innerHTML = `◆&nbsp;<span>${t('Stone','河石')} (${typeLabel(playerTypes[1])})</span>`;
+    document.getElementById('p2label').innerHTML = `◒&nbsp;<span>${t('Shell','贝壳')} (${typeLabel(playerTypes[2])})</span>`;
   }
   document.getElementById('resignBtn').disabled = gameOver;
   updateCoachUI();
 }
 
 /* ── Resign ───────────────────────────────────── */
-function resignName(p) { return p === 1 ? t('Lime', '青柠') : t('Tomato', '番茄'); }
+function resignName(p) { return p === 1 ? t('Stone', '河石') : t('Shell', '贝壳'); }
 function showResign(loser) {
   const winner = loser === 1 ? 2 : 1;
   scores[winner]++;
@@ -2839,7 +3009,7 @@ function drawCoachHints(){
     const col=single||RANK[Math.min(i,RANK.length-1)];
     ctx.strokeStyle=col; ctx.fillStyle=col;
     const x=PAD+c*CELL,y=PAD+r*CELL;
-    ctx.beginPath(); ctx.arc(x,y,CELL*0.34,0,Math.PI*2); ctx.stroke(); ctx.fillText(mark,x,y+1);
+    strokeSegmentedOctagon(ctx,x,y,CELL*0.36); ctx.fillText(mark,x,y+1);
   });
   ctx.restore();
 }
@@ -3163,19 +3333,19 @@ function drawVoiceMarks(){
     ctx.strokeStyle = mk.colour;
     if (mk.taken){
       ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.arc(x, y, CELL * 0.54, 0, Math.PI * 2); ctx.stroke();
+      strokeSegmentedOctagon(ctx, x, y, CELL * 0.56);
       ctx.setLineDash([]);
     } else {
-      ctx.beginPath(); ctx.arc(x, y, CELL * 0.44, 0, Math.PI * 2); ctx.stroke();
+      strokeSegmentedOctagon(ctx, x, y, CELL * 0.46);
     }
   });
   ctx.restore();
 }
 
 /* the prompt is English, and the two sides are their colours */
-function engineName(p){ return p === 1 ? 'Lime (green)' : 'Tomato (red)'; }
+function engineName(p){ return p === 1 ? 'Stone (dark basalt; lime UI accent)' : 'Shell (pale ivory; tomato UI accent)'; }
 function boardText(){
-  const sym = {0:'.', 1:'L', 2:'T'};
+  const sym = {0:'.', 1:'B', 2:'S'};
   const lines = [];
   for (let r = 0; r < N; r++) lines.push(String(N - r).padStart(2,' ') + ' ' + board[r].map(v => sym[v]).join(' '));
   lines.push('   ' + COLS.split('').join(' '));
@@ -3275,7 +3445,7 @@ function validateReview(raw) {
   return (out.gist || out.turning || out.decisive || out.lesson) ? out : null;
 }
 
-function sideName(p) { return p === 1 ? t('Lime', '青柠') : t('Tomato', '番茄'); }
+function sideName(p) { return p === 1 ? t('Stone', '河石') : t('Shell', '贝壳'); }
 
 let reviewOpen = false;
 function toggleReviewDetail() { reviewOpen = !reviewOpen; renderReview(); renderReplayUI(); draw(); }
@@ -3836,10 +4006,10 @@ function drawReplayMarks() {
     const x = PAD + mk.c * CELL, y = PAD + mk.r * CELL;
     if (mk.kind === 'here') {
       ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = Math.max(1.2, CELL * 0.05);
-      ctx.beginPath(); ctx.arc(x, y, CELL * 0.5, 0, Math.PI * 2); ctx.stroke();
+      strokeSegmentedOctagon(ctx, x, y, CELL * 0.52);
     } else if (mk.kind === 'was') {
       ctx.strokeStyle = '#ff9ec4'; ctx.lineWidth = Math.max(1.6, CELL * 0.08);
-      ctx.beginPath(); ctx.arc(x, y, CELL * 0.52, 0, Math.PI * 2); ctx.stroke();
+      strokeSegmentedOctagon(ctx, x, y, CELL * 0.54);
       const q = CELL * 0.26;                       // struck through: this is the one to unlearn
       ctx.beginPath();
       ctx.moveTo(x - q, y - q); ctx.lineTo(x + q, y + q);
@@ -3847,7 +4017,7 @@ function drawReplayMarks() {
       ctx.stroke();
     } else if (mk.kind === 'better') {
       ctx.strokeStyle = '#7ee0ff'; ctx.lineWidth = Math.max(1.6, CELL * 0.08);
-      ctx.beginPath(); ctx.arc(x, y, CELL * 0.52, 0, Math.PI * 2); ctx.stroke();
+      strokeSegmentedOctagon(ctx, x, y, CELL * 0.54);
     } else {
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.fillText(String(mk.i), x, y + 1);
@@ -3990,14 +4160,14 @@ function applyState(moves) {
   if (winner) {
     if (!_remoteOver) {
       _remoteOver = true; scores[winner.player]++;
-      log(winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！'), winner.player === 1 ? 'lwin' : 'lwin-r');
+      log(winner.player === 1 ? t('Stone wins!', '河石获胜！') : t('Shell wins!', '贝壳获胜！'), winner.player === 1 ? 'lwin' : 'lwin-r');
       showQuote(winner.player === myColor ? 'win' : 'lose');
       endFall(winner.player === myColor);
       // each side asks with its own key and is reviewed from its own seat
       reviewGame(winner.player);
     }
     wb.className = 'win-banner ' + (winner.player === 1 ? 'win-g' : 'win-r');
-    wb.textContent = winner.player === 1 ? t('Lime wins!', '青柠获胜！') : t('Tomato wins!', '番茄获胜！');
+    wb.textContent = winner.player === 1 ? t('Stone wins!', '河石获胜！') : t('Shell wins!', '贝壳获胜！');
     document.getElementById('newBtn').className = 'btn ' + (winner.player === 1 ? 'glow-g' : 'glow-r');
   } else {
     _remoteOver = false; wb.className = 'win-banner'; document.getElementById('newBtn').className = 'btn';
@@ -4010,7 +4180,7 @@ function onPlay(snap) {
   const s = v.s || 0;
   const moves = v.moves ? (Array.isArray(v.moves) ? v.moves : Object.values(v.moves)) : [];
   if (s !== _fbSession) {
-    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; _lastScold = -9; drop = null; ripple = null; jolts.clear();
+    _fbSession = s; _remoteOver = false; _prevLen = 0; _lastPraise = -9; _lastScold = -9; drop = null; ripple = null; placementRipples = []; jolts.clear();
     // the previous game's review would otherwise sit there over a fresh board
     commentSeq++; voiceMarks = []; rpStop(); replay = null; reviewData = null; reviewOpen = false; renderReplayUI();
     showQuote('open');
@@ -4020,10 +4190,12 @@ function onPlay(snap) {
   // placeStone, so the one move that is actually new has to be picked out here
   // — and judged now, while `board` still stands as it did before it.
   let fresh = null;
+  let freshPlacement = null;
   if (moves.length > _prevLen) {
-    for (let i = _prevLen; i < moves.length; i++) { const r = moves[i][0], c = moves[i][1], who = (i % 2 === 0) ? 1 : 2; log(`${i + 1}. ${t(who === 1 ? 'Lime' : 'Tomato', who === 1 ? '青柠' : '番茄')} ${COLS[c]}${N - r}`, 'lmove'); }
+    for (let i = _prevLen; i < moves.length; i++) { const r = moves[i][0], c = moves[i][1], who = (i % 2 === 0) ? 1 : 2; log(`${i + 1}. ${t(who === 1 ? 'Stone' : 'Shell', who === 1 ? '河石' : '贝壳')} ${COLS[c]}${N - r}`, 'lmove'); }
     const nm = moves[moves.length - 1];
     const who = (moves.length - 1) % 2 === 0 ? 1 : 2;
+    if (moves.length === _prevLen + 1 && nm) freshPlacement = { r: nm[0], c: nm[1] };
     if (moves.length === _prevLen + 1 && nm && board && board[nm[0]] && board[nm[0]][nm[1]] === 0 && praiseWatch(who)) {
       fresh = { r: nm[0], c: nm[1], p: who, q: moveQuality(nm[0], nm[1], who) };
     }
@@ -4039,6 +4211,7 @@ function onPlay(snap) {
   }
   _prevLen = moves.length;
   applyState(moves);
+  if (freshPlacement) placementRippleAt(freshPlacement.r, freshPlacement.c);
   if (fresh) {
     if (gameOver) { _lastPraise = moveCount; guruShout('five'); }
     else judgeMove(fresh.r, fresh.c, fresh.p, fresh.q);
@@ -4046,7 +4219,7 @@ function onPlay(snap) {
 }
 function onHost(snap) {
   _curHost = snap.val() || 1; computeMyColor();
-  setConnStatus(t('Connected — you play ', '已连接 — 你执 ') + (myColor === 1 ? t('Lime', '青柠') : t('Tomato', '番茄')), 'ok');
+  setConnStatus(t('Connected — you play ', '已连接 — 你执 ') + (myColor === 1 ? t('Stone', '河石') : t('Shell', '贝壳')), 'ok');
   renderPanel();
 }
 function onReq(snap) {

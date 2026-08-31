@@ -1,15 +1,16 @@
 /* Life Game service worker — offline app shell.
    Bump CACHE on each release so clients pick up new files. */
-const CACHE = 'lifegame-v43';
+const CACHE = 'lifegame-v45';
 const CORE = [
   '/',
   '/index.html',
   '/life.html',
   '/game/rope.html',
   '/game/qi.html',
+  '/game/qi-calligraphy.png',
   '/game/go.html',
-  '/game/go-engine.js',
-  '/game/go.js',
+  '/game/go-engine.js?v=45',
+  '/game/go.js?v=45',
   '/game/gomoku.html',
   '/manifest.json',
   '/icon-192.png',

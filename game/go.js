@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const { GoGame, BLACK, WHITE, EMPTY, other, coordinate, starPoints } = window.GoEngine;
+  const { GoGame, BLACK, WHITE, EMPTY, other, coordinate, starPoints, chooseBeginnerMove } = window.GoEngine;
   const $ = (id) => document.getElementById(id);
   const colorKey = (color) => color === BLACK ? 'black' : 'white';
   const colorName = (color) => tr(color === BLACK ? 'Black' : 'White', color === BLACK ? '黑棋' : '白棋');
@@ -17,9 +17,12 @@
   const ROOM_RE = /^[A-HJ-NP-Z2-9]{7}$/;
   const ROOM_TTL = 24 * 60 * 60 * 1000;
   const NETWORK_TIMEOUT = 12000;
+  const HUMAN_COLOR = BLACK;
+  const AI_COLOR = WHITE;
 
   let lang = 'en';
   let learnMode = true;
+  let localMode = 'ai';
   let game = new GoGame({ size: 9, komi: 7.5 });
   let localDead = [];
   let localResult = null;
@@ -40,6 +43,12 @@
   let pad = 28;
   let cell = 1;
   let ctx = null;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let placementRipple = null;
+  let rippleFrame = 0;
+  let aiTimer = 0;
+  let aiGeneration = 0;
+  let aiThinking = false;
   let db = null;
   let remoteBusy = false;
   let room = blankRoom();
@@ -165,17 +174,95 @@
 
   function roomEvents(source) { return eventsOf(source && source.actions); }
   function currentDead() {
-    if (room.code && room.snap) return deadOf(room.snap.review && room.snap.review.dead);
+    if (room.code) return room.snap ? deadOf(room.snap.review && room.snap.review.dead) : [];
     return localDead.slice();
   }
 
   function currentResult() {
-    if (room.code && room.snap && room.snap.result && Number(room.snap.result.session) === Number(room.snap.session)) return room.snap.result;
+    if (room.code) {
+      if (!room.snap) return null;
+      if (room.snap.result && Number(room.snap.result.session) === Number(room.snap.session)) return room.snap.result;
+      return game.result || null;
+    }
     return game.result || localResult;
   }
 
   function roomWaiting() {
     return !!room.code && (!room.snap || !(room.snap.seats && room.snap.seats.white));
+  }
+
+  function localAiActive() {
+    return !room.code && localMode === 'ai';
+  }
+
+  function localAiTurn() {
+    return localAiActive() && game.phase === 'playing' && game.current === AI_COLOR && !currentResult();
+  }
+
+  function cancelAiTurn() {
+    aiGeneration += 1;
+    if (aiTimer) window.clearTimeout(aiTimer);
+    aiTimer = 0;
+    aiThinking = false;
+  }
+
+  function aiCoach(choice, outcome) {
+    const coord = choice.type === 'play' ? coordinate(game.size, choice.row, choice.col) : '';
+    if (choice.type === 'pass') {
+      if (outcome.scoring) {
+        setCoach('AI PASSES', 'AI 停一手', 'The beginner AI also passed. Review dead groups before finishing the area score.', '入门 AI 也停一手了。请先核对死棋，再完成面积计分。');
+      } else {
+        setCoach('AI PASSES', 'AI 停一手', 'The beginner AI found no useful local move and passed.', '入门 AI 没找到有用的局部落点，因此停一手。');
+      }
+      return;
+    }
+    if (choice.reason === 'capture') {
+      setCoach('AI CAPTURES', 'AI 提子', `${coord} captures ${outcome.captured.length} stone${outcome.captured.length === 1 ? '' : 's'}.`, `${coord} 提走 ${outcome.captured.length} 颗棋子。`);
+    } else if (choice.reason === 'save-atari') {
+      setCoach('AI SAVES ATARI', 'AI 解打吃', `${coord} gives an endangered White group more liberties.`, `${coord} 为受威胁的白棋棋群增加了气。`);
+    } else if (choice.reason === 'atari') {
+      setCoach('AI ATTACKS', 'AI 打吃', `${coord} leaves one of Black’s nearby groups with a single liberty.`, `${coord} 让附近一块黑棋只剩一口气。`);
+    } else {
+      setCoach('BEGINNER AI', '入门 AI', `${coord} is a safe local-shape move. This learning-strength AI does not read far ahead.`, `${coord} 是一步较安全的局部棋形；这个入门 AI 不会深度计算。`);
+    }
+  }
+
+  function scheduleAiTurn() {
+    cancelAiTurn();
+    if (!localAiTurn() || reviewAt != null) return;
+    const ticket = aiGeneration;
+    const scheduledGame = game;
+    const scheduledEvents = game.events.length;
+    aiThinking = true;
+    render();
+    const delay = reducedMotion.matches ? 80 : 560;
+    aiTimer = window.setTimeout(() => {
+      aiTimer = 0;
+      if (ticket !== aiGeneration || game !== scheduledGame || game.events.length !== scheduledEvents || !localAiTurn() || reviewAt != null) {
+        if (ticket === aiGeneration) { aiThinking = false; render(); }
+        return;
+      }
+      const choice = chooseBeginnerMove(game);
+      if (!choice) { aiThinking = false; render(); return; }
+      let outcome;
+      if (choice.type === 'play') outcome = game.play(choice.row, choice.col, AI_COLOR);
+      else outcome = game.pass(AI_COLOR);
+      if (ticket !== aiGeneration || !outcome || !outcome.ok) {
+        aiThinking = false;
+        render();
+        return;
+      }
+      aiThinking = false;
+      if (choice.type === 'play') {
+        startPlacementRipple(choice.row, choice.col);
+        selectedIndex = game.index(choice.row, choice.col);
+        announce(`${tr('Beginner AI', '入门 AI')} ${coordinate(game.size, choice.row, choice.col)}.`);
+      } else {
+        announce(tr('Beginner AI passes.', '入门 AI 停一手。'));
+      }
+      aiCoach(choice, outcome);
+      render();
+    }, delay);
   }
 
   function displayGame() {
@@ -192,15 +279,19 @@
   }
 
   function newLocal(size) {
+    cancelAiTurn();
     const nextSize = Number(size || game.size);
+    if (nextSize !== 9 && localMode === 'ai') localMode = 'local';
     game = new GoGame({ size: nextSize, komi: 7.5 });
     localDead = [];
     localResult = null;
     keyboardCell = { r: Math.floor(nextSize / 2), c: Math.floor(nextSize / 2) };
+    stopPlacementRipple();
     resetView();
     setCoach('OPENING', '开局', 'Black begins. Corners are easiest to surround; every stone still needs liberties.', '黑棋先行。角部最容易围地，但每颗棋子都需要气。');
     render();
     resizeCanvas();
+    scheduleAiTurn();
   }
 
   function replayEvents(events, size, komi) {
@@ -254,6 +345,10 @@
       render();
       return;
     }
+    if (localAiTurn()) {
+      toast(tr('The beginner AI is thinking. You play Black.', '入门 AI 正在思考；你执黑棋。'));
+      return;
+    }
     if (room.code) {
       if (!room.snap || !room.color) return;
       if (game.current !== room.color) {
@@ -272,9 +367,11 @@
       render();
       return;
     }
+    startPlacementRipple(row, col);
     describeMove(outcome, row, col);
     announce(`${colorName(outcome.color)} ${coordinate(game.size, row, col)}. ${outcome.captured.length ? tr('Captured ', '提子 ') + outcome.captured.length : ''}`);
     render();
+    scheduleAiTurn();
   }
 
   function passTurn() {
@@ -284,6 +381,7 @@
       sendRemoteEvent({ t: 'pass', by: room.color });
       return;
     }
+    if (localAiTurn()) return;
     const outcome = game.pass();
     if (!outcome.ok) return;
     if (outcome.scoring) {
@@ -292,35 +390,55 @@
       setCoach('PASS', '停一手', 'Passing gives the turn away. A second consecutive pass starts scoring.', '停一手会把回合交给对方；双方连续停一手后开始计分。');
     }
     render();
+    scheduleAiTurn();
   }
 
   function askResign() {
     if (reviewAt != null || currentResult() || (game.phase !== 'playing' && game.phase !== 'scoring')) return;
+    if (localAiTurn()) return;
     showPrompt(tr('Resign this game?', '确定认输本局吗？'), () => {
       if (room.code) sendRemoteEvent({ t: 'resign', by: room.color });
-      else { game.resign(game.current); setCoach('GAME OVER', '对局结束', 'The game ended by resignation. Use Review to walk through the moves.', '本局以认输结束。可用“复盘”回看每一步。'); render(); }
+      else { cancelAiTurn(); game.resign(localAiActive() ? HUMAN_COLOR : game.current); setCoach('GAME OVER', '对局结束', 'The game ended by resignation. Use Review to walk through the moves.', '本局以认输结束。可用“复盘”回看每一步。'); render(); }
     });
   }
 
   function askNewGame() {
+    cancelAiTurn();
     if (room.code) {
       sendRequest('new');
       return;
     }
     if (!game.events.length) { newLocal(game.size); return; }
-    showPrompt(tr('Start a fresh game? The current moves will be cleared.', '开始新对局吗？当前棋谱会被清除。'), () => newLocal(game.size));
+    showPrompt(
+      tr('Start a fresh game? The current moves will be cleared.', '开始新对局吗？当前棋谱会被清除。'),
+      () => newLocal(game.size),
+      scheduleAiTurn,
+    );
   }
 
   function undoMove() {
     if (reviewAt != null || !game.events.length) return;
     if (room.code) { sendRequest('undo'); return; }
-    const replay = replayEvents(game.events.slice(0, -1), game.size, game.komi);
+    cancelAiTurn();
+    const events = game.events.slice();
+    let replay;
+    do {
+      events.pop();
+      replay = replayEvents(events, game.size, game.komi);
+      if (replay.error) return;
+    } while (localMode === 'ai' && events.length &&
+      (replay.game.phase !== 'playing' || replay.game.current !== HUMAN_COLOR));
     if (replay.error) return;
     game = replay.game;
+    stopPlacementRipple();
     localDead = [];
     localResult = null;
     selectedIndex = null;
-    setCoach('UNDO', '悔棋', 'The last action was removed. The board, captures, and ko history were rebuilt.', '已撤回上一步；棋盘、提子数与劫争历史均已重建。');
+    setCoach(
+      'UNDO', '悔棋',
+      localMode === 'ai' ? 'Returned to your previous Black decision. The AI reply and your preceding move were removed when needed.' : 'The last action was removed. The board, captures, and ko history were rebuilt.',
+      localMode === 'ai' ? '已回到你上一次执黑决策之前；必要时会同时撤回 AI 应手和你此前的一手。' : '已撤回上一步；棋盘、提子数与劫争历史均已重建。',
+    );
     render();
   }
 
@@ -354,6 +472,7 @@
     localDead = [];
     setCoach('RESUME', '继续', 'Play resumed so uncertain groups can be settled on the board.', '对弈已继续，可在棋盘上解决有争议的棋群。');
     render();
+    scheduleAiTurn();
   }
 
   function scoreResult(score, session, dead) {
@@ -372,7 +491,38 @@
     const next = Number(size);
     if (room.code) { toast(tr('Board size is fixed for this room.', '房间内棋盘大小已固定。')); return; }
     if (next === game.size && !game.events.length) return;
+    if (next !== 9 && localMode === 'ai') {
+      localMode = 'local';
+      toast(tr('The beginner AI practises on 9×9. Switched to local two-player.', '入门 AI 仅在 9×9 上练习；已切换到本地双人。'));
+    }
     newLocal(next);
+    if (next !== 9) {
+      setCoach('TWO PLAYERS', '双人同屏', `${next}×${next} is ready for Black and White to share this device.`, `${next}×${next} 棋盘已就绪，黑白双方可共用这台设备。`);
+      render();
+    }
+  }
+
+  function setLocalMode(mode) {
+    if (room.code) {
+      toast(tr('Opponent mode is fixed while you are in a room.', '联机房间中无法更改对手模式。'));
+      return;
+    }
+    const next = mode === 'local' ? 'local' : 'ai';
+    if (next === 'ai' && game.size !== 9) {
+      toast(tr('The beginner AI is available on the 9×9 teaching board.', '入门 AI 可在 9×9 教学棋盘上使用。'));
+      return;
+    }
+    if (next === localMode) return;
+    cancelAiTurn();
+    localMode = next;
+    newLocal(game.size);
+    setCoach(
+      next === 'ai' ? 'BEGINNER AI' : 'TWO PLAYERS',
+      next === 'ai' ? '入门 AI' : '双人同屏',
+      next === 'ai' ? 'You play Black. The learning-strength AI answers as White.' : 'Black and White now take turns on this device.',
+      next === 'ai' ? '你执黑棋，入门强度 AI 执白应手。' : '黑白双方现在共用这台设备轮流落子。',
+    );
+    render();
   }
 
   function toggleLearn() {
@@ -427,17 +577,31 @@
       title.textContent = tr('Scoring together', '共同计分');
       sub.textContent = tr('Tap dead groups, check the area, then agree.', '标记死棋、核对面积，然后共同确认。');
     } else {
-      title.textContent = room.code
-        ? (game.current === room.color ? tr(`${colorName(game.current)} — your turn`, `${colorName(game.current)}——轮到你`) : tr(`${colorName(game.current)} — friend’s turn`, `${colorName(game.current)}——好友回合`))
-        : tr(`${colorName(game.current)} to play`, `${colorName(game.current)}落子`);
-      sub.textContent = game.passes === 1
-        ? tr('One pass. Another pass starts scoring.', '已停一手；再次停一手将开始计分。')
-        : tr('Tap an intersection to place a stone.', '点击交叉点落子。');
+      if (room.code) {
+        title.textContent = game.current === room.color
+          ? tr(`${colorName(game.current)} — your turn`, `${colorName(game.current)}——轮到你`)
+          : tr(`${colorName(game.current)} — friend’s turn`, `${colorName(game.current)}——好友回合`);
+      } else if (localAiActive()) {
+        title.textContent = game.current === HUMAN_COLOR
+          ? tr('Black — your turn', '黑棋——轮到你')
+          : (aiThinking ? tr('White beginner AI is thinking…', '白棋入门 AI 思考中…') : tr('White beginner AI to play', '白棋入门 AI 落子'));
+      } else {
+        title.textContent = tr(`${colorName(game.current)} to play`, `${colorName(game.current)}落子`);
+      }
+      if (aiThinking && localAiActive()) {
+        sub.textContent = tr('Learning-strength tactics · captures, atari defense, and safe shape', '入门强度战术 · 提子、解打吃与安全棋形');
+      } else {
+        sub.textContent = game.passes === 1
+          ? tr('One pass. Another pass starts scoring.', '已停一手；再次停一手将开始计分。')
+          : tr('Tap an intersection to place a stone.', '点击交叉点落子。');
+      }
     }
     stone.className = 'turn-stone ' + colorKey(shownColor);
-    $('modeBadge').textContent = room.code
+    const modeBadge = $('modeBadge');
+    modeBadge.textContent = room.code
       ? tr(`ROOM ${room.code} · YOU: ${colorKey(room.color).toUpperCase()}`, `房间 ${room.code} · 你执${room.color === BLACK ? '黑' : '白'}`)
-      : `LOCAL · ${game.size}×${game.size}`;
+      : (localAiActive() ? tr(`VS BEGINNER AI · ${game.size}×${game.size}`, `对阵入门 AI · ${game.size}×${game.size}`) : tr(`LOCAL 2P · ${game.size}×${game.size}`, `本地双人 · ${game.size}×${game.size}`));
+    modeBadge.classList.toggle('thinking', aiThinking && localAiActive());
     $('blackCaptures').textContent = game.captures[BLACK];
     $('whiteCaptures').textContent = game.captures[WHITE];
     const boardLabel = tr(`${game.size} by ${game.size} Go board. `, `${game.size} 路围棋棋盘。`) + title.textContent;
@@ -447,10 +611,10 @@
   function renderControls() {
     const result = currentResult();
     const reviewing = reviewAt != null;
-    const myTurn = !room.code || game.current === room.color;
+    const myTurn = room.code ? game.current === room.color : !localAiTurn();
     const waiting = roomWaiting();
     $('passBtn').disabled = reviewing || !!result || game.phase !== 'playing' || !myTurn || remoteBusy || waiting;
-    $('resignBtn').disabled = reviewing || !!result || (!room.color && !!room.code) || remoteBusy || waiting;
+    $('resignBtn').disabled = reviewing || !!result || (!room.color && !!room.code) || remoteBusy || waiting || localAiTurn();
     $('undoBtn').disabled = reviewing || !game.events.length || remoteBusy || waiting;
     $('newBtn').disabled = remoteBusy || waiting;
     $('createRoomBtn').disabled = remoteBusy || !!room.code;
@@ -461,8 +625,19 @@
       const active = Number(button.dataset.size) === game.size;
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', String(active));
-      button.disabled = !!room.code;
+      button.disabled = !!room.code || remoteBusy;
     });
+    document.querySelectorAll('#playerModeButtons .seg').forEach((button) => {
+      const active = button.dataset.mode === (room.code ? 'local' : localMode);
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+      button.disabled = !!room.code || remoteBusy || (button.dataset.mode === 'ai' && game.size !== 9);
+    });
+    $('opponentHelp').textContent = room.code
+      ? tr('Private friend room. Black and White play from separate devices; the beginner AI is off.', '私密好友房。黑白双方使用各自的设备对弈；入门 AI 已关闭。')
+      : (localMode === 'ai'
+        ? tr('You are Black. The learning-strength AI plays White and practices captures, atari defense, and safe shape — it is intentionally not a strong Go engine.', '你执黑棋。入门 AI 执白，会练习提子、解打吃与安全棋形；它刻意不是高水平围棋引擎。')
+        : tr('Black and White take turns on this device. No computer moves are scheduled in this mode.', '黑白双方在同一设备上轮流落子；此模式不会安排电脑落子。'));
     $('learnBtn').setAttribute('aria-pressed', String(learnMode));
   }
 
@@ -482,6 +657,8 @@
     } else if (room.code) {
       $('approvalLine').innerHTML = tr('Black', '黑棋') + ': ' + (accepted.black ? '<span class="yes">✓</span>' : '…') + ' · ' +
         tr('White', '白棋') + ': ' + (accepted.white ? '<span class="yes">✓</span>' : '…');
+    } else if (localAiActive()) {
+      $('approvalLine').textContent = tr('Check dead groups, then finish the score for this beginner practice game.', '请核对死棋，然后完成这局入门练习的计分。');
     } else {
       $('approvalLine').textContent = tr('Both players on this device should check the board before finishing.', '同设备上的双方请先共同核对棋盘。');
     }
@@ -543,6 +720,29 @@
     drawBoard();
   }
 
+  function stopPlacementRipple() {
+    placementRipple = null;
+    if (rippleFrame) cancelAnimationFrame(rippleFrame);
+    rippleFrame = 0;
+  }
+
+  function startPlacementRipple(row, col) {
+    if (reducedMotion.matches || reviewAt != null) return;
+    placementRipple = { row, col, at: performance.now(), duration: 760 };
+    if (!rippleFrame) rippleFrame = requestAnimationFrame(animatePlacementRipple);
+  }
+
+  function animatePlacementRipple(now) {
+    rippleFrame = 0;
+    if (!placementRipple || now - placementRipple.at >= placementRipple.duration) {
+      placementRipple = null;
+      drawBoard();
+      return;
+    }
+    drawBoard();
+    rippleFrame = requestAnimationFrame(animatePlacementRipple);
+  }
+
   function drawBoard() {
     if (!ctx || !canvasSize) return;
     const state = displayGame();
@@ -551,26 +751,49 @@
     const result = reviewAt == null ? currentResult() : null;
     const showTerritory = reviewAt == null && (state.phase === 'scoring' || (result && result.reason === 'score'));
     const score = showTerritory ? state.score(dead) : null;
-    const gradient = ctx.createLinearGradient(0, 0, canvasSize, canvasSize);
-    gradient.addColorStop(0, '#183c2c');
-    gradient.addColorStop(.52, '#153326');
-    gradient.addColorStop(1, '#10271d');
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = '#294347';
     ctx.fillRect(0, 0, canvasSize, canvasSize);
 
-    ctx.strokeStyle = '#56806a';
+    // A pixel-dithered slate board below a thin layer of water. Every mark is
+    // snapped to CSS pixels and deterministic, so animation stays crisp.
+    ctx.save();
+    const chip = Math.max(2, Math.round(cell * .055));
+    for (let i = 0; i < 132; i++) {
+      const x = Math.floor(((i * 83) % 101) / 101 * canvasSize / chip) * chip;
+      const y = Math.floor(((i * 47 + 19) % 103) / 103 * canvasSize / chip) * chip;
+      ctx.fillStyle = i % 4 ? 'rgba(166,198,187,.09)' : 'rgba(2,14,17,.19)';
+      ctx.fillRect(x, y, chip * (i % 5 === 0 ? 2 : 1), chip);
+    }
+    ctx.fillStyle = 'rgba(50,143,151,.1)';
+    for (let y = 0; y < canvasSize; y += chip * 8) {
+      const offset = ((y / chip) % 16) * chip;
+      for (let x = -offset; x < canvasSize; x += chip * 18) ctx.fillRect(x, y, chip * 7, chip * 2);
+    }
+    ctx.fillStyle = 'rgba(4,47,59,.12)';
+    ctx.fillRect(0, Math.floor(canvasSize * .72), canvasSize, Math.ceil(canvasSize * .28));
+    ctx.restore();
+
+    // Two hairlines make each grid line feel cut into the slab rather than
+    // printed on top: a dark groove with a submerged highlight just below it.
     ctx.lineWidth = Math.max(.75, cell * .035);
+    ctx.shadowColor = 'rgba(176,220,207,.22)';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = Math.max(.55, cell * .018);
     ctx.beginPath();
     for (let i = 0; i < state.size; i++) {
       const p = pad + i * cell;
       ctx.moveTo(pad, p); ctx.lineTo(canvasSize - pad, p);
       ctx.moveTo(p, pad); ctx.lineTo(p, canvasSize - pad);
     }
+    ctx.strokeStyle = 'rgba(4,18,19,.72)';
     ctx.stroke();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowOffsetY = 0;
 
-    ctx.fillStyle = '#8cb29d';
+    ctx.fillStyle = '#9abdb0';
     for (const [row, col] of starPoints(state.size)) {
-      ctx.beginPath(); ctx.arc(pad + col * cell, pad + row * cell, Math.max(2, cell * .09), 0, Math.PI * 2); ctx.fill();
+      const s = Math.max(3, Math.round(cell * .16));
+      ctx.fillRect(Math.round(pad + col * cell - s / 2), Math.round(pad + row * cell - s / 2), s, s);
     }
     drawCoordinates(state.size);
 
@@ -592,6 +815,9 @@
       drawStone(row, col, color, dead.has(point));
     }
 
+    drawWaterGlaze();
+    drawPlacementRipple();
+
     if (learnMode) drawAtariAndSelection(state, dead);
     drawLastMove(state);
     drawCursor(state);
@@ -600,7 +826,7 @@
   function drawCoordinates(size) {
     if (cell < 18) return;
     ctx.save();
-    ctx.fillStyle = '#7e9c8c';
+    ctx.fillStyle = '#a1bbb2';
     ctx.font = `${Math.max(8, Math.min(11, cell * .3))}px Consolas, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -615,18 +841,8 @@
     const radius = Math.max(4.2, cell * .45);
     ctx.save();
     if (isDead) ctx.globalAlpha = .36;
-    ctx.shadowColor = 'rgba(0,0,0,.55)';
-    ctx.shadowBlur = Math.max(2, cell * .12);
-    ctx.shadowOffsetY = Math.max(1, cell * .08);
-    const grad = ctx.createRadialGradient(x - radius * .32, y - radius * .38, radius * .08, x, y, radius);
-    if (color === BLACK) { grad.addColorStop(0, '#53615a'); grad.addColorStop(.3, '#202823'); grad.addColorStop(1, '#020403'); }
-    else { grad.addColorStop(0, '#ffffff'); grad.addColorStop(.38, '#f0eee4'); grad.addColorStop(1, '#bdbbb1'); }
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = color === BLACK ? 'rgba(210,235,221,.22)' : 'rgba(0,0,0,.25)';
-    ctx.lineWidth = Math.max(.6, cell * .025);
-    ctx.stroke();
+    if (color === BLACK) drawRiverPebble(ctx, x, y, radius, row * 31 + col * 17);
+    else drawIvoryShell(ctx, x, y, radius);
     if (isDead) {
       ctx.globalAlpha = .95;
       ctx.strokeStyle = '#ff745f';
@@ -635,6 +851,154 @@
       ctx.moveTo(x - radius * .48, y - radius * .48); ctx.lineTo(x + radius * .48, y + radius * .48);
       ctx.moveTo(x + radius * .48, y - radius * .48); ctx.lineTo(x - radius * .48, y + radius * .48);
       ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function pebblePath(g, x, y, radius, seed) {
+    // Three related silhouettes stop a group reading like stamped counters.
+    // They stay grid-snapped, but each has different flats and chipped edges.
+    const shapes = [
+      [[-.52,-1],[.22,-1],[.22,-.94],[.62,-.94],[.62,-.78],[.84,-.78],[.84,-.5],[1,-.5],[1,.24],[.92,.24],[.92,.58],[.7,.58],[.7,.82],[.28,.82],[.28,.96],[-.44,.96],[-.44,.9],[-.72,.9],[-.72,.72],[-.92,.72],[-.92,.4],[-1,.4],[-1,-.34],[-.9,-.34],[-.9,-.68],[-.72,-.68],[-.72,-.9],[-.52,-.9]],
+      [[-.26,-1],[.48,-1],[.48,-.9],[.72,-.9],[.72,-.72],[.92,-.72],[.92,-.34],[1,-.34],[1,.4],[.86,.4],[.86,.7],[.58,.7],[.58,.9],[.14,.9],[.14,1],[-.58,1],[-.58,.9],[-.82,.9],[-.82,.66],[-.96,.66],[-.96,.2],[-1,.2],[-1,-.5],[-.86,-.5],[-.86,-.76],[-.58,-.76],[-.58,-.94],[-.26,-.94]],
+      [[-.62,-.94],[-.06,-.94],[-.06,-1],[.54,-1],[.54,-.84],[.78,-.84],[.78,-.62],[.94,-.62],[.94,-.16],[1,-.16],[1,.5],[.82,.5],[.82,.74],[.48,.74],[.48,.92],[-.14,.92],[-.14,1],[-.68,1],[-.68,.86],[-.9,.86],[-.9,.58],[-1,.58],[-1,-.18],[-.94,-.18],[-.94,-.56],[-.78,-.56],[-.78,-.82],[-.62,-.82]],
+    ];
+    const pts = shapes[Math.abs(seed) % shapes.length];
+    g.beginPath();
+    pts.forEach((p, i) => { const px = Math.round(x + p[0] * radius), py = Math.round(y + p[1] * radius); if (!i) g.moveTo(px, py); else g.lineTo(px, py); });
+    g.closePath();
+  }
+
+  function drawRiverPebble(g, x, y, radius, seed) {
+    const px = Math.max(1, Math.round(radius * .12));
+    pebblePath(g, x, y + px, radius, seed);
+    g.fillStyle = 'rgba(1,5,5,.72)'; g.fill();
+    pebblePath(g, x, y, radius, seed);
+    g.fillStyle = '#101817'; g.fill();
+    g.strokeStyle = '#020605';
+    g.lineWidth = Math.max(1, Math.round(cell * .03)); g.stroke();
+    // Broad facets make this basalt rather than a glossy black Go counter.
+    g.fillStyle = '#465650';
+    g.beginPath();
+    g.moveTo(Math.round(x - radius * .62), Math.round(y - radius * .58));
+    g.lineTo(Math.round(x - radius * .18), Math.round(y - radius * .78));
+    g.lineTo(Math.round(x + radius * .42), Math.round(y - radius * .62));
+    g.lineTo(Math.round(x + radius * .12), Math.round(y - radius * .28));
+    g.lineTo(Math.round(x - radius * .5), Math.round(y - radius * .2));
+    g.closePath(); g.fill();
+    g.fillStyle = '#273631';
+    g.beginPath();
+    g.moveTo(Math.round(x + radius * .14), Math.round(y - radius * .22));
+    g.lineTo(Math.round(x + radius * .72), Math.round(y - radius * .36));
+    g.lineTo(Math.round(x + radius * .68), Math.round(y + radius * .4));
+    g.lineTo(Math.round(x + radius * .18), Math.round(y + radius * .62));
+    g.closePath(); g.fill();
+    g.fillStyle = '#728a82';
+    const glintX = seed % 2 ? -.5 : -.34;
+    g.fillRect(Math.round(x + radius * glintX), Math.round(y - radius * .56), px, px);
+    g.fillStyle = '#17231f';
+    g.fillRect(Math.round(x - radius * .58), Math.round(y + radius * .34), px * 2, px);
+  }
+
+  function shellPath(g, x, y, radius) {
+    // A scallop seen from above: a broad fluted crown narrowing to the hinge.
+    const pts = [
+      [-.2,.96],[.2,.96],[.2,.86],[.4,.86],[.4,.7],[.6,.7],[.6,.52],[.78,.52],[.78,.3],[.94,.3],[.94,.04],[1,.04],
+      [1,-.2],[.92,-.2],[.92,-.44],[.78,-.44],[.78,-.6],[.6,-.6],[.6,-.74],[.38,-.74],[.38,-.86],[.14,-.86],[.14,-.98],
+      [-.12,-.98],[-.12,-.9],[-.36,-.9],[-.36,-.8],[-.58,-.8],[-.58,-.66],[-.76,-.66],[-.76,-.5],[-.9,-.5],[-.9,-.28],
+      [-1,-.28],[-1,.02],[-.94,.02],[-.94,.3],[-.8,.3],[-.8,.5],[-.62,.5],[-.62,.68],[-.42,.68],[-.42,.84],[-.2,.84],
+    ];
+    g.beginPath();
+    pts.forEach((p, i) => { const px = Math.round(x + p[0] * radius), py = Math.round(y + p[1] * radius); if (!i) g.moveTo(px, py); else g.lineTo(px, py); });
+    g.closePath();
+  }
+
+  function pixelLine(g, x1, y1, x2, y2, size) {
+    const steps = Math.max(1, Math.ceil(Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)) / size));
+    for (let i = 0; i <= steps; i++) {
+      const u = i / steps;
+      g.fillRect(Math.round((x1 + (x2 - x1) * u) / size) * size, Math.round((y1 + (y2 - y1) * u) / size) * size, size, size);
+    }
+  }
+
+  function drawIvoryShell(g, x, y, radius) {
+    const p = Math.max(1, Math.round(radius * .09));
+    shellPath(g, x, y + p, radius);
+    g.fillStyle = 'rgba(48,33,20,.55)'; g.fill();
+    shellPath(g, x, y, radius);
+    g.fillStyle = '#eadfc6'; g.fill();
+    g.strokeStyle = '#6f5a40';
+    g.lineWidth = Math.max(1, Math.round(cell * .03)); g.stroke();
+    // Radial ribs all meet at the hinge; this is the cue that makes the pale
+    // side read immediately as shell rather than white stone.
+    const hingeY = y + radius * .69;
+    g.fillStyle = '#a58e68';
+    [[-.78,-.12],[-.58,-.55],[-.3,-.79],[0,-.9],[.3,-.79],[.58,-.55],[.78,-.12]].forEach((end) => {
+      pixelLine(g, x, hingeY, x + radius * end[0], y + radius * end[1], p);
+    });
+    g.fillStyle = '#fff7df';
+    pixelLine(g, x - p, hingeY - p, x - radius * .2, y - radius * .78, p);
+    g.fillStyle = '#c8b38e';
+    g.fillRect(Math.round(x - radius * .28), Math.round(y + radius * .66), Math.max(p * 2, Math.round(radius * .56)), p * 2);
+    g.fillStyle = '#f4ead1';
+    g.fillRect(Math.round(x - radius * .13), Math.round(y + radius * .72), Math.max(p, Math.round(radius * .26)), p);
+    // Two quiet mother-of-pearl pixels keep it organic without becoming glossy.
+    g.fillStyle = '#efd8c7';
+    g.fillRect(Math.round(x + radius * .45), Math.round(y - radius * .32), p * 2, p);
+    g.fillStyle = '#c8ddd4';
+    g.fillRect(Math.round(x - radius * .58), Math.round(y - radius * .25), p, p);
+  }
+
+  function drawWaterGlaze() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(127,205,203,.035)';
+    ctx.fillRect(0, 0, canvasSize, Math.round(canvasSize * .48));
+    ctx.fillStyle = 'rgba(3,59,72,.055)';
+    ctx.fillRect(0, Math.round(canvasSize * .66), canvasSize, Math.ceil(canvasSize * .34));
+    ctx.strokeStyle = 'rgba(196,238,233,.09)';
+    ctx.lineWidth = Math.max(1, Math.round(cell * .025));
+    for (let band = 0; band < 3; band++) {
+      const y = Math.round(canvasSize * (.2 + band * .29));
+      ctx.beginPath();
+      ctx.moveTo(-cell, y);
+      const step = Math.max(10, Math.round(cell * .72));
+      for (let x = -cell, i = 0; x <= canvasSize + cell; x += step, i++) {
+        ctx.lineTo(Math.round(x), y + ((i + band) % 4 < 2 ? 0 : Math.max(1, Math.round(cell * .07))));
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function strokeSegmentedOctagon(g, x, y, radius) {
+    const pts = [];
+    for (let i = 0; i < 8; i++) {
+      const a = -Math.PI / 8 + i * Math.PI / 4;
+      pts.push([Math.round(x + Math.cos(a) * radius), Math.round(y + Math.sin(a) * radius)]);
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = pts[i], b = pts[(i + 1) % 8];
+      g.beginPath();
+      g.moveTo(Math.round(a[0] * .86 + b[0] * .14), Math.round(a[1] * .86 + b[1] * .14));
+      g.lineTo(Math.round(a[0] * .14 + b[0] * .86), Math.round(a[1] * .14 + b[1] * .86));
+      g.stroke();
+    }
+  }
+
+  function drawPlacementRipple() {
+    if (!placementRipple || reducedMotion.matches || reviewAt != null) return;
+    const elapsed = performance.now() - placementRipple.at;
+    const u = Math.max(0, Math.min(1, elapsed / placementRipple.duration));
+    const x = pad + placementRipple.col * cell;
+    const y = pad + placementRipple.row * cell;
+    ctx.save();
+    ctx.lineWidth = Math.max(.8, cell * .025) * (1 - u * .3);
+    for (let ring = 0; ring < 2; ring++) {
+      const ru = Math.max(0, Math.min(1, u * 1.25 - ring * .22));
+      if (!ru) continue;
+      ctx.globalAlpha = (1 - ru) * (ring ? .26 : .42);
+      ctx.strokeStyle = ring ? '#89ced1' : '#d4f0e9';
+      strokeSegmentedOctagon(ctx, x, y, cell * (.48 + ru * 1.8));
     }
     ctx.restore();
   }
@@ -650,7 +1014,7 @@
         ctx.save(); ctx.strokeStyle = '#ff7867'; ctx.setLineDash([Math.max(2, cell * .12), Math.max(2, cell * .1)]); ctx.lineWidth = Math.max(1, cell * .045);
         group.stones.forEach((stone) => {
           const [r, c] = state.rowCol(stone);
-          ctx.beginPath(); ctx.arc(pad + c * cell, pad + r * cell, cell * .49, 0, Math.PI * 2); ctx.stroke();
+          strokeSegmentedOctagon(ctx, pad + c * cell, pad + r * cell, cell * .51);
         });
         ctx.restore();
       }
@@ -662,12 +1026,13 @@
     ctx.strokeStyle = '#45f18b'; ctx.lineWidth = Math.max(1.2, cell * .055);
     selected.stones.forEach((stone) => {
       const [r, c] = state.rowCol(stone);
-      ctx.beginPath(); ctx.arc(pad + c * cell, pad + r * cell, cell * .51, 0, Math.PI * 2); ctx.stroke();
+      strokeSegmentedOctagon(ctx, pad + c * cell, pad + r * cell, cell * .54);
     });
     ctx.fillStyle = '#59f298';
     selected.liberties.forEach((liberty) => {
       const [r, c] = state.rowCol(liberty);
-      ctx.beginPath(); ctx.arc(pad + c * cell, pad + r * cell, Math.max(2.3, cell * .105), 0, Math.PI * 2); ctx.fill();
+      const s = Math.max(4, Math.round(cell * .2));
+      ctx.fillRect(Math.round(pad + c * cell - s / 2), Math.round(pad + r * cell - s / 2), s, s);
     });
     ctx.restore();
   }
@@ -678,12 +1043,13 @@
     const x = pad + last.c * cell, y = pad + last.r * cell;
     ctx.save();
     ctx.fillStyle = last.by === BLACK ? '#e9f2ec' : '#14221a';
-    ctx.beginPath(); ctx.arc(x, y, Math.max(1.7, cell * .075), 0, Math.PI * 2); ctx.fill();
+    const s = Math.max(3, Math.round(cell * .14));
+    ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s);
     ctx.restore();
   }
 
   function drawCursor(state) {
-    if (reviewAt != null || currentResult()) return;
+    if (reviewAt != null || currentResult() || localAiTurn()) return;
     let target = aimCell || hoverCell;
     if (document.activeElement === $('goBoard')) target = keyboardCell;
     if (!target || !state.inBounds(target.r, target.c)) return;
@@ -692,15 +1058,15 @@
       const preview = state.preview(target.r, target.c);
       ctx.save();
       ctx.globalAlpha = preview.ok ? .45 : .22;
-      ctx.fillStyle = state.current === BLACK ? '#050706' : '#f2efe3';
-      ctx.beginPath(); ctx.arc(x, y, cell * .42, 0, Math.PI * 2); ctx.fill();
+      if (state.current === BLACK) drawRiverPebble(ctx, x, y, cell * .42, target.r * 31 + target.c * 17);
+      else drawIvoryShell(ctx, x, y, cell * .42);
       ctx.globalAlpha = .9;
       ctx.strokeStyle = preview.ok ? '#45f18b' : '#ff6b59';
       ctx.lineWidth = Math.max(1, cell * .045);
-      ctx.stroke();
+      strokeSegmentedOctagon(ctx, x, y, cell * .48);
       if (aimCell) {
         ctx.strokeStyle = '#f1b84b'; ctx.setLineDash([3, 3]);
-        ctx.beginPath(); ctx.arc(x, y, cell * .55, 0, Math.PI * 2); ctx.stroke();
+        strokeSegmentedOctagon(ctx, x, y, cell * .58);
       }
       ctx.restore();
     }
@@ -831,6 +1197,7 @@
 
   async function createRoom() {
     if (remoteBusy) return;
+    cancelAiTurn();
     remoteBusy = true; renderControls();
     $('roomLine').classList.add('show');
     setRoomStatus(tr('Creating a private room…', '正在创建私人房间…'));
@@ -857,7 +1224,7 @@
       hideOverlay();
       setRoomStatus(networkMessage(error), 'err');
     } finally {
-      remoteBusy = false; render();
+      remoteBusy = false; render(); scheduleAiTurn();
     }
   }
 
@@ -879,6 +1246,7 @@
       $('roomLine').classList.add('show');
       return;
     }
+    cancelAiTurn();
     remoteBusy = true; renderControls();
     $('roomLine').classList.add('show');
     setRoomStatus(tr('Looking up room…', '正在查找房间…'));
@@ -904,11 +1272,12 @@
       hideOverlay();
       setRoomStatus(networkMessage(error), 'err');
     } finally {
-      remoteBusy = false; render();
+      remoteBusy = false; render(); scheduleAiTurn();
     }
   }
 
   function connectRoom(code, ref) {
+    cancelAiTurn();
     leaveRoom(false);
     room.code = code;
     room.ref = ref;
@@ -925,6 +1294,7 @@
   }
 
   function onRoomValue(value) {
+    cancelAiTurn();
     if (!validRoom(value)) {
       setRoomStatus(tr('This room is no longer available.', '该房间已不可用。'), 'err');
       hideOverlay();
@@ -967,7 +1337,11 @@
       setRoomStatus(tr(`Connected · you play ${colorName(room.color)}`, `已连接 · 你执${room.color === BLACK ? '黑' : '白'}`), 'ok');
       attachPresence();
     }
-    if (game.events.length > previousCount && reviewAt == null) describeRemoteLastMove();
+    if (game.events.length > previousCount && reviewAt == null) {
+      describeRemoteLastMove();
+      const lastEvent = game.events[game.events.length - 1];
+      if (lastEvent && lastEvent.t === 'play') startPlacementRipple(lastEvent.r, lastEvent.c);
+    }
     handleRemoteRequest(value.request);
     handleReaction(value.reaction);
     render();
@@ -1001,6 +1375,7 @@
   }
 
   function leaveRoom(startLocal) {
+    cancelAiTurn();
     if (room.ref && room.listener) room.ref.off('value', room.listener);
     if (room.presence) {
       try { room.presence.onDisconnect().cancel(); room.presence.remove(); } catch (error) {}
@@ -1223,10 +1598,18 @@
   }
 
   function startReview(value) {
+    cancelAiTurn();
+    stopPlacementRipple();
     const count = game.events.length;
     reviewAt = Math.max(0, Math.min(count, Number(value)));
     selectedIndex = null;
     render();
+  }
+
+  function returnToLive() {
+    reviewAt = null;
+    render();
+    scheduleAiTurn();
   }
 
   function bindEvents() {
@@ -1246,6 +1629,7 @@
     $('shareRoomBtn').addEventListener('click', shareInvite);
     $('roomCode').addEventListener('click', copyInvite);
     document.querySelectorAll('#sizeButtons .seg').forEach((button) => button.addEventListener('click', () => setBoardSize(button.dataset.size)));
+    document.querySelectorAll('#playerModeButtons .seg').forEach((button) => button.addEventListener('click', () => setLocalMode(button.dataset.mode)));
     document.querySelectorAll('#reactions .reaction').forEach((button) => button.addEventListener('click', () => sendReaction(button.textContent)));
     $('promptYes').addEventListener('click', () => closePrompt('yes'));
     $('promptNo').addEventListener('click', () => closePrompt('no'));
@@ -1257,9 +1641,10 @@
     $('reviewRange').addEventListener('input', (event) => startReview(event.target.value));
     $('reviewStart').addEventListener('click', () => startReview(0));
     $('reviewPrev').addEventListener('click', () => startReview(reviewAt == null ? game.events.length - 1 : reviewAt - 1));
-    $('reviewLive').addEventListener('click', () => { reviewAt = null; render(); });
+    $('reviewLive').addEventListener('click', returnToLive);
     window.addEventListener('resize', resizeCanvas, { passive: true });
     window.addEventListener('beforeunload', () => {
+      cancelAiTurn();
       if (room.ref && room.listener) room.ref.off('value', room.listener);
     });
   }

@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Qi · 棋 // Game Life</title>
-  <meta name="description" content="Qi is Game Life's board-game room: learn Go or play Gomoku with friends, locally or online.">
+  <meta name="description" content="Qi is Game Life's board-game room: practise 9×9 Go against a beginner AI, play two-player locally, or invite a friend to a private online room. Includes Gomoku.">
   <meta name="theme-color" content="#07100c">
   <meta property="og:title" content="Qi · 棋 // Game Life">
-  <meta property="og:description" content="One quiet table for board games. Learn Go, play Gomoku, and invite a friend.">
+  <meta property="og:description" content="Practise Go against a beginner AI, share a local board, or invite a friend to a private room. Play Gomoku too.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://lifegameproject.com/game/qi.html">
   <meta property="og:image" content="https://lifegameproject.com/game/brand-og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Qi · 棋 // Game Life">
-  <meta name="twitter:description" content="Learn Go, play Gomoku, and share a board with a friend.">
+  <meta name="twitter:description" content="Beginner Go AI, local two-player games, private friend rooms, and Gomoku — all in Qi.">
   <meta name="twitter:image" content="https://lifegameproject.com/game/brand-og.png">
   <link rel="icon" type="image/png" href="/game/guru-favicon.png?v=2">
   <link rel="apple-touch-icon" href="/game/guru-icon-180.png?v=2">
@@ -101,8 +101,8 @@
     }
     h1 {
       display: flex;
-      align-items: baseline;
-      gap: 13px;
+      align-items: center;
+      gap: 11px;
       margin: 0;
       color: #f3f8f5;
       font-size: clamp(2.25rem, 8vw, 4.65rem);
@@ -110,12 +110,28 @@
       line-height: .95;
       letter-spacing: -.08em;
     }
-    h1 span {
+    h1 .wordmark-dot {
       color: #789688;
-      font-family: "Noto Serif SC", "Songti SC", STSong, serif;
-      font-size: .62em;
+      font-size: .54em;
       font-weight: 400;
       letter-spacing: 0;
+    }
+    .brush-mark {
+      width: clamp(58px, 9vw, 92px);
+      height: auto;
+      overflow: visible;
+      object-fit: contain;
+      filter: invert(94%) sepia(13%) saturate(244%) hue-rotate(93deg) brightness(99%) contrast(91%) drop-shadow(0 0 12px rgba(81, 230, 142, .16));
+    }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
     .lede {
       width: min(620px, 100%);
@@ -206,24 +222,66 @@
       aspect-ratio: 16 / 8.8;
       overflow: hidden;
       border-bottom: 1px solid var(--line);
-      background: #0b1812;
+      background: #08242a;
+      cursor: crosshair;
+      isolation: isolate;
+    }
+    .board-art::before {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      content: "";
+      pointer-events: none;
+      opacity: .34;
+      background:
+        linear-gradient(135deg, transparent 0 45%, rgba(177, 237, 225, .16) 46% 48%, transparent 49%) 0 0 / 32px 24px,
+        linear-gradient(45deg, transparent 0 46%, rgba(123, 211, 202, .11) 47% 49%, transparent 50%) 8px 4px / 40px 32px;
+      mix-blend-mode: screen;
+      transform: translate3d(-8px, 0, 0);
+      transition: opacity .25s ease;
     }
     .board-art::after {
       position: absolute;
       inset: 0;
+      z-index: 2;
       content: "";
       pointer-events: none;
       background:
-        linear-gradient(180deg, transparent 60%, rgba(3, 8, 5, .5)),
-        repeating-linear-gradient(0deg, rgba(1, 5, 2, .12) 0 1px, transparent 1px 3px);
+        repeating-linear-gradient(0deg, rgba(1, 11, 13, .12) 0 1px, transparent 1px 4px),
+        linear-gradient(180deg, rgba(99, 197, 192, .05) 0 50%, rgba(1, 13, 15, .44) 100%);
     }
-    .board-art svg { display: block; width: 100%; height: 100%; }
+    .board-art svg { position: relative; z-index: 0; display: block; width: 100%; height: 100%; shape-rendering: crispEdges; image-rendering: pixelated; }
+    .game-link:hover .board-art::before,
+    .game-link:focus-visible .board-art::before { opacity: .72; animation: caustic-drift 4.8s steps(8, end) infinite alternate; }
+
+    .water-ripple {
+      position: absolute;
+      z-index: 3;
+      width: 14px;
+      height: 14px;
+      margin: -7px 0 0 -7px;
+      border: 2px solid rgba(193, 248, 235, .74);
+      border-radius: 0;
+      clip-path: polygon(29% 0, 71% 0, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0 71%, 0 29%);
+      pointer-events: none;
+      opacity: 0;
+      animation: water-ring 1.15s steps(8, end) forwards;
+    }
+    .water-ripple.strong { animation-duration: 1.45s; border-width: 2px; }
+    @keyframes water-ring {
+      0% { opacity: .72; transform: scale(.25); }
+      55% { opacity: .36; }
+      100% { opacity: 0; transform: scale(8, 4); }
+    }
+    @keyframes caustic-drift {
+      to { transform: translate3d(8px, 4px, 0); }
+    }
 
     .art-label {
       position: absolute;
       top: 12px;
       left: 13px;
-      z-index: 1;
+      z-index: 4;
       padding: 4px 6px;
       border: 1px solid rgba(220, 235, 226, .2);
       background: rgba(4, 10, 6, .78);
@@ -235,7 +293,7 @@
       position: absolute;
       right: 13px;
       bottom: 11px;
-      z-index: 1;
+      z-index: 4;
       color: var(--accent);
       font-size: .58rem;
       letter-spacing: 1px;
@@ -323,6 +381,7 @@
       html { scroll-behavior: auto; }
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
       .game-link:hover, .game-link:focus-visible { transform: none; }
+      .water-ripple { display: none; }
     }
   </style>
 </head>
@@ -333,7 +392,11 @@
     <header class="masthead">
       <div>
         <div class="eyebrow" data-en="Game Life · board-game room" data-zh="游戏人生 · 棋类游戏室">Game Life · board-game room</div>
-        <h1>Qi <span>· 棋</span></h1>
+        <h1>
+          <span>Qi</span>
+          <span class="wordmark-dot" aria-hidden="true">·</span>
+          <img class="brush-mark" src="/game/qi-calligraphy.png" alt="棋 — Qi board-game collection" width="512" height="512">
+        </h1>
         <p class="lede" data-en="One quiet table for games of shape, territory, and patience. Learn the rules, read the board, then invite a friend when you are ready." data-zh="一张安静的棋桌，容纳形势、地盘与耐心的游戏。先学规则、读懂棋盘，准备好后再邀请好友对弈。">One quiet table for games of shape, territory, and patience. Learn the rules, read the board, then invite a friend when you are ready.</p>
       </div>
       <div class="head-actions">
@@ -354,48 +417,60 @@
             <div class="board-art" aria-hidden="true">
               <svg viewBox="0 0 520 286" role="presentation" focusable="false">
                 <defs>
-                  <linearGradient id="goBoardBg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#244c38"/>
-                    <stop offset="1" stop-color="#10261b"/>
-                  </linearGradient>
-                  <radialGradient id="goBlack" cx="34%" cy="28%" r="70%">
-                    <stop offset="0" stop-color="#55625b"/>
-                    <stop offset=".35" stop-color="#1d2521"/>
-                    <stop offset="1" stop-color="#020403"/>
-                  </radialGradient>
-                  <radialGradient id="goWhite" cx="32%" cy="24%" r="72%">
-                    <stop offset="0" stop-color="#fffef8"/>
-                    <stop offset=".55" stop-color="#e9e6da"/>
-                    <stop offset="1" stop-color="#aaa99f"/>
-                  </radialGradient>
-                  <filter id="stoneShadow" x="-40%" y="-40%" width="180%" height="190%">
-                    <feDropShadow dx="0" dy="3" stdDeviation="2.4" flood-color="#000" flood-opacity=".52"/>
-                  </filter>
+                  <pattern id="goWater" width="12" height="12" patternUnits="userSpaceOnUse">
+                    <rect width="12" height="12" fill="#0b3036"/><path d="M0 0h4v4H0zM8 8h4v4H8z" fill="#124249"/><path d="M4 8h4v4H4z" fill="#08272d"/>
+                  </pattern>
+                  <pattern id="goSlab" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <rect width="10" height="10" fill="#5b716c"/><path d="M0 0h4v2H0zM7 4h3v3H7zM2 8h4v2H2z" fill="#70837d"/><path d="M5 1h3v2H5zM0 5h3v2H0z" fill="#455d59"/>
+                  </pattern>
+                  <symbol id="goPebble" viewBox="-20 -20 40 40">
+                    <path d="M-11-18H4V-16H11V-13H15V-8H18V5H16V12H10V16H3V18H-10V16H-15V11H-18V-4H-16V-12H-11Z" transform="translate(0 2)" fill="#020706" opacity=".72"/>
+                    <path d="M-11-18H4V-16H11V-13H15V-8H18V5H16V12H10V16H3V18H-10V16H-15V11H-18V-4H-16V-12H-11Z" fill="#101917" stroke="#050908" stroke-width="2"/>
+                    <path d="M-12-12L-3-16 9-13 3-6-10-5Z" fill="#52645e"/><path d="M4-5L14-8 15 7 6 11Z" fill="#283832"/><path d="M-10-11h3v3h-3z" fill="#829b92"/><path d="M-13 8h7v3h-7z" fill="#17241f"/>
+                  </symbol>
+                  <symbol id="goShell" viewBox="-20 -20 40 40">
+                    <path d="M-4 18H4V16H8V13H12V9H15V4H18V-5H16V-10H12V-13H7V-16H3V-18H-3V-16H-8V-13H-12V-10H-15V-5H-18V4H-15V9H-12V13H-8V16H-4Z" transform="translate(0 2)" fill="#4b3927" opacity=".55"/>
+                    <path d="M-4 18H4V16H8V13H12V9H15V4H18V-5H16V-10H12V-13H7V-16H3V-18H-3V-16H-8V-13H-12V-10H-15V-5H-18V4H-15V9H-12V13H-8V16H-4Z" fill="#eadfc6" stroke="#6f5a40" stroke-width="2"/>
+                    <path d="M0 14L-15-3M0 14L-11-11M0 14L-5-16M0 14L5-16M0 14L11-11M0 14L15-3" fill="none" stroke="#a58e68" stroke-width="2" stroke-linecap="square"/>
+                    <path d="M-5 14H5V17H-5Z" fill="#b59c74"/><path d="M-12-6h4v3h-4z" fill="#fff6df"/><path d="M9-5h4v3H9z" fill="#e7cbbb"/><path d="M-13 1h3v3h-3z" fill="#bfd7cf"/>
+                  </symbol>
                 </defs>
-                <rect width="520" height="286" fill="url(#goBoardBg)"/>
-                <g stroke="#70987f" stroke-width="1.4" opacity=".72">
+                <rect width="520" height="286" fill="url(#goWater)"/>
+                <g opacity=".22" fill="none" stroke="#82c8c0" stroke-width="2">
+                  <path d="M-20 52H24V44H69V39H112V44H157V51H210V47H258V41H309V45H355V51H410V47H460V41H540"/>
+                  <path d="M-15 240H39V232H94V226H148V232H205V239H263V233H320V227H374V233H431V239H485V232H537"/>
+                </g>
+                <path d="M75 18H445V24H453V262H445V268H75V262H67V24H75Z" fill="#203b39" transform="translate(0 7)" opacity=".8"/>
+                <path d="M75 18H445V24H453V262H445V268H75V262H67V24H75Z" fill="url(#goSlab)" stroke="#8da39c" stroke-width="2"/>
+                <path d="M79 29H145V25H204V28H273V24H335V27H441" fill="none" stroke="#a9b9b3" stroke-width="2" opacity=".28"/>
+                <g stroke="#a8bbb4" stroke-width="3" opacity=".17" transform="translate(0 1.5)">
                   <path d="M94 29V257M135 29V257M176 29V257M217 29V257M258 29V257M299 29V257M340 29V257M381 29V257M422 29V257"/>
                   <path d="M94 29H422M94 57.5H422M94 86H422M94 114.5H422M94 143H422M94 171.5H422M94 200H422M94 228.5H422M94 257H422"/>
                 </g>
-                <g fill="#9fc5ae"><circle cx="176" cy="86" r="2.8"/><circle cx="340" cy="86" r="2.8"/><circle cx="258" cy="143" r="2.8"/><circle cx="176" cy="200" r="2.8"/><circle cx="340" cy="200" r="2.8"/></g>
-                <g filter="url(#stoneShadow)">
-                  <g fill="url(#goBlack)"><circle cx="176" cy="86" r="17"/><circle cx="217" cy="86" r="17"/><circle cx="135" cy="114.5" r="17"/><circle cx="135" cy="143" r="17"/><circle cx="176" cy="171.5" r="17"/><circle cx="340" cy="200" r="17"/></g>
-                  <g fill="url(#goWhite)"><circle cx="176" cy="114.5" r="17"/><circle cx="217" cy="114.5" r="17"/><circle cx="258" cy="114.5" r="17"/><circle cx="217" cy="143" r="17"/><circle cx="258" cy="143" r="17"/><circle cx="299" cy="171.5" r="17"/></g>
+                <g stroke="#183e3d" stroke-width="1.7" opacity=".86">
+                  <path d="M94 29V257M135 29V257M176 29V257M217 29V257M258 29V257M299 29V257M340 29V257M381 29V257M422 29V257"/>
+                  <path d="M94 29H422M94 57.5H422M94 86H422M94 114.5H422M94 143H422M94 171.5H422M94 200H422M94 228.5H422M94 257H422"/>
                 </g>
-                <circle cx="299" cy="143" r="7" fill="#51e68e" opacity=".2"/>
+                <g fill="#284f4b" opacity=".9"><circle cx="176" cy="86" r="3"/><circle cx="340" cy="86" r="3"/><circle cx="258" cy="143" r="3"/><circle cx="176" cy="200" r="3"/><circle cx="340" cy="200" r="3"/></g>
+                <g>
+                  <g><use href="#goPebble" x="156" y="66" width="40" height="40"/><use href="#goPebble" x="197" y="66" width="40" height="40"/><use href="#goPebble" x="115" y="94.5" width="40" height="40"/><use href="#goPebble" x="115" y="123" width="40" height="40"/><use href="#goPebble" x="156" y="151.5" width="40" height="40"/><use href="#goPebble" x="320" y="180" width="40" height="40"/></g>
+                  <g><use href="#goShell" x="156" y="94.5" width="40" height="40"/><use href="#goShell" x="197" y="94.5" width="40" height="40"/><use href="#goShell" x="238" y="94.5" width="40" height="40"/><use href="#goShell" x="197" y="123" width="40" height="40"/><use href="#goShell" x="238" y="123" width="40" height="40"/><use href="#goShell" x="279" y="151.5" width="40" height="40"/></g>
+                </g>
+                <path d="M287 139H291V135H307V139H311V147H307V151H291V147H287Z" fill="none" stroke="#9af3d6" stroke-width="2" opacity=".58"/>
                 <circle cx="299" cy="143" r="3" fill="#51e68e"/>
+                <path d="M10 184H55V177H105V169H156V176H207V184H258V178H309V170H360V176H411V184H462V177H519" fill="none" stroke="#b8f5e9" stroke-width="2" opacity=".2"/>
               </svg>
               <span class="art-label">9×9 · TEACHING BOARD</span>
-              <span class="art-status">1 LIBERTY · ATARI</span>
+              <span class="art-status" data-en="BEGINNER AI · READY" data-zh="入门 AI · 就绪">BEGINNER AI · READY</span>
             </div>
             <div class="card-body">
               <div class="card-kicker" data-en="01 / territory" data-zh="01 / 地盘">01 / territory</div>
               <h2 class="card-title" id="goTitle">Go <span>围棋</span></h2>
-              <p class="card-copy" data-en="Surround territory and keep your groups alive. Start on a friendly 9×9 board with visible liberties and coach notes, then move up to 13×13 or 19×19." data-zh="围住地盘并让棋群保持有气。从带有气数提示和教学说明的 9×9 棋盘开始，再进阶至 13×13 或 19×19。">Surround territory and keep your groups alive. Start on a friendly 9×9 board with visible liberties and coach notes, then move up to 13×13 or 19×19.</p>
+              <p class="card-copy" data-en="Start on a teaching 9×9 board with visible liberties and coach notes, then practise against a beginner AI. You can also share one device or open a private friend room; 13×13 and 19×19 are available for two-player games." data-zh="从带有气数提示与教学说明的 9×9 棋盘开始，并与入门级 AI 练习。也可同机双人对弈或创建私密好友房；13×13 与 19×19 棋盘可用于双人对局。">Start on a teaching 9×9 board with visible liberties and coach notes, then practise against a beginner AI. You can also share one device or open a private friend room; 13×13 and 19×19 are available for two-player games.</p>
               <div class="tags">
-                <span class="tag primary" data-en="learn as you play" data-zh="边下边学">learn as you play</span>
-                <span class="tag" data-en="local + online" data-zh="本地 + 联机">local + online</span>
-                <span class="tag" data-en="1–2 players" data-zh="1–2 人">1–2 players</span>
+                <span class="tag primary" data-en="beginner AI" data-zh="入门 AI">beginner AI</span>
+                <span class="tag" data-en="local 2-player" data-zh="同机双人">local 2-player</span>
+                <span class="tag" data-en="private friend rooms" data-zh="私密好友房">private friend rooms</span>
               </div>
               <div class="card-foot">
                 <span data-en="groups · captures · area scoring" data-zh="棋群 · 提子 · 面积计分">groups · captures · area scoring</span>
@@ -410,36 +485,46 @@
             <div class="board-art" aria-hidden="true">
               <svg viewBox="0 0 520 286" role="presentation" focusable="false">
                 <defs>
-                  <linearGradient id="gomokuBoardBg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#3d3323"/>
-                    <stop offset=".55" stop-color="#251f17"/>
-                    <stop offset="1" stop-color="#11130f"/>
-                  </linearGradient>
-                  <radialGradient id="gomokuBlack" cx="33%" cy="27%" r="72%">
-                    <stop offset="0" stop-color="#5b5a55"/>
-                    <stop offset=".32" stop-color="#242522"/>
-                    <stop offset="1" stop-color="#030403"/>
-                  </radialGradient>
-                  <radialGradient id="gomokuWhite" cx="31%" cy="24%" r="74%">
-                    <stop offset="0" stop-color="#fffdf5"/>
-                    <stop offset=".58" stop-color="#ddd8ca"/>
-                    <stop offset="1" stop-color="#969286"/>
-                  </radialGradient>
-                  <filter id="gomokuShadow" x="-40%" y="-40%" width="180%" height="190%">
-                    <feDropShadow dx="0" dy="3" stdDeviation="2.4" flood-color="#000" flood-opacity=".58"/>
-                  </filter>
+                  <pattern id="gomokuWater" width="12" height="12" patternUnits="userSpaceOnUse">
+                    <rect width="12" height="12" fill="#0b2c33"/><path d="M0 0h4v4H0zM8 8h4v4H8z" fill="#153f46"/><path d="M4 8h4v4H4z" fill="#07242a"/>
+                  </pattern>
+                  <pattern id="gomokuSlab" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <rect width="10" height="10" fill="#646b65"/><path d="M0 0h4v2H0zM7 4h3v3H7zM2 8h4v2H2z" fill="#797e76"/><path d="M5 1h3v2H5zM0 5h3v2H0z" fill="#4c5854"/>
+                  </pattern>
+                  <symbol id="gomokuPebble" viewBox="-13 -13 26 26">
+                    <path d="M-7-12H3V-11H7V-9H10V-5H12V4H10V8H7V11H2V12H-7V11H-10V7H-12V-3H-11V-8H-7Z" transform="translate(0 1.5)" fill="#020706" opacity=".72"/>
+                    <path d="M-7-12H3V-11H7V-9H10V-5H12V4H10V8H7V11H2V12H-7V11H-10V7H-12V-3H-11V-8H-7Z" fill="#101917" stroke="#050908" stroke-width="1.4"/>
+                    <path d="M-8-8L-2-11 6-9 2-4-7-3Z" fill="#52645e"/><path d="M3-3L9-5 10 5 4 7Z" fill="#283832"/><path d="M-7-7h2v2h-2z" fill="#829b92"/>
+                  </symbol>
+                  <symbol id="gomokuShell" viewBox="-13 -13 26 26">
+                    <path d="M-3 12H3V10H6V8H9V5H11V2H12V-4H10V-7H7V-9H4V-11H2V-12H-2V-11H-5V-9H-8V-7H-10V-4H-12V2H-11V5H-9V8H-6V10H-3Z" transform="translate(0 1.5)" fill="#4b3927" opacity=".55"/>
+                    <path d="M-3 12H3V10H6V8H9V5H11V2H12V-4H10V-7H7V-9H4V-11H2V-12H-2V-11H-5V-9H-8V-7H-10V-4H-12V2H-11V5H-9V8H-6V10H-3Z" fill="#eadfc6" stroke="#6f5a40" stroke-width="1.3"/>
+                    <path d="M0 9L-10-2M0 9L-7-7M0 9L-3-10M0 9L3-10M0 9L7-7M0 9L10-2" fill="none" stroke="#a58e68" stroke-width="1.25" stroke-linecap="square"/>
+                    <path d="M-3 9H3V11H-3Z" fill="#b59c74"/><path d="M-8-4h3v2h-3z" fill="#fff6df"/><path d="M6-3h3v2H6z" fill="#e7cbbb"/>
+                  </symbol>
                 </defs>
-                <rect width="520" height="286" fill="url(#gomokuBoardBg)"/>
-                <g stroke="#887658" stroke-width="1" opacity=".6">
+                <rect width="520" height="286" fill="url(#gomokuWater)"/>
+                <g opacity=".2" fill="none" stroke="#8dcfc5" stroke-width="2">
+                  <path d="M-24 49H28V42H76V36H127V42H178V49H231V44H282V38H335V43H387V49H438V44H489V38H544"/>
+                  <path d="M-12 245H42V238H96V231H151V237H207V244H263V238H319V231H375V237H431V244H486V237H538"/>
+                </g>
+                <path d="M75 17H445V23H453V263H445V269H75V263H67V23H75Z" fill="#203a39" transform="translate(0 7)" opacity=".82"/>
+                <path d="M75 17H445V23H453V263H445V269H75V263H67V23H75Z" fill="url(#gomokuSlab)" stroke="#969e96" stroke-width="2"/>
+                <g stroke="#b4bbb1" stroke-width="2.3" opacity=".14" transform="translate(0 1.2)">
                   <path d="M88 23V263M112 23V263M136 23V263M160 23V263M184 23V263M208 23V263M232 23V263M256 23V263M280 23V263M304 23V263M328 23V263M352 23V263M376 23V263M400 23V263M424 23V263"/>
                   <path d="M88 23H424M88 40.1H424M88 57.3H424M88 74.4H424M88 91.6H424M88 108.7H424M88 125.9H424M88 143H424M88 160.1H424M88 177.3H424M88 194.4H424M88 211.6H424M88 228.7H424M88 245.9H424M88 263H424"/>
                 </g>
-                <g fill="#b59e78"><circle cx="160" cy="74.4" r="2.5"/><circle cx="352" cy="74.4" r="2.5"/><circle cx="256" cy="143" r="2.5"/><circle cx="160" cy="211.6" r="2.5"/><circle cx="352" cy="211.6" r="2.5"/></g>
-                <g filter="url(#gomokuShadow)">
-                  <g fill="url(#gomokuBlack)"><circle cx="184" cy="177.3" r="10.2"/><circle cx="208" cy="160.1" r="10.2"/><circle cx="232" cy="143" r="10.2"/><circle cx="256" cy="125.9" r="10.2"/><circle cx="280" cy="108.7" r="10.2"/><circle cx="304" cy="177.3" r="10.2"/></g>
-                  <g fill="url(#gomokuWhite)"><circle cx="184" cy="160.1" r="10.2"/><circle cx="208" cy="143" r="10.2"/><circle cx="232" cy="125.9" r="10.2"/><circle cx="280" cy="125.9" r="10.2"/><circle cx="304" cy="143" r="10.2"/><circle cx="328" cy="160.1" r="10.2"/></g>
+                <g stroke="#283f3d" stroke-width="1.15" opacity=".9">
+                  <path d="M88 23V263M112 23V263M136 23V263M160 23V263M184 23V263M208 23V263M232 23V263M256 23V263M280 23V263M304 23V263M328 23V263M352 23V263M376 23V263M400 23V263M424 23V263"/>
+                  <path d="M88 23H424M88 40.1H424M88 57.3H424M88 74.4H424M88 91.6H424M88 108.7H424M88 125.9H424M88 143H424M88 160.1H424M88 177.3H424M88 194.4H424M88 211.6H424M88 228.7H424M88 245.9H424M88 263H424"/>
+                </g>
+                <g fill="#344f4b"><circle cx="160" cy="74.4" r="2.5"/><circle cx="352" cy="74.4" r="2.5"/><circle cx="256" cy="143" r="2.5"/><circle cx="160" cy="211.6" r="2.5"/><circle cx="352" cy="211.6" r="2.5"/></g>
+                <g>
+                  <g><use href="#gomokuPebble" x="171" y="164.3" width="26" height="26"/><use href="#gomokuPebble" x="195" y="147.1" width="26" height="26"/><use href="#gomokuPebble" x="219" y="130" width="26" height="26"/><use href="#gomokuPebble" x="243" y="112.9" width="26" height="26"/><use href="#gomokuPebble" x="267" y="95.7" width="26" height="26"/><use href="#gomokuPebble" x="291" y="164.3" width="26" height="26"/></g>
+                  <g><use href="#gomokuShell" x="171" y="147.1" width="26" height="26"/><use href="#gomokuShell" x="195" y="130" width="26" height="26"/><use href="#gomokuShell" x="219" y="112.9" width="26" height="26"/><use href="#gomokuShell" x="267" y="112.9" width="26" height="26"/><use href="#gomokuShell" x="291" y="130" width="26" height="26"/><use href="#gomokuShell" x="315" y="147.1" width="26" height="26"/></g>
                 </g>
                 <path d="M280 89.5v12M274 95.5h12" stroke="#e7b45b" stroke-width="2" stroke-linecap="square"/>
+                <path d="M-8 188H46V181H101V173H157V180H213V187H268V181H324V173H380V180H436V187H490V180H532" fill="none" stroke="#b9f5ea" stroke-width="2" opacity=".2"/>
               </svg>
               <span class="art-label">15×15 · THE GURU WATCHES</span>
               <span class="art-status">FOUR IN A ROW · YOUR MOVE</span>
@@ -497,6 +582,57 @@
 
     try { if (localStorage.getItem('arcade_lang') === 'zh') lang = 'zh'; } catch (error) {}
     applyLanguage();
+  })();
+
+  (function () {
+    'use strict';
+    var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+
+    function makeRipple(board, x, y, strong, delayed) {
+      if (motionQuery.matches) return;
+      var ripple = document.createElement('span');
+      ripple.className = 'water-ripple' + (strong ? ' strong' : '');
+      ripple.style.left = x + 'px';
+      ripple.style.top = y + 'px';
+      if (delayed) ripple.style.animationDelay = delayed + 'ms';
+      ripple.setAttribute('aria-hidden', 'true');
+      board.appendChild(ripple);
+      ripple.addEventListener('animationend', function () { ripple.remove(); }, { once: true });
+
+      var rings = board.querySelectorAll('.water-ripple');
+      if (rings.length > 7) rings[0].remove();
+    }
+
+    document.querySelectorAll('.board-art').forEach(function (board) {
+      var link = board.closest('.game-link');
+      var lastRipple = 0;
+
+      function point(event) {
+        var bounds = board.getBoundingClientRect();
+        return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+      }
+
+      board.addEventListener('pointerenter', function (event) {
+        var p = point(event);
+        makeRipple(board, p.x, p.y, false, 0);
+        lastRipple = performance.now();
+      });
+      board.addEventListener('pointermove', function (event) {
+        if (event.pointerType === 'touch' || performance.now() - lastRipple < 180) return;
+        var p = point(event);
+        makeRipple(board, p.x, p.y, false, 0);
+        lastRipple = performance.now();
+      });
+      board.addEventListener('pointerdown', function (event) {
+        var p = point(event);
+        makeRipple(board, p.x, p.y, true, 0);
+        makeRipple(board, p.x, p.y, false, 150);
+      });
+      link.addEventListener('focus', function () {
+        makeRipple(board, board.clientWidth * .5, board.clientHeight * .5, true, 0);
+        makeRipple(board, board.clientWidth * .5, board.clientHeight * .5, false, 170);
+      });
+    });
   })();
   </script>
 </body>

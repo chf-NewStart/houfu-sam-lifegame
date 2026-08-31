@@ -312,8 +312,143 @@
     }
   }
 
+  /* A deliberately small, deterministic teaching opponent. It does not search
+     a game tree; instead it ranks every legal move by the local ideas a new Go
+     player is learning on this page. Keeping it pure makes the browser turn
+     scheduler easy to cancel and lets fixtures test the exact same decisions. */
+  function groupsOf(game, color, board) {
+    const source = board || game.board;
+    const seen = new Set();
+    const groups = [];
+    for (let point = 0; point < source.length; point++) {
+      if (source[point] !== color || seen.has(point)) continue;
+      const rc = game.rowCol(point);
+      const group = game.groupAt(rc[0], rc[1], source);
+      if (!group) continue;
+      group.stones.forEach((stone) => seen.add(stone));
+      groups.push(group);
+    }
+    return groups;
+  }
+
+  function atariRescueMap(game, color) {
+    const rescues = new Map();
+    for (const group of groupsOf(game, color)) {
+      if (group.liberties.length !== 1) continue;
+      const liberty = group.liberties[0];
+      rescues.set(liberty, (rescues.get(liberty) || 0) + group.stones.length);
+    }
+    return rescues;
+  }
+
+  function adjacentGroupCount(game, point, color, board) {
+    const source = board || game.board;
+    const groups = new Set();
+    for (const neighbor of game.neighborIndexes(point)) {
+      if (source[neighbor] !== color) continue;
+      const rc = game.rowCol(neighbor);
+      const group = game.groupAt(rc[0], rc[1], source);
+      if (group && group.stones.length) groups.add(group.stones[0]);
+    }
+    return groups.size;
+  }
+
+  function newlyAtaried(game, point, color, board) {
+    const source = board || game.board;
+    const seen = new Set();
+    let stones = 0;
+    for (const neighbor of game.neighborIndexes(point)) {
+      if (source[neighbor] !== color || seen.has(neighbor)) continue;
+      const rc = game.rowCol(neighbor);
+      const group = game.groupAt(rc[0], rc[1], source);
+      if (!group) continue;
+      group.stones.forEach((stone) => seen.add(stone));
+      if (group.liberties.length === 1) stones += group.stones.length;
+    }
+    return stones;
+  }
+
+  function chooseBeginnerMove(game, options) {
+    const opts = options || {};
+    if (!game || game.phase !== 'playing') return null;
+    const color = game.current;
+    const opponent = other(color);
+    const total = game.board.length;
+    const occupied = game.board.reduce((count, value) => count + (value === EMPTY ? 0 : 1), 0);
+    const rescues = atariRescueMap(game, color);
+    const owner = game.score([]).owner;
+    const stars = new Set(starPoints(game.size).map((rc) => game.index(rc[0], rc[1])));
+    const last = game.lastMove && game.lastMove.t === 'play' ? game.lastMove : null;
+    const candidates = [];
+
+    for (let row = 0; row < game.size; row++) {
+      for (let col = 0; col < game.size; col++) {
+        const point = game.index(row, col);
+        if (game.board[point] !== EMPTY) continue;
+        const preview = game.preview(row, col);
+        if (!preview.ok) continue;
+
+        const captured = preview.captured.length;
+        const rescued = rescues.get(point) || 0;
+        const saved = rescued && (preview.liberties.length > 1 || captured) ? rescued : 0;
+        const selfAtari = preview.liberties.length === 1 && captured === 0;
+        const attacked = newlyAtaried(game, point, opponent, preview.board);
+        const friendlyGroups = adjacentGroupCount(game, point, color, game.board);
+        const enemyNeighbors = game.neighborIndexes(point).filter((next) => game.board[next] === opponent).length;
+        const ownTerritory = owner[point] === color;
+        const edge = Math.min(row, col, game.size - 1 - row, game.size - 1 - col);
+        const preferredLine = game.size <= 9 ? 2 : 3;
+        const lineShape = 22 - Math.abs(edge - preferredLine) * 7;
+        const star = occupied < game.size * 2 && stars.has(point) ? 34 : 0;
+        const nearLast = last ? Math.max(0, 5 - Math.abs(row - last.r) - Math.abs(col - last.c)) * 3 : 0;
+
+        let score = 0;
+        score += captured * 10000 + (captured ? 1800 : 0);
+        score += saved * 6200 + (saved ? 1100 : 0);
+        score += attacked * 720;
+        score += Math.max(0, friendlyGroups - 1) * 150;
+        score += enemyNeighbors * 28;
+        score += Math.min(preview.liberties.length, 6) * 18;
+        score += lineShape + star + nearLast;
+        if (ownTerritory && !captured && !saved && !attacked) score -= 1500;
+        if (selfAtari) score -= 5200 + preview.group.length * 90;
+
+        let reason = 'shape';
+        if (captured) reason = 'capture';
+        else if (saved) reason = 'save-atari';
+        else if (attacked) reason = 'atari';
+        else if (friendlyGroups > 1) reason = 'connect';
+        candidates.push({
+          type: 'play', row, col, score, reason, captured, saved, attacked,
+          selfAtari, ownTerritory, liberties: preview.liberties.length,
+        });
+      }
+    }
+
+    if (!candidates.length) return { type: 'pass', reason: 'no-legal-move' };
+    candidates.sort((a, b) => b.score - a.score || a.row - b.row || a.col - b.col);
+    const best = candidates[0];
+    const tactical = best.captured > 0 || best.saved > 0 || best.attacked > 0;
+    const lateEnough = occupied >= Math.max(12, Math.floor(total * .28));
+    if (game.passes === 1 && lateEnough && !tactical && best.ownTerritory) {
+      return { type: 'pass', reason: 'agree-end' };
+    }
+    if (occupied >= Math.floor(total * .82) && !tactical && best.score < 0) {
+      return { type: 'pass', reason: 'board-settled' };
+    }
+
+    /* Optional variety is opt-in. The page intentionally uses the deterministic
+       top move, which makes behavior explainable and repeatable for beginners. */
+    if (typeof opts.random === 'function') {
+      const close = candidates.filter((move) => best.score - move.score <= 12).slice(0, 4);
+      const pick = Math.min(close.length - 1, Math.floor(Math.max(0, opts.random()) * close.length));
+      return close[pick];
+    }
+    return best;
+  }
+
   return {
-    GoGame, EMPTY, BLACK, WHITE, other, coordinate, starPoints,
+    GoGame, EMPTY, BLACK, WHITE, other, coordinate, starPoints, chooseBeginnerMove,
     COLUMNS, VALID_SIZES: Array.from(VALID_SIZES),
   };
 });

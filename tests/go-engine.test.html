@@ -10,7 +10,7 @@
   <script>
   (function () {
     'use strict';
-    const { GoGame, BLACK, WHITE, coordinate, starPoints } = GoEngine;
+    const { GoGame, BLACK, WHITE, coordinate, starPoints, chooseBeginnerMove } = GoEngine;
     const tests = [];
     function test(name, fn) { tests.push([name, fn]); }
     function equal(actual, expected, message) {
@@ -217,6 +217,92 @@
       ok(result.ok);
       equal(game.phase, 'finished');
       equal(game.result.winner, WHITE);
+    });
+
+    test('beginner AI takes an immediate capture', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [[1, 1, WHITE], [0, 1, BLACK], [1, 0, BLACK], [2, 1, BLACK]]),
+      });
+      const move = chooseBeginnerMove(game);
+      equal(move.type, 'play');
+      equal(move.row, 1);
+      equal(move.col, 2);
+      equal(move.reason, 'capture');
+      equal(game.preview(move.row, move.col).captured.length, 1);
+    });
+
+    test('beginner AI saves its group from atari', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [[1, 1, BLACK], [0, 1, WHITE], [1, 0, WHITE], [2, 1, WHITE]]),
+      });
+      equal(game.groupAt(1, 1).liberties.length, 1);
+      const move = chooseBeginnerMove(game);
+      equal(move.type, 'play');
+      equal(move.row, 1);
+      equal(move.col, 2);
+      equal(move.reason, 'save-atari');
+      ok(game.preview(move.row, move.col).liberties.length > 1);
+    });
+
+    test('beginner AI avoids legal self-atari when safe moves exist', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [[1, 2, WHITE], [2, 1, WHITE], [3, 2, WHITE]]),
+      });
+      const center = game.preview(2, 2);
+      ok(center.ok);
+      equal(center.liberties.length, 1);
+      const move = chooseBeginnerMove(game);
+      equal(move.type, 'play');
+      equal(move.selfAtari, false);
+      ok(game.preview(move.row, move.col).liberties.length > 1);
+    });
+
+    test('beginner AI passes only when no legal play exists and stops outside play', () => {
+      const full = GoGame.fromPosition({ size: 5, current: WHITE, board: new Array(25).fill(BLACK) });
+      const pass = chooseBeginnerMove(full);
+      equal(pass.type, 'pass');
+      equal(pass.reason, 'no-legal-move');
+      ok(full.pass(WHITE).ok);
+      const scoring = new GoGame({ size: 9 });
+      scoring.pass(); scoring.pass();
+      equal(chooseBeginnerMove(scoring), null);
+    });
+
+    test('beginner AI choice is deterministic and does not mutate the game', () => {
+      const game = new GoGame({ size: 9 });
+      game.play(4, 4);
+      const before = JSON.stringify({
+        board: game.board, current: game.current, captures: game.captures,
+        events: game.events, history: game.positionHistory,
+        seen: Array.from(game.seenPositions).sort(),
+      });
+      const first = chooseBeginnerMove(game);
+      equal(JSON.stringify(chooseBeginnerMove(game)), JSON.stringify(first));
+      equal(JSON.stringify(chooseBeginnerMove(game)), JSON.stringify(first));
+      equal(JSON.stringify({
+        board: game.board, current: game.current, captures: game.captures,
+        events: game.events, history: game.positionHistory,
+        seen: Array.from(game.seenPositions).sort(),
+      }), before);
+      ok(game.preview(first.row, first.col).ok);
+    });
+
+    test('beginner AI remains bounded and legal on supported teaching sizes', () => {
+      const started = performance.now();
+      [9, 13, 19].forEach((size) => {
+        const game = new GoGame({ size });
+        ok(game.play(Math.floor(size / 2), Math.floor(size / 2)).ok);
+        const move = chooseBeginnerMove(game);
+        equal(move.type, 'play');
+        ok(game.preview(move.row, move.col).ok);
+      });
+      ok(performance.now() - started < 1000, '9/13/19 selection should stay responsive');
     });
 
     const failures = [];

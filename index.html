@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game Arcade // houfu.xyz</title>
-  <meta name="description" content="A small arcade of hand-coded browser games — Conway's Game of Life, Qi board games including Go and Gomoku, Glyph Run, co-op games, and reinforcement-learning agents you can train.">
+  <meta name="description" content="A small arcade of hand-coded browser games — Conway's Game of Life, Qi board games with beginner Go AI, local two-player and private friend rooms, Glyph Run, co-op games, and trainable RL agents.">
 
   <meta property="og:title"       content="Game Arcade // houfu.xyz">
-  <meta property="og:description" content="Hand-coded browser games and RL agents in training. Game of Life, Qi (Go and Gomoku), Glyph Run and more — free to play.">
+  <meta property="og:description" content="Hand-coded browser games and RL agents in training. Qi includes beginner Go AI, local two-player play, private friend rooms, and Gomoku.">
   <meta property="og:url"         content="https://lifegameproject.com/">
   <meta property="og:type"        content="website">
   <meta property="og:image"       content="https://lifegameproject.com/game/brand-og.png">
   <meta name="twitter:card"        content="summary">
   <meta name="twitter:title"       content="Game Arcade // houfu.xyz">
-  <meta name="twitter:description" content="Hand-coded browser games and RL agents in training.">
+  <meta name="twitter:description" content="Hand-coded browser games, including Qi with beginner Go AI and private friend rooms, plus RL agents in training.">
   <meta name="twitter:image"       content="https://lifegameproject.com/game/brand-og.png">
 
   <!-- The brand mark is still every game page's icon; the front door is his.
@@ -101,23 +101,31 @@
 .card.glow-dilemma .dl-canvas{cursor:pointer;touch-action:manipulation;}
 .card.glow-dilemma .dl-canvas:focus-visible{outline:2px solid #e06a8a;outline-offset:-2px;}
 .card.glow-gomoku{ transition: box-shadow .3s ease, border-color .3s ease; }
-.card.glow-gomoku:hover{ border-color:#2f6fa0; box-shadow:0 0 22px -8px rgba(58,158,230,.5); }
+.card.glow-gomoku:hover,
+.card.glow-gomoku:focus-within{ border-color:#3e92a0; box-shadow:0 0 22px -8px rgba(77,197,199,.52); }
 .glow-gomoku .gwater{ position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none;
-  opacity:0; transition:opacity .25s ease; filter:saturate(0.9) brightness(0.82); }
+  opacity:0; transition:opacity .25s steps(4,end); filter:saturate(0.9) brightness(0.82); image-rendering:pixelated; }
 .card.glow-gomoku.ready .gwater{ opacity:1; }
-.card.glow-gomoku:hover .gwater{ filter:saturate(1.05) brightness(1); }
+.card.glow-gomoku:hover .gwater,
+.card.glow-gomoku:focus-within .gwater{ filter:saturate(1.05) brightness(1); }
 .glow-gomoku .gband{ background:transparent; }   /* transparent spacer; water shows through the band */
-.glow-gomoku .gsrc{ display:none; }
-/* The card is already a pool you can poke. He fishes it — sat at the edge of
-   the thumbnail band, on the surface the ripples run across, which is exactly
-   what he does inside the game. */
-.glow-gomoku .gguru{
-  position:absolute; right:16px; top:52px; width:60px; height:60px; z-index:2;
-  image-rendering:pixelated; pointer-events:none;
-  filter:drop-shadow(0 0 10px rgba(168,120,210,.55));
-  transition:transform .25s ease; }
-.card.glow-gomoku:hover .gguru{ transform:translateY(-3px); }
-@media (prefers-reduced-motion: reduce){ .card.glow-gomoku:hover .gguru{ transform:none; } }
+.glow-gomoku .qi-cabinet-overlay{
+  position:absolute; top:0; left:0; right:0; z-index:2; aspect-ratio:440/240;
+  overflow:hidden; pointer-events:none; color:#edf0df;
+}
+.glow-gomoku .qi-cabinet-mark{
+  position:absolute; top:16px; left:17px; width:56px; height:auto;
+  image-rendering:auto;
+  filter:invert(94%) sepia(13%) saturate(244%) hue-rotate(93deg) brightness(99%) contrast(91%) drop-shadow(0 0 8px rgba(117,225,208,.36));
+}
+.glow-gomoku .qi-board-key{
+  position:absolute; left:17px; bottom:12px; padding:4px 7px;
+  border:1px solid rgba(172,239,226,.36); background:rgba(4,18,19,.72);
+  color:#b4ded5; font-size:.57rem; letter-spacing:1.3px;
+}
+@media (prefers-reduced-motion: reduce){
+  .glow-gomoku .gwater{transition:none;}
+}
 
 /* ===== Game of Life — live Conway sim in the card BODY (screenshot stays in the band) ===== */
 .card.glow-life:hover{ border-color:#1f7a4a; box-shadow:0 0 22px -8px rgba(29,185,84,.5); }
@@ -298,19 +306,21 @@
     <div class="ribbon p12" data-en="1–2UP · COLLECTION" data-zh="1–2UP · 合集">1–2UP · COLLECTION</div>
     <canvas class="gwater" aria-hidden="true"></canvas>
     <div class="card-thumb gband" aria-hidden="true"></div>
-    <img class="gguru" src="/sprites/guru.png?v=1" alt="" width="60" height="60" aria-hidden="true">
-    <img class="gsrc" src="/game/thumbs/gomoku.jpg?v=3" alt="Qi board-game room" width="440" height="240">
+    <div class="qi-cabinet-overlay" aria-hidden="true">
+      <img class="qi-cabinet-mark" src="/game/qi-calligraphy.png" alt="" width="512" height="512" aria-hidden="true">
+      <span class="qi-board-key">GO // GOMOKU · WATER TABLE</span>
+    </div>
     <div class="card-icon">[棋]</div>
     <div class="card-title" data-en="qi.exe" data-zh="棋.exe">qi.exe</div>
-    <div class="card-desc" data-en="One table for board games. Learn Go with visible liberties, captures, and area scoring, or play Gomoku against a minimax AI and the old fisherman's tactical coach. Play locally or invite a friend online." data-zh="一张棋桌，容纳多种棋类游戏。学习带有气、提子与面积计分提示的围棋，或挑战极小化极大 AI 与观棋老者指导的五子棋；可本地对弈，也可邀请好友联机。">One table for board games. Learn Go with visible liberties, captures, and area scoring, or play Gomoku against a minimax AI and the old fisherman's tactical coach. Play locally or invite a friend online.</div>
+    <div class="card-desc" data-en="Learn Go with visible liberties and scoring: practise on 9×9 against a beginner AI, share one device, or open a private friend room. Gomoku adds a minimax rival and the old fisherman's tactical coach." data-zh="学习带有气数与计分提示的围棋：在 9×9 棋盘上与入门级 AI 练习、同机双人对弈，或创建私密好友房。五子棋另有极小化极大 AI 与观棋老者战术指导。">Learn Go with visible liberties and scoring: practise on 9×9 against a beginner AI, share one device, or open a private friend room. Gomoku adds a minimax rival and the old fisherman's tactical coach.</div>
     <div class="card-tags">
-      <span class="tag green">Go · 围棋</span>
-      <span class="tag">Gomoku · 五子棋</span>
-      <span class="tag" data-en="local + online" data-zh="本地 + 联机">local + online</span>
-      <span class="tag" data-en="learn + compete" data-zh="学习 + 对弈">learn + compete</span>
+      <span class="tag green" data-en="Go · beginner AI" data-zh="围棋 · 入门 AI">Go · beginner AI</span>
+      <span class="tag" data-en="Gomoku · coach" data-zh="五子棋 · 战术指导">Gomoku · coach</span>
+      <span class="tag" data-en="local 2-player" data-zh="同机双人">local 2-player</span>
+      <span class="tag" data-en="private friend rooms" data-zh="私密好友房">private friend rooms</span>
     </div>
     <div class="card-footer">
-      <span class="card-meta" data-en="2 board games · 1–2 players" data-zh="2 款棋类游戏 · 1–2 人">2 board games · 1–2 players</span>
+      <span class="card-meta" data-en="2 games · 1–2P" data-zh="2 款棋 · 1–2 人">2 games · 1–2P</span>
       <a class="play-btn" href="/game/qi.html" data-en="→ choose a board" data-zh="→ 选择棋盘">→ choose a board</a>
     </div>
   </div>
@@ -623,108 +633,155 @@ document.addEventListener('DOMContentLoaded', applyLang);
   const card = document.querySelector('.card.glow-gomoku');
   if (!card) return;
   const canvas = card.querySelector('.gwater');
-  const img = card.querySelector('.gsrc');
   const band = card.querySelector('.gband');
   const ctx = canvas.getContext('2d', { alpha: false });
-  const SIM_SCALE = 0.5, DAMP = 0.985, REFRACT = 6.0, SHADE = 24, SPEC = 0.9;
-  let DW, DH, SW, SH, SN, cur, prev, bg, out, outData, inited = false;
-  let rafId = 0, inside = false;
-  let wakeQ = [], lastX = 0, lastY = 0, haveLast = false;
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let DW, DH, bg, out, outData, inited = false;
+  let rafId = 0, lastX = 0, lastY = 0, haveLast = false;
+  let pixelRings = [];
+  function riverStone(c, x, y, r) {
+    const q = Math.max(2, Math.round(r * .24)), rr = Math.round(r), xx = Math.round(x), yy = Math.round(y);
+    c.save(); c.translate(xx, yy);
+    c.fillStyle = '#07100f'; c.beginPath(); c.moveTo(-rr + q, -rr); c.lineTo(rr - q, -rr); c.lineTo(rr, -rr + q);
+    c.lineTo(rr, rr - q); c.lineTo(rr - q, rr); c.lineTo(-rr + q, rr); c.lineTo(-rr, rr - q); c.lineTo(-rr, -rr + q); c.closePath(); c.fill();
+    c.fillStyle = '#1e302d'; c.fillRect(-rr + q, -rr + q, rr * 2 - q * 2, rr * 2 - q * 2);
+    c.fillStyle = '#66756f'; c.fillRect(-rr + q, -rr + q, Math.max(2, rr), Math.max(2, q));
+    c.fillStyle = '#344843'; c.fillRect(rr - q * 2, rr - q * 2, q, q); c.restore();
+  }
+  function shell(c, x, y, r) {
+    const q = Math.max(2, Math.round(r * .25)), rr = Math.round(r), xx = Math.round(x), yy = Math.round(y);
+    c.save(); c.translate(xx, yy);
+    c.fillStyle = '#eef0df'; c.beginPath(); c.moveTo(-q, -rr); c.lineTo(q, -rr); c.lineTo(q * 2, -rr + q);
+    c.lineTo(rr - q, -q); c.lineTo(rr, q); c.lineTo(rr - q, rr - q); c.lineTo(q, rr); c.lineTo(-q, rr);
+    c.lineTo(-rr + q, rr - q); c.lineTo(-rr, q); c.lineTo(-rr + q, -q); c.lineTo(-q * 2, -rr + q); c.closePath(); c.fill();
+    c.strokeStyle = '#819a93'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -rr + q); c.lineTo(0, rr - q); c.stroke();
+    c.beginPath(); c.moveTo(0, -rr + q); c.lineTo(-rr + q, rr - q); c.moveTo(0, -rr + q); c.lineTo(rr - q, rr - q); c.moveTo(-rr + q, rr - q); c.lineTo(rr - q, rr - q); c.stroke();
+    c.fillStyle = '#fffbea'; c.fillRect(-q, -rr + q, q, q); c.restore();
+  }
+  function board(c, x, y, w, h, n, plays) {
+    x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h);
+    const corner = 6;
+    c.fillStyle = '#173331'; c.beginPath(); c.moveTo(x + corner, y + 6); c.lineTo(x + w - corner, y + 6); c.lineTo(x + w, y + corner + 6);
+    c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.lineTo(x, y + corner + 6); c.closePath(); c.fill();
+    c.fillStyle = '#5a716b'; c.beginPath(); c.moveTo(x + corner, y); c.lineTo(x + w - corner, y); c.lineTo(x + w, y + corner);
+    c.lineTo(x + w, y + h - corner); c.lineTo(x + w - corner, y + h); c.lineTo(x + corner, y + h); c.lineTo(x, y + h - corner); c.lineTo(x, y + corner); c.closePath(); c.fill();
+    c.fillStyle = '#6d807a';
+    for (let py = y + 4; py < y + h - 3; py += 8) for (let px = x + 5 + ((py / 8) % 2) * 4; px < x + w - 4; px += 10) c.fillRect(px, py, 2, 2);
+
+    const inset = Math.max(10, Math.min(w, h) * .12), x0 = x + inset, x1 = x + w - inset, y0 = y + inset, y1 = y + h - inset;
+    c.lineWidth = n > 9 ? .72 : 1.05;
+    for (let i = 0; i < n; i++) {
+      const gx = x0 + (x1 - x0) * i / (n - 1), gy = y0 + (y1 - y0) * i / (n - 1);
+      c.strokeStyle = 'rgba(185,208,199,.17)';
+      c.beginPath(); c.moveTo(gx + 1, y0 + 1); c.lineTo(gx + 1, y1 + 1); c.stroke();
+      c.beginPath(); c.moveTo(x0 + 1, gy + 1); c.lineTo(x1 + 1, gy + 1); c.stroke();
+      c.strokeStyle = 'rgba(18,55,54,.88)';
+      c.beginPath(); c.moveTo(gx, y0); c.lineTo(gx, y1); c.stroke();
+      c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.stroke();
+    }
+    const spacing = Math.min((x1 - x0) / (n - 1), (y1 - y0) / (n - 1)), pieceR = spacing * (n > 9 ? .43 : .44);
+    plays.forEach((p) => {
+      const px = x0 + (x1 - x0) * p[0] / (n - 1), py = y0 + (y1 - y0) * p[1] / (n - 1);
+      (p[2] ? shell : riverStone)(c, px, py, pieceR);
+    });
+  }
+  function drawQiTable(c, w, h) {
+    c.imageSmoothingEnabled = false;
+    c.fillStyle = '#08282e'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#103a40';
+    for (let y = 0; y < h; y += 8) for (let x = ((y / 8) % 2) * 6; x < w; x += 12) c.fillRect(x, y, 4, 3);
+    c.fillStyle = '#061f25';
+    for (let y = 5; y < h; y += 12) for (let x = 7 + ((y / 12) % 2) * 8; x < w; x += 16) c.fillRect(x, y, 3, 2);
+    const margin = w * .07, gap = w * .035, bw = (w - margin * 2 - gap) * .5, by = h * .105, bh = h * .78;
+    board(c, margin, by, bw, bh, 9, [[2,2,0],[3,2,0],[2,3,1],[3,3,1],[4,3,1],[5,4,0],[6,5,1]]);
+    board(c, margin + bw + gap, by, bw, bh, 15, [[4,9,0],[5,8,0],[6,7,0],[7,6,0],[8,5,0],[4,8,1],[5,7,1],[6,6,1],[8,6,1],[9,7,1]]);
+    c.save(); c.globalAlpha = .22; c.strokeStyle = '#b8eee5'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(-8, Math.round(h*.25)); c.lineTo(w*.12,h*.2); c.lineTo(w*.24,h*.25); c.lineTo(w*.36,h*.3); c.lineTo(w*.5,h*.24); c.lineTo(w*.64,h*.2); c.lineTo(w*.78,h*.26); c.lineTo(w+8,h*.2); c.stroke();
+    c.beginPath(); c.moveTo(-8, Math.round(h*.78)); c.lineTo(w*.12,h*.72); c.lineTo(w*.27,h*.77); c.lineTo(w*.42,h*.82); c.lineTo(w*.58,h*.75); c.lineTo(w*.72,h*.7); c.lineTo(w*.86,h*.77); c.lineTo(w+8,h*.71); c.stroke(); c.restore();
+  }
 
   function setup() {
     const w = card.clientWidth | 0, h = card.clientHeight | 0;
-    if (!w || !h || !img.naturalWidth) return false;
+    if (!w || !h) return false;
     DW = w; DH = h; canvas.width = DW; canvas.height = DH;
-    SW = Math.max(2, Math.round(DW * SIM_SCALE)); SH = Math.max(2, Math.round(DH * SIM_SCALE)); SN = SW * SH;
-    cur = new Float32Array(SN); prev = new Float32Array(SN);
     out = ctx.createImageData(DW, DH); outData = out.data;
     const BAND = Math.min(DH, Math.max(60, (band ? band.offsetHeight : 124)));   // thumbnail band height (px)
     const off = document.createElement('canvas'); off.width = DW; off.height = DH;
     const oc = off.getContext('2d');
     oc.fillStyle = '#0d0d0d'; oc.fillRect(0, 0, DW, DH);                          // dark body
-    // stones thumbnail, cover-fit into the top band
-    const ir = img.naturalWidth / img.naturalHeight, br = DW / BAND;
-    let sw, sh, sx, sy;
-    if (ir > br) { sh = img.naturalHeight; sw = sh * br; sx = (img.naturalWidth - sw) / 2; sy = 0; }
-    else { sw = img.naturalWidth; sh = sw / br; sx = 0; sy = (img.naturalHeight - sh) / 2; }
-    oc.drawImage(img, sx, sy, sw, sh, 0, 0, DW, BAND);
+    drawQiTable(oc, DW, BAND);                                                   // two engraved boards just under the surface
     oc.fillStyle = 'rgba(28,28,28,1)'; oc.fillRect(0, BAND - 1, DW, 1);           // separator line
     try { bg = oc.getImageData(0, 0, DW, DH).data; } catch (e) { return false; }
-    inited = true; render(prev); card.classList.add('ready');
+    inited = true; render(); card.classList.add('ready');
     return true;
   }
-  function ensureInit() { return inited || ((img.complete && img.naturalWidth) ? setup() : false); }
+  function ensureInit() { return inited || setup(); }
 
   function poke(dx, dy, strength, radius) {
-    const sx = (dx * SIM_SCALE) | 0, sy = (dy * SIM_SCALE) | 0, r = radius || 2;
-    for (let y = -r; y <= r; y++) { const yy = sy + y; if (yy < 1 || yy >= SH - 1) continue;
-      for (let x = -r; x <= r; x++) { const xx = sx + x; if (xx < 1 || xx >= SW - 1) continue;
-        const d = Math.hypot(x, y); if (d > r) continue;
-        prev[yy * SW + xx] -= strength * Math.cos((d / r) * Math.PI * 0.5); } }
+    pixelRings.push({ x: Math.round(dx), y: Math.round(dy), age: 0, speed: strength > 20 ? 2 : 1, offset: radius || 0 });
+    if (pixelRings.length > 12) pixelRings.shift();
     ensureRAF();
   }
   function ringPoke(dx, dy, ringR, strength) {
-    const sx = dx * SIM_SCALE, sy = dy * SIM_SCALE, rr = ringR * SIM_SCALE, steps = Math.max(10, (2 * Math.PI * rr) | 0);
-    for (let s = 0; s < steps; s++) { const a = s / steps * Math.PI * 2, xx = (sx + Math.cos(a) * rr) | 0, yy = (sy + Math.sin(a) * rr) | 0;
-      if (xx < 1 || yy < 1 || xx >= SW - 1 || yy >= SH - 1) continue; prev[yy * SW + xx] -= strength; }
+    pixelRings.push({ x: Math.round(dx), y: Math.round(dy), age: -Math.round(ringR * .65), speed: strength > 12 ? 2 : 1, offset: 0 });
   }
-  function splash(x, y) { poke(x, y, 46, 5); ringPoke(x, y, 9, 16); ringPoke(x, y, 16, 9); }
+  function splash(x, y) { poke(x, y, 46, 2); ringPoke(x, y, 9, 16); ringPoke(x, y, 16, 9); }
 
-  function step() {
-    const c = cur, p = prev;
-    for (let y = 1; y < SH - 1; y++) { let i = y * SW + 1;
-      for (let x = 1; x < SW - 1; x++, i++) { c[i] = (((p[i-1] + p[i+1] + p[i-SW] + p[i+SW]) * 0.5) - c[i]) * DAMP; } }
-    const t = prev; prev = cur; cur = t;
+  function drawPixelRing(ring) {
+    if (ring.age < 0) return;
+    const frame = Math.floor(ring.age / 3), rx = 8 + ring.offset + frame * 5, ry = Math.max(4, Math.round(rx * .42));
+    const fade = Math.max(0, 1 - frame / 11);
+    if (!fade) return;
+    const x = ring.x, y = ring.y, sx = Math.max(3, Math.round(rx * .34)), sy = Math.max(2, Math.round(ry * .42));
+    ctx.save(); ctx.globalAlpha = Math.ceil(fade * 4) / 4; ctx.strokeStyle = '#bcefe5'; ctx.lineWidth = frame < 3 ? 2 : 1; ctx.lineJoin = 'miter';
+    ctx.beginPath(); ctx.moveTo(x - rx + sx, y - ry); ctx.lineTo(x + rx - sx, y - ry); ctx.lineTo(x + rx, y - ry + sy);
+    ctx.lineTo(x + rx, y + ry - sy); ctx.lineTo(x + rx - sx, y + ry); ctx.lineTo(x - rx + sx, y + ry);
+    ctx.lineTo(x - rx, y + ry - sy); ctx.lineTo(x - rx, y - ry + sy); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
-  function render(field) {
-    const data = outData, inv = 1 / SIM_SCALE;
-    for (let y = 0; y < DH; y++) {
-      const fy = y * SIM_SCALE, sy0 = fy | 0, wy = fy - sy0, sy1 = sy0 + 1 < SH ? sy0 + 1 : sy0, row0 = sy0 * SW, row1 = sy1 * SW;
-      for (let x = 0; x < DW; x++) {
-        const fx = x * SIM_SCALE, sx0 = fx | 0, sx1 = sx0 + 1 < SW ? sx0 + 1 : sx0;
-        const xm = sx0 > 0 ? sx0 - 1 : sx0, xp = sx1, ym = sy0 > 0 ? sy0 - 1 : sy0, yp = sy1;
-        const dhx = field[row0 + xp] - field[row0 + xm], dhy = field[yp * SW + sx0] - field[ym * SW + sx0];
-        let bx = x + ((dhx * REFRACT * inv) | 0), by = y + ((dhy * REFRACT * inv) | 0);
-        if (bx < 0) bx = 0; else if (bx >= DW) bx = DW - 1; if (by < 0) by = 0; else if (by >= DH) by = DH - 1;
-        const bi = (by * DW + bx) * 4, lit = (-dhx - dhy) * SHADE; let spec = (dhx * dhx + dhy * dhy) * SHADE * SPEC; if (spec > 32) spec = 32;
-        let r = bg[bi] + lit + spec * 0.9, g = bg[bi + 1] + lit + spec, b = bg[bi + 2] + lit + spec * 1.1;
-        const oi = (y * DW + x) * 4;
-        data[oi] = r < 0 ? 0 : r > 255 ? 255 : r; data[oi + 1] = g < 0 ? 0 : g > 255 ? 255 : g; data[oi + 2] = b < 0 ? 0 : b > 255 ? 255 : b; data[oi + 3] = 255;
-      }
-    }
-    ctx.putImageData(out, 0, 0);
+  function render() {
+    outData.set(bg); ctx.putImageData(out, 0, 0);
+    pixelRings.forEach(drawPixelRing);
   }
-  function energy(f) { let e = 0; for (let i = 0; i < SN; i += 7) { const v = f[i]; e += v < 0 ? -v : v; } return e; }
   function frame() {
-    for (let i = 0; i < wakeQ.length; i += 2) poke(wakeQ[i], wakeQ[i + 1], 6, 2); wakeQ.length = 0;
-    step(); render(prev);
-    if (!inside && energy(prev) < 0.1) { rafId = 0; return; }
-    rafId = requestAnimationFrame(frame);
+    pixelRings.forEach((ring) => { ring.age += ring.speed; });
+    pixelRings = pixelRings.filter((ring) => ring.age < 34);
+    render();
+    rafId = pixelRings.length ? requestAnimationFrame(frame) : 0;
   }
-  function ensureRAF() { if (!rafId) rafId = requestAnimationFrame(frame); }
+  function ensureRAF() { if (!reducedMotion && !rafId) rafId = requestAnimationFrame(frame); }
   function pos(ev) { const r = card.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
   function queueWake(x, y) {
-    if (haveLast) { const dx = x - lastX, dy = y - lastY, dist = Math.hypot(dx, dy), segs = Math.min(8, Math.max(1, (dist / 6) | 0));
-      for (let s = 1; s <= segs; s++) wakeQ.push(lastX + dx * (s / segs), lastY + dy * (s / segs)); }
-    else wakeQ.push(x, y);
+    if (!haveLast || Math.hypot(x - lastX, y - lastY) > 18) poke(x, y, 6, 0);
     lastX = x; lastY = y; haveLast = true;
   }
-  card.addEventListener('mouseenter', () => { if (!ensureInit()) return; inside = true; haveLast = false; ensureRAF(); });
-  card.addEventListener('mouseleave', () => { inside = false; haveLast = false; });
-  card.addEventListener('mousemove', (ev) => { if (!ensureInit()) return; const [x, y] = pos(ev); queueWake(x, y); ensureRAF(); });
-  card.addEventListener('click', (ev) => { if (!ensureInit()) return; const [x, y] = pos(ev); splash(x, y); ensureRAF(); });
+  card.addEventListener('mouseenter', () => { if (!ensureInit()) return; haveLast = false; ensureRAF(); });
+  card.addEventListener('mouseleave', () => { haveLast = false; });
+  card.addEventListener('mousemove', (ev) => { if (reducedMotion || !ensureInit()) return; const [x, y] = pos(ev); queueWake(x, y); ensureRAF(); });
+  card.addEventListener('click', (ev) => { if (reducedMotion || !ensureInit()) return; const [x, y] = pos(ev); splash(x, y); ensureRAF(); });
+  card.addEventListener('focusin', () => {
+    if (reducedMotion || !ensureInit()) return;
+    splash(DW * .5, Math.min(DH, band.offsetHeight) * .5); ensureRAF();
+  });
   // attract: when the card first scrolls into view, one light touch dead center —
   // the rings spread out and reflect off all four edges in symmetry
   let attracted = false;
   function attract() {
-    if (!ensureInit()) return;
-    poke(DW * 0.5, DH * 0.5, 18, 3); ensureRAF();
+    if (reducedMotion || !ensureInit()) return;
+    poke(DW * 0.5, Math.min(DH, band.offsetHeight) * 0.5, 18, 3); ensureRAF();
   }
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting && !attracted) { attracted = true; io.disconnect(); setTimeout(attract, 500); } }); }, { threshold: 0.5 });
     io.observe(card);
   } else { setTimeout(() => { if (!attracted) { attracted = true; attract(); } }, 1100); }
-  if (img.complete && img.naturalWidth) setup(); else img.addEventListener('load', setup, { once: true });
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0; inited = false; setup();
+    }, 120);
+  });
+  setup();
 })();
 
 /* Tomato card — a rain of little ASCII tomatoes (varied size & ripeness) falls from the cursor */
