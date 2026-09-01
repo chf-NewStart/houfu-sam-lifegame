@@ -10,7 +10,7 @@
   <script>
   (function () {
     'use strict';
-    const { GoGame, BLACK, WHITE, coordinate, starPoints, chooseBeginnerMove } = GoEngine;
+    const { GoGame, BLACK, WHITE, coordinate, starPoints, chooseBeginnerMove, analyzeBeginnerPriority } = GoEngine;
     const tests = [];
     function test(name, fn) { tests.push([name, fn]); }
     function equal(actual, expected, message) {
@@ -303,6 +303,107 @@
         ok(game.preview(move.row, move.col).ok);
       });
       ok(performance.now() - started < 1000, '9/13/19 selection should stay responsive');
+    });
+
+    test('strategy guide calls an empty board a quiet turn', () => {
+      const game = new GoGame({ size: 9 });
+      const before = game.boardKey();
+      const priority = analyzeBeginnerPriority(game);
+      equal(priority.kind, 'quiet');
+      equal(priority.move, null);
+      equal(game.boardKey(), before, 'analysis must not mutate the board');
+      equal(game.events.length, 0, 'analysis must not add events');
+    });
+
+    test('strategy guide defends a friendly group in atari first', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [[1, 1, BLACK], [0, 1, WHITE], [1, 0, WHITE], [2, 1, WHITE]]),
+      });
+      const priority = analyzeBeginnerPriority(game);
+      equal(priority.kind, 'defend');
+      equal(priority.target.color, BLACK);
+      equal(priority.target.liberties.length, 1);
+      equal(priority.move.row, 1);
+      equal(priority.move.col, 2);
+    });
+
+    test('strategy guide can defend by counter-capturing away from the last liberty', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [
+          [1, 1, BLACK], [0, 0, BLACK],
+          [0, 1, WHITE], [1, 0, WHITE], [2, 1, WHITE],
+        ]),
+      });
+      const priority = analyzeBeginnerPriority(game);
+      equal(priority.kind, 'defend-capture');
+      equal(priority.move.row, 0);
+      equal(priority.move.col, 2);
+      equal(priority.captured, 1);
+      ok(priority.resultLiberties >= 2);
+    });
+
+    test('strategy guide takes a clean capture when its groups are safe', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [[1, 1, WHITE], [0, 1, BLACK], [1, 0, BLACK], [2, 1, BLACK]]),
+      });
+      const priority = analyzeBeginnerPriority(game);
+      equal(priority.kind, 'capture');
+      equal(priority.target.color, WHITE);
+      equal(priority.move.row, 1);
+      equal(priority.move.col, 2);
+    });
+
+    test('strategy guide defends before considering an unrelated attack', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [
+          [1, 1, BLACK], [0, 1, WHITE], [1, 0, WHITE], [2, 1, WHITE],
+          [4, 4, WHITE],
+        ]),
+      });
+      const priority = analyzeBeginnerPriority(game);
+      equal(priority.kind, 'defend');
+      equal(priority.target.color, BLACK);
+      equal(priority.target.liberties.length, 1);
+    });
+
+    test('strategy guide suggests a safe attack that creates atari', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [[0, 0, WHITE]]),
+      });
+      const priority = analyzeBeginnerPriority(game);
+      equal(priority.kind, 'attack');
+      equal(priority.target.color, WHITE);
+      equal(priority.target.liberties.length, 2);
+      ok(priority.move && game.preview(priority.move.row, priority.move.col).ok);
+    });
+
+    test('strategy guide reports danger when an atari group has no immediate escape', () => {
+      const game = GoGame.fromPosition({
+        size: 5,
+        current: BLACK,
+        board: board(5, [[0, 0, BLACK], [1, 0, WHITE], [0, 2, WHITE], [1, 1, WHITE]]),
+      });
+      const priority = analyzeBeginnerPriority(game);
+      equal(priority.kind, 'danger');
+      equal(priority.target.color, BLACK);
+      equal(priority.move, null);
+    });
+
+    test('strategy guide is inactive outside the playing phase', () => {
+      const game = new GoGame({ size: 9 });
+      game.pass();
+      game.pass();
+      equal(analyzeBeginnerPriority(game).kind, 'inactive');
     });
 
     const failures = [];

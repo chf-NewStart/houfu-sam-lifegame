@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const { GoGame, BLACK, WHITE, EMPTY, other, coordinate, starPoints, chooseBeginnerMove } = window.GoEngine;
+  const { GoGame, BLACK, WHITE, EMPTY, other, coordinate, starPoints, chooseBeginnerMove, analyzeBeginnerPriority } = window.GoEngine;
   const $ = (id) => document.getElementById(id);
   const colorKey = (color) => color === BLACK ? 'black' : 'white';
   const colorName = (color) => tr(color === BLACK ? 'Black' : 'White', color === BLACK ? '黑棋' : '白棋');
@@ -30,6 +30,9 @@
   let selectedIndex = null;
   let hoverCell = null;
   let aimCell = null;
+  let strategyAnalysis = null;
+  let strategyPreview = false;
+  let strategySelectedIndex = null;
   let keyboardCell = { r: 4, c: 4 };
   let coach = {
     headEn: 'LIBERTIES', headZh: '气',
@@ -276,6 +279,9 @@
     selectedIndex = null;
     hoverCell = null;
     aimCell = null;
+    strategyAnalysis = null;
+    strategyPreview = false;
+    strategySelectedIndex = null;
   }
 
   function newLocal(size) {
@@ -319,6 +325,7 @@
     } else {
       setCoach('GROUP', '棋群', `${coord} joins a ${result.group.length}-stone group with ${result.liberties.length} liberties.`, `${coord} 形成 ${result.group.length} 颗棋子的棋群，共有 ${result.liberties.length} 口气。`);
     }
+    strategySelectedIndex = null;
     selectedIndex = game.index(row, col);
   }
 
@@ -339,6 +346,9 @@
       return;
     }
     if (game.at(row, col) !== EMPTY && learnMode) {
+      strategySelectedIndex = null;
+      strategyPreview = false;
+      aimCell = null;
       selectedIndex = game.index(row, col);
       const group = game.groupAt(row, col);
       setCoach('LIBERTIES', '气', `${colorName(group.color)}’s ${group.stones.length}-stone group has ${group.liberties.length} ${group.liberties.length === 1 ? 'liberty' : 'liberties'}.`, `${colorName(group.color)}的 ${group.stones.length} 子棋群有 ${group.liberties.length} 口气。`);
@@ -529,7 +539,12 @@
     learnMode = !learnMode;
     $('learnBtn').setAttribute('aria-pressed', String(learnMode));
     try { localStorage.setItem('go_learn', learnMode ? '1' : '0'); } catch (error) {}
-    if (!learnMode) selectedIndex = null;
+    if (!learnMode) {
+      selectedIndex = null;
+      strategySelectedIndex = null;
+      if (strategyPreview) aimCell = null;
+      strategyPreview = false;
+    }
     render();
   }
 
@@ -545,8 +560,160 @@
     );
   }
 
+  function strategyPausedReason() {
+    if (reviewAt != null) return tr('Review is open. Return to Live to read the current turn.', '正在复盘；返回“实时”后再判断当前回合。');
+    if (currentResult() || game.phase !== 'playing') return tr('The position is settled. Review the game instead of choosing a new fight.', '棋局已进入结算；请复盘，而不是寻找新的战斗。');
+    if (room.code && roomWaiting()) return tr('Wait for your friend before reading the first turn.', '等待好友加入后再判断第一手。');
+    if (remoteBusy) return tr('The room is updating. The guide will resume when the position is confirmed.', '房间正在更新；局面确认后教学提示会恢复。');
+    if (room.code && (!room.color || game.current !== room.color)) return tr('It is your friend’s turn. Watch their choice, then read your reply.', '现在是好友回合；先观察对方选择，再判断你的应手。');
+    if (localAiTurn() || aiThinking) return tr('The beginner AI is choosing White’s reply. Watch whether it saves, attacks, or builds.', '入门 AI 正在选择白棋应手；观察它会防守、进攻还是发展。');
+    return '';
+  }
+
+  function setStrategyStep(activeId) {
+    ['strategyDefend', 'strategyAttack', 'strategyGrow'].forEach((id) => {
+      const step = $(id);
+      const active = id === activeId;
+      step.classList.toggle('active', active);
+      if (active) step.setAttribute('aria-current', 'step');
+      else step.removeAttribute('aria-current');
+    });
+  }
+
+  function strategyCopy(analysis) {
+    const actor = colorName(analysis.color);
+    const move = analysis.move ? coordinate(game.size, analysis.move.row, analysis.move.col) : '';
+    const stones = analysis.target ? analysis.target.stones.length : 0;
+    if (analysis.kind === 'defend') {
+      return tr(
+        `${actor}: defend first. ${move} rescues ${analysis.threatenedStones} threatened stone${analysis.threatenedStones === 1 ? '' : 's'}; the selected group reaches ${analysis.resultLiberties} liberties.`,
+        `${actor}：先防守。${move} 可救下 ${analysis.threatenedStones} 颗受威胁棋子；所选棋群增至 ${analysis.resultLiberties} 口气。`,
+      );
+    }
+    if (analysis.kind === 'defend-capture') {
+      return tr(
+        `${actor}: defend by capturing. ${move} saves ${analysis.threatenedStones} threatened stone${analysis.threatenedStones === 1 ? '' : 's'} and takes ${analysis.captured}.`,
+        `${actor}：以攻为守。${move} 可救下 ${analysis.threatenedStones} 颗受威胁棋子，并提走 ${analysis.captured} 子。`,
+      );
+    }
+    if (analysis.kind === 'danger') {
+      const at = analysis.target ? coordinate(game.size, ...game.rowCol(analysis.target.stones[0])) : '';
+      return tr(
+        `${actor}: danger at ${at}. This ${stones}-stone group has one liberty, but no legal move immediately gives it two. Check for a counter-capture—or consider letting it go.`,
+        `${actor}：${at} 告急。这个 ${stones} 子棋群只剩一口气，且没有合法着能立刻增至两气；请寻找反提，或考虑弃子。`,
+      );
+    }
+    if (analysis.kind === 'capture') {
+      return tr(
+        `${actor}: attack now. ${move} captures ${analysis.captured} stone${analysis.captured === 1 ? '' : 's'} immediately.`,
+        `${actor}：现在进攻。${move} 可立即提走 ${analysis.captured} 颗棋子。`,
+      );
+    }
+    if (analysis.kind === 'attack') {
+      return tr(
+        `${actor}: a safe attack is available. ${move} puts a ${stones}-stone group in atari while your new group keeps ${analysis.move.liberties} liberties.`,
+        `${actor}：可以安全进攻。${move} 可打吃一个 ${stones} 子棋群，同时新棋群仍有 ${analysis.move.liberties} 口气。`,
+      );
+    }
+    return tr(
+      `${actor}: no immediate rescue, capture, or safe atari. Connect weak stones or build from a corner or side.`,
+      `${actor}：当前没有紧急解救、直接提子或安全打吃；可连接弱棋，或从角部、边部发展。`,
+    );
+  }
+
+  function renderStrategy() {
+    const guide = $('strategyGuide');
+    guide.hidden = !learnMode;
+    if (!learnMode) { strategyAnalysis = null; strategySelectedIndex = null; return; }
+    const paused = strategyPausedReason();
+    const show = $('strategyShowBtn');
+    if (paused) {
+      guide.dataset.kind = 'paused';
+      $('strategyChip').textContent = tr('PAUSED', '暂停');
+      if ($('strategyCopy').textContent !== paused) $('strategyCopy').textContent = paused;
+      setStrategyStep('');
+      show.hidden = true;
+      strategyAnalysis = null;
+      if (selectedIndex === strategySelectedIndex) selectedIndex = null;
+      strategySelectedIndex = null;
+      if (strategyPreview) aimCell = null;
+      strategyPreview = false;
+      return;
+    }
+
+    const state = displayGame();
+    const analysis = analyzeBeginnerPriority(state);
+    strategyAnalysis = analysis;
+    if (strategySelectedIndex != null) {
+      const stillTargeted = analysis.target && analysis.target.stones.includes(strategySelectedIndex) &&
+        state.board[strategySelectedIndex] === analysis.target.color;
+      if (!stillTargeted) {
+        if (selectedIndex === strategySelectedIndex) selectedIndex = null;
+        strategySelectedIndex = null;
+      }
+    }
+    guide.dataset.kind = analysis.kind;
+    const labels = {
+      defend: tr('DEFEND', '防守'),
+      'defend-capture': tr('DEFEND + CAPTURE', '防守 + 提子'),
+      danger: tr('DANGER', '告急'),
+      capture: tr('CAPTURE', '提子'),
+      attack: tr('ATTACK', '进攻'),
+      quiet: tr('BUILD', '发展'),
+    };
+    $('strategyChip').textContent = labels[analysis.kind] || tr('READ', '读棋');
+    setStrategyStep(['defend', 'defend-capture', 'danger'].includes(analysis.kind)
+      ? 'strategyDefend' : (['capture', 'attack'].includes(analysis.kind) ? 'strategyAttack' : 'strategyGrow'));
+    const copy = strategyCopy(analysis);
+    if ($('strategyCopy').textContent !== copy) $('strategyCopy').textContent = copy;
+    show.hidden = !(analysis.move || analysis.target);
+    show.textContent = analysis.move
+      ? tr('Show idea on board', '在棋盘上显示思路')
+      : tr('Show endangered group', '显示告急棋群');
+
+    if (strategyPreview) {
+      if (analysis.target) {
+        const target = analysis.target.stones.find((point) => state.board[point] === analysis.target.color);
+        if (target != null) {
+          selectedIndex = target;
+          strategySelectedIndex = target;
+        }
+      }
+      if (analysis.move) {
+        aimCell = { r: analysis.move.row, c: analysis.move.col };
+      } else if (analysis.kind !== 'danger') {
+        aimCell = null;
+        strategyPreview = false;
+      }
+    }
+  }
+
+  function showStrategyIdea() {
+    if (!strategyAnalysis) return;
+    const state = displayGame();
+    if (strategyAnalysis.target) {
+      const target = strategyAnalysis.target.stones.find((point) => state.board[point] === strategyAnalysis.target.color);
+      if (target != null) {
+        selectedIndex = target;
+        strategySelectedIndex = target;
+      }
+    }
+    if (strategyAnalysis.move) {
+      aimCell = { r: strategyAnalysis.move.row, c: strategyAnalysis.move.col };
+      keyboardCell = { r: strategyAnalysis.move.row, c: strategyAnalysis.move.col };
+      strategyPreview = true;
+    } else {
+      aimCell = null;
+      strategyPreview = false;
+    }
+    renderInspection();
+    drawBoard();
+    announce(tr('Strategy idea highlighted on the board.', '已在棋盘上标出教学思路。'));
+  }
+
   function render() {
     renderCoach();
+    renderStrategy();
     renderStatus();
     renderControls();
     renderScoring();
@@ -1105,6 +1272,7 @@
       }
     }
     aimCell = null;
+    strategyPreview = false;
     attemptPlay(point.r, point.c);
   }
 
@@ -1124,7 +1292,7 @@
     } else if (key.toLowerCase() === 'p') {
       event.preventDefault(); passTurn();
     } else if (key === 'Escape') {
-      selectedIndex = null; aimCell = null; drawBoard(); renderInspection();
+      selectedIndex = null; strategySelectedIndex = null; strategyPreview = false; aimCell = null; drawBoard(); renderInspection();
     }
   }
 
@@ -1619,6 +1787,7 @@
     $('newBtn').addEventListener('click', askNewGame);
     $('resignBtn').addEventListener('click', askResign);
     $('learnBtn').addEventListener('click', toggleLearn);
+    $('strategyShowBtn').addEventListener('click', showStrategyIdea);
     $('acceptScoreBtn').addEventListener('click', acceptScore);
     $('resumeBtn').addEventListener('click', resumePlay);
     $('createRoomBtn').addEventListener('click', createRoom);

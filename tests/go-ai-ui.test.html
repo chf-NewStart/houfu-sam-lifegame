@@ -45,20 +45,52 @@
       return doc.querySelectorAll('#moveLog > div:not(.empty-log)').length;
     }
     function playCenter() {
+      playAt(4, 4);
+    }
+    function playAt(row, col) {
       const canvas = doc.getElementById('goBoard');
       const rect = canvas.getBoundingClientRect();
+      const pad = 30;
+      const cell = (rect.width - pad * 2) / 8;
       canvas.dispatchEvent(new win.PointerEvent('pointerup', {
         bubbles: true, pointerType: 'mouse',
-        clientX: rect.left + rect.width / 2,
-        clientY: rect.top + rect.height / 2,
+        clientX: rect.left + pad + col * cell,
+        clientY: rect.top + pad + row * cell,
       }));
     }
     function mode(name) { doc.querySelector(`#playerModeButtons [data-mode="${name}"]`).click(); }
 
+    test('strategy guide teaches the quiet-turn priority on an empty board', async () => {
+      ok(!doc.getElementById('strategyGuide').hidden, 'strategy guide should start visible');
+      ok(doc.getElementById('strategyChip').textContent.includes('BUILD'), 'empty board should show the build step');
+      ok(doc.getElementById('strategyGrow').classList.contains('active'), 'build step should be active');
+      ok(doc.getElementById('strategyShowBtn').hidden, 'quiet turn should not pretend to know a best move');
+    });
+
+    test('teaching-aids toggle hides and restores the strategy guide', async () => {
+      doc.getElementById('learnBtn').click();
+      ok(doc.getElementById('strategyGuide').hidden, 'strategy guide stayed visible with aids off');
+      doc.getElementById('learnBtn').click();
+      ok(!doc.getElementById('strategyGuide').hidden, 'strategy guide did not return with aids on');
+    });
+
+    test('strategy guide finds and highlights a safe attack', async () => {
+      mode('local');
+      playAt(0, 2);
+      playAt(0, 0);
+      ok(doc.getElementById('strategyChip').textContent.includes('ATTACK'), 'safe atari was not classified as attack');
+      ok(!doc.getElementById('strategyShowBtn').hidden, 'attack should expose its board highlight');
+      doc.getElementById('strategyShowBtn').click();
+      ok(doc.getElementById('inspectInfo').textContent.includes('White group'), 'opponent target was not highlighted');
+      mode('ai');
+    });
+
     test('default AI replies and Undo returns to the human decision', async () => {
       playCenter();
+      ok(doc.getElementById('strategyChip').textContent.includes('PAUSED'), 'guide should pause while AI thinks');
       await until(() => moveCount() === 2, 'AI did not reply to Black');
       ok(doc.getElementById('turnTitle').textContent.includes('your turn'), 'control did not return to Black');
+      ok(!doc.getElementById('strategyChip').textContent.includes('PAUSED'), 'guide did not resume after AI reply');
       doc.getElementById('undoBtn').click();
       ok(moveCount() === 0, 'Undo did not remove the AI reply and preceding human move');
     });
@@ -103,6 +135,8 @@
       doc.getElementById('langBtn').click();
       ok(doc.querySelector('#playerModeButtons [data-mode="ai"]').textContent.includes('入门'), 'Chinese AI label missing');
       ok(doc.getElementById('opponentHelp').textContent.includes('电脑落子'), 'Chinese local-mode explanation missing');
+      ok(doc.querySelector('.strategy-prompt').textContent.includes('优先'), 'Chinese strategy prompt missing');
+      ok(doc.getElementById('strategyDefend').textContent.includes('防守'), 'Chinese defense step missing');
       doc.getElementById('langBtn').click();
       ok(doc.querySelector('#playerModeButtons [data-mode="ai"]').textContent.includes('Beginner'), 'English AI label did not return');
     });

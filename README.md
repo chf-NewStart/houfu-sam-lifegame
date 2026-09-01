@@ -14,7 +14,7 @@ What began as a Conway's Game of Life implementation grew into a terminal-themed
 |---|---|
 | **game_of_life.exe** | The original. Draw patterns, explore four cellular universes, turn them into music — sandbox, 11 leaderboard challenges, and a Music Box sequencer. *(details below)* |
 | **glyph_run.exe** | An arena survivor where you ARE a Chinese character — evolve 3,000 years back to your oracle-bone form, with a fresh daily oracle objective. Every monster, weapon and drop is a real ancient glyph. *(details below)* |
-| **qi.exe · 棋** | The board-game room. **Go · 围棋** adds a beginner tactical AI on 9×9, local two-player boards on 9×9, 13×13, or 19×19, teaching aids, and private friend rooms. **Gomoku · 五子棋** offers a minimax AI, tactical coach, AI-vs-AI, and private friend rooms. |
+| **qi.exe · 棋** | The board-game room. **Go · 围棋** adds a beginner tactical AI on 9×9, a live attack-or-defend guide, local two-player boards on 9×9, 13×13, or 19×19, teaching aids, and private friend rooms. **Gomoku · 五子棋** offers a minimax AI, tactical coach, AI-vs-AI, and private friend rooms. |
 | **tether.exe** | Two players, one rope. Verlet rope physics, wind, ice, crumbling ledges — local or online co-op. |
 | **labyrinth.exe** | An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, a bigger maze every escape. |
 | **grow_a_tomato.exe** | Grow the biggest, sweetest tomato — powered by a real plant-metabolism model. |

@@ -368,6 +368,140 @@
     return stones;
   }
 
+  function orderedGroups(game, color) {
+    return groupsOf(game, color).sort((a, b) =>
+      a.liberties.length - b.liberties.length ||
+      b.stones.length - a.stones.length ||
+      a.stones[0] - b.stones[0]
+    );
+  }
+
+  function strategyTarget(group) {
+    return group ? {
+      color: group.color,
+      stones: group.stones.slice(),
+      liberties: group.liberties.slice(),
+    } : null;
+  }
+
+  function moveFromPoint(game, point) {
+    if (point == null) return null;
+    const rc = game.rowCol(point);
+    return { row: rc[0], col: rc[1], point };
+  }
+
+  function survivingGroup(game, group, board) {
+    const survivor = group.stones.find((stone) => board[stone] === group.color);
+    if (survivor == null) return null;
+    const rc = game.rowCol(survivor);
+    return game.groupAt(rc[0], rc[1], board);
+  }
+
+  function strategyMove(game, evaluation) {
+    const move = moveFromPoint(game, evaluation.point);
+    move.liberties = evaluation.preview.liberties.length;
+    return move;
+  }
+
+  /* A one-move, explainable priority ladder for the live beginner coach. It is
+     intentionally not a life-and-death solver or a claim about the best move. */
+  function analyzeBeginnerPriority(game) {
+    if (!game || game.phase !== 'playing' || (game.current !== BLACK && game.current !== WHITE)) {
+      return { kind: 'inactive', color: game && game.current || BLACK, target: null, move: null };
+    }
+    const color = game.current;
+    const opponent = other(color);
+    const own = orderedGroups(game, color);
+    const theirs = orderedGroups(game, opponent);
+    const endangered = own.filter((group) => group.liberties.length === 1);
+    const evaluations = [];
+
+    for (let row = 0; row < game.size; row++) {
+      for (let col = 0; col < game.size; col++) {
+        const point = game.index(row, col);
+        if (game.board[point] !== EMPTY) continue;
+        const preview = game.preview(row, col);
+        if (!preview.ok) continue;
+        const capturedSet = new Set(preview.captured);
+        const saved = endangered.map((group) => ({ group, after: survivingGroup(game, group, preview.board) }))
+          .filter((entry) => entry.after && entry.after.liberties.length >= 2);
+        const capturedGroups = theirs.filter((group) => group.stones.some((stone) => capturedSet.has(stone)));
+        const attacked = theirs.filter((group) => group.liberties.length > 1)
+          .map((group) => ({ group, after: survivingGroup(game, group, preview.board) }))
+          .filter((entry) => entry.after && entry.after.liberties.length === 1);
+        evaluations.push({
+          point, preview, saved, capturedGroups, attacked,
+          savedStones: saved.reduce((sum, entry) => sum + entry.group.stones.length, 0),
+          attackedStones: attacked.reduce((sum, entry) => sum + entry.group.stones.length, 0),
+          selfAtari: preview.liberties.length === 1 && preview.captured.length === 0,
+        });
+      }
+    }
+
+    if (endangered.length) {
+      const rescues = evaluations.filter((entry) => entry.savedStones > 0);
+      rescues.sort((a, b) =>
+        b.savedStones - a.savedStones || b.saved.length - a.saved.length ||
+        b.preview.captured.length - a.preview.captured.length ||
+        b.saved.reduce((sum, entry) => sum + entry.after.liberties.length, 0) -
+          a.saved.reduce((sum, entry) => sum + entry.after.liberties.length, 0) ||
+        a.point - b.point
+      );
+      if (!rescues.length) {
+        return { kind: 'danger', color, target: strategyTarget(endangered[0]), move: null };
+      }
+      const best = rescues[0];
+      const savedTarget = best.saved.slice().sort((a, b) =>
+        b.group.stones.length - a.group.stones.length || a.group.stones[0] - b.group.stones[0]
+      )[0];
+      return {
+        kind: best.preview.captured.length ? 'defend-capture' : 'defend',
+        color,
+        target: strategyTarget(savedTarget.group),
+        move: strategyMove(game, best),
+        threatenedStones: best.savedStones,
+        savedGroups: best.saved.length,
+        captured: best.preview.captured.length,
+        resultLiberties: savedTarget.after.liberties.length,
+      };
+    }
+
+    const captures = evaluations.filter((entry) => entry.preview.captured.length > 0);
+    captures.sort((a, b) =>
+      b.preview.captured.length - a.preview.captured.length ||
+      b.preview.liberties.length - a.preview.liberties.length || a.point - b.point
+    );
+    if (captures.length) {
+      const best = captures[0];
+      const target = best.capturedGroups.slice().sort((a, b) =>
+        b.stones.length - a.stones.length || a.stones[0] - b.stones[0]
+      )[0] || null;
+      return {
+        kind: 'capture', color, target: strategyTarget(target), move: strategyMove(game, best),
+        captured: best.preview.captured.length,
+      };
+    }
+
+    const attacks = evaluations.filter((entry) => entry.attackedStones > 0 && !entry.selfAtari);
+    attacks.sort((a, b) =>
+      b.attackedStones - a.attackedStones || b.attacked.length - a.attacked.length ||
+      b.preview.liberties.length - a.preview.liberties.length || a.point - b.point
+    );
+    if (attacks.length) {
+      const best = attacks[0];
+      const attackedTarget = best.attacked.slice().sort((a, b) =>
+        b.group.stones.length - a.group.stones.length || a.group.stones[0] - b.group.stones[0]
+      )[0];
+      return {
+        kind: 'attack', color, target: strategyTarget(attackedTarget.group), move: strategyMove(game, best),
+        attackedStones: best.attackedStones,
+        attackedGroups: best.attacked.length,
+      };
+    }
+
+    return { kind: 'quiet', color, target: null, move: null };
+  }
+
   function chooseBeginnerMove(game, options) {
     const opts = options || {};
     if (!game || game.phase !== 'playing') return null;
@@ -449,6 +583,7 @@
 
   return {
     GoGame, EMPTY, BLACK, WHITE, other, coordinate, starPoints, chooseBeginnerMove,
+    analyzeBeginnerPriority,
     COLUMNS, VALID_SIZES: Array.from(VALID_SIZES),
   };
 });

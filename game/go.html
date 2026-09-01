@@ -129,6 +129,37 @@
     .coach-note { margin-top: 9px; min-height: 54px; padding: 9px 10px; border-left: 2px solid var(--amber); background: rgba(241, 184, 75, .04); color: #a9b6af; font-size: .72rem; line-height: 1.55; }
     .coach-note strong { color: var(--amber); font-weight: 400; }
     .inspect { margin-top: 8px; color: var(--cyan); font-size: .68rem; min-height: 1.2em; }
+    .strategy-guide { margin-top: 10px; border: 1px solid #294036; background: #07120e; padding: 10px; }
+    .strategy-head { display: flex; align-items: center; gap: 7px; }
+    .strategy-prompt { margin: 0; color: #dce8e1; font-size: .72rem; letter-spacing: .04em; }
+    .strategy-glyph { color: var(--amber); font-size: .68rem; }
+    .strategy-chip { margin-left: auto; border: 1px solid #385244; padding: 3px 6px; color: #8da398; font-size: .58rem; letter-spacing: .08em; white-space: nowrap; }
+    .strategy-guide[data-kind="defend"] .strategy-chip,
+    .strategy-guide[data-kind="defend-capture"] .strategy-chip { border-color: rgba(99, 207, 219, .5); color: var(--cyan); }
+    .strategy-guide[data-kind="danger"] .strategy-chip { border-color: rgba(255, 107, 89, .55); color: var(--tomato); }
+    .strategy-guide[data-kind="capture"] .strategy-chip,
+    .strategy-guide[data-kind="attack"] .strategy-chip { border-color: rgba(241, 184, 75, .55); color: var(--amber); }
+    .strategy-guide[data-kind="quiet"] .strategy-chip { border-color: rgba(56, 223, 125, .42); color: var(--lime); }
+    .strategy-order { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 9px 0 0; padding: 0; list-style: none; }
+    .strategy-step { min-width: 0; border-top: 2px solid #20352a; padding: 6px 5px; background: rgba(14, 29, 22, .55); color: #849b8e; }
+    .strategy-step b { display: block; color: #9cb1a6; font-size: .61rem; font-weight: 400; letter-spacing: .06em; }
+    .strategy-step small { display: block; margin-top: 3px; font-size: .57rem; line-height: 1.35; }
+    .strategy-step.active { border-color: var(--lime); background: rgba(56, 223, 125, .07); color: #aec0b6; box-shadow: inset 0 -2px 0 rgba(56, 223, 125, .12); }
+    .strategy-step.active b { color: var(--lime); }
+    .strategy-guide[data-kind="defend"] .strategy-step.active,
+    .strategy-guide[data-kind="defend-capture"] .strategy-step.active { border-color: var(--cyan); }
+    .strategy-guide[data-kind="defend"] .strategy-step.active b,
+    .strategy-guide[data-kind="defend-capture"] .strategy-step.active b { color: var(--cyan); }
+    .strategy-guide[data-kind="danger"] .strategy-step.active { border-color: var(--tomato); }
+    .strategy-guide[data-kind="danger"] .strategy-step.active b { color: var(--tomato); }
+    .strategy-guide[data-kind="capture"] .strategy-step.active,
+    .strategy-guide[data-kind="attack"] .strategy-step.active { border-color: var(--amber); }
+    .strategy-guide[data-kind="capture"] .strategy-step.active b,
+    .strategy-guide[data-kind="attack"] .strategy-step.active b { color: var(--amber); }
+    .strategy-copy { min-height: 3.2em; margin: 9px 0 0; color: #a9b6af; font-size: .68rem; line-height: 1.5; }
+    .strategy-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .strategy-show { min-height: 44px; padding: 8px; }
+    .strategy-caveat { color: #82998d; font-size: .56rem; line-height: 1.35; text-align: right; }
     details { margin-top: 10px; border-top: 1px solid var(--line-soft); padding-top: 9px; }
     summary { color: #8da398; font-size: .7rem; cursor: pointer; }
     .rules { padding: 5px 0 0 18px; color: #738a7d; font-size: .68rem; line-height: 1.55; }
@@ -197,8 +228,9 @@
       .actions { grid-template-columns: repeat(2, 1fr); }
       .side { grid-template-columns: 1fr; }
       .card.wide { grid-column: auto; }
-      .turn-sub, .board-note, .helper, .coach-note, .inspect, .rules,
+      .turn-sub, .board-note, .helper, .coach-note, .inspect, .rules, .strategy-copy,
       .room-status, .approval, .review-caption, .log { font-size: .76rem; }
+      .strategy-step small { font-size: .63rem; }
       .card-title { font-size: .72rem; }
       .score-strip { gap: 5px; }
       .score-box { padding: 8px; }
@@ -209,8 +241,8 @@
   </style>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script defer src="/game/go-engine.js?v=45"></script>
-  <script defer src="/game/go.js?v=45"></script>
+  <script defer src="/game/go-engine.js?v=46"></script>
+  <script defer src="/game/go.js?v=46"></script>
 </head>
 <body>
   <a class="skip-link" href="#gameControls" data-en="Skip to game controls" data-zh="跳到游戏控制">Skip to game controls</a>
@@ -300,6 +332,32 @@
         </button>
         <div class="coach-note" id="coachNote"><strong>LIBERTIES</strong> · Empty points touching a group keep it alive.</div>
         <div class="inspect" id="inspectInfo"></div>
+        <div class="strategy-guide" id="strategyGuide" data-kind="quiet" aria-labelledby="strategyPrompt">
+          <div class="strategy-head">
+            <span class="strategy-glyph" aria-hidden="true">[?]</span>
+            <h3 class="strategy-prompt" id="strategyPrompt" data-en="What comes first?" data-zh="哪一步优先？">What comes first?</h3>
+            <span class="strategy-chip" id="strategyChip">BUILD</span>
+          </div>
+          <ol class="strategy-order" id="strategyOrder">
+            <li class="strategy-step" id="strategyDefend">
+              <b data-en="1 · DEFEND" data-zh="1 · 防守">1 · DEFEND</b>
+              <small data-en="save your group" data-zh="先救己方棋群">save your group</small>
+            </li>
+            <li class="strategy-step" id="strategyAttack">
+              <b data-en="2 · ATTACK" data-zh="2 · 进攻">2 · ATTACK</b>
+              <small data-en="capture or atari" data-zh="提子或打吃">capture or atari</small>
+            </li>
+            <li class="strategy-step active" id="strategyGrow" aria-current="step">
+              <b data-en="3 · BUILD" data-zh="3 · 发展">3 · BUILD</b>
+              <small data-en="when both are safe" data-zh="双方都安全时">when both are safe</small>
+            </li>
+          </ol>
+          <p class="strategy-copy" id="strategyCopy" role="status" aria-live="polite" aria-atomic="true">No immediate one-move tactic. Build connected shape.</p>
+          <div class="strategy-foot">
+            <button class="btn small strategy-show" id="strategyShowBtn" type="button" hidden data-en="Show on board" data-zh="在棋盘上显示">Show on board</button>
+            <span class="strategy-caveat" data-en="one-move liberty check · not a full Go solver" data-zh="单步气数检查 · 并非完整围棋求解器">one-move liberty check · not a full Go solver</span>
+          </div>
+        </div>
         <details>
           <summary data-en="Four rules you need" data-zh="只需掌握四条规则">Four rules you need</summary>
           <ol class="rules">
