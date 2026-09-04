@@ -64,15 +64,17 @@
     .recipe-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:0.68rem; color:#666; }
     .recipe-row select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.68rem; padding:4px; }
     .build-note { color:#555; font-size:0.64rem; margin-top:8px; line-height:1.6; }
-    .share-box { margin-top:10px; border-top:1px solid #1a1a1a; padding-top:9px; }
-    .share-title { color:#666; font-size:0.66rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
-    .share-line { display:flex; gap:6px; margin-bottom:6px; }
-    .share-line input { flex:1; min-width:0; background:#0a0a0a; border:1px solid #232323; color:#999; font-family:inherit; font-size:0.68rem; padding:6px 7px; }
-    .share-line input:focus { outline:none; border-color:#1db954; }
-    .share-line input#shareCode { color:#e8b04a; cursor:text; }
-    .share-msg { font-size:0.66rem; min-height:1.3em; margin-top:2px; }
-    .share-msg.ok { color:#1db954; }
-    .share-msg.fail { color:#f44336; }
+
+    /* share / import */
+    .share-block { margin-top:10px; border-top:1px solid #1a1a1a; padding-top:9px; }
+    .share-row { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+    .share-msg, .import-msg { font-size:0.64rem; min-height:1.4em; }
+    .import-msg { margin-top:4px; }
+    .share-box { display:none; gap:5px; margin-top:7px; }
+    .share-box.show { display:flex; }
+    .share-box input, .import-row input { flex:1; min-width:0; background:#0a0a0a; border:1px solid #262626; color:#999; font-family:inherit; font-size:0.66rem; padding:5px 7px; }
+    .share-box input:focus, .import-row input:focus { outline:none; border-color:#1db954; }
+    .import-row { display:flex; gap:5px; margin-top:8px; }
 
     /* field roster */
     .field-row { display:flex; gap:9px; align-items:center; padding:5px 4px; border-bottom:1px solid #161616; }
@@ -252,17 +254,21 @@
           </select>
         </div>
         <div class="build-note" data-en="&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser." data-zh="&gt; 第一回合还没有历史：「模仿对方上一步」视为合作，「反着来」视为背叛。你的策略会保存在本浏览器里。">&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser.</div>
-        <div class="share-box">
-          <div class="share-title" data-en="// share your strategy" data-zh="// 分享你的策略">// share your strategy</div>
-          <div class="share-line">
-            <input id="shareCode" readonly spellcheck="false" onfocus="this.select()">
-            <button class="sm-btn" id="shareCopyBtn" data-en="copy code" data-zh="复制代码">copy code</button>
+
+        <div class="share-block">
+          <div class="share-row">
+            <button class="sm-btn" id="shareBtn" data-en="share my strategy ↴" data-zh="分享我的策略 ↴">share my strategy ↴</button>
+            <span class="share-msg" id="shareMsg"></span>
           </div>
-          <div class="share-line">
-            <input id="importCode" spellcheck="false">
-            <button class="sm-btn" id="importBtn" data-en="import ▸" data-zh="导入 ▸">import ▸</button>
+          <div class="share-box" id="shareBox">
+            <input type="text" id="shareCode" readonly spellcheck="false">
+            <button class="sm-btn" id="shareCopyBtn" data-en="copy" data-zh="复制">copy</button>
           </div>
-          <div class="share-msg" id="shareMsg"></div>
+          <div class="import-row">
+            <input type="text" id="importInput" spellcheck="false">
+            <button class="sm-btn" id="importBtn" data-en="import" data-zh="导入">import</button>
+          </div>
+          <div class="import-msg" id="importMsg"></div>
         </div>
       </div>
     </div>
@@ -414,7 +420,7 @@
 
 <script>
 /*ENGINE-START*/
-// ───────────────────────── engine (DOM-free) ─────────────────────────
+// ─────────────────────── engine (DOM-free) ───────────────────────
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 
 var PAY = { CC:[3,3], CD:[0,5], DC:[5,0], DD:[1,1] };
@@ -547,7 +553,7 @@ function evoGeneration(pop, makers, rounds, noisePct, seed, cull){
 }
 /*ENGINE-END*/
 
-// ───────────────────────── strategies metadata ─────────────────────────
+// ─────────────────────── strategies metadata ───────────────────────
 var STRATS = [
   { id:'you',    color:'#1db954', av:{skin:'#3fbf6f', hat:'headband', eyes:'normal', mouth:'smile'},
     name:{en:'YOU', zh:'你'}, bio:{en:'Built from your rule cards on the left.', zh:'由左侧你的规则卡构成。'} },
@@ -574,7 +580,7 @@ var STRATS = [
 ];
 var SBY = {}; STRATS.forEach(function(s){ SBY[s.id]=s; });
 
-// ───────────────────────── pixel avatars ─────────────────────────
+// ─────────────────────── pixel avatars ───────────────────────
 function shade(hex, f){
   var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
   r=Math.max(0,Math.min(255,Math.round(r*f))); g=Math.max(0,Math.min(255,Math.round(g*f))); b=Math.max(0,Math.min(255,Math.round(b*f)));
@@ -618,7 +624,7 @@ function paintAvatar(cv, spec, accent){
 }
 function avatarFor(id, cv){ var s=SBY[id]; paintAvatar(cv, s.av, s.color); }
 
-// ───────────────────────── i18n ─────────────────────────
+// ─────────────────────── i18n ───────────────────────
 var lang='en';
 var TXT = {
   pick:{en:'— pick —',zh:'— 选择 —'},
@@ -660,18 +666,17 @@ var TXT = {
   domin:{en:'gen {g} — {name} has taken over the whole population',zh:'第 {g} 代 —— {name} 占领了整个种群'},
   pause:{en:'❚❚ pause',zh:'❚❚ 暂停'}, play:{en:'▶ play',zh:'▶ 播放'},
   myDefault:{en:'MY STRATEGY',zh:'我的策略'},
-  sharePlaceholder:{en:'paste a friend’s code here',zh:'在此粘贴好友的代码'},
-  shareCopied:{en:'✓ copied to clipboard',zh:'✓ 已复制到剪贴板'},
-  shareCopyFail:{en:'✗ could not copy — code is selected, copy it manually',zh:'✗ 复制失败——代码已选中，请手动复制'},
-  importEmpty:{en:'paste a code first',zh:'请先粘贴代码'},
-  importSuccess:{en:'✓ loaded “{name}” ({n} rules)',zh:'✓ 已载入「{name}」（{n} 条规则）'},
-  importFail:{en:'✗ that code doesn’t look right — check it and try again',zh:'✗ 代码无法识别——请检查后重试'}
+  copied:{en:'✓ copied to clipboard',zh:'✓ 已复制到剪贴板'},
+  copyErr:{en:'copy failed — select the code and copy it manually',zh:'复制失败——请手动选中代码并复制'},
+  importPlaceholder:{en:"paste a friend's code…",zh:'粘贴好友的代码…'},
+  importOk:{en:'✓ imported — loaded into the rule builder above',zh:'✓ 已导入——已加载到上方的规则编辑器'},
+  importErr:{en:'✗ invalid code',zh:'✗ 代码无效'}
 };
 function L(obj){ return obj[lang]; }
 function fmt(t, map){ var s=L(t); for(var k in map){ s=s.split('{'+k+'}').join(map[k]); } return s; }
 function sname(id){ return id==='you' ? (playerName||L(TXT.myDefault)) : L(SBY[id].name); }
 
-// ───────────────────────── player strategy state ─────────────────────────
+// ─────────────────────── player strategy state ───────────────────────
 var RECIPES = {
   tft:      [{c:'first',a:'coop'},{c:'always',a:'copy'}],
   grudger:  [{c:'opp_ever_d',a:'defect'},{c:'always',a:'coop'}],
@@ -689,7 +694,7 @@ function savePlayer(){ try{ localStorage.setItem('dilemma_player_v1', JSON.strin
 function playerMaker(){ return compileRules(playerRules)(); }
 function makerFor(id){ return id==='you' ? function(){ return playerMaker(); } : MAKERS[id]; }
 
-// ───────────────────────── rule builder UI ─────────────────────────
+// ─────────────────────── rule builder UI ───────────────────────
 var CONDS=['first','opp_last_d','opp_last_c','opp_streak_d','opp_streak_c','opp_ever_d','opp_rate_gt','my_last_d','round_gt','every_n','chance'];
 var ACTS=['coop','defect','copy','opposite','random'];
 var needsN={opp_streak_d:1,opp_streak_c:1,round_gt:1,every_n:1}, needsP={opp_rate_gt:1,chance:1};
@@ -736,7 +741,6 @@ function renderRules(){
     }
     box.appendChild(row);
   });
-  updateShareCode();
 }
 document.getElementById('addRule').onclick=function(){
   playerRules.splice(playerRules.length-1,0,{c:'opp_last_d',a:'defect'}); savePlayer(); renderRules();
@@ -747,65 +751,66 @@ document.getElementById('recipeSel').onchange=function(){
   savePlayer(); renderRules(); this.value='';
 };
 var nameInput=document.getElementById('stratName');
-nameInput.oninput=function(){ playerName=nameInput.value; savePlayer(); refreshNames(); updateShareCode(); };
+nameInput.oninput=function(){ playerName=nameInput.value; savePlayer(); refreshNames(); };
 
-// ───────────────────────── share / import strategy codes ─────────────────────────
-// UTF-8-safe base64, so names in Chinese round-trip cleanly.
-function b64EncodeUnicode(str){
-  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(_, hex){ return String.fromCharCode(parseInt(hex,16)); }));
+// ─────────────────────── share / import codes ───────────────────────
+// pack {v, n(ame), r(ules)} as JSON, UTF-8 safe base64, URL-safe alphabet, no padding.
+function encodeStrategy(){
+  var payload=JSON.stringify({v:1,n:playerName||'',r:playerRules});
+  var b64=btoa(unescape(encodeURIComponent(payload)));
+  return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
-function b64DecodeUnicode(str){
-  return decodeURIComponent(Array.prototype.map.call(atob(str), function(c){
-    return '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2);
-  }).join(''));
-}
-function buildShareCode(){
-  try{ return b64EncodeUnicode(JSON.stringify({ v:1, n:playerName, r:playerRules })); }
-  catch(e){ return ''; }
-}
-// throws on anything malformed; caller wraps in try/catch
-function parseShareCode(code){
-  var obj = JSON.parse(b64DecodeUnicode(code.trim()));
-  if(!obj || !Array.isArray(obj.r) || !obj.r.length) throw new Error('no rules');
-  var rules = obj.r.map(function(r){
-    // 'always' isn't in CONDS (it's the implicit trailing "otherwise" row, not a dropdown choice)
-    // but every real strategy ends with one, so it must still validate here.
-    var condOk = r && (CONDS.indexOf(r.c)!==-1 || r.c==='always');
-    if(!condOk || ACTS.indexOf(r.a)===-1) throw new Error('bad rule');
-    var o = { c:r.c, a:r.a };
-    if(needsN[r.c]) o.n = Math.max(1, Math.min(50, r.n|0)) || 2;
-    if(needsP[r.c]) o.p = Math.max(1, Math.min(100, r.p|0)) || 50;
-    return o;
+function decodeStrategyCode(code){
+  var b64=(code||'').trim().replace(/-/g,'+').replace(/_/g,'/');
+  if(!b64) throw new Error('empty');
+  while(b64.length%4) b64+='=';
+  var payload=decodeURIComponent(escape(atob(b64)));
+  var obj=JSON.parse(payload);
+  if(!obj || !Array.isArray(obj.r) || !obj.r.length) throw new Error('shape');
+  obj.r.forEach(function(rule){
+    if(!rule || (CONDS.indexOf(rule.c)===-1 && rule.c!=='always') || ACTS.indexOf(rule.a)===-1) throw new Error('rule');
   });
-  return { name: (typeof obj.n==='string' ? obj.n.slice(0,18) : ''), rules: rules };
+  return obj;
 }
-function updateShareCode(){ document.getElementById('shareCode').value = buildShareCode(); }
-function shareMsg(text, ok){
-  var m=document.getElementById('shareMsg'); m.textContent=text; m.className='share-msg '+(ok?'ok':'fail');
+function fallbackCopy(inputEl, cb){
+  try{
+    inputEl.removeAttribute('readonly'); inputEl.focus(); inputEl.select(); inputEl.setSelectionRange(0,99999);
+    var ok=document.execCommand('copy'); inputEl.setAttribute('readonly','');
+    cb(ok);
+  }catch(e){ cb(false); }
 }
-document.getElementById('shareCopyBtn').onclick=function(){
-  var inp=document.getElementById('shareCode');
-  inp.focus(); inp.select();
+document.getElementById('shareBtn').onclick=function(){
+  var code=encodeStrategy();
+  var box=document.getElementById('shareBox'), out=document.getElementById('shareCode');
+  out.value=code; box.classList.add('show');
+  var msg=document.getElementById('shareMsg');
+  function done(ok){ msg.textContent = ok?L(TXT.copied):L(TXT.copyErr); msg.style.color = ok?'#1db954':'#f44336'; }
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(inp.value).then(function(){ shareMsg(L(TXT.shareCopied), true); }, function(){ shareMsg(L(TXT.shareCopyFail), false); });
+    navigator.clipboard.writeText(code).then(function(){ done(true); }).catch(function(){ fallbackCopy(out,done); });
   } else {
-    try{ document.execCommand('copy'); shareMsg(L(TXT.shareCopied), true); }
-    catch(e){ shareMsg(L(TXT.shareCopyFail), false); }
+    fallbackCopy(out,done);
   }
 };
+document.getElementById('shareCopyBtn').onclick=function(){
+  document.getElementById('shareBtn').click();
+};
 document.getElementById('importBtn').onclick=function(){
-  var raw=document.getElementById('importCode').value.trim();
-  if(!raw){ shareMsg(L(TXT.importEmpty), false); return; }
-  var parsed=null;
-  try{ parsed=parseShareCode(raw); }catch(e){ parsed=null; }
-  if(!parsed){ shareMsg(L(TXT.importFail), false); return; }
-  playerRules=parsed.rules; playerName=parsed.name;
-  savePlayer(); renderRules(); nameInput.value=playerName; refreshNames(); updateShareCode();
-  shareMsg(fmt(TXT.importSuccess,{name:playerName||L(TXT.myDefault), n:parsed.rules.length}), true);
-  document.getElementById('importCode').value='';
+  var input=document.getElementById('importInput'), msg=document.getElementById('importMsg');
+  try{
+    var obj=decodeStrategyCode(input.value);
+    playerRules=obj.r.map(function(r){ var o={}; for(var k in r) o[k]=r[k]; return o; });
+    playerName=obj.n||'';
+    savePlayer();
+    nameInput.value=playerName;
+    renderRules(); refreshNames();
+    input.value='';
+    msg.textContent=L(TXT.importOk); msg.style.color='#1db954';
+  }catch(e){
+    msg.textContent=L(TXT.importErr); msg.style.color='#f44336';
+  }
 };
 
-// ───────────────────────── field roster ─────────────────────────
+// ─────────────────────── field roster ───────────────────────
 function renderField(){
   var box=document.getElementById('fieldList'); box.innerHTML='';
   STRATS.forEach(function(s){
@@ -819,14 +824,14 @@ function renderField(){
   });
 }
 
-// ───────────────────────── settings ─────────────────────────
+// ─────────────────────── settings ───────────────────────
 function getRounds(){ return document.getElementById('roundsSel').value|0; }
 function getNoise(){ return document.getElementById('noiseRange').value|0; }
 document.getElementById('noiseRange').oninput=function(){
   document.getElementById('noiseVal').textContent=this.value+'%';
 };
 
-// ───────────────────────── tabs ─────────────────────────
+// ─────────────────────── tabs ───────────────────────
 var tabs=document.querySelectorAll('.tab');
 tabs.forEach(function(t){ t.onclick=function(){ selectTab(t.dataset.tab); }; });
 function selectTab(id){
@@ -834,7 +839,7 @@ function selectTab(id){
   document.querySelectorAll('.tabpanel').forEach(function(p){ p.classList.toggle('sel', p.id==='panel-'+id); });
 }
 
-// ───────────────────────── tournament ─────────────────────────
+// ─────────────────────── tournament ───────────────────────
 var lastBoard=null;
 document.getElementById('runTourney').onclick=function(){
   var rounds=getRounds(), noise=getNoise();
@@ -888,7 +893,7 @@ function renderBreakdown(row){
   bd.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
-// ───────────────────────── match viewer ─────────────────────────
+// ─────────────────────── match viewer ───────────────────────
 var speed=150, matchTimer=null, matchData=null, matchPos=0;
 document.querySelectorAll('.spd').forEach(function(b){
   b.onclick=function(){ document.querySelectorAll('.spd').forEach(function(x){x.classList.remove('sel');}); b.classList.add('sel'); speed=b.dataset.spd|0;
@@ -987,7 +992,7 @@ function finishMatch(){
   box.style.borderColor=wcol; box.style.color='#ccc';
 }
 
-// ───────────────────────── evolution ─────────────────────────
+// ─────────────────────── evolution ───────────────────────
 var POPN=24, CULL=4;
 var evoPop=null, evoGenN=0, evoHist=[], evoTimer=null, evoLogSeen={};
 function evoChecked(){
@@ -1078,7 +1083,7 @@ document.getElementById('evoPlay').onclick=function(){
 };
 document.getElementById('evoReset').onclick=evoReset;
 
-// ───────────────────────── trust trials ─────────────────────────
+// ─────────────────────── trust trials ───────────────────────
 var TRIALS = [
   {
     id:'handshake', opp:'tft', rounds:30, noise:0, seed:1001,
@@ -1206,14 +1211,14 @@ document.getElementById('editTrial').onclick=function(){
   document.querySelector('.col-build .pcard').scrollIntoView({behavior:'smooth',block:'start'});
 };
 
-// ───────────────────────── language ─────────────────────────
+// ─────────────────────── language ───────────────────────
 function applyLangAttrs(){
   document.querySelectorAll('[data-en]').forEach(function(n){
     var v=n.getAttribute('data-'+lang); if(v!=null) n.innerHTML=v;
   });
   document.getElementById('langBtn').textContent = lang==='en' ? '中文' : 'EN';
   document.documentElement.lang = lang==='en'?'en':'zh';
-  document.getElementById('importCode').placeholder = L(TXT.sharePlaceholder);
+  document.getElementById('importInput').placeholder=L(TXT.importPlaceholder);
 }
 function refreshNames(){
   fillPickers(); renderField();
@@ -1234,7 +1239,7 @@ function renderEvoRosterKeepChecks(){
   document.querySelectorAll('#evoRoster input').forEach(function(c){ if(c.value in checked) c.checked=checked[c.value]; });
 }
 
-// ───────────────────────── init ─────────────────────────
+// ─────────────────────── init ───────────────────────
 try{ if(localStorage.getItem('arcade_lang')==='zh') lang='zh'; }catch(e){}
 applyLangAttrs();
 avatarFor('you', document.getElementById('myAvatar'));
