@@ -16,4 +16,4 @@ Write tasks like you'd brief a contractor: what, where, and what "done" looks li
       player's rule list + name into a short code string (base64 or similar) with
       a copy button, and an import box that decodes a friend's code into the rule
       builder. Bilingual labels like the rest of the page. Bump the index link
-      to ?v=b2. (2026-09-04, overnight/dilemma-share-strategy)
+      to ?v=b2. (2026-09-05, overnight/dilemma-share-strategy)
