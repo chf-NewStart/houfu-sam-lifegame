@@ -64,17 +64,13 @@
     .recipe-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:0.68rem; color:#666; }
     .recipe-row select { background:#0a0a0a; border:1px solid #262626; color:#ccc; font-family:inherit; font-size:0.68rem; padding:4px; }
     .build-note { color:#555; font-size:0.64rem; margin-top:8px; line-height:1.6; }
-
-    /* share / import */
-    .share-block { margin-top:10px; border-top:1px solid #1a1a1a; padding-top:9px; }
-    .share-row { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
-    .share-msg, .import-msg { font-size:0.64rem; min-height:1.4em; }
-    .import-msg { margin-top:4px; }
-    .share-box { display:none; gap:5px; margin-top:7px; }
-    .share-box.show { display:flex; }
-    .share-box input, .import-row input { flex:1; min-width:0; background:#0a0a0a; border:1px solid #262626; color:#999; font-family:inherit; font-size:0.66rem; padding:5px 7px; }
-    .share-box input:focus, .import-row input:focus { outline:none; border-color:#1db954; }
-    .import-row { display:flex; gap:5px; margin-top:8px; }
+    .share-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .share-box, .import-box { display:none; gap:6px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+    .share-box input, .import-box input { flex:1; min-width:160px; background:#0a0a0a; border:1px solid #262626; font-family:inherit; font-size:0.68rem; padding:6px 7px; }
+    .share-box input { color:#1db954; }
+    .import-box input { color:#ccc; }
+    .share-box input:focus, .import-box input:focus { outline:none; border-color:#1db954; }
+    .share-msg { font-size:0.64rem; }
 
     /* field roster */
     .field-row { display:flex; gap:9px; align-items:center; padding:5px 4px; border-bottom:1px solid #161616; }
@@ -253,23 +249,21 @@
             <option value="majority" data-en="Majority Rule" data-zh="多数裁决">Majority Rule</option>
           </select>
         </div>
-        <div class="build-note" data-en="&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser." data-zh="&gt; 第一回合还没有历史：「模仿对方上一步」视为合作，「反着来」视为背叛。你的策略会保存在本浏览器里。">&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser.</div>
-
-        <div class="share-block">
-          <div class="share-row">
-            <button class="sm-btn" id="shareBtn" data-en="share my strategy ↴" data-zh="分享我的策略 ↴">share my strategy ↴</button>
-            <span class="share-msg" id="shareMsg"></span>
-          </div>
-          <div class="share-box" id="shareBox">
-            <input type="text" id="shareCode" readonly spellcheck="false">
-            <button class="sm-btn" id="shareCopyBtn" data-en="copy" data-zh="复制">copy</button>
-          </div>
-          <div class="import-row">
-            <input type="text" id="importInput" spellcheck="false">
-            <button class="sm-btn" id="importBtn" data-en="import" data-zh="导入">import</button>
-          </div>
-          <div class="import-msg" id="importMsg"></div>
+        <div class="share-row">
+          <button class="sm-btn" id="shareBtn" data-en="📤 share my strategy" data-zh="📤 分享我的策略">📤 share my strategy</button>
+          <button class="sm-btn" id="importBtn" data-en="📥 import a code" data-zh="📥 导入代码">📥 import a code</button>
         </div>
+        <div class="share-box" id="shareBox">
+          <input id="shareCode" readonly spellcheck="false">
+          <button class="sm-btn" id="copyShareBtn" data-en="copy" data-zh="复制">copy</button>
+          <span class="share-msg" id="shareMsg"></span>
+        </div>
+        <div class="import-box" id="importBox">
+          <input id="importCode" spellcheck="false">
+          <button class="sm-btn" id="applyImportBtn" data-en="load" data-zh="载入">load</button>
+          <span class="share-msg" id="importMsg"></span>
+        </div>
+        <div class="build-note" data-en="&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser." data-zh="&gt; 第一回合还没有历史：「模仿对方上一步」视为合作，「反着来」视为背叛。你的策略会保存在本浏览器里。">&gt; on round 1 there is no history yet: “copy their last move” cooperates, “do the opposite” defects. Your strategy is saved in this browser.</div>
       </div>
     </div>
 
@@ -415,12 +409,12 @@
 
 <div class="foot-note"
   data-en="&gt; Inspired by Robert Axelrod's 1980 computer tournaments — where the simplest entry, Anatol Rapoport's TIT FOR TAT, beat every clever program — and by Nicky Case's “The Evolution of Trust”. The lesson survives noise, evolution and forty years: be nice, retaliate, forgive, don't be envious."
-  data-zh="&gt; 灵感来自罗伯特·阿克塞尔罗德 1980 年的计算机锦标赛——最简单的参赛作品、阿纳托尔·拉波波特的「一报还一报」击败了所有聪明程序——也来自 Nicky Case 的《信任的进化》。这条经验穿过噪音、演化与四十年依然成立：善良、回击、宽恕、不嫉妒。">
+  data-zh="&gt; 灵感来自罗伯特·阿克塞尔罗德 1980 年的计算机锦标赛——最简单的参赛作品、阿纳托尔·拉波波特的「一报还一报」击败了所有聪明程序——也来自 Nicky Case 的《信任的进化》。这条经验穿过噪声、演化与四十年依然成立：善良、回击、宽恕、不嫁妒。">
   &gt; Inspired by Robert Axelrod's 1980 computer tournaments — where the simplest entry, Anatol Rapoport's TIT FOR TAT, beat every clever program — and by Nicky Case's “The Evolution of Trust”. The lesson survives noise, evolution and forty years: be nice, retaliate, forgive, don't be envious.</div>
 
 <script>
 /*ENGINE-START*/
-// ───────────────────────── engine (DOM-free) ─────────────────────────
+// ───────────────────── engine (DOM-free) ─────────────────────
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 
 var PAY = { CC:[3,3], CD:[0,5], DC:[5,0], DD:[1,1] };
@@ -553,7 +547,7 @@ function evoGeneration(pop, makers, rounds, noisePct, seed, cull){
 }
 /*ENGINE-END*/
 
-// ───────────────────────── strategies metadata ─────────────────────────
+// ───────────────────── strategies metadata ─────────────────────
 var STRATS = [
   { id:'you',    color:'#1db954', av:{skin:'#3fbf6f', hat:'headband', eyes:'normal', mouth:'smile'},
     name:{en:'YOU', zh:'你'}, bio:{en:'Built from your rule cards on the left.', zh:'由左侧你的规则卡构成。'} },
@@ -580,7 +574,7 @@ var STRATS = [
 ];
 var SBY = {}; STRATS.forEach(function(s){ SBY[s.id]=s; });
 
-// ───────────────────────── pixel avatars ─────────────────────────
+// ───────────────────── pixel avatars ─────────────────────
 function shade(hex, f){
   var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
   r=Math.max(0,Math.min(255,Math.round(r*f))); g=Math.max(0,Math.min(255,Math.round(g*f))); b=Math.max(0,Math.min(255,Math.round(b*f)));
@@ -624,7 +618,7 @@ function paintAvatar(cv, spec, accent){
 }
 function avatarFor(id, cv){ var s=SBY[id]; paintAvatar(cv, s.av, s.color); }
 
-// ───────────────────────── i18n ─────────────────────────
+// ───────────────────── i18n ─────────────────────
 var lang='en';
 var TXT = {
   pick:{en:'— pick —',zh:'— 选择 —'},
@@ -666,17 +660,18 @@ var TXT = {
   domin:{en:'gen {g} — {name} has taken over the whole population',zh:'第 {g} 代 —— {name} 占领了整个种群'},
   pause:{en:'❚❚ pause',zh:'❚❚ 暂停'}, play:{en:'▶ play',zh:'▶ 播放'},
   myDefault:{en:'MY STRATEGY',zh:'我的策略'},
+  importPh:{en:"paste a friend's code here",zh:'粘贴好友的代码'},
   copied:{en:'✓ copied to clipboard',zh:'✓ 已复制到剪贴板'},
-  copyErr:{en:'copy failed — select the code and copy it manually',zh:'复制失败——请手动选中代码并复制'},
-  importPlaceholder:{en:"paste a friend's code…",zh:'粘贴好友的代码…'},
-  importOk:{en:'✓ imported — loaded into the rule builder above',zh:'✓ 已导入——已加载到上方的规则编辑器'},
-  importErr:{en:'✗ invalid code',zh:'✗ 代码无效'}
+  copyFail:{en:'✗ copy failed — select & copy manually',zh:'✗ 复制失败——请手动选择并复制'},
+  importOk:{en:'✓ loaded! your rules were replaced.',zh:'✓ 已载入！你的规则已被替换。'},
+  importFail:{en:'✗ invalid code',zh:'✗ 代码无效'}
 };
 function L(obj){ return obj[lang]; }
 function fmt(t, map){ var s=L(t); for(var k in map){ s=s.split('{'+k+'}').join(map[k]); } return s; }
-function sname(id){ return id==='you' ? (playerName||L(TXT.myDefault)) : L(SBY[id].name); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]; }); }
+function sname(id){ return id==='you' ? escapeHtml(playerName||L(TXT.myDefault)) : L(SBY[id].name); }
 
-// ───────────────────────── player strategy state ─────────────────────────
+// ───────────────────── player strategy state ─────────────────────
 var RECIPES = {
   tft:      [{c:'first',a:'coop'},{c:'always',a:'copy'}],
   grudger:  [{c:'opp_ever_d',a:'defect'},{c:'always',a:'coop'}],
@@ -694,12 +689,48 @@ function savePlayer(){ try{ localStorage.setItem('dilemma_player_v1', JSON.strin
 function playerMaker(){ return compileRules(playerRules)(); }
 function makerFor(id){ return id==='you' ? function(){ return playerMaker(); } : MAKERS[id]; }
 
-// ───────────────────────── rule builder UI ─────────────────────────
+// ───────────────────── rule builder UI ─────────────────────
 var CONDS=['first','opp_last_d','opp_last_c','opp_streak_d','opp_streak_c','opp_ever_d','opp_rate_gt','my_last_d','round_gt','every_n','chance'];
 var ACTS=['coop','defect','copy','opposite','random'];
 var needsN={opp_streak_d:1,opp_streak_c:1,round_gt:1,every_n:1}, needsP={opp_rate_gt:1,chance:1};
 
 function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
+
+// ───────────────────── share / import codes ─────────────────────
+function sanitizeRules(rules){
+  var out=[];
+  (rules||[]).forEach(function(r){
+    if(!r || typeof r!=='object') return;
+    var c=r.c, a=r.a;
+    if(c!=='always' && CONDS.indexOf(c)===-1) return;
+    if(ACTS.indexOf(a)===-1) return;
+    var o={c:c,a:a};
+    if(needsN[c]) o.n=Math.max(1,Math.min(50,(r.n|0)||2));
+    if(needsP[c]) o.p=Math.max(1,Math.min(100,(r.p|0)||50));
+    out.push(o);
+  });
+  if(!out.length) out.push({c:'first',a:'coop'});
+  if(out[out.length-1].c!=='always') out.push({c:'always',a:'coop'});
+  return out.slice(0,30);
+}
+function encodeShareCode(){
+  var payload=JSON.stringify({v:1,name:playerName,rules:playerRules});
+  var b64;
+  try{ b64=btoa(unescape(encodeURIComponent(payload))); }catch(e){ b64=btoa(payload); }
+  return 'DLAB1:'+b64;
+}
+function decodeShareCode(raw){
+  var code=(raw||'').trim();
+  if(!code) throw new Error('empty code');
+  var m=code.match(/^DLAB1:([\s\S]+)$/);
+  if(m) code=m[1];
+  code=code.replace(/\s+/g,'');
+  var json;
+  try{ json=decodeURIComponent(escape(atob(code))); }catch(e){ throw new Error('decode failed'); }
+  var data=JSON.parse(json);
+  if(!data || !Array.isArray(data.rules)) throw new Error('bad payload');
+  return data;
+}
 
 function renderRules(){
   var box=document.getElementById('ruleList'); box.innerHTML='';
@@ -753,64 +784,51 @@ document.getElementById('recipeSel').onchange=function(){
 var nameInput=document.getElementById('stratName');
 nameInput.oninput=function(){ playerName=nameInput.value; savePlayer(); refreshNames(); };
 
-// ───────────────────────── share / import codes ─────────────────────────
-// pack {v, n(ame), r(ules)} as JSON, UTF-8 safe base64, URL-safe alphabet, no padding.
-function encodeStrategy(){
-  var payload=JSON.stringify({v:1,n:playerName||'',r:playerRules});
-  var b64=btoa(unescape(encodeURIComponent(payload)));
-  return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-function decodeStrategyCode(code){
-  var b64=(code||'').trim().replace(/-/g,'+').replace(/_/g,'/');
-  if(!b64) throw new Error('empty');
-  while(b64.length%4) b64+='=';
-  var payload=decodeURIComponent(escape(atob(b64)));
-  var obj=JSON.parse(payload);
-  if(!obj || !Array.isArray(obj.r) || !obj.r.length) throw new Error('shape');
-  obj.r.forEach(function(rule){
-    if(!rule || (CONDS.indexOf(rule.c)===-1 && rule.c!=='always') || ACTS.indexOf(rule.a)===-1) throw new Error('rule');
-  });
-  return obj;
-}
-function fallbackCopy(inputEl, cb){
-  try{
-    inputEl.removeAttribute('readonly'); inputEl.focus(); inputEl.select(); inputEl.setSelectionRange(0,99999);
-    var ok=document.execCommand('copy'); inputEl.setAttribute('readonly','');
-    cb(ok);
-  }catch(e){ cb(false); }
-}
+// ───────────────────── share / import UI ─────────────────────
 document.getElementById('shareBtn').onclick=function(){
-  var code=encodeStrategy();
-  var box=document.getElementById('shareBox'), out=document.getElementById('shareCode');
-  out.value=code; box.classList.add('show');
-  var msg=document.getElementById('shareMsg');
-  function done(ok){ msg.textContent = ok?L(TXT.copied):L(TXT.copyErr); msg.style.color = ok?'#1db954':'#f44336'; }
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(code).then(function(){ done(true); }).catch(function(){ fallbackCopy(out,done); });
-  } else {
-    fallbackCopy(out,done);
-  }
-};
-document.getElementById('shareCopyBtn').onclick=function(){
-  document.getElementById('shareBtn').click();
+  var box=document.getElementById('shareBox'), open=box.style.display==='flex';
+  document.getElementById('importBox').style.display='none';
+  if(open){ box.style.display='none'; return; }
+  document.getElementById('shareCode').value=encodeShareCode();
+  document.getElementById('shareMsg').textContent='';
+  box.style.display='flex';
+  document.getElementById('shareCode').select();
 };
 document.getElementById('importBtn').onclick=function(){
-  var input=document.getElementById('importInput'), msg=document.getElementById('importMsg');
+  var box=document.getElementById('importBox'), open=box.style.display==='flex';
+  document.getElementById('shareBox').style.display='none';
+  box.style.display = open ? 'none' : 'flex';
+  document.getElementById('importMsg').textContent='';
+};
+document.getElementById('copyShareBtn').onclick=function(){
+  var input=document.getElementById('shareCode'), msg=document.getElementById('shareMsg');
+  input.select(); input.setSelectionRange(0,99999);
+  function ok(){ msg.textContent=L(TXT.copied); msg.style.color='#1db954'; }
+  function fail(){ msg.textContent=L(TXT.copyFail); msg.style.color='#f44336'; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(input.value).then(ok, function(){
+      try{ document.execCommand('copy') ? ok() : fail(); }catch(e){ fail(); }
+    });
+  } else {
+    try{ document.execCommand('copy') ? ok() : fail(); }catch(e){ fail(); }
+  }
+};
+document.getElementById('applyImportBtn').onclick=function(){
+  var msg=document.getElementById('importMsg');
   try{
-    var obj=decodeStrategyCode(input.value);
-    playerRules=obj.r.map(function(r){ var o={}; for(var k in r) o[k]=r[k]; return o; });
-    playerName=obj.n||'';
+    var data=decodeShareCode(document.getElementById('importCode').value);
+    playerRules=sanitizeRules(data.rules);
+    if(typeof data.name==='string') playerName=data.name.slice(0,18);
     savePlayer();
     nameInput.value=playerName;
     renderRules(); refreshNames();
-    input.value='';
     msg.textContent=L(TXT.importOk); msg.style.color='#1db954';
   }catch(e){
-    msg.textContent=L(TXT.importErr); msg.style.color='#f44336';
+    msg.textContent=L(TXT.importFail); msg.style.color='#f44336';
   }
 };
 
-// ───────────────────────── field roster ─────────────────────────
+// ───────────────────── field roster ─────────────────────
 function renderField(){
   var box=document.getElementById('fieldList'); box.innerHTML='';
   STRATS.forEach(function(s){
@@ -824,14 +842,14 @@ function renderField(){
   });
 }
 
-// ───────────────────────── settings ─────────────────────────
+// ───────────────────── settings ─────────────────────
 function getRounds(){ return document.getElementById('roundsSel').value|0; }
 function getNoise(){ return document.getElementById('noiseRange').value|0; }
 document.getElementById('noiseRange').oninput=function(){
   document.getElementById('noiseVal').textContent=this.value+'%';
 };
 
-// ───────────────────────── tabs ─────────────────────────
+// ───────────────────── tabs ─────────────────────
 var tabs=document.querySelectorAll('.tab');
 tabs.forEach(function(t){ t.onclick=function(){ selectTab(t.dataset.tab); }; });
 function selectTab(id){
@@ -839,7 +857,7 @@ function selectTab(id){
   document.querySelectorAll('.tabpanel').forEach(function(p){ p.classList.toggle('sel', p.id==='panel-'+id); });
 }
 
-// ───────────────────────── tournament ─────────────────────────
+// ───────────────────── tournament ─────────────────────
 var lastBoard=null;
 document.getElementById('runTourney').onclick=function(){
   var rounds=getRounds(), noise=getNoise();
@@ -893,7 +911,7 @@ function renderBreakdown(row){
   bd.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
-// ───────────────────────── match viewer ─────────────────────────
+// ───────────────────── match viewer ─────────────────────
 var speed=150, matchTimer=null, matchData=null, matchPos=0;
 document.querySelectorAll('.spd').forEach(function(b){
   b.onclick=function(){ document.querySelectorAll('.spd').forEach(function(x){x.classList.remove('sel');}); b.classList.add('sel'); speed=b.dataset.spd|0;
@@ -992,7 +1010,7 @@ function finishMatch(){
   box.style.borderColor=wcol; box.style.color='#ccc';
 }
 
-// ───────────────────────── evolution ─────────────────────────
+// ───────────────────── evolution ─────────────────────
 var POPN=24, CULL=4;
 var evoPop=null, evoGenN=0, evoHist=[], evoTimer=null, evoLogSeen={};
 function evoChecked(){
@@ -1083,7 +1101,7 @@ document.getElementById('evoPlay').onclick=function(){
 };
 document.getElementById('evoReset').onclick=evoReset;
 
-// ───────────────────────── trust trials ─────────────────────────
+// ───────────────────── trust trials ─────────────────────
 var TRIALS = [
   {
     id:'handshake', opp:'tft', rounds:30, noise:0, seed:1001,
@@ -1104,7 +1122,7 @@ var TRIALS = [
     title:{en:'03 // THE POWDER KEG',zh:'03 // 火药桶'},
     copy:{en:'Your opponent forgives nothing. Earn together without lighting the fuse.',zh:'你的对手绝不原谅。别点燃导火索，一起把收益带走。'},
     goal:{en:'Both players score at least 105.',zh:'双方都至少获得 105 分。'},
-    hint:{en:'Hint: some opponents turn one clever trick into a permanent feud.',zh:'提示：对有些对手耍一次聪明，会换来永久的世仇。'}
+    hint:{en:'Hint: some opponents turn one clever trick into a permanent feud.',zh:'提示：对有些对手耵一次聊明，会换来永久的世仇。'}
   },
   {
     id:'static', opp:'tft', rounds:60, noise:8, seed:1004,
@@ -1211,14 +1229,13 @@ document.getElementById('editTrial').onclick=function(){
   document.querySelector('.col-build .pcard').scrollIntoView({behavior:'smooth',block:'start'});
 };
 
-// ───────────────────────── language ─────────────────────────
+// ───────────────────── language ─────────────────────
 function applyLangAttrs(){
   document.querySelectorAll('[data-en]').forEach(function(n){
     var v=n.getAttribute('data-'+lang); if(v!=null) n.innerHTML=v;
   });
   document.getElementById('langBtn').textContent = lang==='en' ? '中文' : 'EN';
   document.documentElement.lang = lang==='en'?'en':'zh';
-  document.getElementById('importInput').placeholder=L(TXT.importPlaceholder);
 }
 function refreshNames(){
   fillPickers(); renderField();
@@ -1232,6 +1249,7 @@ document.getElementById('langBtn').onclick=function(){
   try{ localStorage.setItem('arcade_lang', lang); }catch(e){}
   applyLangAttrs(); renderRules(); renderEvoRosterKeepChecks(); refreshNames();
   nameInput.placeholder=L(TXT.myDefault);
+  document.getElementById('importCode').placeholder=L(TXT.importPh);
 };
 function renderEvoRosterKeepChecks(){
   var checked={}; document.querySelectorAll('#evoRoster input').forEach(function(c){ checked[c.value]=c.checked; });
@@ -1239,11 +1257,12 @@ function renderEvoRosterKeepChecks(){
   document.querySelectorAll('#evoRoster input').forEach(function(c){ if(c.value in checked) c.checked=checked[c.value]; });
 }
 
-// ───────────────────────── init ─────────────────────────
+// ───────────────────── init ─────────────────────
 try{ if(localStorage.getItem('arcade_lang')==='zh') lang='zh'; }catch(e){}
 applyLangAttrs();
 avatarFor('you', document.getElementById('myAvatar'));
 nameInput.value=playerName; nameInput.placeholder=L(TXT.myDefault);
+document.getElementById('importCode').placeholder=L(TXT.importPh);
 renderRules(); renderField(); fillPickers();
 document.getElementById('pickA').value='you'; document.getElementById('pickB').value='tft';
 renderEvoRoster(); evoReset();
