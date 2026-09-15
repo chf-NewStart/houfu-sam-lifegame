@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Flight, BrowSwitch } from '../game/plank-engine.js';
+import { Flight, BrowSwitch, CoopFlight } from '../game/plank-engine.js';
 
 for (const duration of [30, 45, 60, 90]) {
   test(`${duration}-second round finishes at its target, including after a delayed frame`, () => {
@@ -171,4 +171,59 @@ test('resetting eyebrow control discards a pending gesture and requires a fresh 
   brows.update(0.2, 1010);
   brows.update(0.8, 1020);
   assert.equal(brows.update(0.8, 1130), true);
+});
+
+test('co-op clocks and gate patterns remain synchronized through the full selected duration', () => {
+  for (const duration of [30, 45, 60, 90]) {
+    const flight = new CoopFlight(duration, 12345);
+    for (let frame = 0; !flight.done; frame++) {
+      flight.advance(frame % 3 === 0 ? .4 : .25);
+      assert.equal(flight.games[0].elapsed, flight.games[1].elapsed);
+      assert.deepEqual(flight.games[0].gates, flight.games[1].gates);
+    }
+    assert.equal(flight.elapsed, duration);
+    assert.ok(flight.games.every(game => game.done && game.elapsed === duration));
+  }
+});
+
+test('co-op steering and collisions are independent for each player', () => {
+  const flight = new CoopFlight(30, 12345);
+  flight.advance(.8);
+  const blockedLane = flight.games[0].gates[0].lane;
+  flight.steer(blockedLane, 0); flight.steer(1 - blockedLane, 1);
+  assert.deepEqual(flight.games.map(game => game.lane), [blockedLane, 1 - blockedLane]);
+  const events = flight.advance(3.2);
+  assert.deepEqual(events.map(({type, player}) => [type, player]), [['hit', 0], ['clear', 1]]);
+  assert.deepEqual(flight.games.map(game => [game.hits, game.cleared, game.score]), [[1, 0, 0], [0, 1, 50]]);
+  assert.equal(flight.teamBonus, 0);
+  assert.equal(flight.score, 50);
+});
+
+test('clearing the same gate together awards one team bonus and cannot award it again', () => {
+  const flight = new CoopFlight(30, 12345);
+  flight.advance(.8);
+  const safeLane = 1 - flight.games[0].gates[0].lane;
+  flight.steer(safeLane, 0); flight.steer(safeLane, 1);
+  const events = flight.advance(3.2);
+  assert.equal(events.filter(event => event.together).length, 1);
+  assert.equal(flight.teamBonus, 25);
+  assert.equal(flight.score, 125);
+  assert.equal(flight.cleared, 2);
+  assert.deepEqual(flight.advance(.1), []);
+  assert.equal(flight.teamBonus, 25);
+  assert.equal(flight.score, 125);
+});
+
+test('co-op steering while paused and invalid frame deltas do not advance either flight', () => {
+  const flight = new CoopFlight(30, 12345);
+  flight.advance(5);
+  const before = flight.games.map(({elapsed, score, hits, cleared}) => ({elapsed, score, hits, cleared}));
+  flight.steer(1, 0); flight.steer(0, 1);
+  for (const dt of [0, -1, NaN, Infinity, -Infinity]) assert.deepEqual(flight.advance(dt), []);
+  assert.deepEqual(flight.games.map(({elapsed, score, hits, cleared}) => ({elapsed, score, hits, cleared})), before);
+  flight.advance(100);
+  assert.deepEqual(flight.games.map(game => game.elapsed), [30, 30]);
+  const finalScore = flight.score;
+  assert.deepEqual(flight.advance(1), []);
+  assert.equal(flight.score, finalScore);
 });

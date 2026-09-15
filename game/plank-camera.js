@@ -6,17 +6,47 @@ const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_landmark
 const FRAME_INTERVAL = 1000 / 15;
 const FRAME_STALE_MS = 500;
 const STARTUP_TIMEOUT_MS = 30000;
+// Reject nearly overlapping centers before a detector's ordering can swap the
+// two players. The app additionally keeps each player on their preview side.
+const MIN_FACE_SEPARATION = 0.08;
 const CANCELLED = Symbol('camera startup cancelled');
+
+const unit = value => Math.max(0, Math.min(1, value));
+
+function faceBounds(landmarks, x, y, eyeWidth) {
+  const points = landmarks.filter(point => Number.isFinite(point?.x) && Number.isFinite(point?.y));
+  let left = points.length ? Math.min(...points.map(point => point.x)) : x;
+  let right = points.length ? Math.max(...points.map(point => point.x)) : x;
+  let top = points.length ? Math.min(...points.map(point => point.y)) : y;
+  let bottom = points.length ? Math.max(...points.map(point => point.y)) : y;
+  // Some synthetic/partial results only contain the two eyes, or place all
+  // landmarks on one line. Keep those crops useful without changing input.
+  if (right <= left) { left = x - eyeWidth; right = x + eyeWidth; }
+  if (bottom <= top) { top = y - eyeWidth; bottom = y + eyeWidth; }
+  left = unit(left);
+  right = unit(right);
+  top = unit(top);
+  bottom = unit(bottom);
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
 
 /**
  * Front-camera input for Plank Pilot.
  *
- * start(): resolves true when ready, false when stopped during startup; failures
+ * start({ numFaces = 1 } = {}): supports one or two faces; resolves true when
+ * ready, false when stopped during startup; failures
  * also call onError(Error) and reject. Repeated starts reuse the active session.
+ * Stop and start again to change the requested number of faces.
  * onStatus receives starting | running | paused | stopped | error.
- * onSample receives { visible, x, brow, time }; x is NOT selfie-mirrored and time
- * uses performance.now(). A missing/stalled face emits one invisible sample until
- * a face is visible again. The app owns calibration and gesture interpretation.
+ * onSample receives { visible, x, brow, time, faces, count }. Each face contains
+ * { x, y, brow, width, bounds: { x, y, width, height } } in raw camera coordinates.
+ * x is NOT selfie-mirrored and time uses performance.now(). Faces are sorted by
+ * descending x: the left player in the mirrored preview comes first. Width is
+ * horizontal eye distance; y is the eye midpoint and bounds covers all finite
+ * landmarks, clamped to the video frame. Two-player input requires two separated
+ * faces; partial detections remain in faces for framing, never as active input.
+ * Missing/stalled faces emit once until visibility or detected count changes.
+ * The app owns calibration, player-side checks, and gesture interpretation.
  */
 export class PlankCamera {
   constructor(video, { onSample = () => {}, onError = () => {}, onStatus = () => {} } = {}) {
@@ -26,7 +56,8 @@ export class PlankCamera {
     this._run = null;
   }
 
-  async start() {
+  async start({ numFaces = 1 } = {}) {
+    if (numFaces !== 1 && numFaces !== 2) throw new RangeError('Track one or two faces.');
     if (this._run) return this._run.startPromise;
 
     const run = {
@@ -34,6 +65,8 @@ export class PlankCamera {
       ready: false,
       paused: false,
       visible: null,
+      numFaces,
+      lastCount: null,
       stream: null,
       model: null,
       timer: null,
@@ -148,15 +181,19 @@ export class PlankCamera {
     }
   }
 
+  async _loadVision() {
+    return import(`${VISION_ROOT}/vision_bundle.mjs`);
+  }
+
   async _loadModel(run) {
-    const { FaceLandmarker, FilesetResolver } = await import(`${VISION_ROOT}/vision_bundle.mjs`);
+    const { FaceLandmarker, FilesetResolver } = await this._loadVision();
     if (!this._isCurrent(run)) return null;
     const files = await FilesetResolver.forVisionTasks(`${VISION_ROOT}/wasm`);
     if (!this._isCurrent(run)) return null;
     const options = {
       baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
       runningMode: 'VIDEO',
-      numFaces: 1,
+      numFaces: run.numFaces,
       minFaceDetectionConfidence: 0.6,
       minFacePresenceConfidence: 0.6,
       minTrackingConfidence: 0.6,
@@ -227,17 +264,27 @@ export class PlankCamera {
         run.lastVideoTime = this.video.currentTime;
         run.lastFrameAt = time;
         const result = run.model.detectForVideo(this.video, time);
-        const face = result.faceLandmarks?.[0];
-        const left = face?.[33];
-        const right = face?.[263];
-        if (Number.isFinite(left?.x) && Number.isFinite(right?.x)) {
-          const x = Math.max(0, Math.min(1, (left.x + right.x) / 2));
-          const score = result.faceBlendshapes?.[0]?.categories?.find(category => category.categoryName === 'browInnerUp')?.score;
+        const faces = (result.faceLandmarks || []).flatMap((face, index) => {
+          const left = face?.[33];
+          const right = face?.[263];
+          if (!Number.isFinite(left?.x) || !Number.isFinite(right?.x)) return [];
+          const width = Math.abs(left.x - right.x);
+          if (width === 0) return [];
+          const x = unit((left.x + right.x) / 2);
+          const y = Number.isFinite(left?.y) && Number.isFinite(right?.y) ? unit((left.y + right.y) / 2) : 0.5;
+          const score = result.faceBlendshapes?.[index]?.categories?.find(category => category.categoryName === 'browInnerUp')?.score;
+          return [{ x, y, brow: Number.isFinite(score) ? unit(score) : 0, width, bounds: faceBounds(face, x, y, width) }];
+        }).sort((a, b) => b.x - a.x);
+        const count = faces.length;
+        const separated = run.numFaces === 1 || (count === 2 && faces[0].x - faces[1].x >= MIN_FACE_SEPARATION);
+        if (count === run.numFaces && separated) {
+          const { x, brow } = faces[0];
           run.visible = true;
+          run.lastCount = count;
           run.lastX = x;
-          this._notify('onSample', { visible: true, x, brow: Number.isFinite(score) ? Math.max(0, Math.min(1, score)) : 0, time });
+          this._notify('onSample', { visible: true, x, brow, time, faces, count });
         } else {
-          this._emitInvisible(run, time);
+          this._emitInvisible(run, time, faces);
         }
       } else if (time - run.lastFrameAt >= FRAME_STALE_MS) {
         this._emitInvisible(run, time);
@@ -253,10 +300,12 @@ export class PlankCamera {
     }
   }
 
-  _emitInvisible(run, time = performance.now()) {
-    if (run.visible === false) return;
+  _emitInvisible(run, time = performance.now(), faces = []) {
+    const count = faces.length;
+    if (run.visible === false && run.lastCount === count) return;
     run.visible = false;
-    this._notify('onSample', { visible: false, x: run.lastX, brow: 0, time });
+    run.lastCount = count;
+    this._notify('onSample', { visible: false, x: run.lastX, brow: 0, time, faces, count });
   }
 
   _fail(run, error) {

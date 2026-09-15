@@ -7,7 +7,7 @@
   <meta name="description" content="A tiny hands-free space dodger. Turn a short plank into a flight through the stars.">
   <title>Plank Pilot · GAME LIFE</title>
   <link rel="icon" type="image/svg+xml" href="thumbs/plank.svg">
-  <link rel="stylesheet" href="plank.css?v=1">
+  <link rel="stylesheet" href="plank.css?v=2">
 </head>
 <body>
   <div class="cockpit">
@@ -21,54 +21,89 @@
         <div><small data-key="remaining">FLIGHT TIME</small><strong id="clock">0:30</strong></div>
         <div class="hud-right"><small data-key="score">SCORE</small><strong id="score">0000</strong></div>
       </div>
+      <div class="player-scores" id="player-scores" hidden aria-label="Player scores">
+        <div><span data-key="playerOne">PLAYER 1</span><strong id="p1-score">0000</strong></div>
+        <div><span data-key="playerTwo">PLAYER 2</span><strong id="p2-score">0000</strong></div>
+      </div>
       <div class="flight-label" id="flight-label"><span class="dot"></span> <span data-key="sector">SECTOR 01 — THE QUIET BELT</span></div>
       <section class="panel" id="setup">
+        <div class="setup-intro">
         <p class="eyebrow" data-key="tagline">HANDS FREE. EYES ON THE STARS.</p>
         <h1 data-key="title">Make the<br>seconds fly.</h1>
         <p class="intro" data-key="intro">A little space adventure for your next plank. Dodge the barriers. Finish your flight.</p>
+        <p class="buddy-copy" id="buddy-copy" hidden data-key="buddyCopy">One phone, two pilots. Get both faces in view; each person controls their half.</p>
+        <p class="rotate-hint" id="rotate-hint" data-key="rotateHint">Turn your phone sideways for two roomy flight zones.</p>
+        </div>
+        <div class="setup-options">
+        <fieldset><legend data-key="playersLegend">WHO'S FLYING?</legend><div class="segments" id="players"><button data-players="1" aria-pressed="true" data-key="soloMode">Solo</button><button data-players="2" aria-pressed="false" data-key="buddyMode">With a buddy</button></div></fieldset>
         <fieldset><legend data-key="duration">CHOOSE YOUR FLIGHT</legend><div class="segments" id="durations"><button data-duration="30" aria-pressed="true">30s</button><button data-duration="45" aria-pressed="false">45s</button><button data-duration="60" aria-pressed="false">60s</button><button data-duration="90" aria-pressed="false">90s</button></div></fieldset>
         <fieldset><legend data-key="control">CAMERA CONTROL</legend><div class="segments controls"><button data-control="face" aria-pressed="true" data-key="faceControl">Small face shift</button><button data-control="brow" aria-pressed="false" data-key="browControl">Eyebrow switch</button></div></fieldset>
         <p class="control-copy" id="control-copy"></p>
+        </div>
+        <div class="setup-actions">
         <button class="primary wide" id="camera-start" data-key="cameraStart">Enable camera & set up <span>↗</span></button>
         <button class="secondary wide" id="practice-start" data-key="practiceStart">Try with touch / keyboard</button>
         <p class="privacy" data-key="privacy">Video stays on your device. Nothing is recorded. Camera mode downloads a tracking model.</p>
+        </div>
       </section>
       <section class="panel" id="camera-panel" hidden>
+        <div class="camera-intro">
         <p class="eyebrow" data-key="cameraTag">PREFLIGHT CHECK</p>
         <h2 id="camera-title"></h2>
         <p class="intro" id="camera-copy"></p>
-        <div class="viewfinder"><video id="camera" muted playsinline autoplay></video><div class="frame-corner tl"></div><div class="frame-corner tr"></div><div class="frame-corner bl"></div><div class="frame-corner br"></div><span id="tracking-label"></span></div>
-        <div class="signal"><span data-key="left">LEFT</span><div class="signal-track"><i id="signal-dot"></i></div><span data-key="right">RIGHT</span></div>
-        <label class="sensitivity" id="sensitivity-label"><span data-key="sensitivity">Movement needed</span><input id="sensitivity" type="range" min="2" max="8" value="4" step="1"><span data-key="small">small → more</span></label>
         <p class="hint" data-key="position">Rest the phone securely in front of you, with your face in view. Keep movement comfortable and small. This tracks controls, not plank form.</p>
+        </div>
+        <div class="camera-visual">
+        <div class="viewfinder"><video id="camera" muted playsinline autoplay></video><span id="face-left" class="face-label" hidden>P1</span><span id="face-right" class="face-label face-label-two" hidden>P2</span><div class="frame-corner tl"></div><div class="frame-corner tr"></div><div class="frame-corner bl"></div><div class="frame-corner br"></div><span id="tracking-label"></span></div>
+        <div class="signal"><span data-key="left">LEFT</span><div class="signal-track"><i id="signal-dot"></i></div><span data-key="right">RIGHT</span></div>
+        <div class="face-background-controls"><label for="face-background"><input id="face-background" type="checkbox" checked><span data-key="faceBackground">Show my face in flight</span></label><input id="face-opacity" type="range" min="25" max="80" value="55" step="5" aria-label="Face background visibility"></div>
+        <label class="sensitivity" id="sensitivity-label"><span data-key="sensitivity">Movement needed</span><input id="sensitivity" type="range" min="2" max="8" value="4" step="1"><span data-key="small">small → more</span></label>
+        </div>
+        <div class="camera-actions">
         <button class="primary wide" id="calibrate" disabled data-key="calibrate">Get ready · 5-second countdown</button>
         <button class="secondary wide" id="camera-cancel" data-key="back">Back</button>
+        </div>
       </section>
       <section class="panel message-panel" id="message" hidden aria-live="polite">
+        <div class="message-content">
         <p class="eyebrow" id="message-kicker"></p>
         <h2 id="message-title"></h2>
         <p class="intro" id="message-copy"></p>
         <div class="countdown" id="countdown" hidden></div>
+        </div>
+        <div class="message-actions">
         <button class="primary wide" id="resume" hidden data-key="resume">Resume flight</button>
         <button class="secondary wide" id="recalibrate" hidden data-key="recalibrate">Reposition & recalibrate</button>
         <button class="secondary wide" id="finish" data-key="finish">Finish here</button>
+        </div>
       </section>
       <section class="panel" id="results" hidden aria-live="polite">
+        <div class="result-intro">
         <p class="eyebrow" id="result-kicker"></p>
         <h2 id="result-title"></h2>
         <p class="intro" id="result-copy"></p>
+        </div>
+        <div class="result-content">
+        <p class="result-line result-buddy" id="result-buddy" hidden></p>
         <div class="result-stats"><div><small data-key="flightSeconds">FLIGHT SECONDS</small><strong id="result-time"></strong></div><div><small data-key="score">SCORE</small><strong id="result-score"></strong></div></div>
         <div class="result-line"><span data-key="gates">Gates cleared</span><strong id="result-gates"></strong></div>
         <div class="result-line"><span data-key="best">Best this mode & duration</span><strong id="result-best"></strong></div>
+        </div>
+        <div class="result-actions">
         <button class="primary wide" id="again" data-key="again">Back to the launchpad ↗</button>
         <p class="privacy" data-key="rest">Take a breather. Your next flight can wait.</p>
+        </div>
       </section>
       <div class="toast" id="toast" aria-live="polite"></div>
       <div class="inflight-controls" id="inflight-controls" hidden><button id="pause" data-key="pause">Ⅱ Pause</button><span id="control-hint"></span><button id="end" data-key="end">End</button></div>
+      <div class="buddy-touch" id="buddy-touch" hidden>
+        <div role="group" aria-label="Player 1 controls"><button id="p1-left" aria-label="Player 1 left">←</button><button id="p1-right" aria-label="Player 1 right">→</button></div>
+        <div role="group" aria-label="Player 2 controls"><button id="p2-left" aria-label="Player 2 left">←</button><button id="p2-right" aria-label="Player 2 right">→</button></div>
+      </div>
       <div class="touch-controls" id="touch-controls" hidden><button id="touch-left" aria-label="Move left">←</button><span data-key="practiceBadge">PRACTICE · NO CAMERA</span><button id="touch-right" aria-label="Move right">→</button></div>
     </main>
     <footer><span><i class="dot"></i> <span id="status" data-key="ready">READY WHEN YOU ARE</span></span><a href="../wip.html" data-key="lab">← WIP Lab</a></footer>
   </div>
-  <script type="module" src="plank.js?v=1"></script>
+  <script type="module" src="plank.js?v=2"></script>
 </body>
 </html>

@@ -2,6 +2,16 @@
 
 Open `/game/plank.html` directly or choose **plank_pilot.exe** in the WIP lab. Dodge obstacles with a cyan ship while a **30, 45, 60, or 90-second** target round counts down.
 
+## One phone, two gym buddies
+
+Choose **Buddy · one phone** and turn the phone sideways. Place it between you at a distance where its front camera can see both faces at once. The left person in the mirrored preview controls P1's cyan half; the right person controls P2's purple half. Stay on those sides during the round. If either face disappears, both games and the shared timer pause until tracking is stable again.
+
+Both players calibrate together. Eyebrow switching is selected initially in buddy mode; each person's raised eyebrows move only their own ship. Small face shifts are also available. The flights share an obstacle sequence and finish together. Individual scores are added, with another 25 points for each obstacle both players clear.
+
+**Live face background** enlarges each face behind its own game zone. Use the slider to adjust visibility, or turn it off for the starfield. These crops are only a display effect: the detector always reads the original, uncropped camera frame. Neither player needs an account, room code, or second phone.
+
+Camera-free buddy practice has four touch buttons, two per half. On a keyboard, P1 uses A/D and P2 uses the arrow keys. Space pauses both.
+
 ## Controls and setup
 
 1. Start with **practice mode while seated**. Touch controls or the keyboard let you learn the game without granting camera access.
@@ -19,14 +29,14 @@ Open `/game/plank.html` directly or choose **plank_pilot.exe** in the WIP lab. D
 
 ## Real-phone testing checklist
 
-**Status: browser visual verification and physical iPhone Safari / Android Chrome camera validation are pending.** Automated rules and mocked camera lifecycle tests pass; the available cloud browser could not access the local preview. Simulated camera checks cannot establish phone compatibility or a comfortable plank setup.
+**Status: physical iPhone Safari / Android Chrome two-person camera validation is pending.** Automated rules, application flows, mocked camera lifecycle, and rendering geometry tests cover solo and shared-phone play. Simulated camera checks cannot establish phone compatibility, two-face tracking quality, or a comfortable plank setup.
 
 Use an HTTPS deployment of the branch containing this game. Test in the full Safari app on iPhone and the full Chrome app on Android, starting while seated:
 
 1. Open the WIP card and confirm the page fits the screen in portrait and landscape. Check that setup buttons remain reachable without horizontal scrolling.
 2. Run a 30-second practice round without camera access. Verify left/right controls, obstacles, pause/restart, countdown, and end-of-round results.
 3. Choose camera mode. Allow the front camera and wait for the runtime/model download. Confirm that the preview and tracking status are useful before starting.
-4. Calibrate and test both control modes. Confirm that small face shifts steer in the expected direction and that a single eyebrow gesture changes lanes once, without repeated unintended switching.
+4. Calibrate and test both control modes. Confirm that small face shifts steer in the expected direction and that a single eyebrow gesture changes lanes once, without repeated unintended switching. In buddy mode, verify each person's gesture only affects their own half, both face crops are assigned correctly, and an absent player freezes both games.
 5. Move out of view, cover the camera, background the browser, and return. Check that the game clearly handles tracking loss or interruption and lets you resume or recalibrate without a surprise collision.
 6. End a camera session and leave the game. Check that the browser camera indicator turns off when the session releases the camera. Repeat with permission denied and with the model host unavailable; practice should remain available and errors should explain how to continue.
 7. After seated checks pass, try the shortest round with the phone in a comfortable plank viewing position. Record phone model, OS/browser versions, control mode, lighting, tracking stability, and any lag or neck discomfort. Test longer round choices only as appropriate for the tester.
@@ -44,3 +54,5 @@ node --test tests/plank-*.test.mjs
 ```
 
 Tracking uses pinned `@mediapipe/tasks-vision@0.10.32` and the `face_landmarker/float16/1` model. See Google's [Face Landmarker web guide](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/web_js) for its landmark and expression APIs. A Screen Wake Lock is requested during active rounds when supported; it is not guaranteed by every browser.
+
+`tests/plank-layout.html` is a developer-only simulated layout fixture. It displays the actual page inside phone-sized frames for visual and geometry checks, without requesting a camera. Its sample states are not a playable mode or evidence of real camera tracking.

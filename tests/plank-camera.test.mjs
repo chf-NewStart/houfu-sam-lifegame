@@ -22,13 +22,20 @@ function video() {
   };
 }
 
-function faceResult(x = 0.3, brow = 0.7) {
+function faceResult(x = 0.3, brow = 0.7, width = 0.2) {
   const landmarks = [];
-  landmarks[33] = { x: x - 0.1 };
-  landmarks[263] = { x: x + 0.1 };
+  landmarks[33] = { x: x - width / 2 };
+  landmarks[263] = { x: x + width / 2 };
   return {
     faceLandmarks: [landmarks],
     faceBlendshapes: [{ categories: [{ categoryName: 'browInnerUp', score: brow }] }],
+  };
+}
+
+function combinedFaces(...results) {
+  return {
+    faceLandmarks: results.flatMap(result => result.faceLandmarks),
+    faceBlendshapes: results.flatMap(result => result.faceBlendshapes),
   };
 }
 
@@ -267,4 +274,117 @@ test('a camera whose frames stop advancing emits an invisible sample after the g
   now = 900;
   t.mock.timers.tick(70);
   assert.equal(samples.length, 2);
+});
+
+test('one or two faces are configured in MediaPipe and changing mode requires restarting', async t => {
+  const createdOptions = [];
+  const camera = new PlankCamera(video());
+  camera._openCamera = async () => stream();
+  camera._loadVision = async () => ({
+    FilesetResolver: { forVisionTasks: async () => ({}) },
+    FaceLandmarker: {
+      createFromOptions: async (_, options) => {
+        createdOptions.push(options);
+        return model();
+      },
+    },
+  });
+  t.after(() => camera.stop());
+  await camera.start();
+  assert.equal(createdOptions[0].numFaces, 1);
+  await camera.start({ numFaces: 2 });
+  assert.equal(createdOptions.length, 1, 'active session is reused');
+  camera.stop();
+  await camera.start({ numFaces: 2 });
+  assert.equal(createdOptions[1].numFaces, 2);
+  await assert.rejects(camera.start({ numFaces: 3 }), /one or two faces/);
+});
+
+test('two faces keep their mirrored player order and matching brow scores when detection order switches', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const previewLeft = faceResult(0.75, 0.8, 0.14);
+  const previewRight = faceResult(0.25, 0.1, 0.12);
+  const tracker = model([
+    combinedFaces(previewRight, previewLeft),
+    combinedFaces(previewLeft, previewRight),
+  ]);
+  const samples = [];
+  const { camera, element } = controller(stream(), tracker, { onSample: sample => samples.push(sample) });
+  t.after(() => camera.stop());
+  await camera.start({ numFaces: 2 });
+  element.currentTime = 1;
+  t.mock.timers.tick(70);
+  assert.equal(samples.length, 2);
+  assert.deepEqual(samples[0].faces, samples[1].faces);
+  for (const sample of samples) {
+    assert.equal(sample.visible, true);
+    assert.equal(sample.count, 2);
+    assert.deepEqual(sample.faces.map(face => face.x), [0.75, 0.25]);
+    assert.deepEqual(sample.faces.map(face => face.brow), [0.8, 0.1]);
+    assert.ok(Math.abs(sample.faces[0].width - 0.14) < 1e-10);
+    assert.ok(Math.abs(sample.faces[1].width - 0.12) < 1e-10);
+    assert.equal(sample.faces[0].y, 0.5);
+    assert.ok(Math.abs(sample.faces[0].bounds.height - 0.28) < 1e-10, 'partial eye-only results get a usable crop');
+  }
+});
+
+test('a missing buddy freezes input, reports changing face counts, and resumes only when both return', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const both = combinedFaces(faceResult(0.75, 0.8), faceResult(0.25, 0.1));
+  const loneBuddy = faceResult(0.3, 0.9);
+  const tracker = model([both, loneBuddy, loneBuddy, combinedFaces(), loneBuddy, both]);
+  const samples = [];
+  const { camera, element } = controller(stream(), tracker, { onSample: sample => samples.push(sample) });
+  t.after(() => camera.stop());
+  await camera.start({ numFaces: 2 });
+  for (let frame = 1; frame <= 5; frame++) {
+    element.currentTime = frame;
+    t.mock.timers.tick(70);
+  }
+  assert.deepEqual(samples.map(sample => sample.visible), [true, false, false, false, true]);
+  assert.deepEqual(samples.map(sample => sample.count), [2, 1, 0, 1, 2]);
+  assert.equal(samples[1].faces.length, 1, 'remaining face is available for framing');
+  assert.ok(Math.abs(samples[1].faces[0].x - 0.3) < 1e-10);
+  assert.equal(samples[1].x, 0.75, 'remaining buddy never becomes active player-one input');
+  assert.equal(samples[1].brow, 0);
+  assert.equal(samples[2].faces.length, 0);
+});
+
+test('two-player input pauses when face centers overlap and recovers with separated faces', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const separated = combinedFaces(faceResult(0.72), faceResult(0.26));
+  const close = combinedFaces(faceResult(0.54), faceResult(0.51));
+  const samples = [];
+  const { camera, element } = controller(stream(), model([separated, close, close, separated]), {
+    onSample: sample => samples.push(sample),
+  });
+  t.after(() => camera.stop());
+  await camera.start({ numFaces: 2 });
+  for (let frame = 1; frame <= 3; frame++) {
+    element.currentTime = frame;
+    t.mock.timers.tick(70);
+  }
+  assert.deepEqual(samples.map(sample => sample.visible), [true, false, true]);
+  assert.deepEqual(samples.map(sample => sample.count), [2, 2, 2]);
+  assert.equal(samples[1].faces.length, 2, 'both close faces remain available for framing');
+});
+
+test('face crops use full landmarks, clamp the video boundary, and preserve eye-based steering', async t => {
+  const result = faceResult(0.25, 0.7, 0.2);
+  result.faceLandmarks[0][33].y = 0.25;
+  result.faceLandmarks[0][263].y = 0.35;
+  result.faceLandmarks[0][0] = { x: -0.1, y: 0.05 };
+  result.faceLandmarks[0][1] = { x: 0.65, y: 1.1 };
+  result.faceLandmarks[0][2] = { x: NaN, y: -4 };
+  const samples = [];
+  const { camera } = controller(stream(), model([result]), { onSample: sample => samples.push(sample) });
+  t.after(() => camera.stop());
+  await camera.start();
+  const face = samples[0].faces[0];
+  assert.equal(face.x, 0.25);
+  assert.equal(face.y, 0.3);
+  assert.ok(Math.abs(face.width - 0.2) < 1e-10);
+  assert.deepEqual(face.bounds, { x: 0, y: 0.05, width: 0.65, height: 0.95 });
+  assert.equal(samples[0].x, face.x);
+  assert.equal(samples[0].brow, face.brow);
 });

@@ -50,7 +50,7 @@ A top-down Brotato-style survivor where **you are a Chinese character**, and eve
 
 Playable-but-rough experiments: **[plank_pilot.exe](game/plank.html)** (a space dodger for 30/45/60/90-second plank rounds: small face shifts steer, or eyebrows switch lanes; touch/keyboard practice needs no camera), **escape_grid.exe** (4 runners vs 1 hunter, Dijkstra AI), **keep_up.exe** (co-op Pong), **lander.exe** (two-player lunar lander — one throttles, one steers), **train_rl_hunter.exe** (watch an RL policy learn in-browser), and **greenhouse.exe** (the raw plant digital-twin behind grow_a_tomato).
 
-Plank Pilot is an experimental browser prototype; real iPhone Safari and Android Chrome camera validation is pending. Face processing runs locally without recording, but camera mode downloads MediaPipe and its model. It does not verify full-body plank form. See [setup and device testing](docs/plank-pilot.md).
+Plank Pilot supports sideways phones and **one-phone buddy co-op**: two adjacent flight zones, one shared timer, independent controls, and bonus points for clearing obstacles together. A single front camera tracks both faces; each face is enlarged behind its own translucent game view, with adjustable visibility. Both faces must remain in view. Processing stays local without recording, but camera mode downloads MediaPipe and its model. Real iPhone Safari and Android Chrome two-person camera validation is pending; it does not verify plank form. See [setup and device testing](docs/plank-pilot.md).
 
 ---
 

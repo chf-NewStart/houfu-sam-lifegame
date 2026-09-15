@@ -62,3 +62,42 @@ export class BrowSwitch {
     return true;
   }
 }
+
+// Local co-op uses one clock and the same obstacle sequence on both halves.
+// Each player still earns (or loses) their own points. Clearing a gate together
+// adds a team bonus exactly once, even across pauses or different frame rates.
+export class CoopFlight {
+  constructor(duration = 30, seed = Math.floor(Math.random() * 0xffffffff)) {
+    const random = () => {
+      let state = seed >>> 0;
+      return () => {
+        state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+        return state / 0x100000000;
+      };
+    };
+    this.duration = duration;
+    this.games = [new Flight(duration, random()), new Flight(duration, random())];
+    this.clearedIds = [new Set(), new Set()];
+    this.togetherIds = new Set();
+  }
+  get elapsed() { return this.games[0].elapsed; }
+  get done() { return this.games.every(game => game.done); }
+  get score() { return this.games[0].score + this.games[1].score + this.teamBonus; }
+  get cleared() { return this.games[0].cleared + this.games[1].cleared; }
+  get hits() { return this.games[0].hits + this.games[1].hits; }
+  get teamBonus() { return this.togetherIds.size * 25; }
+  steer(lane, player = 0) { this.games[player === 1 ? 1 : 0].steer(lane); }
+  advance(dt) {
+    const events = this.games.flatMap((game, player) =>
+      game.advance(dt).map(event => ({ ...event, player })));
+    for (const event of events) {
+      if (event.type !== 'clear') continue;
+      this.clearedIds[event.player].add(event.gate.id);
+      if (this.clearedIds[1 - event.player].has(event.gate.id) && !this.togetherIds.has(event.gate.id)) {
+        this.togetherIds.add(event.gate.id);
+        event.together = true;
+      }
+    }
+    return events;
+  }
+}

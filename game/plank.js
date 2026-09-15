@@ -1,5 +1,6 @@
-import { Flight, BrowSwitch } from './plank-engine.js?v=1';
-import { PlankCamera } from './plank-camera.js?v=1';
+import { Flight, BrowSwitch, CoopFlight } from './plank-engine.js?v=2';
+import { PlankCamera } from './plank-camera.js?v=2';
+import { PlankRenderer } from './plank-renderer.js?v=2';
 
 const $ = id => document.getElementById(id);
 const copy = {
@@ -37,37 +38,70 @@ const copy = {
   complete:['FLIGHT COMPLETE','飞行完成'], landed:['Nicely landed.','顺利着陆。'], stopped:['FLIGHT SAVED','飞行已保存'], stoppedTitle:['A good place to stop.','在这里休息一下。'],
   completeCopy:['You made it through the belt. Time for a breather.','你已穿越星带，休息一下吧。'], stoppedCopy:['Your flight ends here. No need to finish the timer.','飞行在这里结束，不必坚持到计时结束。'],
   practiceResult:['Practice flight. Camera controls were not used.','试玩飞行，本轮未使用摄像头。'], resultStatus:['BACK AT BASE','已返回基地'], clear:['Clear!','通过！'], hit:['Shield hit · −25','护盾受击 · −25'],
+  playersLegend:['WHO’S FLYING?','几人飞行？'], soloMode:['Solo','单人'], buddyMode:['Buddy · one phone','双人 · 一部手机'],
+  buddyCopy:['One sideways phone, two pilots. P1 takes the left half; P2 takes the right. Clear gates together for bonus points.','一部横屏手机，两位飞行员。P1 操控左半屏，P2 操控右半屏，同时通过障碍可获额外分数。'],
+  rotateHint:['Turn your phone sideways for two-player flight.','双人飞行建议将手机横放。'], playerOne:['P1 · LEFT','P1 · 左侧'], playerTwo:['P2 · RIGHT','P2 · 右侧'],
+  faceBackground:['Live face background','实时面部背景'], teamScore:['TEAM SCORE','团队得分'],
+  buddyPosition:['Set the phone sideways between you, far enough away to see both faces. Keep your preview sides: P1 left, P2 right.','将手机横放在你们中间，调整距离让两张脸都进入镜头。保持预览中的左右位置：P1 左，P2 右。'],
+  buddyFramingCopy:['Both faces need to fit in the preview at once. The game zooms each face into its own half after calibration.','预览中需同时看到两张脸。校准后，每张脸会放大显示在各自半屏中。'],
+  buddyNeutralCopy:['Both hold still with relaxed faces for two seconds. Stay on your own preview side.','两人保持自然表情两秒，留在各自的预览侧。'],
+  buddyBrowCopy:['Both raise your eyebrows for two seconds. Each gesture will control only your own ship.','两人抬眉保持两秒，之后每人的动作只操控自己的飞船。'],
+  buddyRelaxCopy:['Both relax your eyebrows before liftoff.','两人放松眉毛，准备起飞。'],
+  buddyPracticeCopy:['P1 uses A / D. P2 uses ← / →. Or use the arrows in your half. Space pauses both.','P1 用 A / D，P2 用 ← / →，也可点击各自半屏箭头。空格暂停双方。'],
+  buddyKeysHint:['P1: A / D · P2: ← / →','P1：A / D · P2：← / →'],
+  buddyTrackingCopy:['Both faces must be visible on their original sides. Both flights and the clock are paused.','两张脸都需回到原来的预览侧，两人的飞行和计时均已暂停。'],
+  buddyLostCal:['Bring both faces into view, with one on each side, to continue calibration.','让两张脸回到镜头中，一左一右，继续校准。'],
+  buddyWeakBrow:['We could not distinguish both eyebrow raises. Try together again, or choose small face shifts.','未能清楚识别两人的抬眉动作。请同时再试一次，或选择轻微左右移动。'],
+  bothFaces:['BOTH FACES READY','两张脸已就位'], needBoth:['NEED TWO SEPARATE FACES','需要两张分开的脸'], together:['Together! +25 team bonus','默契通过！团队加 25'],
+  buddyResult:['Two pilots, one flight. Take a breather together.','两位飞行员，一起完成飞行。一起休息一下吧。'],
 };
 let lang = 'en';
 try { lang = localStorage.getItem('arcade_lang') === 'zh' ? 'zh' : 'en'; } catch {}
 const t = key => copy[key]?.[lang === 'zh' ? 1 : 0] ?? key;
-let phase = 'setup', mode = 'face', duration = 30, game = null, stepTime = 0, samples = [], center = .5;
-let neutralBrow = .05, browSwitch = new BrowSwitch(), lastSample = {visible:false,time:0}, filteredX = .5;
+let phase = 'setup', mode = 'face', players = 1, duration = 30, game = null, stepTime = 0, samples = [];
+let centers = [.5,.5], faceWidths = [.15,.15], neutralBrows = [.05,.05], calibrated = false;
+let browSwitches = [new BrowSwitch(),new BrowSwitch()], lastSample = {visible:false,time:0,faces:[],count:0}, filteredXs = [.5,.5];
 let continuing = false, stableTime = 0, sound = false, audioContext = null, wakeLock = null, wakeEpoch = 0;
-let phaseDetail = '', previousTime = performance.now(), visualTime = 0, shipX = 0, hitGlow = 0, toastUntil = 0;
+let phaseDetail = '', previousTime = performance.now(), hitGlows = [0,0], toastUntil = 0;
 let pausedPhase = null;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const activePhases = new Set(['prep','neutral','brow','relax','countdown','playing','tracking']);
 const isCamera = () => mode !== 'practice';
-const freshFace = now => lastSample.visible && now - lastSample.time < 650;
+const getFaces = sample => sample.faces ?? (players === 1 ? [{x:sample.x,brow:sample.brow,width:.15}] : []);
+const freshFace = now => lastSample.visible && getFaces(lastSample).length >= players && now - lastSample.time < 650;
 const median = values => [...values].sort((a,b)=>a-b)[Math.floor(values.length / 2)];
+const flightGames = () => game ? (players === 2 ? game.games : [game]) : [];
+const newFlight = () => players === 2 ? new CoopFlight(duration) : new Flight(duration);
+const resetGestures = () => browSwitches.forEach(control => control.reset());
+const calibrationCopy = () => phase === 'neutral' ? (players === 2 ? 'buddyNeutralCopy':'neutralCopy') : phase === 'brow' ? (players === 2 ? 'buddyBrowCopy':'browCalCopy') : (players === 2 ? 'buddyRelaxCopy':'relaxCopy');
 const camera = new PlankCamera($('camera'), {
   onSample(sample) {
+    const faces = getFaces(sample);
+    if (players === 2 && calibrated && ['playing','countdown','tracking'].includes(phase)) {
+      const boundary = (centers[0] + centers[1]) / 2;
+      if (faces.length !== 2 || faces[0].x <= boundary || faces[1].x >= boundary) sample = {...sample,visible:false};
+    }
     lastSample = sample;
     if (!sample.visible) {
       if (phase === 'playing' || phase === 'countdown') enterTracking();
       if (['neutral','brow','relax'].includes(phase)) { stepTime = 0; samples = []; }
       return;
     }
-    if (['neutral','brow'].includes(phase)) samples.push(sample);
-    filteredX += (sample.x - filteredX) * .4;
+    if (faces.length < players) return;
+    if (['neutral','brow'].includes(phase)) samples.push(faces);
+    for (let player = 0; player < players; player++) filteredXs[player] += (faces[player].x - filteredXs[player]) * .4;
     if (phase === 'playing' || phase === 'countdown') {
-      if (mode === 'face') {
-        const offset = center - filteredX; // Mirrored controls: your right is screen right.
-        const threshold = Number($('sensitivity').value) / 100;
-        if (offset < -threshold) game.steer(0);
-        else if (offset > threshold) game.steer(1);
-      } else if (browSwitch.update(sample.brow, sample.time)) { game.steer(1 - game.lane); tone(410, .06); }
+      for (let player = 0; player < players; player++) {
+        if (mode === 'face') {
+          const offset = centers[player] - filteredXs[player];
+          // In a shared view each face is smaller; scale motion to its eye span.
+          const threshold = players === 2 ? Math.max(.008,faceWidths[player] * Number($('sensitivity').value) / 10) : Number($('sensitivity').value) / 100;
+          if (offset < -threshold) game.steer(0,player);
+          else if (offset > threshold) game.steer(1,player);
+        } else if (browSwitches[player].update(faces[player].brow, sample.time)) {
+          game.steer(1 - flightGames()[player].lane,player); tone(410 + player*70, .06);
+        }
+      }
     }
   },
   onError(error) {
@@ -83,8 +117,13 @@ function translate() {
   for (const el of document.querySelectorAll('[data-key]')) el.innerHTML = t(el.dataset.key);
   $('lang').textContent = lang === 'en' ? '中文' : 'EN';
   $('sound').textContent = t(sound ? 'soundOn' : 'soundOff');
-  $('space').setAttribute('aria-label', lang === 'en' ? 'Two flight lanes. Avoid coral barriers and fly through the open lane.' : '两条飞行航道，躲开珊瑚色障碍，穿过空航道。');
+  $('space').setAttribute('aria-label', players === 2
+    ? (lang === 'en' ? 'Two side-by-side flight zones. Player 1 on the left, Player 2 on the right. Each pilot dodges coral barriers in their own two lanes.' : '左右两个飞行区：左侧 P1，右侧 P2。每人在自己的两条航道中躲避珊瑚色障碍。')
+    : (lang === 'en' ? 'Two flight lanes. Avoid coral barriers and fly through the open lane.' : '两条飞行航道，躲开珊瑚色障碍，穿过空航道。'));
   $('control-copy').textContent = t(mode === 'brow' ? 'browCopy' : 'faceCopy');
+  document.body.classList.toggle('buddy-mode',players === 2);
+  $('buddy-copy').hidden = players !== 2;
+  document.querySelector('[data-key="position"]').textContent = t(players === 2 ? 'buddyPosition' : 'position');
   renderPhase();
 }
 function setPhase(next) {
@@ -95,21 +134,30 @@ function renderPhase() {
   for (const id of ['setup','camera-panel','message','results']) $(id).hidden = true;
   $('resume').hidden = true; $('recalibrate').hidden = true; $('countdown').hidden = true;
   $('hud').hidden = !game || ['setup','starting','framing','results'].includes(phase);
+  $('player-scores').hidden = players !== 2 || $('hud').hidden;
+  $('face-left').hidden = $('face-right').hidden = players !== 2;
+  const scoreLabel = document.querySelector('#hud [data-key="score"]');
+  if (scoreLabel) scoreLabel.textContent = t(players === 2 ? 'teamScore' : 'score');
   if (game) {
     const remaining = Math.ceil(Math.max(0, duration - game.elapsed));
     $('clock').textContent = `${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
     $('score').textContent = String(game.score).padStart(4,'0');
+    if (players === 2) {
+      $('p1-score').textContent = game.games[0].score;
+      $('p2-score').textContent = game.games[1].score;
+    }
   }
   $('inflight-controls').hidden = phase !== 'playing';
-  $('touch-controls').hidden = phase !== 'playing' || mode !== 'practice';
+  $('touch-controls').hidden = phase !== 'playing' || mode !== 'practice' || players !== 1;
+  $('buddy-touch').hidden = phase !== 'playing' || mode !== 'practice' || players !== 2;
   document.body.classList.toggle('playing', !!game && !['setup','starting','framing'].includes(phase));
-  $('control-hint').textContent = t(mode === 'practice' ? 'keysHint' : mode === 'brow' ? 'browHint' : 'faceHint');
+  $('control-hint').textContent = t(mode === 'practice' ? (players === 2 ? 'buddyKeysHint':'keysHint') : mode === 'brow' ? 'browHint' : 'faceHint');
   $('status').textContent = t(phase === 'setup' ? 'ready' : phase === 'results' ? 'resultStatus' : isCamera() ? 'tracked' : 'practiceStatus');
   if (phase === 'setup') { $('setup').hidden = false; return; }
   if (phase === 'starting' || phase === 'framing') {
     $('camera-panel').hidden = false;
     $('camera-title').textContent = t(phase === 'starting' ? 'loading' : phaseDetail ? 'calibrationError' : 'framing');
-    $('camera-copy').textContent = t(phase === 'starting' ? 'loadingCopy' : phaseDetail || 'framingCopy');
+    $('camera-copy').textContent = t(phase === 'starting' ? 'loadingCopy' : phaseDetail || (players === 2 ? 'buddyFramingCopy':'framingCopy'));
     $('calibrate').disabled = phase === 'starting' || !freshFace(performance.now());
     $('sensitivity-label').hidden = mode !== 'face';
     return;
@@ -119,7 +167,7 @@ function renderPhase() {
   $('message').hidden = false;
   $('message-kicker').textContent = t(mode === 'practice' ? 'practiceBadge' : 'cameraTag');
   const title = {prep:'prep',neutral:'neutral',brow:'brow',relax:'relax',countdown:'launch',tracking:'tracking',paused:'paused',error:'cameraError'}[phase];
-  const details = {prep:'prepCopy',neutral:'neutralCopy',brow:'browCalCopy',relax:'relaxCopy',countdown:mode==='practice'?'practiceCopy':'launchCopy',tracking:'trackingCopy',paused:'pausedCopy',error:phaseDetail || 'errorCopy'}[phase];
+  const details = {prep:'prepCopy',neutral:calibrationCopy(),brow:calibrationCopy(),relax:calibrationCopy(),countdown:mode==='practice'?(players===2?'buddyPracticeCopy':'practiceCopy'):'launchCopy',tracking:players===2?'buddyTrackingCopy':'trackingCopy',paused:'pausedCopy',error:phaseDetail || 'errorCopy'}[phase];
   $('message-title').textContent = t(title);
   $('message-copy').textContent = t(details);
   $('resume').hidden = phase !== 'paused';
@@ -153,15 +201,16 @@ function tone(frequency, length = .12) {
 }
 function backToSetup() {
   camera.stop(); releaseWake(); game = null; continuing = false; lastSample = {visible:false,time:0};
+  calibrated = false;
   phaseDetail = ''; mode = document.querySelector('[data-control][aria-pressed=true]').dataset.control;
   $('toast').textContent = ''; setPhase('setup'); translate();
 }
 function enterTracking() {
   if (!isCamera()) return;
-  browSwitch.reset(); setPhase('tracking');
+  resetGestures(); setPhase('tracking');
 }
 function startCountdown() {
-  browSwitch.reset(); filteredX = lastSample.x ?? center;
+  resetGestures(); filteredXs = centers.slice();
   setPhase('countdown'); requestWake();
 }
 function pause() {
@@ -171,7 +220,7 @@ function pause() {
 function stopFlight() {
   camera.stop(); releaseWake();
   if (!game || game.elapsed === 0) { backToSetup(); return; }
-  const key = `plank_pilot_best_v1_${mode}_${duration}`;
+  const key = players === 2 ? `plank_pilot_best_v2_buddy_${mode}_${duration}` : `plank_pilot_best_v1_${mode}_${duration}`;
   let best = game.score;
   try { best = Math.max(Number(localStorage.getItem(key)) || 0, game.score); localStorage.setItem(key, String(best)); } catch {}
   game.best = best; $('toast').textContent = ''; setPhase('results'); tone(660, .3);
@@ -180,11 +229,23 @@ function renderResults() {
   if (!game) return;
   $('result-kicker').textContent = t(game.done ? 'complete' : 'stopped');
   $('result-title').textContent = t(game.done ? 'landed' : 'stoppedTitle');
-  $('result-copy').textContent = t(mode === 'practice' ? 'practiceResult' : game.done ? 'completeCopy' : 'stoppedCopy');
+  $('result-copy').textContent = t(mode === 'practice' ? 'practiceResult' : players === 2 ? 'buddyResult' : game.done ? 'completeCopy' : 'stoppedCopy');
   $('result-time').textContent = `${Math.floor(game.elapsed)} / ${duration}`;
   $('result-score').textContent = game.score; $('result-gates').textContent = game.cleared;
   $('result-best').textContent = game.best ?? game.score;
+  $('result-buddy').hidden = players !== 2;
+  if (players === 2) $('result-buddy').textContent = `P1: ${game.games[0].score} · P2: ${game.games[1].score} · ${lang==='zh'?'默契加分':'Together bonus'}: +${game.teamBonus}`;
 }
+
+document.querySelectorAll('[data-players]').forEach(button => button.addEventListener('click', () => {
+  players = Number(button.dataset.players); calibrated = false;
+  document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed',String(el === button)));
+  if (players === 2) {
+    mode = 'brow';
+    document.querySelectorAll('[data-control]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.control === 'brow')));
+  }
+  translate();
+}));
 
 document.querySelectorAll('[data-duration]').forEach(button => button.addEventListener('click', () => {
   duration = Number(button.dataset.duration);
@@ -201,13 +262,13 @@ $('camera-start').onclick = async () => {
   unlockAudio(); phaseDetail = ''; continuing = false;
   if (window.Capacitor?.isNativePlatform?.()) { phaseDetail = 'nativeError'; setPhase('error'); return; }
   setPhase('starting');
-  try { if (await camera.start() && phase === 'starting') setPhase('framing'); } catch { /* onError renders recovery. */ }
+  try { if (await camera.start({numFaces:players}) && phase === 'starting') setPhase('framing'); } catch { /* onError renders recovery. */ }
 };
 $('camera-cancel').onclick = backToSetup;
 $('practice-start').onclick = () => {
-  camera.stop(); unlockAudio(); mode = 'practice'; game = new Flight(duration); continuing = false; startCountdown();
+  camera.stop(); unlockAudio(); mode = 'practice'; game = newFlight(); continuing = false; startCountdown();
 };
-$('calibrate').onclick = () => { phaseDetail = ''; unlockAudio(); setPhase('prep'); requestWake(); };
+$('calibrate').onclick = () => { phaseDetail = ''; calibrated = false; unlockAudio(); setPhase('prep'); requestWake(); };
 $('resume').onclick = () => {
   unlockAudio();
   const interruptedCalibration = ['prep','neutral','brow','relax'].includes(pausedPhase);
@@ -225,13 +286,16 @@ $('finish').onclick = stopFlight; $('end').onclick = stopFlight; $('pause').oncl
 for (const [id,lane] of [['touch-left',0],['touch-right',1]]) $(id).addEventListener('pointerdown', e => {
   e.preventDefault(); if (phase === 'playing' && mode === 'practice') game.steer(lane);
 });
+for (const [id,player,lane] of [['p1-left',0,0],['p1-right',0,1],['p2-left',1,0],['p2-right',1,1]]) $(id).addEventListener('pointerdown', e => {
+  e.preventDefault(); if (phase === 'playing' && mode === 'practice' && players === 2) game.steer(lane,player);
+});
 window.addEventListener('keydown', e => {
   if (['INPUT','BUTTON','A','SELECT'].includes(document.activeElement?.tagName)) {
     if (!['ArrowLeft','ArrowRight','a','A','d','D','Escape'].includes(e.key)) return;
   }
   if (mode === 'practice' && phase === 'playing') {
-    if (['ArrowLeft','a','A'].includes(e.key)) { e.preventDefault(); game.steer(0); }
-    if (['ArrowRight','d','D'].includes(e.key)) { e.preventDefault(); game.steer(1); }
+    if (['ArrowLeft','a','A'].includes(e.key)) { e.preventDefault(); game.steer(0,players === 2 && e.key === 'ArrowLeft' ? 1:0); }
+    if (['ArrowRight','d','D'].includes(e.key)) { e.preventDefault(); game.steer(1,players === 2 && e.key === 'ArrowRight' ? 1:0); }
   }
   if ((e.code === 'Space' || e.key === 'Escape') && activePhases.has(phase)) { e.preventDefault(); pause(); }
 });
@@ -253,20 +317,23 @@ window.addEventListener('orientationchange', () => {
 function progress(dt, now) {
   const visible = freshFace(now);
   if (phase === 'starting' || phase === 'framing') {
-    $('tracking-label').textContent = t(phase === 'starting' ? 'cameraWaiting' : visible ? 'faceSeen' : 'noFace');
+    $('tracking-label').textContent = t(phase === 'starting' ? 'cameraWaiting' : players === 2 ? (visible ? 'bothFaces':'needBoth') : visible ? 'faceSeen' : 'noFace');
+    if (players === 2 && phase !== 'starting' && !visible) $('tracking-label').textContent += ` · ${lastSample.count ?? getFaces(lastSample).length}/2`;
     $('calibrate').disabled = phase !== 'framing' || !visible;
-    const signal = mode === 'brow' ? lastSample.brow || 0 : .5 + (center - (lastSample.x ?? .5)) * 4;
+    const signal = mode === 'brow' ? getFaces(lastSample)[0]?.brow || 0 : .5 + (centers[0] - (getFaces(lastSample)[0]?.x ?? .5)) * 4;
     $('signal-dot').style.left = `${Math.max(0,Math.min(1,signal))*100}%`;
   }
   if (phase === 'playing') {
     if (isCamera() && !visible) { enterTracking(); return; }
     for (const event of game.advance(dt)) {
-      $('toast').textContent = t(event.type === 'hit' ? 'hit' : 'clear'); toastUntil = now + 1000;
-      if (event.type === 'hit') { hitGlow = .6; tone(125,.18); } else tone(520 + Math.min(game.streak,5)*50);
+      const pilot = event.player ?? 0;
+      $('toast').textContent = (players === 2 && !event.together ? `P${pilot+1} · ` : '') + t(event.together ? 'together' : event.type === 'hit' ? 'hit' : 'clear'); toastUntil = now + 1000;
+      if (event.type === 'hit') { hitGlows[pilot] = .6; tone(125,.18); } else tone(520 + Math.min(flightGames()[pilot].streak,5)*50);
     }
     const remaining = Math.ceil(Math.max(0,duration - game.elapsed));
     $('clock').textContent = `${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
     $('score').textContent = String(game.score).padStart(4,'0');
+    if (players === 2) { $('p1-score').textContent = game.games[0].score; $('p2-score').textContent = game.games[1].score; }
     if (game.done) stopFlight();
   } else if (phase === 'tracking') {
     stableTime = visible ? stableTime + dt : 0;
@@ -275,32 +342,41 @@ function progress(dt, now) {
     stepTime += dt; $('countdown').textContent = Math.max(1,Math.ceil(5-stepTime));
     if (stepTime >= 5) setPhase('neutral');
   } else if (['neutral','brow','relax'].includes(phase)) {
-    if (!visible) { stepTime = 0; samples = []; $('message-copy').textContent = t('lostCal'); $('countdown').textContent = '…'; return; }
-    $('message-copy').textContent = t(phase === 'neutral' ? 'neutralCopy' : phase === 'brow' ? 'browCalCopy' : 'relaxCopy');
-    if (phase === 'relax' && lastSample.brow >= browSwitch.low) { stepTime = 0; return; }
+    if (!visible) { stepTime = 0; samples = []; $('message-copy').textContent = t(players === 2 ? 'buddyLostCal':'lostCal'); $('countdown').textContent = '…'; return; }
+    $('message-copy').textContent = t(calibrationCopy());
+    if (phase === 'relax' && getFaces(lastSample).some((face,index) => index < players && face.brow >= browSwitches[index].low)) { stepTime = 0; return; }
     stepTime += dt; $('countdown').textContent = Math.max(1,Math.ceil(2-stepTime));
     if (stepTime < 2) return;
     if (phase !== 'relax' && samples.length < 10) { stepTime = 0; samples = []; return; }
     if (phase === 'neutral') {
-      const xs = samples.map(s=>s.x), brows = samples.map(s=>s.brow);
-      if (Math.max(...xs)-Math.min(...xs) > .055 || (mode === 'brow' && Math.max(...brows)-Math.min(...brows) > .2)) {
-        phaseDetail = 'unstable'; setPhase('framing'); releaseWake(); return;
+      const nextCenters = [], nextBrows = [], nextWidths = [];
+      for (let player = 0; player < players; player++) {
+        const xs = samples.map(s=>s[player].x), brows = samples.map(s=>s[player].brow);
+        if (Math.max(...xs)-Math.min(...xs) > .055 || (mode === 'brow' && Math.max(...brows)-Math.min(...brows) > .2)) {
+          phaseDetail = 'unstable'; setPhase('framing'); releaseWake(); return;
+        }
+        nextCenters.push(median(xs)); nextBrows.push(median(brows)); nextWidths.push(median(samples.map(s=>s[player].width || .15)));
       }
-      center = median(xs); filteredX = center; neutralBrow = median(brows);
+      centers = nextCenters; filteredXs = centers.slice(); neutralBrows = nextBrows; faceWidths = nextWidths;
+      calibrated = true;
       if (mode === 'brow') setPhase('brow');
-      else { if (!continuing) game = new Flight(duration); startCountdown(); }
+      else { if (!continuing) game = newFlight(); startCountdown(); }
     } else if (phase === 'brow') {
-      const raised = median(samples.map(s=>s.brow));
-      if (raised - neutralBrow < .12) { phaseDetail = 'weakBrow'; setPhase('framing'); releaseWake(); return; }
-      browSwitch = new BrowSwitch(neutralBrow,raised); setPhase('relax');
-    } else { if (!continuing) game = new Flight(duration); startCountdown(); }
+      const nextSwitches = [];
+      for (let player = 0; player < players; player++) {
+        const raised = median(samples.map(s=>s[player].brow));
+        if (raised - neutralBrows[player] < .12) { phaseDetail = players === 2 ? 'buddyWeakBrow':'weakBrow'; setPhase('framing'); releaseWake(); return; }
+        nextSwitches.push(new BrowSwitch(neutralBrows[player],raised));
+      }
+      browSwitches = nextSwitches; setPhase('relax');
+    } else { if (!continuing) game = newFlight(); startCountdown(); }
   } else if (phase === 'countdown') {
     if (isCamera() && !visible) { enterTracking(); return; }
     const old = Math.ceil(3-stepTime); stepTime += dt;
     $('countdown').textContent = Math.max(1,Math.ceil(3-stepTime));
     if (old !== Math.ceil(3-stepTime)) tone(330,.07);
     if (stepTime >= 3) {
-      browSwitch.reset(); setPhase('playing');
+      resetGestures(); setPhase('playing');
       // Remove button focus so Space pauses instead of activating the last menu control.
       document.activeElement?.blur();
     }
@@ -308,73 +384,18 @@ function progress(dt, now) {
   if (now > toastUntil) $('toast').textContent = '';
 }
 
-const canvas = $('space'), ctx = canvas.getContext('2d');
-let width = 1, height = 1;
-const stars = Array.from({length:85},(_,i)=>({x:Math.sin(i*127.1)*.5+.5,y:Math.sin(i*311.7)*.5+.5,size:i%5===0?1.6:.8}));
+const renderer = new PlankRenderer($('space'), {reducedMotion});
 function resize() {
-  const rect = $('flight').getBoundingClientRect(); width = rect.width; height = rect.height;
-  const dpr = Math.min(devicePixelRatio || 1,2); canvas.width = Math.round(width*dpr); canvas.height = Math.round(height*dpr);
-  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const rect = $('flight').getBoundingClientRect();
+  renderer.resize(rect.width,rect.height,Math.min(devicePixelRatio || 1,2));
 }
 new ResizeObserver(resize).observe($('flight'));
 function draw(now,dt) {
-  visualTime += reducedMotion || phase === 'paused' || phase === 'tracking' ? 0 : dt;
-  ctx.fillStyle = '#080f1b'; ctx.fillRect(0,0,width,height);
-  const inFlight = !!game && !['setup','framing','starting'].includes(phase);
-  const cx = !inFlight && width > 799 ? width*.72 : width*.5;
-  const horizon = height*.22, shipY = height*(mode === 'practice' && inFlight ? .69 : .76);
-  const spread = Math.min(width*.28,240);
-  const glow = ctx.createRadialGradient(cx,horizon,0,cx,horizon,height*.7);
-  glow.addColorStop(0,'#123542'); glow.addColorStop(.45,'#0c1c2c'); glow.addColorStop(1,'#080f1b');
-  ctx.fillStyle = glow; ctx.fillRect(0,0,width,height);
-  for (const star of stars) {
-    ctx.globalAlpha = .25+star.size*.22; ctx.fillStyle = '#b8d3df';
-    const y = (star.y * height + visualTime*(star.size*7))%height;
-    ctx.fillRect(star.x*width,y,star.size,star.size);
-  }
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = '#244956'; ctx.lineWidth = 1;
-  for (const s of [-1,0,1]) { ctx.beginPath(); ctx.moveTo(cx+s*12,horizon); ctx.lineTo(cx+s*spread*1.7,height+30); ctx.stroke(); }
-  for (let i=0;i<11;i++) {
-    const z = ((i/11 + visualTime*.07)%1)**2;
-    const y = horizon + z*(height-horizon);
-    ctx.globalAlpha = .1 + z*.26; ctx.beginPath(); ctx.moveTo(cx-spread*1.7*z,y); ctx.lineTo(cx+spread*1.7*z,y); ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-  // A distant planet and its thin orbit give the launchpad a quiet destination.
-  ctx.strokeStyle = '#426675'; ctx.beginPath(); ctx.ellipse(cx,horizon-8,54,14,-.3,0,Math.PI*2); ctx.stroke();
-  const planet = ctx.createRadialGradient(cx-9,horizon-20,2,cx,horizon-8,25); planet.addColorStop(0,'#679196'); planet.addColorStop(1,'#172c3a');
-  ctx.fillStyle = planet; ctx.beginPath(); ctx.arc(cx,horizon-8,24,0,Math.PI*2); ctx.fill();
-  const renderGates = game && inFlight ? game.gates.map(g=>({...g,p:(game.elapsed-g.born)/3.2})) : [{lane:0,p:.55},{lane:1,p:.84}];
-  for (const g of renderGates) {
-    const z = Math.max(0,g.p)**1.7, y = horizon+(shipY-horizon)*z;
-    if (y>height+50) continue;
-    const x = cx+(g.lane===0?-1:1)*spread*.56*z;
-    const gateWidth = Math.max(5,spread*.92*z), gateHeight = Math.max(3,18*z);
-    ctx.globalAlpha = g.resolved ? .3 : .45 + Math.min(1,z)*.55;
-    ctx.fillStyle = '#351d27'; ctx.strokeStyle = '#fa8d79'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(x-gateWidth/2,y-gateHeight/2,gateWidth,gateHeight,3); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x-5*z,y-4*z); ctx.lineTo(x+5*z,y+4*z); ctx.moveTo(x+5*z,y-4*z); ctx.lineTo(x-5*z,y+4*z); ctx.stroke();
-    if (g.p < .25 && inFlight) {
-      ctx.globalAlpha = .75; ctx.font = '10px monospace'; ctx.textAlign = 'center'; ctx.fillStyle='#faab98';
-      ctx.fillText('!',cx+(g.lane===0?-1:1)*spread*.56,shipY+45);
-    }
-  }
-  ctx.globalAlpha = 1;
-  const target = cx+(game && inFlight ? game.lane===0?-1:1 : 1)*spread*.56;
-  if (!shipX) shipX=target; shipX+=(target-shipX)*(reducedMotion?1:Math.min(1,dt*14));
-  const size = Math.min(25,width*.058);
-  ctx.save(); ctx.translate(shipX,shipY);
-  if (!reducedMotion) ctx.rotate(Math.max(-.22,Math.min(.22,(target-shipX)*.008)));
-  ctx.fillStyle='#419d9c'; ctx.beginPath();ctx.moveTo(-size*.25,size*.5);ctx.lineTo(0,size*(1.4+Math.sin(visualTime*18)*.1));ctx.lineTo(size*.25,size*.5);ctx.fill();
-  ctx.shadowColor='#83e5de';ctx.shadowBlur=16;
-  ctx.fillStyle='#9ceae2';ctx.beginPath();ctx.moveTo(0,-size);ctx.lineTo(size*.8,size*.8);ctx.lineTo(0,size*.35);ctx.lineTo(-size*.8,size*.8);ctx.closePath();ctx.fill();
-  ctx.shadowBlur=0;ctx.strokeStyle='#2a6e73';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,-size*.7);ctx.lineTo(0,size*.32);ctx.stroke();ctx.restore();
-  if (inFlight) {
-    const progressWidth = Math.max(0,Math.min(1,game.elapsed/duration))*width;
-    ctx.fillStyle='#1f3e48';ctx.fillRect(0,height-3,width,3);ctx.fillStyle='#83e5de';ctx.fillRect(0,height-3,progressWidth,3);
-  }
-  if (hitGlow>0) { hitGlow=Math.max(0,hitGlow-dt); if(!reducedMotion){ctx.fillStyle=`rgba(250,141,121,${hitGlow*.16})`;ctx.fillRect(0,0,width,height);} }
+  hitGlows = hitGlows.map(value => Math.max(0,value-dt));
+  renderer.draw({dt,phase,mode,players,games:flightGames(),duration,lang,hitGlows,
+    video:$('camera'),faces:getFaces(lastSample),
+    cameraActive:isCamera() && freshFace(now) && $('face-background').checked,
+    cameraOpacity:Number($('face-opacity').value)/100});
 }
 function frame(now) {
   const gap = (now-previousTime)/1000; previousTime=now;
