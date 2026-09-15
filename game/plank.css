@@ -202,6 +202,8 @@ body.playing #results { margin-inline: auto; }
   .setup-actions .wide, .camera-actions .wide, .result-actions .wide { margin: 0; }
   .privacy { font-size: 8px; line-height: 1.5; margin: 0; }
   #camera-panel { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); grid-template-areas: "steps steps" "intro visual" "actions actions"; gap: 10px 24px; }
+  #camera-panel:not([data-stage="frame"]) { grid-template-areas: "steps steps" "intro visual" "intro actions"; align-items: start; }
+  #camera-panel:not([data-stage="frame"]) .camera-actions { align-self: start; }
   .prep-steps { grid-area: steps; padding-bottom: 9px; margin: 0; font-size: 10px; }
   .prep-step-number { height: 21px; width: 21px; font-size: 8px; }
   .camera-intro { grid-area: intro; }
@@ -260,10 +262,12 @@ body.playing #results { margin-inline: auto; }
   .wide { min-height: 36px; padding-block: 6px; }
   .viewfinder { height: 85px; }
   #camera-panel { gap: 8px 16px; }
+  #camera-panel:not([data-stage="frame"]) { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); padding-block: 8px; }
+  #camera-panel:not([data-stage="frame"]) h2 { font-size: 22px; margin-bottom: 8px; }
   .prep-steps { padding-bottom: 6px; font-size: 9px; gap: 4px; }
   .prep-steps li { gap: 4px; }
   .prep-step-number { width: 18px; height: 18px; font-size: 7px; }
-  #camera-panel:not([data-stage="frame"]) .viewfinder { height: 105px; }
+  #camera-panel:not([data-stage="frame"]) .viewfinder { height: 100px; margin-bottom: 6px; }
   .prep-pilots { margin-bottom: 6px; }
   .prep-pilots > span { padding-block: 3px; font-size: 7px; }
   .prep-next { font-size: 8px; margin-top: 7px; }
