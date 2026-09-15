@@ -13,17 +13,17 @@ const copy = {
   privacy:['Video stays on your device. Nothing is recorded. Camera mode downloads a tracking model.','画面仅在本机处理，不录制。摄像头模式需要下载追踪模型。'],
   cameraTag:['PREFLIGHT CHECK','飞行前检查'], left:['LEFT','左'], right:['RIGHT','右'], sensitivity:['Movement needed','移动幅度'], small:['small → more','小 → 大'],
   position:['Rest the phone securely in front of you, with your face in view. Keep movement comfortable and small. This tracks controls, not plank form.','把手机稳妥放在面前，让镜头能看见脸。动作保持轻微舒适。此功能只用于操控，不判断平板支撑姿势。'],
-  calibrate:['Get ready · 5-second countdown','准备出发 · 5 秒倒计时'], back:['Back','返回'], resume:['Resume flight','继续飞行'], recalibrate:['Reposition & recalibrate','重新摆放并校准'],
+  calibrate:['Start setup · 5s to get into position','开始准备 · 5 秒就位'], back:['Back','返回'], resume:['Resume flight','继续飞行'], recalibrate:['Reposition & recalibrate','重新摆放并校准'],
   finish:['Finish here','到这里结束'], flightSeconds:['FLIGHT SECONDS','飞行秒数'], gates:['Gates cleared','通过障碍'], best:['Best this mode & duration','本模式与时长的最高分'],
   again:['Back to the launchpad ↗','返回发射台 ↗'], rest:['Take a breather. Your next flight can wait.','先休息一下，下一次飞行可以等等。'], pause:['Ⅱ Pause','Ⅱ 暂停'], end:['End','结束'],
   practiceBadge:['PRACTICE · NO CAMERA','试玩 · 无摄像头'], ready:['READY WHEN YOU ARE','准备好就出发'], lab:['← WIP Lab','← 实验室'],
   loading:['Waking up the camera…','正在开启摄像头…'], loadingCopy:['Allow camera access. The first model download may take a moment.','请允许访问摄像头，首次下载模型可能需要一点时间。'],
-  framing:['Find your position.','找好位置。'], framingCopy:['Frame your face, then tap the countdown. You have 5 seconds to settle into position before calibration.','让整张脸出现在预览中，再点击倒计时。校准前有 5 秒时间就位。'],
+  framing:['Get your face in view.','让脸进入镜头。'], framingCopy:['Position the phone so you can see your whole face. Tap Start setup when the framing looks right.','摆好手机，让整张脸出现在预览中。取景合适后，点击开始准备。'],
   faceSeen:['FACE IN VIEW','已看到面部'], noFace:['FACE NOT VISIBLE','未看到面部'], cameraWaiting:['WAITING FOR CAMERA','等待摄像头'],
-  prep:['Get comfortable.','准备就位。'], prepCopy:['Settle into your position. Calibration starts next.','调整到舒适的位置，随后自动开始校准。'],
-  neutral:['Stay centered.','保持居中。'], neutralCopy:['Hold still with a relaxed face for two seconds.','面部放松，保持不动两秒。'],
+  prep:['Settle into your plank.','进入平板支撑姿势。'], prepCopy:['You have five seconds to get comfortable. We are not measuring your center yet.','你有五秒时间调整到舒适姿势，此时还没有开始记录中心位置。'],
+  neutral:['Center & hold still.','确定中心，保持不动。'], neutralCopy:['Look at the screen with a relaxed face. Hold your comfortable position for two seconds: this becomes your steering center.','自然看向屏幕，放松面部。在舒适位置保持两秒，这就是你的转向中心。'],
   brow:['Raise your eyebrows.','抬起眉毛。'], browCalCopy:['Hold the raised expression for two seconds so we can learn your gesture.','保持抬眉两秒，让游戏学习你的动作。'],
-  relax:['And relax.','放松眉毛。'], relaxCopy:['Return to your neutral expression. Each raise will switch lanes once.','恢复自然表情，之后每抬眉一次就切换一条航道。'],
+  relax:['Gesture found. Now relax.','已识别抬眉，现在放松。'], relaxCopy:['Lower your eyebrows and hold your relaxed expression for two seconds. Then we will count you in.','放下眉毛，保持自然表情两秒，然后进入起飞倒计时。'],
   launch:['Ready for liftoff?','准备起飞？'], launchCopy:['Fly through the open lane. Coral barriers cost points.','穿过空航道，珊瑚色障碍会扣分。'],
   practiceCopy:['Use ← →, A / D, or the buttons to steer. Space pauses.','用 ← →、A / D 或屏幕按钮转向。空格键暂停。'],
   tracked:['CAMERA CONTROL · LOCAL PROCESSING','摄像头操控 · 本机处理'], practiceStatus:['PRACTICE FLIGHT · NO CAMERA','试玩飞行 · 无摄像头'],
@@ -43,10 +43,10 @@ const copy = {
   rotateHint:['Turn your phone sideways for two-player flight.','双人飞行建议将手机横放。'], playerOne:['P1 · LEFT','P1 · 左侧'], playerTwo:['P2 · RIGHT','P2 · 右侧'],
   faceBackground:['Live face background','实时面部背景'], teamScore:['TEAM SCORE','团队得分'],
   buddyPosition:['Set the phone sideways between you, far enough away to see both faces. Keep your preview sides: P1 left, P2 right.','将手机横放在你们中间，调整距离让两张脸都进入镜头。保持预览中的左右位置：P1 左，P2 右。'],
-  buddyFramingCopy:['Both faces need to fit in the preview at once. The game zooms each face into its own half after calibration.','预览中需同时看到两张脸。校准后，每张脸会放大显示在各自半屏中。'],
-  buddyNeutralCopy:['Both hold still with relaxed faces for two seconds. Stay on your own preview side.','两人保持自然表情两秒，留在各自的预览侧。'],
+  buddyFramingCopy:['Fit both faces in the preview: P1 left, P2 right. Tap Start setup when you can both see yourselves.','让两张脸同时进入预览：P1 在左，P2 在右。两人都能看到自己后，点击开始准备。'],
+  buddyNeutralCopy:['Each look at your own half and hold a relaxed, comfortable position for two seconds. We save a separate center for each of you.','各自看向自己的半屏，在舒适位置放松保持两秒。游戏会分别记录两人的中心位置。'],
   buddyBrowCopy:['Both raise your eyebrows for two seconds. Each gesture will control only your own ship.','两人抬眉保持两秒，之后每人的动作只操控自己的飞船。'],
-  buddyRelaxCopy:['Both relax your eyebrows before liftoff.','两人放松眉毛，准备起飞。'],
+  buddyRelaxCopy:['Both lower your eyebrows and hold relaxed for two seconds. The countdown waits until you are both ready.','两人放下眉毛，保持自然表情两秒。两人都准备好后才会进入倒计时。'],
   buddyPracticeCopy:['P1 uses A / D. P2 uses ← / →. Or use the arrows in your half. Space pauses both.','P1 用 A / D，P2 用 ← / →，也可点击各自半屏箭头。空格暂停双方。'],
   buddyKeysHint:['P1: A / D · P2: ← / →','P1：A / D · P2：← / →'],
   buddyTrackingCopy:['Both faces must be visible on their original sides. Both flights and the clock are paused.','两张脸都需回到原来的预览侧，两人的飞行和计时均已暂停。'],
@@ -54,6 +54,28 @@ const copy = {
   buddyWeakBrow:['We could not distinguish both eyebrow raises. Try together again, or choose small face shifts.','未能清楚识别两人的抬眉动作。请同时再试一次，或选择轻微左右移动。'],
   bothFaces:['BOTH FACES READY','两张脸已就位'], needBoth:['NEED TWO SEPARATE FACES','需要两张分开的脸'], together:['Together! +25 team bonus','默契通过！团队加 25'],
   buddyResult:['Two pilots, one flight. Take a breather together.','两位飞行员，一起完成飞行。一起休息一下吧。'],
+  prepFrame:['Frame','入镜'], prepCenter:['Center','定中心'], prepControls:['Controls','试操控'], prepLaunch:['Fly','起飞'],
+  frameStep:['STEP 1 / 4 · CAMERA FRAMING','第 1 / 4 步 · 镜头取景'], settleStep:['GET INTO POSITION · CENTERING IS NEXT','先就位 · 下一步确定中心'],
+  centerStep:['STEP 2 / 4 · SET YOUR CENTER','第 2 / 4 步 · 确定中心'], controlsStep:['STEP 3 / 4 · CHECK YOUR CONTROLS','第 3 / 4 步 · 试一下操控'], launchStep:['STEP 4 / 4 · READY TO FLY','第 4 / 4 步 · 准备起飞'],
+  nextSettle:['Next: 5 seconds to settle, then center your face.','接下来：5 秒就位，然后记录面部中心。'],
+  nextCenter:['Next: hold still when the CENTER stage lights up.','接下来：定中心步骤亮起时，保持不动。'],
+  nextBrow:['Next: raise your eyebrows when prompted.','接下来：看到提示后抬眉。'], nextShift:['Next: try a small shift left, then right.','接下来：轻微左移，再右移。'],
+  nextRelax:['Next: lower your eyebrows to finish the check.','接下来：放下眉毛，完成操控检查。'], nextCountdown:['Next: a separate 3-second countdown to play.','接下来：单独的 3 秒起飞倒计时。'],
+  nextRight:['Next: move right to check the other lane.','接下来：右移，检查另一条航道。'],
+  launchReady:['Controls ready. Liftoff in…','操控就绪，起飞倒计时…'],
+  testLeft:['Try a small shift left.','试着轻微左移。'], testRight:['Now shift right.','现在轻微右移。'],
+  testLeftCopy:['Move your face a little left in the mirrored preview. Keep your hands planted; the flight timer has not started.','在镜像预览中轻微向左移动面部。双手保持支撑，飞行还没有开始计时。'],
+  testRightCopy:['Move a little right past your resting center. We will count you in once both directions work.','越过刚才的中心位置，轻微向右移动。两个方向都能识别后，进入起飞倒计时。'],
+  buddyTestLeftCopy:['Both shift a little left in the preview, staying on your own sides. Each ready indicator checks its own pilot.','两人在预览中轻微向左移动，保持各自的左右位置。就绪提示分别检查每个人。'],
+  buddyTestRightCopy:['Both shift a little right past your own resting centers. The flight waits until both controls work.','两人越过各自的中心位置，轻微向右移动。两人的操控都通过后才开始飞行。'],
+  centerStarts:['Centering starts in','距离开始定中心'], holdProgress:['Hold still · 2 seconds','保持不动 · 2 秒'], browProgress:['Hold both eyebrows raised · 2 seconds','抬眉保持 · 2 秒'],
+  relaxProgress:['Hold relaxed · 2 seconds','放松保持 · 2 秒'], shiftProgress:['Hold the direction briefly','短暂保持方向'], launchProgress:['Flight starts in','距离起飞'],
+  notInView:['Find your face','请入镜'], inView:['In view','已入镜'], settleStatus:['Get comfortable','调整姿势'], holdStatus:['Hold still','保持不动'],
+  raiseStatus:['Raise eyebrows','抬起眉毛'], raisedStatus:['Raised ✓','已抬眉 ✓'], lowerStatus:['Relax eyebrows','放松眉毛'], relaxedStatus:['Relaxed ✓','已放松 ✓'],
+  leftStatus:['Shift left','向左移动'], rightStatus:['Shift right','向右移动'], controlReady:['Ready ✓','就绪 ✓'],
+  waitingFaces:['Waiting for faces · progress paused','等待入镜 · 进度暂停'], centerRetry:['Movement detected. Hold still again; the center check has restarted.','检测到移动，请重新保持不动，定中心进度已重置。'],
+  waitingBoth:['Both faces needed','等待两人入镜'],
+  steeringRoom:['Leave a little more room to steer: keep each face away from the preview edges and each other, or reduce Movement needed. Then start setup again.','请给转向留出更多空间：让脸离开预览边缘，两人之间留出距离，或调小移动幅度，然后重新开始准备。'],
 };
 let lang = 'en';
 try { lang = localStorage.getItem('arcade_lang') === 'zh' ? 'zh' : 'en'; } catch {}
@@ -64,8 +86,11 @@ let browSwitches = [new BrowSwitch(),new BrowSwitch()], lastSample = {visible:fa
 let continuing = false, stableTime = 0, sound = false, audioContext = null, wakeLock = null, wakeEpoch = 0;
 let phaseDetail = '', previousTime = performance.now(), hitGlows = [0,0], toastUntil = 0;
 let pausedPhase = null;
+let centerResetUntil = 0;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const activePhases = new Set(['prep','neutral','brow','relax','countdown','playing','tracking']);
+const calibrationPhases = new Set(['prep','neutral','brow','relax','testLeft','testRight']);
+const activePhases = new Set([...calibrationPhases,'countdown','playing','tracking']);
+const cameraPrep = () => isCamera() && (['starting','framing','countdown'].includes(phase) || calibrationPhases.has(phase));
 const isCamera = () => mode !== 'practice';
 const getFaces = sample => sample.faces ?? (players === 1 ? [{x:sample.x,brow:sample.brow,width:.15}] : []);
 const freshFace = now => lastSample.visible && getFaces(lastSample).length >= players && now - lastSample.time < 650;
@@ -73,29 +98,42 @@ const median = values => [...values].sort((a,b)=>a-b)[Math.floor(values.length /
 const flightGames = () => game ? (players === 2 ? game.games : [game]) : [];
 const newFlight = () => players === 2 ? new CoopFlight(duration) : new Flight(duration);
 const resetGestures = () => browSwitches.forEach(control => control.reset());
+const moveThreshold = player => players === 2 ? Math.max(.008,faceWidths[player] * Number($('sensitivity').value) / 10) : Number($('sensitivity').value) / 100;
+const directionReady = (face,player) => phase === 'testLeft' ? face.x - centers[player] > moveThreshold(player) : centers[player] - face.x > moveThreshold(player);
 const calibrationCopy = () => phase === 'neutral' ? (players === 2 ? 'buddyNeutralCopy':'neutralCopy') : phase === 'brow' ? (players === 2 ? 'buddyBrowCopy':'browCalCopy') : (players === 2 ? 'buddyRelaxCopy':'relaxCopy');
 const camera = new PlankCamera($('camera'), {
   onSample(sample) {
     const faces = getFaces(sample);
-    if (players === 2 && calibrated && ['playing','countdown','tracking'].includes(phase)) {
+    if (players === 2 && calibrated && ['playing','countdown','tracking','brow','relax','testLeft','testRight'].includes(phase)) {
       const boundary = (centers[0] + centers[1]) / 2;
       if (faces.length !== 2 || faces[0].x <= boundary || faces[1].x >= boundary) sample = {...sample,visible:false};
     }
     lastSample = sample;
     if (!sample.visible) {
       if (phase === 'playing' || phase === 'countdown') enterTracking();
-      if (['neutral','brow','relax'].includes(phase)) { stepTime = 0; samples = []; }
+      if (calibrationPhases.has(phase) && phase !== 'prep') { stepTime = 0; samples = []; }
       return;
     }
     if (faces.length < players) return;
-    if (['neutral','brow'].includes(phase)) samples.push(faces);
+    if (phase === 'neutral') {
+      const trial = [...samples, faces];
+      const moved = faces.some((_,player) => {
+        const xs = trial.map(s=>s[player].x), brows = trial.map(s=>s[player].brow);
+        return Math.max(...xs)-Math.min(...xs) > .055 || (mode === 'brow' && Math.max(...brows)-Math.min(...brows) > .2);
+      });
+      if (moved) { samples = []; stepTime = 0; centerResetUntil = sample.time + 700; }
+      samples.push(faces);
+    } else if (phase === 'brow') {
+      if (faces.every((face,player) => face.brow - neutralBrows[player] >= .12)) samples.push(faces);
+      else { samples = []; stepTime = 0; }
+    }
     for (let player = 0; player < players; player++) filteredXs[player] += (faces[player].x - filteredXs[player]) * .4;
     if (phase === 'playing' || phase === 'countdown') {
       for (let player = 0; player < players; player++) {
         if (mode === 'face') {
           const offset = centers[player] - filteredXs[player];
           // In a shared view each face is smaller; scale motion to its eye span.
-          const threshold = players === 2 ? Math.max(.008,faceWidths[player] * Number($('sensitivity').value) / 10) : Number($('sensitivity').value) / 100;
+          const threshold = moveThreshold(player);
           if (offset < -threshold) game.steer(0,player);
           else if (offset > threshold) game.steer(1,player);
         } else if (browSwitches[player].update(faces[player].brow, sample.time)) {
@@ -128,12 +166,14 @@ function translate() {
 }
 function setPhase(next) {
   phase = next; stepTime = 0; samples = []; stableTime = 0;
+  if (next === 'neutral') centerResetUntil = 0;
   renderPhase();
+  if (cameraPrep()) $('camera-panel').scrollTop = 0;
 }
 function renderPhase() {
   for (const id of ['setup','camera-panel','message','results']) $(id).hidden = true;
   $('resume').hidden = true; $('recalibrate').hidden = true; $('countdown').hidden = true;
-  $('hud').hidden = !game || ['setup','starting','framing','results'].includes(phase);
+  $('hud').hidden = !game || cameraPrep() || ['setup','results'].includes(phase);
   $('player-scores').hidden = players !== 2 || $('hud').hidden;
   $('face-left').hidden = $('face-right').hidden = players !== 2;
   const scoreLabel = document.querySelector('#hud [data-key="score"]');
@@ -154,14 +194,7 @@ function renderPhase() {
   $('control-hint').textContent = t(mode === 'practice' ? (players === 2 ? 'buddyKeysHint':'keysHint') : mode === 'brow' ? 'browHint' : 'faceHint');
   $('status').textContent = t(phase === 'setup' ? 'ready' : phase === 'results' ? 'resultStatus' : isCamera() ? 'tracked' : 'practiceStatus');
   if (phase === 'setup') { $('setup').hidden = false; return; }
-  if (phase === 'starting' || phase === 'framing') {
-    $('camera-panel').hidden = false;
-    $('camera-title').textContent = t(phase === 'starting' ? 'loading' : phaseDetail ? 'calibrationError' : 'framing');
-    $('camera-copy').textContent = t(phase === 'starting' ? 'loadingCopy' : phaseDetail || (players === 2 ? 'buddyFramingCopy':'framingCopy'));
-    $('calibrate').disabled = phase === 'starting' || !freshFace(performance.now());
-    $('sensitivity-label').hidden = mode !== 'face';
-    return;
-  }
+  if (cameraPrep()) { renderPrep(); return; }
   if (phase === 'playing') return;
   if (phase === 'results') { $('results').hidden = false; renderResults(); return; }
   $('message').hidden = false;
@@ -174,6 +207,74 @@ function renderPhase() {
   $('recalibrate').hidden = !isCamera() || !['tracking','paused'].includes(phase);
   $('countdown').hidden = !['prep','neutral','brow','relax','countdown'].includes(phase);
   if (!$('countdown').hidden) $('countdown').textContent = phase === 'prep' ? '5' : phase === 'countdown' ? '3' : '2';
+}
+
+function renderPrep() {
+  const framing = phase === 'starting' || phase === 'framing';
+  const stage = framing ? 'frame' : phase === 'prep' ? 'settle' : phase === 'neutral' ? 'center' : phase === 'countdown' ? 'launch' : 'controls';
+  const stages = ['frame','center','controls','launch'], current = stages.indexOf(stage === 'settle' ? 'frame' : stage);
+  $('camera-panel').hidden = false;
+  $('camera-panel').setAttribute('data-stage',stage);
+  $('camera-kicker').textContent = t({frame:'frameStep',settle:'settleStep',center:'centerStep',controls:'controlsStep',launch:'launchStep'}[stage]);
+  for (const [index,step] of stages.entries()) {
+    const el = $(`prep-step-${step}`);
+    el.setAttribute('data-state',index < current ? 'done' : index === current ? 'current' : 'pending');
+    el.setAttribute('aria-current',index === current ? 'step' : 'false');
+  }
+  const titles = {starting:'loading',framing:phaseDetail?'calibrationError':'framing',prep:'prep',neutral:'neutral',brow:'brow',relax:'relax',testLeft:'testLeft',testRight:'testRight',countdown:'launchReady'};
+  const details = {starting:'loadingCopy',framing:phaseDetail||(players===2?'buddyFramingCopy':'framingCopy'),prep:'prepCopy',neutral:calibrationCopy(),brow:calibrationCopy(),relax:calibrationCopy(),testLeft:players===2?'buddyTestLeftCopy':'testLeftCopy',testRight:players===2?'buddyTestRightCopy':'testRightCopy',countdown:'launchCopy'};
+  const next = {starting:'nextSettle',framing:'nextSettle',prep:'nextCenter',neutral:mode==='brow'?'nextBrow':'nextShift',brow:'nextRelax',relax:'nextCountdown',testLeft:'nextRight',testRight:'nextCountdown'};
+  $('camera-title').textContent = t(titles[phase]);
+  $('camera-copy').textContent = t(details[phase]);
+  $('prep-next').hidden = phase === 'countdown';
+  $('prep-next').textContent = next[phase] ? t(next[phase]) : '';
+  $('camera-position').hidden = !framing;
+  $('camera-options').hidden = !framing;
+  $('camera-signal').hidden = true; // Readiness now describes the actual action for each pilot.
+  $('calibrate').hidden = !framing;
+  $('calibrate').disabled = phase !== 'framing' || !freshFace(performance.now());
+  $('camera-cancel').textContent = t(framing ? 'back' : 'finish');
+  $('sensitivity-label').hidden = mode !== 'face';
+  $('prep-p2').hidden = players !== 2;
+  $('prep-progress-wrap').hidden = framing;
+  $('prep-progress-label').textContent = t({prep:'centerStarts',neutral:'holdProgress',brow:'browProgress',relax:'relaxProgress',testLeft:'shiftProgress',testRight:'shiftProgress',countdown:'launchProgress'}[phase] || 'holdProgress');
+  updatePrep(performance.now());
+}
+
+function updatePrep(now) {
+  const visible = freshFace(now), faces = getFaces(lastSample);
+  $('tracking-label').textContent = t(phase === 'starting' ? 'cameraWaiting' : players === 2 ? (visible ? 'bothFaces':'needBoth') : visible ? 'faceSeen' : 'noFace');
+  if (players === 2 && !visible && phase !== 'starting') $('tracking-label').textContent += ` · ${lastSample.count ?? faces.length}/2`;
+  $('calibrate').disabled = phase !== 'framing' || !visible;
+  for (let player = 0; player < players; player++) {
+    const face = faces[player], el = $(`prep-p${player+1}`);
+    let ready = visible, key = 'inView';
+    if (!visible) { ready = false; key = players === 2 ? 'waitingBoth' : 'notInView'; }
+    else if (phase === 'prep') { ready = false; key = 'settleStatus'; }
+    else if (phase === 'neutral') { ready = false; key = 'holdStatus'; }
+    else if (phase === 'brow') { ready = face.brow - neutralBrows[player] >= .12; key = ready ? 'raisedStatus' : 'raiseStatus'; }
+    else if (phase === 'relax') { ready = face.brow < browSwitches[player].low; key = ready ? 'relaxedStatus' : 'lowerStatus'; }
+    else if (phase === 'testLeft' || phase === 'testRight') { ready = directionReady(face,player); key = ready ? 'controlReady' : phase === 'testLeft' ? 'leftStatus' : 'rightStatus'; }
+    else if (phase === 'countdown') key = 'controlReady';
+    el.textContent = `${players === 2 ? `P${player+1} · ` : ''}${t(key)}`;
+    el.setAttribute('data-state',ready ? 'ready' : 'waiting');
+  }
+  const limit = phase === 'prep' ? 5 : phase === 'countdown' ? 3 : phase === 'testLeft' || phase === 'testRight' ? .35 : 2;
+  $('prep-progress').value = Math.min(1,stepTime / limit);
+  $('prep-timer').textContent = phase === 'prep' || phase === 'countdown' ? String(Math.max(1,Math.ceil(limit-stepTime))) : `${Math.round(Math.min(1,stepTime/limit)*100)}%`;
+  if (!visible && calibrationPhases.has(phase) && phase !== 'prep') {
+    $('camera-copy').textContent = t(players === 2 ? 'buddyLostCal':'lostCal');
+    $('prep-progress-label').textContent = t('waitingFaces');
+  } else if (phase === 'neutral') {
+    $('camera-copy').textContent = t(now < centerResetUntil ? 'centerRetry' : calibrationCopy());
+    $('prep-progress-label').textContent = t('holdProgress');
+  } else if (phase === 'brow' || phase === 'relax') {
+    $('camera-copy').textContent = t(calibrationCopy());
+    $('prep-progress-label').textContent = t(phase === 'brow' ? 'browProgress':'relaxProgress');
+  } else if (phase === 'testLeft' || phase === 'testRight') {
+    $('camera-copy').textContent = t(phase === 'testLeft' ? (players === 2 ? 'buddyTestLeftCopy':'testLeftCopy') : (players === 2 ? 'buddyTestRightCopy':'testRightCopy'));
+    $('prep-progress-label').textContent = t('shiftProgress');
+  }
 }
 
 async function requestWake() {
@@ -264,14 +365,14 @@ $('camera-start').onclick = async () => {
   setPhase('starting');
   try { if (await camera.start({numFaces:players}) && phase === 'starting') setPhase('framing'); } catch { /* onError renders recovery. */ }
 };
-$('camera-cancel').onclick = backToSetup;
+$('camera-cancel').onclick = () => game?.elapsed > 0 ? stopFlight() : backToSetup();
 $('practice-start').onclick = () => {
   camera.stop(); unlockAudio(); mode = 'practice'; game = newFlight(); continuing = false; startCountdown();
 };
 $('calibrate').onclick = () => { phaseDetail = ''; calibrated = false; unlockAudio(); setPhase('prep'); requestWake(); };
 $('resume').onclick = () => {
   unlockAudio();
-  const interruptedCalibration = ['prep','neutral','brow','relax'].includes(pausedPhase);
+  const interruptedCalibration = calibrationPhases.has(pausedPhase);
   if (isCamera() && (!game || interruptedCalibration)) {
     continuing = !!game; phaseDetail = ''; setPhase('framing'); camera.resume(); return;
   }
@@ -316,13 +417,7 @@ window.addEventListener('orientationchange', () => {
 
 function progress(dt, now) {
   const visible = freshFace(now);
-  if (phase === 'starting' || phase === 'framing') {
-    $('tracking-label').textContent = t(phase === 'starting' ? 'cameraWaiting' : players === 2 ? (visible ? 'bothFaces':'needBoth') : visible ? 'faceSeen' : 'noFace');
-    if (players === 2 && phase !== 'starting' && !visible) $('tracking-label').textContent += ` · ${lastSample.count ?? getFaces(lastSample).length}/2`;
-    $('calibrate').disabled = phase !== 'framing' || !visible;
-    const signal = mode === 'brow' ? getFaces(lastSample)[0]?.brow || 0 : .5 + (centers[0] - (getFaces(lastSample)[0]?.x ?? .5)) * 4;
-    $('signal-dot').style.left = `${Math.max(0,Math.min(1,signal))*100}%`;
-  }
+  if (cameraPrep()) updatePrep(now);
   if (phase === 'playing') {
     if (isCamera() && !visible) { enterTracking(); return; }
     for (const event of game.advance(dt)) {
@@ -339,13 +434,14 @@ function progress(dt, now) {
     stableTime = visible ? stableTime + dt : 0;
     if (stableTime >= 1.2) startCountdown();
   } else if (phase === 'prep') {
-    stepTime += dt; $('countdown').textContent = Math.max(1,Math.ceil(5-stepTime));
+    stepTime += dt;
     if (stepTime >= 5) setPhase('neutral');
   } else if (['neutral','brow','relax'].includes(phase)) {
-    if (!visible) { stepTime = 0; samples = []; $('message-copy').textContent = t(players === 2 ? 'buddyLostCal':'lostCal'); $('countdown').textContent = '…'; return; }
-    $('message-copy').textContent = t(calibrationCopy());
-    if (phase === 'relax' && getFaces(lastSample).some((face,index) => index < players && face.brow >= browSwitches[index].low)) { stepTime = 0; return; }
-    stepTime += dt; $('countdown').textContent = Math.max(1,Math.ceil(2-stepTime));
+    if (!visible) { stepTime = 0; samples = []; return; }
+    const faces = getFaces(lastSample);
+    if (phase === 'brow' && faces.some((face,index) => face.brow - neutralBrows[index] < .12)) { stepTime = 0; samples = []; return; }
+    if (phase === 'relax' && faces.some((face,index) => face.brow >= browSwitches[index].low)) { stepTime = 0; return; }
+    stepTime += dt;
     if (stepTime < 2) return;
     if (phase !== 'relax' && samples.length < 10) { stepTime = 0; samples = []; return; }
     if (phase === 'neutral') {
@@ -358,9 +454,12 @@ function progress(dt, now) {
         nextCenters.push(median(xs)); nextBrows.push(median(brows)); nextWidths.push(median(samples.map(s=>s[player].width || .15)));
       }
       centers = nextCenters; filteredXs = centers.slice(); neutralBrows = nextBrows; faceWidths = nextWidths;
+      if (mode === 'face' && centers.slice(0,players).some((center,player) => {
+        const room = Math.min(center,1-center,players === 2 ? Math.abs(centers[0]-centers[1])/2 : 1);
+        return room <= moveThreshold(player) * 1.1;
+      })) { phaseDetail = 'steeringRoom'; setPhase('framing'); releaseWake(); return; }
       calibrated = true;
-      if (mode === 'brow') setPhase('brow');
-      else { if (!continuing) game = newFlight(); startCountdown(); }
+      setPhase(mode === 'brow' ? 'brow' : 'testLeft');
     } else if (phase === 'brow') {
       const nextSwitches = [];
       for (let player = 0; player < players; player++) {
@@ -370,10 +469,17 @@ function progress(dt, now) {
       }
       browSwitches = nextSwitches; setPhase('relax');
     } else { if (!continuing) game = newFlight(); startCountdown(); }
+  } else if (phase === 'testLeft' || phase === 'testRight') {
+    if (!visible || !getFaces(lastSample).every(directionReady)) { stepTime = 0; return; }
+    stepTime += dt;
+    if (stepTime >= .35) {
+      if (phase === 'testLeft') setPhase('testRight');
+      else { if (!continuing) game = newFlight(); startCountdown(); }
+    }
   } else if (phase === 'countdown') {
     if (isCamera() && !visible) { enterTracking(); return; }
     const old = Math.ceil(3-stepTime); stepTime += dt;
-    $('countdown').textContent = Math.max(1,Math.ceil(3-stepTime));
+    if (mode === 'practice') $('countdown').textContent = Math.max(1,Math.ceil(3-stepTime));
     if (old !== Math.ceil(3-stepTime)) tone(330,.07);
     if (stepTime >= 3) {
       resetGestures(); setPhase('playing');

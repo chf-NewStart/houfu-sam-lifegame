@@ -7,7 +7,7 @@
   <meta name="description" content="A tiny hands-free space dodger. Turn a short plank into a flight through the stars.">
   <title>Plank Pilot · GAME LIFE</title>
   <link rel="icon" type="image/svg+xml" href="thumbs/plank.svg">
-  <link rel="stylesheet" href="plank.css?v=3">
+  <link rel="stylesheet" href="plank.css?v=4">
 </head>
 <body>
   <div class="cockpit">
@@ -46,21 +46,35 @@
         <p class="privacy" data-key="privacy">Video stays on your device. Nothing is recorded. Camera mode downloads a tracking model.</p>
         </div>
       </section>
-      <section class="panel" id="camera-panel" hidden>
+      <section class="panel" id="camera-panel" data-stage="frame" hidden>
+        <ol class="prep-steps" aria-label="Preflight steps">
+          <li id="prep-step-frame" data-state="current" aria-current="step"><span class="prep-step-number" aria-hidden="true">01</span><span data-key="prepFrame">Frame</span></li>
+          <li id="prep-step-center" data-state="pending" aria-current="false"><span class="prep-step-number" aria-hidden="true">02</span><span data-key="prepCenter">Center</span></li>
+          <li id="prep-step-controls" data-state="pending" aria-current="false"><span class="prep-step-number" aria-hidden="true">03</span><span data-key="prepControls">Controls</span></li>
+          <li id="prep-step-launch" data-state="pending" aria-current="false"><span class="prep-step-number" aria-hidden="true">04</span><span data-key="prepLaunch">Launch</span></li>
+        </ol>
         <div class="camera-intro">
-        <p class="eyebrow" data-key="cameraTag">PREFLIGHT CHECK</p>
-        <h2 id="camera-title"></h2>
+        <p class="eyebrow" id="camera-kicker">PREFLIGHT CHECK</p>
+        <h2 id="camera-title" aria-live="polite" aria-atomic="true"></h2>
         <p class="intro" id="camera-copy"></p>
-        <p class="hint" data-key="position">Rest the phone securely in front of you, with your face in view. Keep movement comfortable and small. This tracks controls, not plank form.</p>
+        <p class="hint" id="camera-position" data-key="position">Rest the phone securely in front of you, with your face in view. Keep movement comfortable and small. This tracks controls, not plank form.</p>
+        <p class="prep-next" id="prep-next"></p>
+        <div class="prep-progress-wrap" id="prep-progress-wrap" hidden>
+          <div class="prep-progress-copy"><span id="prep-progress-label"></span><span id="prep-timer"></span></div>
+          <progress id="prep-progress" max="1" value="0" aria-labelledby="prep-progress-label"></progress>
+        </div>
         </div>
         <div class="camera-visual">
         <div class="viewfinder"><video id="camera" muted playsinline autoplay></video><span id="face-left" class="face-label" hidden>P1</span><span id="face-right" class="face-label face-label-two" hidden>P2</span><div class="frame-corner tl"></div><div class="frame-corner tr"></div><div class="frame-corner bl"></div><div class="frame-corner br"></div><span id="tracking-label"></span></div>
-        <div class="signal"><span data-key="left">LEFT</span><div class="signal-track"><i id="signal-dot"></i></div><span data-key="right">RIGHT</span></div>
+        <div class="prep-pilots" id="prep-pilots"><span id="prep-p1" data-state="waiting">P1 · waiting</span><span id="prep-p2" data-state="waiting" hidden>P2 · waiting</span></div>
+        <div class="signal" id="camera-signal"><span data-key="left">LEFT</span><div class="signal-track"><i id="signal-dot"></i></div><span data-key="right">RIGHT</span></div>
+        <div id="camera-options">
         <div class="face-background-controls"><label for="face-background"><input id="face-background" type="checkbox" checked><span data-key="faceBackground">Show my face in flight</span></label><input id="face-opacity" type="range" min="25" max="80" value="55" step="5" aria-label="Face background visibility"></div>
         <label class="sensitivity" id="sensitivity-label"><span data-key="sensitivity">Movement needed</span><input id="sensitivity" type="range" min="2" max="8" value="4" step="1"><span data-key="small">small → more</span></label>
         </div>
-        <div class="camera-actions">
-        <button class="primary wide" id="calibrate" disabled data-key="calibrate">Get ready · 5-second countdown</button>
+        </div>
+        <div class="camera-actions" id="camera-actions">
+        <button class="primary wide" id="calibrate" disabled data-key="calibrate">Start setup · 5s to get into position</button>
         <button class="secondary wide" id="camera-cancel" data-key="back">Back</button>
         </div>
       </section>
@@ -104,6 +118,6 @@
     </main>
     <footer><span><i class="dot"></i> <span id="status" data-key="ready">READY WHEN YOU ARE</span></span><a href="../wip.html" data-key="lab">← WIP Lab</a></footer>
   </div>
-  <script type="module" src="plank.js?v=2"></script>
+  <script type="module" src="plank.js?v=3"></script>
 </body>
 </html>

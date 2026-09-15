@@ -92,20 +92,28 @@ function harness() {
     const el = select(`[data-${attribute}="${value}"]`)[0];
     assert.ok(el, `Missing ${attribute} choice ${value}`); el.dispatch('click');
   };
+  const finishCalibration = (control = 'face') => {
+    const centers = camera.faces.map(face => face.x);
+    if (control === 'brow') {
+      until('brow'); camera.faces = camera.faces.map(face => ({...face, brow: .8}));
+      until('relax'); camera.faces = camera.faces.map(face => ({...face, brow: .05}));
+    } else {
+      until('testLeft'); camera.faces = camera.faces.map((face, i) => ({...face, x: centers[i] + .1}));
+      until('testRight'); camera.faces = camera.faces.map((face, i) => ({...face, x: centers[i] - .1}));
+      until('countdown'); camera.faces = camera.faces.map((face, i) => ({...face, x: centers[i]}));
+    }
+    until('playing');
+  };
   const launchCamera = async ({ buddy = false, control = 'face' } = {}) => {
     if (buddy) choose('players', 2);
     choose('control', control);
     await click('camera-start'); advance(.1); await click('calibrate');
-    if (control === 'brow') {
-      until('brow'); camera.faces = camera.faces.map(face => ({...face, brow: .8}));
-      until('relax'); camera.faces = camera.faces.map(face => ({...face, brow: .05}));
-    }
-    until('playing');
+    finishCalibration(control);
   };
   const key = key => context.dispatch('keydown', { key });
   const rotate = () => context.dispatch('orientationchange');
   const pointer = id => ids.get(id).dispatch('pointerdown');
-  return { ids, storage, camera, document, state, advance, until, click, choose, key, rotate, pointer, launchCamera };
+  return { ids, storage, camera, document, state, advance, until, click, choose, key, rotate, pointer, launchCamera, finishCalibration };
 }
 
 test('practice countdown does not spend flight time and completion lands at exactly 30 seconds', async () => {
@@ -154,7 +162,7 @@ test('backgrounding during recalibration returns to framing while preserving fli
   app.document.hidden = false; app.document.dispatch('visibilitychange');
   await app.click('resume'); assert.equal(app.state().phase, 'framing');
   assert.equal(app.state().elapsed, elapsed);
-  app.advance(.1); await app.click('calibrate'); app.until('playing');
+  app.advance(.1); await app.click('calibrate'); app.finishCalibration();
   assert.equal(app.state().elapsed, elapsed);
 });
 
@@ -204,7 +212,7 @@ test('one shared camera calibrates two eyebrow controls and each raise changes o
   assert.deepEqual(app.state().lanes, [1, 0]);
 });
 
-test('both players must finish neutral and eyebrow calibration before a buddy flight can launch', async () => {
+test('both players must complete neutral, a sustained eyebrow raise, and relaxation before buddy liftoff', async () => {
   const app = harness(); app.choose('players', 2);
   await app.click('camera-start'); app.advance(.1); await app.click('calibrate'); app.until('neutral');
   const bothFaces = app.camera.faces;
@@ -212,10 +220,106 @@ test('both players must finish neutral and eyebrow calibration before a buddy fl
   assert.equal(app.state().phase, 'neutral');
   assert.equal(app.state().elapsed, undefined);
   app.camera.faces = bothFaces; app.until('brow');
-  app.camera.faces[0].brow = .8; // Buddy never raises their eyebrows.
-  app.until('framing');
+  app.camera.faces = bothFaces.map((face, i) => ({...face, brow: i === 0 ? .8 : .05}));
+  app.advance(4);
+  assert.equal(app.state().phase, 'brow', 'wait for the buddy in this step without restarting preparation');
   assert.equal(app.state().elapsed, undefined, 'one successful gesture cannot launch both players');
-  assert.match(app.ids.get('camera-copy').textContent, /both eyebrow raises/);
+  assert.equal(app.ids.get('camera-panel').hidden, false);
+  assert.equal(app.ids.get('prep-step-controls').attributes['data-state'], 'current');
+  app.camera.faces = bothFaces.map(face => ({...face, brow: .8}));
+  app.advance(1); assert.equal(app.state().phase, 'brow', 'a short shared raise is insufficient');
+  app.until('relax');
+  app.camera.faces = bothFaces.map((face, i) => ({...face, brow: i === 0 ? .05 : .8}));
+  app.advance(3); assert.equal(app.state().phase, 'relax', 'both players must relax');
+  app.camera.faces = bothFaces.map(face => ({...face, brow: .05}));
+  app.until('countdown'); assert.equal(app.state().elapsed, 0);
+  app.advance(2.9); assert.equal(app.state().elapsed, 0);
+  app.until('playing'); assert.equal(app.state().calibrated, true);
+});
+
+test('camera preparation keeps the preview visible and distinguishes settling, centering, controls, and liftoff', async () => {
+  const app = harness();
+  await app.click('camera-start'); app.advance(.1);
+  const cameraStage = (phase, title, activeStep) => {
+    assert.equal(app.state().phase, phase);
+    assert.equal(app.ids.get('camera-panel').hidden, false, `${phase}: live framing preview stays visible`);
+    assert.equal(app.ids.get('message').hidden, true, `${phase}: instructions stay with the preview`);
+    assert.equal(app.ids.get('camera-title').textContent, title);
+    assert.ok(app.ids.get('camera-copy').textContent.length, `${phase}: explains the current action`);
+    assert.equal(app.ids.get('prep-next').hidden, phase === 'countdown');
+    if (phase !== 'countdown') assert.ok(app.ids.get('prep-next').textContent.length, `${phase}: explains what happens next`);
+    for (const step of ['frame', 'center', 'controls', 'launch']) {
+      assert.equal(app.ids.get(`prep-step-${step}`).attributes['aria-current'], step === activeStep ? 'step' : 'false');
+    }
+  };
+  await app.click('calibrate');
+  cameraStage('prep', 'Settle into your plank.', 'frame');
+  app.advance(4.9); assert.equal(app.state().phase, 'prep');
+  assert.equal(app.state().elapsed, undefined, 'settling is outside the flight');
+  app.until('neutral'); cameraStage('neutral', 'Center & hold still.', 'center');
+  assert.equal(app.ids.get('prep-step-frame').attributes['data-state'], 'done');
+  app.until('testLeft'); cameraStage('testLeft', 'Try a small shift left.', 'controls');
+  app.camera.faces = app.camera.faces.map(face => ({...face, x: .6}));
+  app.until('testRight'); cameraStage('testRight', 'Now shift right.', 'controls');
+  app.camera.faces = app.camera.faces.map(face => ({...face, x: .4}));
+  app.until('countdown'); cameraStage('countdown', 'Controls ready. Liftoff in…', 'launch');
+  assert.equal(app.ids.get('prep-step-controls').attributes['data-state'], 'done');
+  assert.equal(app.state().elapsed, 0, 'testing both controls is outside the flight');
+  app.camera.faces = app.camera.faces.map(face => ({...face, x: .5}));
+  app.advance(2.9); assert.equal(app.state().elapsed, 0);
+  app.until('playing'); assert.equal(app.ids.get('camera-panel').hidden, true);
+});
+
+test('centering restarts its continuous hold after movement or a lost face without restarting preparation', async () => {
+  const app = harness();
+  await app.click('camera-start'); app.advance(.1); await app.click('calibrate'); app.until('neutral');
+  app.advance(1);
+  app.camera.faces = app.camera.faces.map(face => ({...face, x: .65}));
+  app.advance(1.2);
+  assert.equal(app.state().phase, 'neutral', 'movement restarts the hold in the centering step');
+  assert.equal(app.ids.get('camera-panel').hidden, false);
+  assert.equal(app.state().calibrated, false);
+  app.advance(.2, false);
+  assert.equal(app.state().phase, 'neutral');
+  app.advance(1.5);
+  assert.equal(app.state().phase, 'neutral', 'recovered tracking needs a fresh continuous hold');
+  app.until('testLeft');
+  assert.equal(app.state().elapsed, undefined);
+});
+
+test('crowded buddy framing explains insufficient steering room before starting control checks', async () => {
+  const app = harness(); app.choose('players', 2); app.choose('control', 'face');
+  await app.click('camera-start');
+  app.camera.faces = app.camera.faces.map((face, i) => ({...face, x: i === 0 ? .55 : .45, width: .15}));
+  app.advance(.1); await app.click('calibrate'); app.until('neutral'); app.until('framing');
+  assert.match(app.ids.get('camera-copy').textContent, /room to steer/);
+  assert.equal(app.ids.get('camera-panel').hidden, false);
+  assert.equal(app.state().elapsed, undefined, 'framing failure never creates or spends a flight');
+  assert.deepEqual(app.state().clocks, []);
+});
+
+test('face control checks require both players to hold a useful left shift, then a useful right shift', async () => {
+  const app = harness(); app.choose('players', 2); app.choose('control', 'face');
+  await app.click('camera-start'); app.advance(.1); await app.click('calibrate'); app.until('testLeft');
+  const faces = app.camera.faces.map(face => ({...face}));
+  const shift = offsets => { app.camera.faces = faces.map((face, i) => ({...face, x: face.x + offsets[i]})); };
+  app.advance(3); assert.equal(app.state().phase, 'testLeft', 'time alone never proves a control');
+  shift([.04, .04]); app.advance(1);
+  assert.equal(app.state().phase, 'testLeft', 'movement smaller than the gameplay threshold does not pass');
+  shift([.1, 0]); app.advance(1);
+  assert.equal(app.state().phase, 'testLeft', 'P1 cannot complete the check for P2');
+  shift([.1, .1]); app.advance(.2);
+  assert.equal(app.state().phase, 'testLeft', 'a brief crossing is insufficient');
+  shift([0, 0]); app.advance(.2);
+  shift([.1, .1]); app.advance(.2);
+  assert.equal(app.state().phase, 'testLeft', 'separate short crossings cannot accumulate into a hold');
+  app.until('testRight');
+  assert.equal(app.state().elapsed, undefined);
+  shift([-.1, .1]); app.advance(1);
+  assert.equal(app.state().phase, 'testRight', 'both players must also prove right steering');
+  shift([-.1, -.1]); app.until('countdown');
+  assert.equal(app.state().elapsed, 0);
+  shift([0, 0]); app.until('playing');
 });
 
 test('a single remaining face freezes both flights and cannot take over the other player', async () => {
@@ -241,7 +345,7 @@ test('rotating during buddy camera play requires fresh calibration without spend
   const elapsed = app.state().elapsed;
   app.rotate(); assert.equal(app.state().phase, 'framing');
   app.advance(4); assert.deepEqual(app.state().clocks, [elapsed, elapsed]);
-  await app.click('calibrate'); app.until('playing');
+  await app.click('calibrate'); app.finishCalibration();
   assert.deepEqual(app.state().clocks, [elapsed, elapsed]);
   app.advance(.2); assert.ok(app.state().elapsed > elapsed);
   assert.equal(app.camera.starts.length, 1, 'rotation reuses the shared camera');

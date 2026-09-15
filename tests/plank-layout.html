@@ -20,10 +20,11 @@
     <label>Viewport <select id="viewport"><option value="844,390">844 × 390 · phone sideways</option><option value="667,375">667 × 375 · small phone sideways</option><option value="568,320">568 × 320 · compact sideways</option><option value="844,290">844 × 290 · browser bars</option><option value="390,844">390 × 844 · portrait</option><option value="1365,930">1365 × 930 · desktop</option></select></label>
     <label>Language <select id="language"><option value="en">English</option><option value="zh">中文</option></select></label>
     <label>Players <select id="players"><option value="2">Two buddies</option><option value="1">Solo</option></select></label>
+    <label>Camera control <select id="control-mode"><option value="brow">Eyebrow switch</option><option value="face">Small face shift</option></select></label>
     <button id="top">Panel top</button><button id="bottom">Panel bottom</button><button id="reload">Reload game</button>
   </div>
   <div class="options" id="states">
-    <button data-state="setup" aria-pressed="true">Setup</button><button data-state="camera" aria-pressed="false">Camera</button><button data-state="pause" aria-pressed="false">Pause</button><button data-state="error" aria-pressed="false">Camera error</button><button data-state="results" aria-pressed="false">Results</button><button data-state="solo" aria-pressed="false">Solo flight</button><button data-state="buddy" aria-pressed="false">Buddy flight</button>
+    <button data-state="setup" aria-pressed="true">Setup</button><button data-state="frame" aria-pressed="false">Frame</button><button data-state="settle" aria-pressed="false">Settle</button><button data-state="center" aria-pressed="false">Center</button><button data-state="brow" aria-pressed="false">Raise brows</button><button data-state="relax" aria-pressed="false">Relax</button><button data-state="testLeft" aria-pressed="false">Test left</button><button data-state="testRight" aria-pressed="false">Test right</button><button data-state="launch" aria-pressed="false">Launch</button><button data-state="pause" aria-pressed="false">Pause</button><button data-state="error" aria-pressed="false">Camera error</button><button data-state="results" aria-pressed="false">Results</button><button data-state="solo" aria-pressed="false">Solo flight</button><button data-state="buddy" aria-pressed="false">Buddy flight</button>
   </div>
   <pre id="report">Loading the actual game page…</pre>
   <div id="frame-wrap"><iframe id="game" src="../game/plank.html" title="Simulated Plank Pilot layout" width="844" height="390"></iframe></div>
@@ -31,26 +32,124 @@
     const frame=document.getElementById('game'),report=document.getElementById('report');
     let fixtureState='setup',ready=false;
     const copy={en:{cameraTitle:'Both pilots in view',cameraCopy:'Sit side by side and position the phone securely. Player 1 is on the left; player 2 is on the right. Stay on your own side.',tracking:'Both faces found · ready to calibrate',pauseTitle:'Both pilots back in view?',pauseCopy:'Your flight is paused while we find both faces. Reposition the phone if needed, then resume when both pilots are ready.',errorTitle:'Camera unavailable',errorCopy:'Camera access was blocked. Allow camera access in your browser settings, or return to practice with touch controls.',resultTitle:'You flew together.',resultCopy:'Two pilots, one phone. A shared flight through the quiet belt.',resultBuddy:'Player 1: 240 · Player 2: 360 · Together bonus: 100',kicker:'FLIGHT COMPLETE',hint:'Both pilots · raise eyebrows to switch lanes'},zh:{cameraTitle:'两位飞行员就位',cameraCopy:'并排支撑，稳稳放好手机。玩家 1 在左，玩家 2 在右，两人的脸都要出现在镜头内，校准后不要交换位置。',tracking:'已找到两张脸 · 可以开始校准',pauseTitle:'两位飞行员都回来了吗？',pauseCopy:'正在寻找两张脸，飞行已暂停。如有需要，请调整手机位置，等两个人准备好后再继续。',errorTitle:'无法使用相机',errorCopy:'相机权限被阻止。请在浏览器设置中允许使用相机，或返回使用触屏模式练习。',resultTitle:'一起完成了飞行。',resultCopy:'两位飞行员，一部手机。一起飞过寂静星带。',resultBuddy:'玩家 1：240 · 玩家 2：360 · 合作奖励：100',kicker:'飞行完成',hint:'双人 · 抬眉切换航道'}};
+    // These display strings mirror plank.js; all prep indicators below are simulated.
+    const prepCopy={
+      framing:['Get your face in view.','让脸进入镜头。'],
+      framingCopy:['Position the phone so you can see your whole face. Tap Start setup when the framing looks right.','摆好手机，让整张脸出现在预览中。取景合适后，点击开始准备。'],
+      buddyFramingCopy:['Fit both faces in the preview: P1 left, P2 right. Tap Start setup when you can both see yourselves.','让两张脸同时进入预览：P1 在左，P2 在右。两人都能看到自己后，点击开始准备。'],
+      position:['Rest the phone securely in front of you, with your face in view. Keep movement comfortable and small. This tracks controls, not plank form.','把手机稳妥放在面前，让镜头能看见脸。动作保持轻微舒适。此功能只用于操控，不判断平板支撑姿势。'],
+      buddyPosition:['Set the phone sideways between you, far enough away to see both faces. Keep your preview sides: P1 left, P2 right.','将手机横放在你们中间，调整距离让两张脸都进入镜头。保持预览中的左右位置：P1 左，P2 右。'],
+      faceSeen:['FACE IN VIEW','已看到面部'],
+      bothFaces:['BOTH FACES READY','两张脸已就位'],
+      calibrate:['Start setup · 5s to get into position','开始准备 · 5 秒就位'],
+      back:['Back','返回'],
+      finish:['Finish here','到这里结束'],
+      prep:['Settle into your plank.','进入平板支撑姿势。'],
+      prepCopy:['You have five seconds to get comfortable. We are not measuring your center yet.','你有五秒时间调整到舒适姿势，此时还没有开始记录中心位置。'],
+      neutral:['Center & hold still.','确定中心，保持不动。'],
+      neutralCopy:['Look at the screen with a relaxed face. Hold your comfortable position for two seconds: this becomes your steering center.','自然看向屏幕，放松面部。在舒适位置保持两秒，这就是你的转向中心。'],
+      buddyNeutralCopy:['Each look at your own half and hold a relaxed, comfortable position for two seconds. We save a separate center for each of you.','各自看向自己的半屏，在舒适位置放松保持两秒。游戏会分别记录两人的中心位置。'],
+      brow:['Raise your eyebrows.','抬起眉毛。'],
+      browCalCopy:['Hold the raised expression for two seconds so we can learn your gesture.','保持抬眉两秒，让游戏学习你的动作。'],
+      buddyBrowCopy:['Both raise your eyebrows for two seconds. Each gesture will control only your own ship.','两人抬眉保持两秒，之后每人的动作只操控自己的飞船。'],
+      relax:['Gesture found. Now relax.','已识别抬眉，现在放松。'],
+      relaxCopy:['Lower your eyebrows and hold your relaxed expression for two seconds. Then we will count you in.','放下眉毛，保持自然表情两秒，然后进入起飞倒计时。'],
+      buddyRelaxCopy:['Both lower your eyebrows and hold relaxed for two seconds. The countdown waits until you are both ready.','两人放下眉毛，保持自然表情两秒。两人都准备好后才会进入倒计时。'],
+      launchReady:['Controls ready. Liftoff in…','操控就绪，起飞倒计时…'],
+      launchCopy:['Fly through the open lane. Coral barriers cost points.','穿过空航道，珊瑚色障碍会扣分。'],
+      frameStep:['STEP 1 / 4 · CAMERA FRAMING','第 1 / 4 步 · 镜头取景'],
+      settleStep:['GET INTO POSITION · CENTERING IS NEXT','先就位 · 下一步确定中心'],
+      centerStep:['STEP 2 / 4 · SET YOUR CENTER','第 2 / 4 步 · 确定中心'],
+      controlsStep:['STEP 3 / 4 · CHECK YOUR CONTROLS','第 3 / 4 步 · 试一下操控'],
+      launchStep:['STEP 4 / 4 · READY TO FLY','第 4 / 4 步 · 准备起飞'],
+      nextSettle:['Next: 5 seconds to settle, then center your face.','接下来：5 秒就位，然后记录面部中心。'],
+      nextCenter:['Next: hold still when the CENTER stage lights up.','接下来：定中心步骤亮起时，保持不动。'],
+      nextBrow:['Next: raise your eyebrows when prompted.','接下来：看到提示后抬眉。'],
+      nextShift:['Next: try a small shift left, then right.','接下来：轻微左移，再右移。'],
+      nextRelax:['Next: lower your eyebrows to finish the check.','接下来：放下眉毛，完成操控检查。'],
+      nextCountdown:['Next: a separate 3-second countdown to play.','接下来：单独的 3 秒起飞倒计时。'],
+      nextRight:['Next: move right to check the other lane.','接下来：右移，检查另一条航道。'],
+      testLeft:['Try a small shift left.','试着轻微左移。'],
+      testRight:['Now shift right.','现在轻微右移。'],
+      testLeftCopy:['Move your face a little left in the mirrored preview. Keep your hands planted; the flight timer has not started.','在镜像预览中轻微向左移动面部。双手保持支撑，飞行还没有开始计时。'],
+      testRightCopy:['Move a little right past your resting center. We will count you in once both directions work.','越过刚才的中心位置，轻微向右移动。两个方向都能识别后，进入起飞倒计时。'],
+      buddyTestLeftCopy:['Both shift a little left in the preview, staying on your own sides. Each ready indicator checks its own pilot.','两人在预览中轻微向左移动，保持各自的左右位置。就绪提示分别检查每个人。'],
+      buddyTestRightCopy:['Both shift a little right past your own resting centers. The flight waits until both controls work.','两人越过各自的中心位置，轻微向右移动。两人的操控都通过后才开始飞行。'],
+      centerStarts:['Centering starts in','距离开始定中心'],
+      holdProgress:['Hold still · 2 seconds','保持不动 · 2 秒'],
+      browProgress:['Hold both eyebrows raised · 2 seconds','抬眉保持 · 2 秒'],
+      relaxProgress:['Hold relaxed · 2 seconds','放松保持 · 2 秒'],
+      shiftProgress:['Hold the direction briefly','短暂保持方向'],
+      launchProgress:['Flight starts in','距离起飞'],
+      inView:['In view','已入镜'],
+      settleStatus:['Get comfortable','调整姿势'],
+      holdStatus:['Hold still','保持不动'],
+      raiseStatus:['Raise eyebrows','抬起眉毛'],
+      raisedStatus:['Raised ✓','已抬眉 ✓'],
+      lowerStatus:['Relax eyebrows','放松眉毛'],
+      relaxedStatus:['Relaxed ✓','已放松 ✓'],
+      leftStatus:['Shift left','向左移动'],
+      rightStatus:['Shift right','向右移动'],
+      controlReady:['Ready ✓','就绪 ✓']
+    };
+    const prepStates=new Set(['camera','frame','settle','center','brow','relax','testLeft','testRight','launch']);
     const visible=el=>!!el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
     function apply(){
       if(!ready)return;
       const doc=frame.contentDocument,win=frame.contentWindow,language=document.getElementById('language').value;
       const buddy=fixtureState==='buddy'||(fixtureState!=='solo'&&document.getElementById('players').value==='2');
-      const text=copy[language],byId=id=>doc.getElementById(id);
+      const text=copy[language],byId=id=>doc.getElementById(id),t=key=>prepCopy[key][language==='zh'?1:0];
+      const control=document.getElementById('control-mode').value;
       if(doc.documentElement.lang!==language)byId('lang').click();
       const choice=doc.querySelector(`[data-players="${buddy?2:1}"]`);
       if(choice&&choice.getAttribute('aria-pressed')!=='true')choice.click();
+      const controlChoice=doc.querySelector(`[data-control="${control}"]`);
+      if(controlChoice&&controlChoice.getAttribute('aria-pressed')!=='true')controlChoice.click();
       doc.body.classList.toggle('buddy-mode',buddy);
       doc.body.classList.toggle('playing',['pause','results','solo','buddy'].includes(fixtureState));
-      const panel={setup:'setup',camera:'camera-panel',pause:'message',error:'message',results:'results'}[fixtureState];
+      const panel=prepStates.has(fixtureState)?'camera-panel':{setup:'setup',pause:'message',error:'message',results:'results'}[fixtureState];
       for(const el of doc.querySelectorAll('.panel')){el.hidden=el.id!==panel;el.scrollTop=0;}
       const flight=fixtureState==='solo'||fixtureState==='buddy';
       byId('hud').hidden=!flight;byId('player-scores').hidden=!flight||!buddy;
       byId('inflight-controls').hidden=!flight;byId('touch-controls').hidden=!flight||buddy;byId('buddy-touch').hidden=!flight||!buddy;
       byId('flight-label').hidden=fixtureState!=='setup';byId('toast').textContent='';
       byId('buddy-copy').hidden=!buddy;
-      byId('camera-title').textContent=text.cameraTitle;byId('camera-copy').textContent=text.cameraCopy;byId('tracking-label').textContent=text.tracking;
-      byId('face-left').hidden=!buddy;byId('face-right').hidden=!buddy;byId('calibrate').disabled=false;
+      if(prepStates.has(fixtureState)){
+        const state=fixtureState==='camera'?'frame':fixtureState;
+        const stage=['brow','relax','testLeft','testRight'].includes(state)?'controls':state;
+        const stages=['frame','center','controls','launch'],current=stages.indexOf(stage==='settle'?'frame':stage);
+        byId('camera-panel').dataset.stage=stage;
+        for(const [index,step]of stages.entries()){
+          const el=byId(`prep-step-${step}`);
+          el.dataset.state=index<current?'done':index===current?'current':'pending';
+          el.setAttribute('aria-current',index===current?'step':'false');
+        }
+        const title={frame:'framing',settle:'prep',center:'neutral',brow:'brow',relax:'relax',testLeft:'testLeft',testRight:'testRight',launch:'launchReady'}[state];
+        const detail={frame:buddy?'buddyFramingCopy':'framingCopy',settle:'prepCopy',center:buddy?'buddyNeutralCopy':'neutralCopy',brow:buddy?'buddyBrowCopy':'browCalCopy',relax:buddy?'buddyRelaxCopy':'relaxCopy',testLeft:buddy?'buddyTestLeftCopy':'testLeftCopy',testRight:buddy?'buddyTestRightCopy':'testRightCopy',launch:'launchCopy'}[state];
+        const next={frame:'nextSettle',settle:'nextCenter',center:control==='brow'?'nextBrow':'nextShift',brow:'nextRelax',relax:'nextCountdown',testLeft:'nextRight',testRight:'nextCountdown'}[state];
+        byId('camera-kicker').textContent=t({frame:'frameStep',settle:'settleStep',center:'centerStep',controls:'controlsStep',launch:'launchStep'}[stage]);
+        byId('camera-title').textContent=t(title);byId('camera-copy').textContent=t(detail);
+        byId('camera-position').textContent=t(buddy?'buddyPosition':'position');byId('camera-position').hidden=state!=='frame';
+        byId('prep-next').textContent=next?t(next):'';byId('prep-next').hidden=state==='launch';
+        byId('tracking-label').textContent=t(buddy?'bothFaces':'faceSeen');
+        byId('face-left').hidden=!buddy;byId('face-right').hidden=!buddy;
+        byId('camera-options').hidden=state!=='frame';byId('camera-signal').hidden=true;
+        byId('calibrate').hidden=state!=='frame';byId('calibrate').disabled=false;byId('calibrate').textContent=t('calibrate');
+        byId('camera-cancel').hidden=false;byId('camera-cancel').textContent=t(state==='frame'?'back':'finish');
+        byId('sensitivity-label').hidden=control!=='face';byId('prep-p2').hidden=!buddy;
+        for(let player=1;player<=(buddy?2:1);player++){
+          const status={frame:'inView',settle:'settleStatus',center:'holdStatus',brow:player===1?'raisedStatus':'raiseStatus',relax:player===1?'relaxedStatus':'lowerStatus',testLeft:player===1?'controlReady':'leftStatus',testRight:player===1?'controlReady':'rightStatus',launch:'controlReady'}[state];
+          const ready=['inView','raisedStatus','relaxedStatus','controlReady'].includes(status);
+          byId(`prep-p${player}`).textContent=`${buddy?`P${player} · `:''}${t(status)}`;
+          byId(`prep-p${player}`).dataset.state=ready?'ready':'waiting';
+        }
+        byId('prep-progress-wrap').hidden=state==='frame';
+        byId('prep-progress-label').textContent=t({settle:'centerStarts',center:'holdProgress',brow:'browProgress',relax:'relaxProgress',testLeft:'shiftProgress',testRight:'shiftProgress',launch:'launchProgress'}[state]||'holdProgress');
+        // Setting native progress.value changes only the preview DOM, never the game clock.
+        const progress=state==='frame'?0:state==='settle'?.4:state==='launch'?1/3:buddy&&stage==='controls'?0:.5;
+        byId('prep-progress').value=progress;
+        byId('prep-timer').textContent=state==='settle'?'3':state==='launch'?'2':`${Math.round(progress*100)}%`;
+      }
       byId('message-kicker').textContent=language==='zh'?'飞行暂停':'FLIGHT PAUSED';
       byId('message-title').textContent=fixtureState==='error'?text.errorTitle:text.pauseTitle;
       byId('message-copy').textContent=fixtureState==='error'?text.errorCopy:text.pauseCopy;
@@ -75,13 +174,24 @@
         if(panel){const p=panel.getBoundingClientRect();if(r.left<p.left-1||r.right>p.right+1)issues.push(button.id+' overflows panel horizontally');if(r.top<p.top||r.bottom>p.bottom)clipped++;}
         else if(r.left<0||r.right>width+1||r.top<0||r.bottom>height+1)issues.push(button.id+' is outside viewport');
       }
+      const progress=doc.getElementById('prep-progress');
+      let progressReport='';
+      if(visible(progress)){
+        const r=progress.getBoundingClientRect(),p=progress.closest('.panel').getBoundingClientRect();
+        if(r.width<=0||r.height<=0||r.left<p.left-1||r.right>p.right+1)issues.push('Prep progress has invalid bounds');
+        if(!Number.isFinite(progress.value)||progress.value<0||progress.value>progress.max)issues.push('Prep progress is out of range');
+        const label=doc.getElementById(progress.getAttribute('aria-labelledby'));
+        if(!label||!label.textContent.trim())issues.push('Prep progress has no accessible label');
+        progressReport=`\nSimulated prep: ${doc.getElementById('camera-panel').dataset.stage}; native progress ${Math.round(progress.value/progress.max*100)}%; timer ${doc.getElementById('prep-timer').textContent}. No camera or flight clock is running.`;
+      }
+      if(prepStates.has(fixtureState)&&doc.querySelectorAll('.prep-steps [aria-current="step"]').length!==1)issues.push('Prep must have one current step');
       const scroll=panels.map(p=>`${p.id}: ${Math.max(0,p.scrollHeight-p.clientHeight)}px vertical scroll`).join('; ')||'Flight fills the available viewport';
       report.dataset.ok=String(!issues.length);
-      report.textContent=`${issues.length?'CHECK FAILED':'LAYOUT BOUNDS PASS'} · ${width} × ${height} · ${fixtureState}\n${scroll}\n${buttons.length} visible buttons; ${clipped} require panel scrolling. Inner panel scrolling is allowed at short heights and in portrait.\n${issues.join('\n')||'No page overflow, horizontal panel overflow, or controls outside the viewport.'}`;
+      report.textContent=`${issues.length?'CHECK FAILED':'LAYOUT BOUNDS PASS'} · ${width} × ${height} · ${fixtureState}\n${scroll}\n${buttons.length} visible buttons; ${clipped} require panel scrolling. Inner panel scrolling is allowed at short heights and in portrait.\n${issues.join('\n')||'No page overflow, horizontal panel overflow, or controls outside the viewport.'}${progressReport}`;
     }
     frame.addEventListener('load',()=>{ready=true;apply();});
     document.getElementById('viewport').addEventListener('change',event=>{const [w,h]=event.target.value.split(',');frame.width=w;frame.height=h;requestAnimationFrame(apply);});
-    for(const id of ['language','players'])document.getElementById(id).addEventListener('change',apply);
+    for(const id of ['language','players','control-mode'])document.getElementById(id).addEventListener('change',apply);
     document.getElementById('states').addEventListener('click',event=>{if(!event.target.dataset.state)return;fixtureState=event.target.dataset.state;apply();});
     for(const [id,bottom]of [['top',false],['bottom',true]])document.getElementById(id).addEventListener('click',()=>{if(!ready)return;for(const panel of frame.contentDocument.querySelectorAll('.panel'))if(visible(panel))panel.scrollTop=bottom?panel.scrollHeight:0;requestAnimationFrame(measure);});
     document.getElementById('reload').addEventListener('click',()=>{ready=false;report.textContent='Reloading…';frame.contentWindow.location.reload();});

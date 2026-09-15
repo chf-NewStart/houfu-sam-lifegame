@@ -17,8 +17,10 @@ Camera-free buddy practice has four touch buttons, two per half. On a keyboard, 
 1. Start with **practice mode while seated**. Touch controls or the keyboard let you learn the game without granting camera access.
 2. For hands-free play, place the phone securely in front of you with its front camera able to see your face. Adjust the phone angle so you can look at it comfortably without craning your neck.
 3. Choose camera control: **small face shifts** steer left and right, or **raised eyebrows** switch lanes. Use calibration in the position you intend to play from. Make only small, comfortable movements; move the phone or use eyebrow mode if steering requires exaggerated movement.
-4. Choose a round length you already find manageable. Follow the setup and start prompts; the round countdown gives you time to settle into position.
+4. Choose a round length you already find manageable. Follow the four labeled prep stages: **Frame → Center → Controls → Fly**. After you tap **Start setup**, five seconds let you settle into position before centering begins. The center stage records two seconds of stillness; movement or a missing face restarts that hold. Eyebrow mode checks a sustained raise and a relaxed expression; face mode checks a small left shift and then a right shift. Both players must pass each control check together. A separate three-second countdown starts the flight only after these checks pass.
 5. Rest when needed. The camera tracks the face for input; it does **not** verify full-body plank form or measure exercise quality.
+
+The live preview stays visible throughout preparation. The current step, next action, hold progress, and individual pilot status distinguish settling, measuring a center, checking controls, and launching. No flight time is spent in preparation.
 
 ## Camera, network, and privacy
 
