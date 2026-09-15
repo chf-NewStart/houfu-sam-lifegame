@@ -1,6 +1,6 @@
 # Plank Pilot — browser experiment
 
-Open `/game/plank.html` directly or choose **plank_pilot.exe** in the WIP lab. Dodge obstacles with a cyan ship while a **30, 45, 60, or 90-second** target round counts down.
+Open `/game/plank.html` directly or choose **plank_pilot.exe** in the WIP lab. Dodge obstacles with a cyan ship while your chosen target round counts down. Pick **30, 45, 60, or 90 seconds**, or enter **Custom seconds** (any whole number from 1 to 3,600). Typing a custom duration replaces the preset selection; choosing a preset clears the custom field. Both solo and buddy flights use the entered duration.
 
 ## One phone, two gym buddies
 

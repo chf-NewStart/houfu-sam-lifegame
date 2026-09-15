@@ -7,7 +7,7 @@
   <meta name="description" content="A tiny hands-free space dodger. Turn a short plank into a flight through the stars.">
   <title>Plank Pilot · GAME LIFE</title>
   <link rel="icon" type="image/svg+xml" href="thumbs/plank.svg">
-  <link rel="stylesheet" href="plank.css?v=5">
+  <link rel="stylesheet" href="plank.css?v=6">
 </head>
 <body>
   <div class="cockpit">
@@ -36,7 +36,14 @@
         </div>
         <div class="setup-options">
         <fieldset><legend data-key="playersLegend">WHO'S FLYING?</legend><div class="segments" id="players"><button data-players="1" aria-pressed="true" data-key="soloMode">Solo</button><button data-players="2" aria-pressed="false" data-key="buddyMode">With a buddy</button></div></fieldset>
-        <fieldset><legend data-key="duration">CHOOSE YOUR FLIGHT</legend><div class="segments" id="durations"><button data-duration="30" aria-pressed="true">30s</button><button data-duration="45" aria-pressed="false">45s</button><button data-duration="60" aria-pressed="false">60s</button><button data-duration="90" aria-pressed="false">90s</button></div></fieldset>
+        <fieldset>
+          <legend data-key="duration">CHOOSE YOUR FLIGHT</legend>
+          <div class="duration-options">
+            <div class="segments" id="durations"><button data-duration="30" aria-pressed="true">30s</button><button data-duration="45" aria-pressed="false">45s</button><button data-duration="60" aria-pressed="false">60s</button><button data-duration="90" aria-pressed="false">90s</button></div>
+            <label class="custom-duration-label" for="custom-duration"><span data-key="customSeconds">Custom seconds</span><input id="custom-duration" type="number" inputmode="numeric" min="1" max="3600" step="1" placeholder="75" aria-describedby="duration-error" aria-invalid="false" autocomplete="off"></label>
+          </div>
+          <p class="duration-error" id="duration-error" role="status" hidden></p>
+        </fieldset>
         <fieldset><legend data-key="control">CAMERA CONTROL</legend><div class="segments controls"><button data-control="face" aria-pressed="true" data-key="faceControl">Small face shift</button><button data-control="brow" aria-pressed="false" data-key="browControl">Eyebrow switch</button></div></fieldset>
         <p class="control-copy" id="control-copy"></p>
         </div>
@@ -118,6 +125,6 @@
     </main>
     <footer><span><i class="dot"></i> <span id="status" data-key="ready">READY WHEN YOU ARE</span></span><a href="../wip.html" data-key="lab">← WIP Lab</a></footer>
   </div>
-  <script type="module" src="plank.js?v=3"></script>
+  <script type="module" src="plank.js?v=4"></script>
 </body>
 </html>

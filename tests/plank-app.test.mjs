@@ -72,7 +72,7 @@ function harness() {
   }));
   context.window = context;
   vm.runInContext(`'use strict';\n${source}`, context, { filename: 'game/plank.js' });
-  const state = () => JSON.parse(JSON.stringify(vm.runInContext('({phase, players, mode, calibrated, elapsed: game?.elapsed, score: game?.score, done: game?.done, lanes: flightGames().map(g => g.lane), clocks: flightGames().map(g => g.elapsed)})', context)));
+  const state = () => JSON.parse(JSON.stringify(vm.runInContext('({phase, players, mode, duration, gameDuration: game?.duration, calibrated, elapsed: game?.elapsed, score: game?.score, done: game?.done, lanes: flightGames().map(g => g.lane), clocks: flightGames().map(g => g.elapsed)})', context)));
   function frame(face = true) {
     now += 50;
     if (camera.active && !camera.paused && now % 100 === 0) camera.emit(face);
@@ -128,6 +128,67 @@ test('practice countdown does not spend flight time and completion lands at exac
   assert.equal(app.ids.get('result-time').textContent, '30 / 30');
   assert.equal(app.ids.get('result-kicker').textContent, 'FLIGHT COMPLETE');
   assert.ok(app.storage.has('plank_pilot_best_v1_practice_30'));
+});
+
+for (const buddy of [false,true]) {
+  test(`custom seconds finish ${buddy ? 'both buddy flights' : 'a solo flight'} at the exact requested time`, async () => {
+    const app = harness(), seconds = buddy ? 123 : 75;
+    if (buddy) app.choose('players',2);
+    const input = app.ids.get('custom-duration');
+    input.value = String(seconds); input.dispatch('input');
+    assert.equal(input.attributes['data-active'],'true');
+    await app.click('practice-start'); app.until('playing');
+    assert.equal(app.state().gameDuration,seconds);
+    assert.equal(app.state().elapsed,0);
+    app.advance(seconds-.1); assert.equal(app.state().phase,'playing');
+    app.advance(.2); assert.equal(app.state().phase,'results');
+    assert.equal(app.state().elapsed,seconds);
+    assert.ok(app.state().clocks.every(clock => clock === seconds));
+    assert.equal(app.ids.get('result-time').textContent,`${seconds} / ${seconds}`);
+    assert.ok(app.storage.has(buddy ? `plank_pilot_best_v2_buddy_practice_${seconds}` : `plank_pilot_best_v1_practice_${seconds}`));
+  });
+}
+
+test('invalid custom seconds cannot start a camera or practice flight and a preset restores valid setup', async () => {
+  const app = harness(), input = app.ids.get('custom-duration');
+  for (const value of ['', '0', '-1', '12.5', '1e2', 'Infinity', 'abc', '3601']) {
+    input.value = value; input.dispatch('input');
+    assert.equal(input.attributes['aria-invalid'],'true',value);
+    assert.equal(app.ids.get('duration-error').hidden,false);
+    assert.equal(app.ids.get('camera-start').disabled,true);
+    assert.equal(app.ids.get('practice-start').disabled,true);
+    await app.ids.get('camera-start').onclick();
+    await app.ids.get('practice-start').onclick();
+    assert.equal(app.state().phase,'setup');
+    assert.equal(app.state().gameDuration,undefined);
+    assert.equal(app.camera.starts.length,0);
+  }
+  app.choose('duration',45);
+  assert.equal(input.value,'');
+  assert.equal(input.attributes['data-active'],'false');
+  assert.equal(input.attributes['aria-invalid'],'false');
+  assert.equal(app.ids.get('duration-error').hidden,true);
+  await app.click('practice-start');
+  assert.equal(app.state().gameDuration,45);
+});
+
+test('custom duration accepts the lower and upper limits and displays their flight clocks', async () => {
+  for (const seconds of [1,3600]) {
+    const app = harness(), input = app.ids.get('custom-duration');
+    input.value = String(seconds); input.dispatch('input');
+    assert.equal(app.ids.get('duration-error').hidden,true);
+    await app.click('practice-start');
+    assert.equal(app.state().gameDuration,seconds);
+    assert.equal(app.ids.get('clock').textContent,seconds === 1 ? '0:01' : '60:00');
+  }
+});
+
+test('camera setup uses the custom duration through calibration and launch', async () => {
+  const app = harness(), input = app.ids.get('custom-duration');
+  input.value = '97'; input.dispatch('input');
+  await app.launchCamera({buddy:true,control:'brow'});
+  assert.equal(app.state().gameDuration,97);
+  assert.deepEqual(app.state().clocks,[0,0]);
 });
 
 test('manual pause and its resume countdown freeze the actual flight clock', async () => {

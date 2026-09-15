@@ -8,6 +8,7 @@ const copy = {
   sector:['SECTOR 01 — THE QUIET BELT','第 01 区 — 静谧星带'], tagline:['HANDS FREE. EYES ON THE STARS.','解放双手，目光飞向星空。'],
   title:['Make the<br>seconds fly.','让每一秒<br>飞起来。'], intro:['A little space adventure for your next plank. Dodge the barriers. Finish your flight.','平板支撑时来一场太空冒险。躲开障碍，完成飞行。'],
   duration:['CHOOSE YOUR FLIGHT','选择飞行时长'], control:['CAMERA CONTROL','摄像头操控'], faceControl:['Small face shift','轻微左右移动'], browControl:['Eyebrow switch','抬眉切换'],
+  customSeconds:['Custom seconds','自定秒数'], durationInvalid:['Enter a whole number from 1 to 3,600 seconds.','请输入 1 至 3,600 之间的整数秒数。'],
   faceCopy:['A small left / right shift steers your ship. Keep both hands planted.','面部轻微左右移动即可转向，双手保持支撑。'], browCopy:['Raise your eyebrows once to switch lanes. Relax to prepare the next switch.','抬眉一次切换航道，放松后可再次切换。'],
   cameraStart:['Enable camera & set up <span>↗</span>','开启摄像头并设置 <span>↗</span>'], practiceStart:['Try with touch / keyboard','触屏 / 键盘试玩'],
   privacy:['Video stays on your device. Nothing is recorded. Camera mode downloads a tracking model.','画面仅在本机处理，不录制。摄像头模式需要下载追踪模型。'],
@@ -81,6 +82,7 @@ let lang = 'en';
 try { lang = localStorage.getItem('arcade_lang') === 'zh' ? 'zh' : 'en'; } catch {}
 const t = key => copy[key]?.[lang === 'zh' ? 1 : 0] ?? key;
 let phase = 'setup', mode = 'face', players = 1, duration = 30, game = null, stepTime = 0, samples = [];
+let customDurationActive = false;
 let centers = [.5,.5], faceWidths = [.15,.15], neutralBrows = [.05,.05], calibrated = false;
 let browSwitches = [new BrowSwitch(),new BrowSwitch()], lastSample = {visible:false,time:0,faces:[],count:0}, filteredXs = [.5,.5];
 let continuing = false, stableTime = 0, sound = false, audioContext = null, wakeLock = null, wakeEpoch = 0;
@@ -162,7 +164,29 @@ function translate() {
   document.body.classList.toggle('buddy-mode',players === 2);
   $('buddy-copy').hidden = players !== 2;
   document.querySelector('[data-key="position"]').textContent = t(players === 2 ? 'buddyPosition' : 'position');
+  renderDuration();
   renderPhase();
+}
+
+function customSeconds() {
+  const value = $('custom-duration').value.trim(), seconds = Number(value);
+  return /^\d+$/.test(value) && Number.isInteger(seconds) && seconds >= 1 && seconds <= 3600 ? seconds : null;
+}
+function renderDuration() {
+  const invalid = customDurationActive && customSeconds() === null;
+  $('custom-duration').setAttribute('data-active',String(customDurationActive));
+  $('custom-duration').setAttribute('aria-invalid',String(invalid));
+  $('duration-error').hidden = !invalid;
+  $('duration-error').textContent = invalid ? t('durationInvalid') : '';
+  $('camera-start').disabled = $('practice-start').disabled = invalid;
+}
+function acceptDuration() {
+  if (!customDurationActive) return true;
+  const seconds = customSeconds();
+  renderDuration();
+  if (seconds === null) return false;
+  duration = seconds;
+  return true;
 }
 function setPhase(next) {
   phase = next; stepTime = 0; samples = []; stableTime = 0;
@@ -349,9 +373,20 @@ document.querySelectorAll('[data-players]').forEach(button => button.addEventLis
 }));
 
 document.querySelectorAll('[data-duration]').forEach(button => button.addEventListener('click', () => {
+  if (phase !== 'setup') return;
+  customDurationActive = false; $('custom-duration').value = '';
   duration = Number(button.dataset.duration);
   document.querySelectorAll('[data-duration]').forEach(el=>el.setAttribute('aria-pressed',String(el===button)));
+  renderDuration();
 }));
+$('custom-duration').addEventListener('input', () => {
+  if (phase !== 'setup') return;
+  customDurationActive = true;
+  document.querySelectorAll('[data-duration]').forEach(el=>el.setAttribute('aria-pressed','false'));
+  const seconds = customSeconds();
+  if (seconds !== null) duration = seconds;
+  renderDuration();
+});
 document.querySelectorAll('[data-control]').forEach(button => button.addEventListener('click', () => {
   mode = button.dataset.control;
   document.querySelectorAll('[data-control]').forEach(el=>el.setAttribute('aria-pressed',String(el===button)));
@@ -360,6 +395,7 @@ document.querySelectorAll('[data-control]').forEach(button => button.addEventLis
 $('lang').onclick = () => { lang = lang === 'en' ? 'zh' : 'en'; try { localStorage.setItem('arcade_lang',lang); } catch {} translate(); };
 $('sound').onclick = () => { sound = !sound; $('sound').setAttribute('aria-pressed', String(sound)); unlockAudio(); translate(); };
 $('camera-start').onclick = async () => {
+  if (!acceptDuration()) return;
   unlockAudio(); phaseDetail = ''; continuing = false;
   if (window.Capacitor?.isNativePlatform?.()) { phaseDetail = 'nativeError'; setPhase('error'); return; }
   setPhase('starting');
@@ -367,6 +403,7 @@ $('camera-start').onclick = async () => {
 };
 $('camera-cancel').onclick = () => game?.elapsed > 0 ? stopFlight() : backToSetup();
 $('practice-start').onclick = () => {
+  if (!acceptDuration()) return;
   camera.stop(); unlockAudio(); mode = 'practice'; game = newFlight(); continuing = false; startCountdown();
 };
 $('calibrate').onclick = () => { phaseDetail = ''; calibrated = false; unlockAudio(); setPhase('prep'); requestWake(); };
