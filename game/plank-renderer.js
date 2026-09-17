@@ -157,7 +157,7 @@ export class PlankRenderer {
     const shipY=height*(compact?.69:mode==='practice'&&inFlight?.69:.76);
     const spread=Math.min(width*(split?.32:.28),240);
     ctx.fillStyle=pilot?'#18132f':'#101b30';ctx.fillRect(0,0,width,height);
-    const liveFace=this.drawCamera(video,face,pilot,width,height,cameraOpacity,dt,inFlight?game?.activeFilter:null);
+    const liveFace=this.drawCamera(video,face,pilot,width,height,cameraOpacity,dt);
     for(const star of STARS) {
       ctx.globalAlpha=liveFace?.4:.7;ctx.fillStyle=star.size>1?'#c6edeb':'#59637e';
       ctx.fillRect(Math.round(star.x*width/4)*4,Math.round(((star.y*height+this.visualTime*star.size*5)%height)/4)*4,star.size>1?4:2,star.size>1?4:2);
@@ -227,7 +227,7 @@ export class PlankRenderer {
     ctx.fillStyle='#ffd65c';const flame=this.reducedMotion?2:2+Math.floor(this.visualTime*8)%2;
     ctx.fillRect(left+cell*2,top+size+cell*2,cell,cell*flame);ctx.fillRect(left+cell*9,top+size+cell*2,cell,cell*flame);
   }
-  drawCamera(video,face,pilot,width,height,opacity,dt,filter=null) {
+  drawCamera(video,face,pilot,width,height,opacity,dt) {
     const crop=video&&video.readyState>=2?calculateFaceCrop(face,video.videoWidth,video.videoHeight,width,height):null;
     if(!crop){this.faceCrops[pilot]=null;return false;}
     const previous=this.faceCrops[pilot],smoothing=Math.min(1,dt*8);
@@ -237,14 +237,6 @@ export class PlankRenderer {
     try{ctx.translate(width,0);ctx.scale(-1,1);ctx.drawImage(video,crop.x,crop.y,crop.width,crop.height,0,0,width,height);}
     catch{this.faceCrops[pilot]=null;return false;}finally{ctx.restore();}
     ctx.fillStyle=`rgba(8,15,27,${1-Math.max(0,Math.min(.65,opacity))})`;ctx.fillRect(0,0,width,height);
-    if(filter) {
-      // Use the same square as the selfie, transformed into the mirrored crop.
-      const avatarCrop=calculateFaceCrop(face,video.videoWidth,video.videoHeight,1,1);
-      const scale=width/crop.width,side=avatarCrop.width*.78;
-      const centerX=avatarCrop.x+avatarCrop.width/2,centerY=avatarCrop.y+avatarCrop.height/2;
-      const left=width-(centerX-crop.x+side/2)*scale,top=(centerY-crop.y-side/2)*scale;
-      ctx.save();ctx.globalAlpha=.75;drawFaceFilter(ctx,filter,left,top,side*scale);ctx.restore();
-    }
     return true;
   }
 }

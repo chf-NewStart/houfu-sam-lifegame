@@ -1,6 +1,6 @@
 import { Flight, BrowSwitch, CoopFlight, FACE_FILTERS } from './plank-engine.js?v=8';
 import { PlankCamera } from './plank-camera.js?v=8';
-import { PlankRenderer } from './plank-renderer.js?v=8';
+import { PlankRenderer } from './plank-renderer.js?v=9';
 
 const $ = id => document.getElementById(id);
 const copy = {
