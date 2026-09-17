@@ -60,6 +60,32 @@ function controller(cameraSource, modelSource, callbacks = {}, element = video()
 
 const flush = async () => { for (let n = 0; n < 8; n++) await Promise.resolve(); };
 
+test('detection scheduling includes inference in the frame budget while yielding after slow inference', async t => {
+  t.mock.timers.enable({apis:['setTimeout']});
+  let now = 0, inferenceMs = 40;
+  t.mock.method(performance, 'now', () => now);
+  const tracker = model();
+  const detect = tracker.detectForVideo.bind(tracker);
+  tracker.detectForVideo = () => { now += inferenceMs; return detect(); };
+  const {camera, element} = controller(stream(),tracker);
+  t.after(() => camera.stop());
+  await camera.start();
+  assert.equal(tracker.detections,1);
+  element.currentTime = 1;
+  t.mock.timers.tick(25);
+  assert.equal(tracker.detections,1);
+  t.mock.timers.tick(2);
+  assert.equal(tracker.detections,2,'40 ms of inference leaves about 27 ms to the next detection');
+  inferenceMs = 90; element.currentTime = 2;
+  t.mock.timers.tick(27);
+  assert.equal(tracker.detections,3);
+  element.currentTime = 3;
+  t.mock.timers.tick(7);
+  assert.equal(tracker.detections,3,'slow inference must still yield to the rest of the page');
+  t.mock.timers.tick(1);
+  assert.equal(tracker.detections,4);
+});
+
 test('stopping while permission and model are pending resolves promptly and releases late resources', async () => {
   const permission = deferred();
   const loading = deferred();

@@ -304,9 +304,10 @@ export class PlankCamera {
       return;
     }
     if (this._isCurrent(run) && !run.paused) {
-      // Schedule after inference finishes: never more than 15 detections/second,
-      // even when inference is slow. Rendering uses the app's own frame loop.
-      run.timer = setTimeout(() => this._tick(run), FRAME_INTERVAL);
+      // Inference is part of the 15 FPS budget, not an extra delay on top of it.
+      // Keep one inference in flight and yield to rendering even on slow devices.
+      const remaining = FRAME_INTERVAL - (performance.now() - time);
+      run.timer = setTimeout(() => this._tick(run), Math.max(8, remaining));
     }
   }
 

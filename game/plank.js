@@ -1,5 +1,5 @@
-import { Flight, BrowSwitch, CoopFlight, FACE_FILTERS } from './plank-engine.js?v=8';
-import { PlankCamera } from './plank-camera.js?v=8';
+import { Flight, BrowSwitch, CoopFlight, FACE_FILTERS, TrackingPace } from './plank-engine.js?v=10';
+import { PlankCamera } from './plank-camera.js?v=10';
 import { PlankRenderer } from './plank-renderer.js?v=9';
 
 const $ = id => document.getElementById(id);
@@ -25,7 +25,7 @@ const copy = {
   neutral:['Center & hold still.','确定中心，保持不动。'], neutralCopy:['Look at the screen with a relaxed face. Hold your comfortable position for two seconds: this becomes your steering center.','自然看向屏幕，放松面部。在舒适位置保持两秒，这就是你的转向中心。'],
   brow:['Raise your eyebrows.','抬起眉毛。'], browCalCopy:['Hold the raised expression for two seconds so we can learn your gesture.','保持抬眉两秒，让游戏学习你的动作。'],
   relax:['Gesture found. Now relax.','已识别抬眉，现在放松。'], relaxCopy:['Lower your eyebrows and hold your relaxed expression for two seconds. Then we will count you in.','放下眉毛，保持自然表情两秒，然后进入起飞倒计时。'],
-  launch:['Ready for liftoff?','准备起飞？'], launchCopy:['Fly through the open lane. Rocks cost a heart. Mystery boxes in the safe lane change your face.','穿过空航道，碰到障碍少一颗心，安全航道的神秘盒子会让你的脸变装。'],
+  launch:['Ready for liftoff?','准备起飞？'], launchCopy:['Dodge through the open lane: rocks speed up and switch sides more often. Rocks cost a heart; ? boxes change your face.','穿过空航道：障碍会逐渐加速，更频繁地换边。碰到障碍少一颗心，问号盒子让你的脸变装。'],
   practiceCopy:['Use ← →, A / D, or the buttons to steer. Space pauses.','用 ← →、A / D 或屏幕按钮转向。空格键暂停。'],
   tracked:['CAMERA CONTROL · LOCAL PROCESSING','摄像头操控 · 本机处理'], practiceStatus:['PRACTICE FLIGHT · NO CAMERA','试玩飞行 · 无摄像头'],
   faceHint:['Small shift ← / →','轻微移动 ← / →'], browHint:['Raise eyebrows to switch','抬眉切换航道'], keysHint:['← → to dodge · Space to pause','← → 闪避 · 空格暂停'],
@@ -102,10 +102,16 @@ const activePhases = new Set([...calibrationPhases,'starting','framing','countdo
 const cameraPrep = () => isCamera() && (['starting','framing','countdown'].includes(phase) || calibrationPhases.has(phase));
 const isCamera = () => mode !== 'practice';
 const getFaces = sample => sample.faces ?? (players === 1 ? [{x:sample.x,brow:sample.brow,width:.15}] : []);
-const freshFace = now => lastSample.visible && getFaces(lastSample).length >= players && now - lastSample.time < 1000;
+const trackingPace = new TrackingPace();
+const freshFace = now => lastSample.visible && getFaces(lastSample).length >= players && now - lastSample.time <
+  (['playing','countdown','tracking'].includes(phase) ? trackingPace.freshnessMs : 1000);
 const median = values => [...values].sort((a,b)=>a-b)[Math.floor(values.length / 2)];
 const flightGames = () => game ? (players === 2 ? game.games : [game]) : [];
-const newFlight = () => players === 2 ? new CoopFlight(duration) : new Flight(duration);
+const newFlight = () => {
+  const flight = players === 2 ? new CoopFlight(duration) : new Flight(duration);
+  if (isCamera()) flight.setResponseGap(trackingPace.responseGap);
+  return flight;
+};
 const resetGestures = () => browSwitches.forEach(control => control.reset());
 const moveThreshold = player => players === 2 ? Math.max(.008,faceWidths[player] * Number($('sensitivity').value) / 10) : Number($('sensitivity').value) / 100;
 const directionReady = (face,player) => phase === 'testLeft' ? face.x - centers[player] > moveThreshold(player) : centers[player] - face.x > moveThreshold(player);
@@ -119,11 +125,14 @@ const camera = new PlankCamera($('camera'), {
     }
     lastSample = sample;
     if (!sample.visible) {
+      trackingPace.interrupt();
       resetGestures();
       if (calibrationPhases.has(phase) && phase !== 'prep') { stepTime = 0; samples = []; }
       return;
     }
     if (faces.length < players) return;
+    trackingPace.record(sample.time);
+    if (isCamera()) game?.setResponseGap(trackingPace.responseGap);
     if (sample.time - avatarTime >= 750 && ['neutral','brow','relax','testLeft','testRight','countdown','playing'].includes(phase)) {
       renderer.captureFaces($('camera'), faces); avatarTime = sample.time;
     }
@@ -139,7 +148,7 @@ const camera = new PlankCamera($('camera'), {
       if (faces.every((face,player) => face.brow - neutralBrows[player] >= .12)) samples.push(faces);
       else { samples = []; stepTime = 0; }
     }
-    for (let player = 0; player < players; player++) filteredXs[player] += (faces[player].x - filteredXs[player]) * .4;
+    for (let player = 0; player < players; player++) filteredXs[player] += (faces[player].x - filteredXs[player]) * .55;
     if (phase === 'playing' || phase === 'countdown' || phase === 'tracking') {
       for (let player = 0; player < players; player++) {
         if (mode === 'face') {
@@ -345,7 +354,7 @@ function tone(frequency, length = .12) {
 }
 function backToSetup() {
   camera.stop(); releaseWake(); game = null; continuing = false; lastSample = {visible:false,time:0};
-  calibrated = false; hiddenPhase = null; renderer.clearFaces(); avatarTime = -Infinity;
+  calibrated = false; hiddenPhase = null; renderer.clearFaces(); avatarTime = -Infinity; trackingPace.reset();
   phaseDetail = ''; mode = document.querySelector('[data-control][aria-pressed=true]').dataset.control;
   $('toast').textContent = ''; setPhase('setup'); translate();
 }
@@ -366,7 +375,7 @@ function pause() {
 function stopFlight() {
   camera.stop(); releaseWake();
   if (!game || game.elapsed === 0) { backToSetup(); return; }
-  const key = players === 2 ? `plank_pilot_makeovers_v4_buddy_${mode}_${duration}` : `plank_pilot_makeovers_v4_${mode}_${duration}`;
+  const key = players === 2 ? `plank_pilot_makeovers_v5_buddy_${mode}_${duration}` : `plank_pilot_makeovers_v5_${mode}_${duration}`;
   let best = game.score;
   try { best = Math.max(Number(localStorage.getItem(key)) || 0, game.score); localStorage.setItem(key, String(best)); } catch {}
   game.best = best; $('toast').textContent = ''; setPhase('results'); tone(660, .3);
@@ -432,7 +441,7 @@ $('camera-start').onclick = async () => {
   if (!acceptDuration()) return;
   unlockAudio(); phaseDetail = ''; continuing = false;
   if (window.Capacitor?.isNativePlatform?.()) { phaseDetail = 'nativeError'; setPhase('error'); return; }
-  renderer.clearFaces(); avatarTime = -Infinity;
+  renderer.clearFaces(); avatarTime = -Infinity; trackingPace.reset();
   setPhase('starting'); requestWake();
   try { if (await camera.start({numFaces:players}) && phase === 'starting') setPhase('framing'); } catch { /* onError renders recovery. */ }
 };

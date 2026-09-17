@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
-import { Flight, BrowSwitch, CoopFlight, FACE_FILTERS } from '../game/plank-engine.js';
+import { Flight, BrowSwitch, CoopFlight, FACE_FILTERS, TrackingPace } from '../game/plank-engine.js';
 
 const html = readFileSync(new URL('../game/plank.html', import.meta.url), 'utf8');
 // Execute the actual application with its real engine and controlled camera/DOM.
@@ -64,7 +64,7 @@ function harness() {
   }
   const context = vm.createContext(Object.assign(target(), {
     document, navigator: {}, performance: { now: () => now }, devicePixelRatio: 1, console,
-    Flight: class extends Flight { constructor(duration) { super(duration, () => 0); } }, BrowSwitch, CoopFlight, FACE_FILTERS, PlankCamera: MockCamera,
+    Flight: class extends Flight { constructor(duration) { super(duration, () => 0); } }, BrowSwitch, CoopFlight, FACE_FILTERS, TrackingPace, PlankCamera: MockCamera,
     PlankRenderer: class { resize() {} draw() {} clearFaces() {} captureFaces() {} },
     matchMedia: () => ({ matches: false }), requestAnimationFrame: callback => { animation = callback; },
     ResizeObserver: class { constructor(callback) { this.callback = callback; } observe() { this.callback(); } },
@@ -72,10 +72,10 @@ function harness() {
   }));
   context.window = context;
   vm.runInContext(`'use strict';\n${source}`, context, { filename: 'game/plank.js' });
-  const state = () => JSON.parse(JSON.stringify(vm.runInContext('({phase, players, mode, duration, gameDuration: game?.duration, calibrated, elapsed: game?.elapsed, score: game?.score, done: game?.done, lanes: flightGames().map(g => g.lane), clocks: flightGames().map(g => g.elapsed), health: game?.health, filter: game?.activeFilter})', context)));
+  const state = () => JSON.parse(JSON.stringify(vm.runInContext('({phase, players, mode, duration, gameDuration: game?.duration, calibrated, elapsed: game?.elapsed, score: game?.score, done: game?.done, lanes: flightGames().map(g => g.lane), clocks: flightGames().map(g => g.elapsed), health: game?.health, filter: game?.activeFilter, responseGaps: flightGames().map(g => g.responseGap)})', context)));
   function frame(face = true) {
     now += 50;
-    if (camera.active && !camera.paused && now % 100 === 0) camera.emit(face);
+    if (camera.active && !camera.paused && !camera.silent && now % (camera.cadenceMs ?? 100) === 0) camera.emit(face);
     const callback = animation; animation = null; callback(now);
     assert.equal(typeof animation, 'function', 'Application must schedule its next frame');
   }
@@ -133,7 +133,7 @@ test('practice countdown does not spend flight time and completion lands at exac
   assert.equal(app.state().done, true);
   assert.equal(app.ids.get('result-time').textContent, '30 / 30');
   assert.equal(app.ids.get('result-kicker').textContent, 'FLIGHT COMPLETE');
-  assert.ok(app.storage.has('plank_pilot_makeovers_v4_practice_30'));
+  assert.ok(app.storage.has('plank_pilot_makeovers_v5_practice_30'));
 });
 
 for (const buddy of [false,true]) {
@@ -151,7 +151,7 @@ for (const buddy of [false,true]) {
     assert.equal(app.state().elapsed,seconds);
     assert.ok(app.state().clocks.every(clock => clock === seconds));
     assert.equal(app.ids.get('result-time').textContent,`${seconds} / ${seconds}`);
-    assert.ok(app.storage.has(buddy ? `plank_pilot_makeovers_v4_buddy_practice_${seconds}` : `plank_pilot_makeovers_v4_practice_${seconds}`));
+    assert.ok(app.storage.has(buddy ? `plank_pilot_makeovers_v5_buddy_practice_${seconds}` : `plank_pilot_makeovers_v5_practice_${seconds}`));
   });
 }
 
@@ -455,7 +455,7 @@ test('running out of hearts renders an honest early finish and saves pickups sep
   assert.equal(app.state().phase,'results');assert.equal(app.state().health,0);
   assert.equal(app.ids.get('result-kicker').textContent,'OUT OF HEARTS');
   assert.ok(app.state().elapsed<30);
-  assert.ok(app.storage.has('plank_pilot_makeovers_v4_practice_30'));
+  assert.ok(app.storage.has('plank_pilot_makeovers_v5_practice_30'));
 });
 
 test('a collected mystery box announces the actual look and updates the HUD', async () => {
@@ -470,4 +470,34 @@ test('a collected mystery box announces the actual look and updates the HUD', as
   assert.equal(app.ids.get('active-filter').textContent,filter.zh);
   await app.click('end');await app.click('again');await app.click('practice-start');
   assert.equal(app.state().filter,null);
+});
+
+for (const buddy of [false,true]) {
+  test(`slower camera detections ease the pace for ${buddy ? 'both buddies' : 'a solo pilot'} without freezing healthy input`, async () => {
+    const app = harness(); await app.launchCamera({buddy});
+    app.camera.cadenceMs = 250;
+    app.advance(2.5);
+    assert.equal(app.state().phase, 'playing');
+    assert.ok(Math.abs(app.state().elapsed - 2.5) < 1e-9);
+    assert.deepEqual(app.state().responseGaps, buddy ? [1.5,1.5] : [1.5]);
+  });
+}
+
+test('a camera silently stops updating near a collision: stale input freezes time and hearts', async () => {
+  const app = harness(); await app.launchCamera();
+  app.camera.faces[0].x = .6; // Steer into the first obstacle before the camera stops.
+  app.advance(3);
+  const before = app.state();
+  app.camera.silent = true;
+  app.advance(.4);
+  const frozen = app.state();
+  assert.ok(frozen.elapsed - before.elapsed <= .35 + 1e-9);
+  assert.equal(frozen.health,3);
+  app.advance(2);
+  assert.equal(app.state().phase,'tracking');
+  assert.equal(app.state().elapsed,frozen.elapsed);
+  assert.equal(app.state().health,frozen.health);
+  app.camera.silent = false;
+  app.until('playing');
+  assert.equal(app.state().elapsed,frozen.elapsed);
 });
