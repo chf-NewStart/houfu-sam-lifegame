@@ -32,7 +32,7 @@ export function calculateFaceCrop(face, videoWidth, videoHeight, targetWidth, ta
 
 // Small, original pixel sprites. A cell is always a solid square.
 const ROCK = ['  xxxx  ',' xxooox ','xxooaoox','xoaoooox','xoooaoox',' xxooox ','  xxxx  '];
-const COIN = ['  yyyy  ',' yyggyy ','yygwwgyy','yygwggyy','yygwggyy',' yyggy  ','  yyyy  '];
+const MYSTERY = ['xxxxxxxx','xppwwppx','xpwppwpx','xpppwppx','xppwpppx','xppppppx','xppwpppx','xxxxxxxx'];
 const FACE = ['  hhhhhh  ',' hhsssshh ',' hssssssh ','sswsswssss','ssbssbssss','ssssspssss',' ssm msss ','  smmmss  ','   ssss   '];
 function sprite(ctx, rows, x, y, size, colors) {
   const cell = size / Math.max(...rows.map(row => row.length));
@@ -40,6 +40,46 @@ function sprite(ctx, rows, x, y, size, colors) {
     const color = colors[rows[row][col]];
     if (color) { ctx.fillStyle = color; ctx.fillRect(Math.round(x + col * cell), Math.round(y + row * cell), Math.ceil(cell), Math.ceil(cell)); }
   }
+}
+
+// Overlays use a 20-pixel face square, matching the transient selfie crop.
+// Keeping this separate leaves the original face intact when the look changes.
+export function drawFaceFilter(ctx, filter, left, top, size) {
+  const pixel = size / 20;
+  const box = (x, y, w, h, color) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(Math.round(left+x*pixel), Math.round(top+y*pixel), Math.ceil(w*pixel), Math.ceil(h*pixel));
+  };
+  ctx.save();
+  if (filter === 'frog') {
+    box(0,0,20,5,'#48a66c'); box(1,-4,7,6,'#80e691'); box(12,-4,7,6,'#80e691');
+    box(3,-3,4,4,'#fff6dc'); box(13,-3,4,4,'#fff6dc');
+    box(5,-2,2,3,'#172b30'); box(13,-2,2,3,'#172b30'); box(8,1,4,1,'#225c4c');
+  } else if (filter === 'shades') {
+    box(0,6,20,2,'#182035'); box(1,7,8,5,'#10192b'); box(11,7,8,5,'#10192b');
+    box(2,7,2,1,'#b9f1f4'); box(4,8,2,1,'#5987ac'); box(12,7,2,1,'#b9f1f4');
+    box(9,7,2,2,'#ffd65c');
+  } else if (filter === 'moustache') {
+    box(3,5,5,2,'#37232e'); box(12,5,5,2,'#37232e');
+    box(4,13,12,3,'#37232e'); box(2,12,3,3,'#37232e'); box(15,12,3,3,'#37232e');
+    box(1,11,2,2,'#37232e'); box(17,11,2,2,'#37232e'); box(9,13,2,1,'#be7a58');
+    box(7,20,3,3,'#f38daa'); box(11,20,3,3,'#f38daa'); box(10,21,1,1,'#b54e76');
+  } else if (filter === 'googly') {
+    box(0,5,9,8,'#fff4dc'); box(11,5,9,8,'#fff4dc');
+    box(1,4,7,1,'#fff4dc'); box(12,4,7,1,'#fff4dc');
+    box(5,9,3,3,'#162139'); box(12,6,3,3,'#162139');
+    box(6,9,1,1,'#a3f7e0'); box(13,6,1,1,'#a3f7e0');
+  } else if (filter === 'clown') {
+    box(-2,4,4,9,'#c98aee'); box(18,4,4,9,'#c98aee');
+    box(7,9,6,5,'#f25178'); box(8,8,4,1,'#f25178'); box(8,9,2,1,'#ffdcc9');
+    box(2,13,3,2,'#f79baf'); box(15,13,3,2,'#f79baf'); box(7,16,6,2,'#fff4dc');
+  } else if (filter === 'crown') {
+    box(1,-3,3,6,'#ffd65c'); box(8,-5,4,8,'#ffd65c'); box(16,-3,3,6,'#ffd65c');
+    box(2,0,16,4,'#e9ad36'); box(3,3,14,1,'#fff0a3');
+    box(4,1,2,2,'#91efbe'); box(9,0,2,2,'#f77cb0'); box(14,1,2,2,'#baaaff');
+    box(1,12,3,2,'#f5a6ae'); box(16,12,3,2,'#f5a6ae');
+  }
+  ctx.restore();
 }
 
 // Rendering never advances a Flight. Face thumbnails are small canvases held
@@ -117,7 +157,7 @@ export class PlankRenderer {
     const shipY=height*(compact?.69:mode==='practice'&&inFlight?.69:.76);
     const spread=Math.min(width*(split?.32:.28),240);
     ctx.fillStyle=pilot?'#18132f':'#101b30';ctx.fillRect(0,0,width,height);
-    const liveFace=this.drawCamera(video,face,pilot,width,height,cameraOpacity,dt);
+    const liveFace=this.drawCamera(video,face,pilot,width,height,cameraOpacity,dt,inFlight?game?.activeFilter:null);
     for(const star of STARS) {
       ctx.globalAlpha=liveFace?.4:.7;ctx.fillStyle=star.size>1?'#c6edeb':'#59637e';
       ctx.fillRect(Math.round(star.x*width/4)*4,Math.round(((star.y*height+this.visualTime*star.size*5)%height)/4)*4,star.size>1?4:2,star.size>1?4:2);
@@ -146,16 +186,24 @@ export class PlankRenderer {
       ctx.globalAlpha=gate.resolved?.2:1;
       sprite(ctx,ROCK,x-size/2,y-size/2,size,{x:'#5b354e',o:'#e17d89',a:'#ffbd9a'});
       if(!gate.resolved) {
-        const coinX=cx-direction*spread*.56*z,coinSize=Math.max(10,Math.min(32,spread*.25)*z);
-        sprite(ctx,COIN,coinX-coinSize/2,y-coinSize/2,coinSize,{y:'#bd822b',g:'#ffd65c',w:'#fff0a3'});
+        const pickupX=cx-direction*spread*.56*z,pickupSize=Math.max(10,Math.min(32,spread*.25)*z);
+        sprite(ctx,MYSTERY,pickupX-pickupSize/2,y-pickupSize/2,pickupSize,{x:'#8055b4',p:'#b89aef',w:'#fff4dc'});
       }
     }
     ctx.globalAlpha=1;
     const lane=game&&inFlight?game.lane:pilot?0:1,target=cx+(lane===0?-1:1)*spread*.56;
     this.shipXs[pilot]??=target;this.shipXs[pilot]+=(target-this.shipXs[pilot])*(this.reducedMotion?1:Math.min(1,dt*16));
-    const size=Math.max(28,Math.min(52,width*.15,height*.17));
+    const size=Math.max(28,Math.min(62,width*.16,height*.19));
     if(game?.health===0)ctx.globalAlpha=.35;
-    this.drawFace(this.shipXs[pilot],shipY,size,pilot,palette,hitGlow);
+    this.drawFace(this.shipXs[pilot],shipY,size,pilot,palette,hitGlow,game?.activeFilter);
+    if(game?.activeFilter && game.elapsed-game.filterChangedAt<.7 && !this.reducedMotion) {
+      const radius=size*.75;
+      ctx.fillStyle='#ffd65c';
+      for(const [dx,dy] of [[-1,-.5],[1,-.5],[-.7,.65],[.7,.65]]) {
+        const sx=this.shipXs[pilot]+dx*radius,sy=shipY+dy*radius;
+        ctx.fillRect(sx-5,sy,12,3);ctx.fillRect(sx,sy-5,3,12);
+      }
+    }
     ctx.globalAlpha=1;
     if(game&&inFlight) {
       const progress=Math.max(0,Math.min(1,game.elapsed/Math.max(1,duration)));
@@ -164,7 +212,7 @@ export class PlankRenderer {
     }
     if(hitGlow>0&&!this.reducedMotion){ctx.fillStyle=`rgba(250,141,121,${Math.min(1,hitGlow)*.18})`;ctx.fillRect(0,0,width,height);}
   }
-  drawFace(x,y,size,pilot,palette,hitGlow) {
+  drawFace(x,y,size,pilot,palette,hitGlow,filter=null) {
     const ctx=this.ctx,cell=size/12,left=Math.round(x-size/2),top=Math.round(y-size/2);
     // Ridiculous floating selfie in a tiny rocket pack; camera-free mode gets a
     // toothy pixel gremlin, so neither mode falls back to an arrow.
@@ -174,11 +222,12 @@ export class PlankRenderer {
     ctx.imageSmoothingEnabled=false;
     if(this.avatars[pilot])ctx.drawImage(this.avatars[pilot],left+2,top+2,size-4,size-4);
     else sprite(ctx,FACE,left+2,top+2,size-4,{h:pilot?'#b47dca':'#6dccae',s:'#e5b087',w:'#fff8df',b:'#15213b',p:'#f48796',m:'#713757'});
+    drawFaceFilter(ctx,filter,left+2,top+2,size-4);
     ctx.fillStyle=palette.exhaust;ctx.fillRect(left+cell,top+size+4,cell*2,cell*2);ctx.fillRect(left+cell*9,top+size+4,cell*2,cell*2);
     ctx.fillStyle='#ffd65c';const flame=this.reducedMotion?2:2+Math.floor(this.visualTime*8)%2;
     ctx.fillRect(left+cell*2,top+size+cell*2,cell,cell*flame);ctx.fillRect(left+cell*9,top+size+cell*2,cell,cell*flame);
   }
-  drawCamera(video,face,pilot,width,height,opacity,dt) {
+  drawCamera(video,face,pilot,width,height,opacity,dt,filter=null) {
     const crop=video&&video.readyState>=2?calculateFaceCrop(face,video.videoWidth,video.videoHeight,width,height):null;
     if(!crop){this.faceCrops[pilot]=null;return false;}
     const previous=this.faceCrops[pilot],smoothing=Math.min(1,dt*8);
@@ -187,6 +236,15 @@ export class PlankRenderer {
     ctx.save();
     try{ctx.translate(width,0);ctx.scale(-1,1);ctx.drawImage(video,crop.x,crop.y,crop.width,crop.height,0,0,width,height);}
     catch{this.faceCrops[pilot]=null;return false;}finally{ctx.restore();}
-    ctx.fillStyle=`rgba(8,15,27,${1-Math.max(0,Math.min(.65,opacity))})`;ctx.fillRect(0,0,width,height);return true;
+    ctx.fillStyle=`rgba(8,15,27,${1-Math.max(0,Math.min(.65,opacity))})`;ctx.fillRect(0,0,width,height);
+    if(filter) {
+      // Use the same square as the selfie, transformed into the mirrored crop.
+      const avatarCrop=calculateFaceCrop(face,video.videoWidth,video.videoHeight,1,1);
+      const scale=width/crop.width,side=avatarCrop.width*.78;
+      const centerX=avatarCrop.x+avatarCrop.width/2,centerY=avatarCrop.y+avatarCrop.height/2;
+      const left=width-(centerX-crop.x+side/2)*scale,top=(centerY-crop.y-side/2)*scale;
+      ctx.save();ctx.globalAlpha=.75;drawFaceFilter(ctx,filter,left,top,side*scale);ctx.restore();
+    }
+    return true;
   }
 }

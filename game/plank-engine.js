@@ -1,3 +1,13 @@
+// Every pickup changes the face immediately; effects last until the next pickup.
+export const FACE_FILTERS = [
+  { id: 'frog', en: 'FROG BOSS', zh: '青蛙老大' },
+  { id: 'shades', en: 'DEAL WITH IT', zh: '墨镜大佬' },
+  { id: 'moustache', en: 'VERY SERIOUS', zh: '胡子绅士' },
+  { id: 'googly', en: 'ABSOLUTELY FOCUSED', zh: '瞪眼专家' },
+  { id: 'clown', en: 'HONK HONK', zh: '小丑鼻子' },
+  { id: 'crown', en: 'PLANK ROYALTY', zh: '平板国王' },
+];
+
 // Pure game rules. The app advances time only while tracking/input is usable.
 export class Flight {
   constructor(duration = 30, random = Math.random) {
@@ -5,7 +15,9 @@ export class Flight {
     this.random = random;
     this.elapsed = 0;
     this.lane = 0;
-    this.coins = 0;
+    this.pickups = 0;
+    this.activeFilter = null;
+    this.filterChangedAt = -Infinity;
     this.maxHealth = 3;
     this.health = this.maxHealth;
     this.cleared = 0;
@@ -16,7 +28,7 @@ export class Flight {
     this.serial = 0;
     this.done = false;
   }
-  get score() { return this.coins; }
+  get score() { return this.pickups; }
   steer(lane) { if (!this.done) this.lane = lane === 1 ? 1 : 0; }
   advance(seconds) {
     if (this.done || !Number.isFinite(seconds) || seconds <= 0) return [];
@@ -24,7 +36,7 @@ export class Flight {
     const events = [];
     while (this.nextGate <= end && this.nextGate + 3.2 < this.duration) {
       const lane = this.random() < .5 ? 0 : 1;
-      this.gates.push({ id: this.serial++, lane, coinLane: 1 - lane,
+      this.gates.push({ id: this.serial++, lane, pickupLane: 1 - lane, surprise: this.random(),
         born: this.nextGate, arrival: this.nextGate + 3.2, resolved: false });
       this.nextGate += 2.1;
     }
@@ -37,8 +49,11 @@ export class Flight {
           events.push({ type: 'hit', gate });
           if (this.health === 0) { end = gate.arrival; break; }
         } else {
-          this.cleared++; this.streak++; this.coins++;
-          events.push({ type: 'clear', gate });
+          this.cleared++; this.streak++; this.pickups++;
+          const options = FACE_FILTERS.filter(filter => filter.id !== this.activeFilter);
+          this.activeFilter = options[Math.min(options.length - 1, Math.floor(gate.surprise * options.length))].id;
+          this.filterChangedAt = gate.arrival;
+          events.push({ type: 'clear', gate, filter: this.activeFilter });
         }
       }
     }
@@ -68,7 +83,7 @@ export class BrowSwitch {
   }
 }
 
-// Independent hearts and coins, shared clock/pattern. An out-of-hearts pilot
+// Independent hearts and face filters, shared clock/pattern. An out-of-hearts pilot
 // spectates while their buddy finishes; the round ends when both are out.
 export class CoopFlight {
   constructor(duration = 30, seed = Math.floor(Math.random() * 0xffffffff)) {
@@ -87,11 +102,11 @@ export class CoopFlight {
   }
   get done() { return this.games.every(game => game.done); }
   get health() { return this.games.reduce((total, game) => total + game.health, 0); }
-  get coins() { return this.games[0].coins + this.games[1].coins + this.teamBonus; }
-  get score() { return this.coins; }
+  get pickups() { return this.games[0].pickups + this.games[1].pickups; }
+  get score() { return this.pickups; }
   get cleared() { return this.games[0].cleared + this.games[1].cleared; }
   get hits() { return this.games[0].hits + this.games[1].hits; }
-  get teamBonus() { return this.togetherIds.size; }
+  get togetherCount() { return this.togetherIds.size; }
   steer(lane, player = 0) { this.games[player === 1 ? 1 : 0].steer(lane); }
   advance(dt) {
     if (this.done || !Number.isFinite(dt) || dt <= 0) return [];

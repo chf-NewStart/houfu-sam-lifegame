@@ -1,12 +1,12 @@
-import { Flight, BrowSwitch, CoopFlight } from './plank-engine.js?v=7';
-import { PlankCamera } from './plank-camera.js?v=7';
-import { PlankRenderer } from './plank-renderer.js?v=7';
+import { Flight, BrowSwitch, CoopFlight, FACE_FILTERS } from './plank-engine.js?v=8';
+import { PlankCamera } from './plank-camera.js?v=8';
+import { PlankRenderer } from './plank-renderer.js?v=8';
 
 const $ = id => document.getElementById(id);
 const copy = {
-  soundOff:['Sound off','声音关'], soundOn:['Sound on','声音开'], remaining:['FLIGHT TIME','剩余时间'], score:['COINS','金币'],
+  soundOff:['Sound off','声音关'], soundOn:['Sound on','声音开'], remaining:['FLIGHT TIME','剩余时间'], score:['MAKEOVERS','变装次数'],
   sector:['SECTOR 01 — THE QUIET BELT','第 01 区 — 静谧星带'], tagline:['HANDS FREE. EYES ON THE STARS.','解放双手，目光飞向星空。'],
-  title:['Make the<br>seconds fly.','让每一秒<br>飞起来。'], intro:['A little space adventure for your next plank. Your face. Three hearts. Dodge rocks, grab coins.','平板支撑时来一场太空冒险。像素大头，三颗爱心。躲障碍，捡金币。'],
+  title:['Make the<br>seconds fly.','让每一秒<br>飞起来。'], intro:['A little space adventure for your next plank. Dodge rocks. Grab a ? box. Give your face a ridiculous new look.','平板支撑时来一场太空冒险。躲开障碍，捡问号盒子，让像素大头变得更搞笑。'],
   duration:['CHOOSE YOUR FLIGHT','选择飞行时长'], control:['CAMERA CONTROL','摄像头操控'], faceControl:['Small face shift','轻微左右移动'], browControl:['Eyebrow switch','抬眉切换'],
   customSeconds:['Custom seconds','自定秒数'], durationInvalid:['Enter a whole number from 1 to 3,600 seconds.','请输入 1 至 3,600 之间的整数秒数。'],
   faceCopy:['A small left / right shift steers your pixel face. Keep both hands planted.','面部轻微左右移动即可转向，双手保持支撑。'], browCopy:['Raise your eyebrows once to switch lanes. Relax to prepare the next switch.','抬眉一次切换航道，放松后可再次切换。'],
@@ -15,7 +15,7 @@ const copy = {
   cameraTag:['PREFLIGHT CHECK','飞行前检查'], left:['LEFT','左'], right:['RIGHT','右'], sensitivity:['Movement needed','移动幅度'], small:['small → more','小 → 大'],
   position:['Rest the phone securely in front of you, with your face in view. Keep movement comfortable and small. This tracks controls, not plank form.','把手机稳妥放在面前，让镜头能看见脸。动作保持轻微舒适。此功能只用于操控，不判断平板支撑姿势。'],
   calibrate:['Start now · otherwise automatic','立即开始 · 也会自动开始'], back:['Back','返回'], resume:['Resume flight','继续飞行'], recalibrate:['Reposition & recalibrate','重新摆放并校准'],
-  finish:['Finish here','到这里结束'], flightSeconds:['FLIGHT SECONDS','飞行秒数'], gates:['Gates cleared','通过障碍'], best:['Most coins · this mode & duration','本模式与时长的最多金币'],
+  finish:['Finish here','到这里结束'], flightSeconds:['FLIGHT SECONDS','飞行秒数'], gates:['Gates cleared','通过障碍'], best:['Most makeovers · this mode & duration','本模式与时长的最多变装次数'],
   again:['Back to the launchpad ↗','返回发射台 ↗'], rest:['Take a breather. Your next flight can wait.','先休息一下，下一次飞行可以等等。'], pause:['Ⅱ Pause','Ⅱ 暂停'], end:['End','结束'],
   practiceBadge:['PRACTICE · NO CAMERA','试玩 · 无摄像头'], ready:['READY WHEN YOU ARE','准备好就出发'], lab:['← WIP Lab','← 实验室'],
   loading:['Waking up the camera…','正在开启摄像头…'], loadingCopy:['Allow camera access. The first model download may take a moment.','请允许访问摄像头，首次下载模型可能需要一点时间。'],
@@ -25,7 +25,7 @@ const copy = {
   neutral:['Center & hold still.','确定中心，保持不动。'], neutralCopy:['Look at the screen with a relaxed face. Hold your comfortable position for two seconds: this becomes your steering center.','自然看向屏幕，放松面部。在舒适位置保持两秒，这就是你的转向中心。'],
   brow:['Raise your eyebrows.','抬起眉毛。'], browCalCopy:['Hold the raised expression for two seconds so we can learn your gesture.','保持抬眉两秒，让游戏学习你的动作。'],
   relax:['Gesture found. Now relax.','已识别抬眉，现在放松。'], relaxCopy:['Lower your eyebrows and hold your relaxed expression for two seconds. Then we will count you in.','放下眉毛，保持自然表情两秒，然后进入起飞倒计时。'],
-  launch:['Ready for liftoff?','准备起飞？'], launchCopy:['Fly through the open lane. Rocks cost a heart. Gold coins are in the safe lane.','穿过空航道，碰到障碍少一颗心，金币在安全航道。'],
+  launch:['Ready for liftoff?','准备起飞？'], launchCopy:['Fly through the open lane. Rocks cost a heart. Mystery boxes in the safe lane change your face.','穿过空航道，碰到障碍少一颗心，安全航道的神秘盒子会让你的脸变装。'],
   practiceCopy:['Use ← →, A / D, or the buttons to steer. Space pauses.','用 ← →、A / D 或屏幕按钮转向。空格键暂停。'],
   tracked:['CAMERA CONTROL · LOCAL PROCESSING','摄像头操控 · 本机处理'], practiceStatus:['PRACTICE FLIGHT · NO CAMERA','试玩飞行 · 无摄像头'],
   faceHint:['Small shift ← / →','轻微移动 ← / →'], browHint:['Raise eyebrows to switch','抬眉切换航道'], keysHint:['← → to dodge · Space to pause','← → 闪避 · 空格暂停'],
@@ -38,11 +38,11 @@ const copy = {
   weakBrow:['The eyebrow change was too small to distinguish. Try again, or choose small face shifts on the launchpad.','抬眉变化不够明显。请重试，或返回发射台选择轻微左右移动。'],
   complete:['FLIGHT COMPLETE','飞行完成'], landed:['Nicely landed.','顺利着陆。'], stopped:['FLIGHT SAVED','飞行已保存'], stoppedTitle:['A good place to stop.','在这里休息一下。'],
   completeCopy:['You made it through the belt. Time for a breather.','你已穿越星带，休息一下吧。'], stoppedCopy:['Your flight ends here. No need to finish the timer.','飞行在这里结束，不必坚持到计时结束。'],
-  practiceResult:['Practice flight. Camera controls were not used.','试玩飞行，本轮未使用摄像头。'], resultStatus:['BACK AT BASE','已返回基地'], clear:['Coin +1','金币 +1'], hit:['Ouch! −1 heart','哎哟！−1 颗心'],
+  practiceResult:['Practice flight. Camera controls were not used.','试玩飞行，本轮未使用摄像头。'], resultStatus:['BACK AT BASE','已返回基地'], clear:['New look!','新造型！'], hit:['Ouch! −1 heart','哎哟！−1 颗心'],
   playersLegend:['WHO’S FLYING?','几人飞行？'], soloMode:['Solo','单人'], buddyMode:['Buddy · one phone','双人 · 一部手机'],
-  buddyCopy:['One sideways phone, two pilots. P1 takes the left half; P2 takes the right. Clear gates together for bonus coins.','一部横屏手机，两位飞行员。P1 操控左半屏，P2 操控右半屏，同时通过障碍可获额外金币。'],
+  buddyCopy:['One sideways phone, two pilots. P1 takes the left half; P2 takes the right. Grab mystery boxes for two ridiculous makeovers.','一部横屏手机，两位飞行员。P1 操控左半屏，P2 操控右半屏，各自捡盒子，看看谁的造型更搞笑。'],
   rotateHint:['Turn your phone sideways for two-player flight.','双人飞行建议将手机横放。'], playerOne:['P1 · LEFT','P1 · 左侧'], playerTwo:['P2 · RIGHT','P2 · 右侧'],
-  faceBackground:['Live face background','实时面部背景'], teamScore:['TEAM COINS','团队金币'],
+  faceBackground:['Live face background','实时面部背景'], teamScore:['TEAM MAKEOVERS','团队变装'],
   buddyPosition:['Set the phone sideways between you, far enough away to see both faces. Keep your preview sides: P1 left, P2 right.','将手机横放在你们中间，调整距离让两张脸都进入镜头。保持预览中的左右位置：P1 左，P2 右。'],
   buddyFramingCopy:['Fit both faces in the preview: P1 left, P2 right. Setup starts automatically once both faces are in view.','让两张脸同时进入预览：P1 在左，P2 在右。两人入镜后自动开始准备。'],
   buddyNeutralCopy:['Each look at your own half and hold a relaxed, comfortable position for two seconds. We save a separate center for each of you.','各自看向自己的半屏，在舒适位置放松保持两秒。游戏会分别记录两人的中心位置。'],
@@ -53,7 +53,7 @@ const copy = {
   buddyTrackingCopy:['Both faces must be visible on their original sides. Both flights and the clock are paused.','两张脸都需回到原来的预览侧，两人的飞行和计时均已暂停。'],
   buddyLostCal:['Bring both faces into view, with one on each side, to continue calibration.','让两张脸回到镜头中，一左一右，继续校准。'],
   buddyWeakBrow:['We could not distinguish both eyebrow raises. Try together again, or choose small face shifts.','未能清楚识别两人的抬眉动作。请同时再试一次，或选择轻微左右移动。'],
-  bothFaces:['BOTH FACES READY','两张脸已就位'], needBoth:['NEED TWO SEPARATE FACES','需要两张分开的脸'], together:['Together! +1 bonus coin','默契通过！奖励 1 金币'],
+  bothFaces:['BOTH FACES READY','两张脸已就位'], needBoth:['NEED TWO SEPARATE FACES','需要两张分开的脸'], together:['Double makeover!','双人变装！'],
   buddyResult:['Two pilots, one flight. Take a breather together.','两位飞行员，一起完成飞行。一起休息一下吧。'],
   prepFrame:['Frame','入镜'], prepCenter:['Center','定中心'], prepControls:['Controls','试操控'], prepLaunch:['Fly','起飞'],
   frameStep:['STEP 1 / 4 · CAMERA FRAMING','第 1 / 4 步 · 镜头取景'], settleStep:['GET INTO POSITION · CENTERING IS NEXT','先就位 · 下一步确定中心'],
@@ -76,14 +76,16 @@ const copy = {
   leftStatus:['Shift left','向左移动'], rightStatus:['Shift right','向右移动'], controlReady:['Ready ✓','就绪 ✓'],
   waitingFaces:['Waiting for faces · progress paused','等待入镜 · 进度暂停'], centerRetry:['Movement detected. Hold still again; the center check has restarted.','检测到移动，请重新保持不动，定中心进度已重置。'],
   waitingBoth:['Both faces needed','等待两人入镜'],
-  hearts:['HEARTS','生命'], out:['OUT OF HEARTS','爱心用完啦'], outTitle:['Bonk. Back to base!','撞晕啦，返回基地！'], outCopy:['Three bumps, one goofy face. Your coins are kept for this round. Take a breather.','撞了三次，大头回家。本轮金币保留，先休息一下吧。'],
+  hearts:['HEARTS','生命'], out:['OUT OF HEARTS','爱心用完啦'], outTitle:['Bonk. Back to base!','撞晕啦，返回基地！'], outCopy:['Three bumps, one goofy face. Your last ridiculous look stays until you leave. Take a breather.','撞了三次，大头回家。最后的搞笑造型会保留到你离开本轮，先休息一下吧。'],
   reconnect:['Finding your face… time and hearts are safe.','正在寻找面部…时间和爱心已冻结。'], reconnectBuddy:['Finding both pilots… time and hearts are safe.','正在寻找两位玩家…时间和爱心已冻结。'], returning:['Found you! Back in 1…','找到啦！1 秒后继续…'],
+  noFilter:['GRAB A ? BOX','捡一个问号盒子'],
   cueStay:['STAY HERE','保持不动'], cueLeft:['MOVE LEFT','向左移动'], cueRight:['MOVE RIGHT','向右移动'], cueBrow:['EYEBROWS UP','抬起眉毛'], cueRelax:['RELAX','放松眉毛'], cueFrame:['FACE THE CAMERA','看向镜头'], cueGo:['GET READY','准备起飞'], autoSetup:['Starting automatically…','即将自动开始…'],
   steeringRoom:['Leave a little more room to steer: keep each face away from the preview edges and each other, or reduce Movement needed. Then start setup again.','请给转向留出更多空间：让脸离开预览边缘，两人之间留出距离，或调小移动幅度，然后重新开始准备。'],
 };
 let lang = 'en';
 try { lang = localStorage.getItem('arcade_lang') === 'zh' ? 'zh' : 'en'; } catch {}
 const t = key => copy[key]?.[lang === 'zh' ? 1 : 0] ?? key;
+const filterLabel = id => FACE_FILTERS.find(filter => filter.id === id)?.[lang] ?? t('noFilter');
 let phase = 'setup', mode = 'face', players = 1, duration = 30, game = null, stepTime = 0, samples = [];
 let customDurationActive = false;
 let centers = [.5,.5], faceWidths = [.15,.15], neutralBrows = [.05,.05], calibrated = false;
@@ -166,8 +168,8 @@ function translate() {
   $('lang').textContent = lang === 'en' ? '中文' : 'EN';
   $('sound').textContent = t(sound ? 'soundOn' : 'soundOff');
   $('space').setAttribute('aria-label', players === 2
-    ? (lang === 'en' ? 'Two side-by-side flight zones. Player 1 on the left, Player 2 on the right. Each pilot dodges coral barriers in their own two lanes.' : '左右两个飞行区：左侧 P1，右侧 P2。每人在自己的两条航道中躲避珊瑚色障碍。')
-    : (lang === 'en' ? 'Two flight lanes. Avoid coral barriers and fly through the open lane.' : '两条飞行航道，躲开珊瑚色障碍，穿过空航道。'));
+    ? (lang === 'en' ? 'Two side-by-side flight zones. Player 1 on the left, Player 2 on the right. Each pilot dodges rocks and collects mystery boxes to change their pixel face.' : '左右两个飞行区：左侧 P1，右侧 P2。每人在自己的两条航道中躲避珊瑚色障碍。')
+    : (lang === 'en' ? 'Two flight lanes. Dodge rocks and collect mystery boxes to change your pixel face.' : '两条飞行航道，躲开珊瑚色障碍，穿过空航道。'));
   $('control-copy').textContent = t(mode === 'brow' ? 'browCopy' : 'faceCopy');
   document.body.classList.toggle('buddy-mode',players === 2);
   $('buddy-copy').hidden = players !== 2;
@@ -213,7 +215,7 @@ function renderPhase() {
   if (game) {
     const remaining = Math.ceil(Math.max(0, duration - game.elapsed));
     $('clock').textContent = `${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
-    $('score').textContent = String(game.score).padStart(4,'0');
+    $('score').textContent = String(game.score);
     if (players === 2) {
       $('p1-score').textContent = game.games[0].score;
       $('p2-score').textContent = game.games[1].score;
@@ -364,7 +366,7 @@ function pause() {
 function stopFlight() {
   camera.stop(); releaseWake();
   if (!game || game.elapsed === 0) { backToSetup(); return; }
-  const key = players === 2 ? `plank_pilot_coins_v3_buddy_${mode}_${duration}` : `plank_pilot_coins_v3_${mode}_${duration}`;
+  const key = players === 2 ? `plank_pilot_makeovers_v4_buddy_${mode}_${duration}` : `plank_pilot_makeovers_v4_${mode}_${duration}`;
   let best = game.score;
   try { best = Math.max(Number(localStorage.getItem(key)) || 0, game.score); localStorage.setItem(key, String(best)); } catch {}
   game.best = best; $('toast').textContent = ''; setPhase('results'); tone(660, .3);
@@ -373,8 +375,10 @@ function renderHealth() {
   const hearts = flight => '♥'.repeat(flight.health) + '♡'.repeat(flight.maxHealth - flight.health);
   if (!game) return;
   if (players === 1) {
+    $('active-filter').textContent = filterLabel(game.activeFilter);
     $('hearts').textContent = hearts(game); $('hearts').setAttribute('aria-label',`${t('hearts')}: ${game.health}/3`);
   } else for (const [i,flight] of game.games.entries()) {
+    $(`p${i+1}-filter`).textContent = filterLabel(flight.activeFilter);
     $(`p${i+1}-hearts`).textContent = hearts(flight);
     $(`p${i+1}-hearts`).setAttribute('aria-label',`P${i+1} ${t('hearts')}: ${flight.health}/3`);
   }
@@ -389,7 +393,7 @@ function renderResults() {
   $('result-score').textContent = game.score; $('result-gates').textContent = game.cleared;
   $('result-best').textContent = game.best ?? game.score;
   $('result-buddy').hidden = players !== 2;
-  if (players === 2) $('result-buddy').textContent = `P1: ${game.games[0].score} · P2: ${game.games[1].score} · ${lang==='zh'?'默契金币':'Bonus coins'}: +${game.teamBonus}`;
+  if (players === 2) $('result-buddy').textContent = `P1: ${game.games[0].score} · P2: ${game.games[1].score} · ${lang==='zh'?'同步变装':'Shared makeovers'}: ${game.togetherCount}`;
 }
 
 document.querySelectorAll('[data-players]').forEach(button => button.addEventListener('click', () => {
@@ -519,12 +523,12 @@ function progress(dt, now) {
   } else if (phase === 'playing') {
     for (const event of game.advance(dt)) {
       const pilot = event.player ?? 0;
-      $('toast').textContent = (players === 2 && !event.together ? `P${pilot+1} · ` : '') + t(event.together ? 'together' : event.type === 'hit' ? 'hit' : 'clear'); toastUntil = now + 1000;
+      $('toast').textContent = (players === 2 && !event.together ? `P${pilot+1} · ` : '') + (event.type === 'hit' ? t('hit') : event.together ? t('together') : filterLabel(event.filter)); toastUntil = now + 1500;
       if (event.type === 'hit') { hitGlows[pilot] = .6; tone(125,.18); } else tone(520 + Math.min(flightGames()[pilot].streak,5)*50);
     }
     const remaining = Math.ceil(Math.max(0,duration - game.elapsed));
     $('clock').textContent = `${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
-    $('score').textContent = String(game.score).padStart(4,'0');
+    $('score').textContent = String(game.score);
     if (players === 2) { $('p1-score').textContent = game.games[0].score; $('p2-score').textContent = game.games[1].score; }
     renderHealth();
     if (game.done) stopFlight();

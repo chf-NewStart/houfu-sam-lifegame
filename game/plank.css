@@ -383,3 +383,14 @@ h2 { line-height: 1.35; font-size: 25px; }
   #camera-panel h2 { font-size: 20px; }
   .prep-cue strong { font-size: 14px; }
 }
+/* Mystery boxes give the face a new look immediately, with no coin balance. */
+.hud-right { color: #d4b6ff; }
+.hud-right strong::before, .player-scores strong::before { content: '? '; color: #d4b6ff; }
+.filter-name { display: block; margin-top: 5px; max-width: 240px; color: #e4d3ff; font: 700 10px/1.4 ui-monospace, monospace; letter-spacing: .5px; }
+.player-scores .filter-name { font-size: 9px; margin: 5px auto 0; letter-spacing: .25px; }
+.buddy-mode #active-filter { display: none; }
+.toast { color: #e1c9ff; }
+@media (max-height: 540px) and (orientation: landscape) {
+  .filter-name, .player-scores .filter-name { font-size: 8px; margin-top: 3px; max-width: 170px; }
+  .player-scores .hearts { letter-spacing: 3px; }
+}

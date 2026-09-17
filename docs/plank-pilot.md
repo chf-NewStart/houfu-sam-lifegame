@@ -1,12 +1,12 @@
 # Plank Pilot — browser experiment
 
-Open `/game/plank.html` directly or choose **plank_pilot.exe** in the WIP lab. Fly a pixel selfie through rocks and gold coins. Each pilot starts with **three hearts**: a collision costs one heart, while the opposite lane has a coin. Coins already collected are never subtracted. At zero hearts a solo round ends; in co-op that pilot spectates until their buddy finishes or also runs out of hearts. Pick **30, 45, 60, or 90 seconds**, or enter **Custom seconds** (any whole number from 1 to 3,600). Typing a custom duration replaces the preset selection; choosing a preset clears the custom field. Both solo and buddy flights use the entered duration.
+Open `/game/plank.html` directly or choose **plank_pilot.exe** in the WIP lab. Fly a pixel selfie through rocks and purple mystery boxes. Each pilot starts with **three hearts**: a collision costs one heart, while the opposite lane has a **? box**. Collecting one immediately changes your face to a silly pixel filter: frog hat, shades, moustache, googly eyes, clown nose, or crown. The effect remains until the next pickup and never repeats the current look. It decorates both the avatar and the optional live face backdrop, and works on the practice face too. At zero hearts a solo round ends; in co-op that pilot spectates until their buddy finishes or also runs out of hearts. Pick **30, 45, 60, or 90 seconds**, or enter **Custom seconds** (any whole number from 1 to 3,600). Typing a custom duration replaces the preset selection; choosing a preset clears the custom field. Both solo and buddy flights use the entered duration.
 
 ## One phone, two gym buddies
 
 Choose **Buddy · one phone** and turn the phone sideways. Place it between you at a distance where its front camera can see both faces at once. The left person in the mirrored preview controls P1's cyan half; the right person controls P2's purple half. Stay on those sides during the round. A missed detection freezes hazards and the shared clock quietly. A tracking notice appears only after a one-second gap. When tracking is stable for 0.75 seconds, play resumes automatically; brief misses no longer open a pause menu or restart a three-second countdown.
 
-Both players calibrate together. Eyebrow switching is selected initially in buddy mode; each person's raised eyebrows move only their own pixel face. Small face shifts are also available. The flights share an obstacle sequence and finish together. Individual coin counts are added, with one extra team coin for each obstacle both players clear. Coin records use a new storage key so old point scores do not appear as coin records.
+Both players calibrate together. Eyebrow switching is selected initially in buddy mode; each person's raised eyebrows move only their own pixel face. Small face shifts are also available. The flights share an obstacle sequence and finish together. Each player earns and wears their own filter. The HUD shows the current look and number of makeovers, with no currency or shop. Shared pickups are counted separately in the results; they do not inflate the makeover count. New record keys keep old coin/point records separate.
 
 **Live face background** enlarges each face behind its own game zone. Use the slider to adjust visibility, or turn it off for the starfield. These crops are only a display effect: the detector always reads the original, uncropped camera frame. Neither player needs an account, room code, or second phone.
 
@@ -60,3 +60,5 @@ Tracking uses pinned `@mediapipe/tasks-vision@0.10.32` and the `face_landmarker/
 `tests/plank-layout.html` is a developer-only simulated layout fixture. It displays the actual page inside phone-sized frames for visual and geometry checks, without requesting a camera. Its sample states are not a playable mode or evidence of real camera tracking.
 
 The local `game/plank-pixel.woff` font is an original 5 × 7 bitmap design. Rebuild it with `python scripts/build-plank-font.py` (fonttools required); runtime play needs no font CDN.
+
+`tests/plank-filter-gallery.html` shows the six real renderer overlays on the practice avatar for visual inspection without a camera.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Flight, BrowSwitch, CoopFlight } from '../game/plank-engine.js';
+import { Flight, BrowSwitch, CoopFlight, FACE_FILTERS } from '../game/plank-engine.js';
 
 for (const duration of [30, 45, 60, 90]) {
   test(`${duration}-second round finishes at its target, including after a delayed frame`, () => {
@@ -50,36 +50,36 @@ test('obstacles resolve once, using the lane occupied when they arrive', () => {
   flight.steer(1);
   assert.deepEqual(flight.advance(2.1).map(event => event.type), ['clear']);
   assert.equal(flight.cleared, 1);
-  assert.equal(flight.coins, 1);
+  assert.equal(flight.pickups, 1);
 });
 
-test('obstacles cost hearts, preserve earned coins, and the third hit ends the round', () => {
+test('obstacles cost hearts, preserve earned pickups, and the third hit ends the round', () => {
   const flight = new Flight(30, () => 0);
   flight.steer(1); flight.advance(4);
-  assert.equal(flight.coins, 1); assert.equal(flight.health, 3);
+  assert.equal(flight.pickups, 1); assert.equal(flight.health, 3);
   flight.steer(0); flight.advance(2.11);
-  assert.equal(flight.health, 2); assert.equal(flight.coins, 1);
+  assert.equal(flight.health, 2); assert.equal(flight.pickups, 1);
   flight.advance(2.1); assert.equal(flight.health, 1);
   flight.advance(100);
   assert.equal(flight.health, 0); assert.equal(flight.hits, 3);
-  assert.equal(flight.coins, 1); assert.equal(flight.done, true);
+  assert.equal(flight.pickups, 1); assert.equal(flight.done, true);
   assert.ok(Math.abs(flight.elapsed - 10.3) < 1e-8, 'ends at the fatal collision');
   const snapshot = JSON.stringify(flight);
   assert.deepEqual(flight.advance(100), []);
   assert.equal(JSON.stringify(flight), snapshot);
 });
 
-test('each visible safe-lane coin is collected exactly once', () => {
+test('each visible safe-lane pickup is collected exactly once', () => {
   const flight = new Flight(90, () => 0);
   flight.steer(1);
   while (!flight.done) {
-    const previous = flight.coins;
+    const previous = flight.pickups;
     const events = flight.advance(.25);
-    assert.equal(flight.coins - previous, events.filter(e => e.type === 'clear').length);
-    for (const gate of flight.gates) assert.equal(gate.coinLane, 1 - gate.lane);
+    assert.equal(flight.pickups - previous, events.filter(e => e.type === 'clear').length);
+    for (const gate of flight.gates) assert.equal(gate.pickupLane, 1 - gate.lane);
   }
   assert.equal(flight.health, 3);
-  assert.equal(flight.coins, flight.cleared);
+  assert.equal(flight.pickups, flight.cleared);
 });
 
 test('a long frame and short frames produce the same flight outcome', () => {
@@ -97,7 +97,7 @@ test('a long frame and short frames produce the same flight outcome', () => {
     stepEvents.push(...stepped.advance(0.25).map(({ type, gate }) => [type, gate.id]));
   }
   assert.deepEqual(stepEvents, wholeEvents);
-  for (const key of ['elapsed', 'score', 'hits', 'cleared', 'streak', 'done']) {
+  for (const key of ['elapsed', 'score', 'hits', 'cleared', 'streak', 'done', 'activeFilter', 'filterChangedAt']) {
     assert.equal(stepped[key], whole[key], `${key} should not depend on frame size`);
   }
 });
@@ -186,23 +186,23 @@ test('co-op steering and collisions are independent for each player', () => {
   const events = flight.advance(3.2);
   assert.deepEqual(events.map(({type, player}) => [type, player]), [['hit', 0], ['clear', 1]]);
   assert.deepEqual(flight.games.map(game => [game.hits, game.cleared, game.score]), [[1, 0, 0], [0, 1, 1]]);
-  assert.equal(flight.teamBonus, 0);
-  assert.equal(flight.coins, 1);
+  assert.equal(flight.togetherCount, 0);
+  assert.equal(flight.pickups, 1);
 });
 
-test('clearing the same gate together awards one team bonus and cannot award it again', () => {
+test('clearing the same gate together changes both faces and counts the shared pickup once', () => {
   const flight = new CoopFlight(30, 12345);
   flight.advance(.8);
   const safeLane = 1 - flight.games[0].gates[0].lane;
   flight.steer(safeLane, 0); flight.steer(safeLane, 1);
   const events = flight.advance(3.2);
   assert.equal(events.filter(event => event.together).length, 1);
-  assert.equal(flight.teamBonus, 1);
-  assert.equal(flight.coins, 3);
+  assert.equal(flight.togetherCount, 1);
+  assert.equal(flight.pickups, 2);
   assert.equal(flight.cleared, 2);
   assert.deepEqual(flight.advance(.1), []);
-  assert.equal(flight.teamBonus, 1);
-  assert.equal(flight.coins, 3);
+  assert.equal(flight.togetherCount, 1);
+  assert.equal(flight.pickups, 2);
 });
 
 test('co-op steering while paused and invalid frame deltas do not advance either flight', () => {
@@ -236,16 +236,48 @@ test('an eliminated buddy spectates while the other keeps their hearts and share
   assert.equal(spectating, true);
   assert.equal(flight.elapsed, 30);
   assert.equal(flight.games[1].health, 3);
-  assert.ok(flight.games[1].coins > 3);
+  assert.ok(flight.games[1].pickups > 3);
 });
 
-test('co-op fatal time, coins and bonuses agree for one long advance and many short advances', () => {
+test('co-op fatal time, pickups and shared pickups agree for one long advance and many short advances', () => {
   const a = new CoopFlight(90, 12345), b = new CoopFlight(90, 12345);
   a.steer(1, 1); b.steer(1, 1);
   a.advance(90);
   for (let i = 0; i < 900; i++) b.advance(.1);
   assert.equal(a.elapsed,b.elapsed);
-  assert.equal(a.coins,b.coins);
-  assert.equal(a.teamBonus,b.teamBonus);
-  assert.deepEqual(a.games.map(g=>[g.health,g.hits,g.coins]),b.games.map(g=>[g.health,g.hits,g.coins]));
+  assert.equal(a.pickups,b.pickups);
+  assert.equal(a.togetherCount,b.togetherCount);
+  assert.deepEqual(a.games.map(g=>[g.health,g.hits,g.pickups]),b.games.map(g=>[g.health,g.hits,g.pickups]));
+});
+
+test('each mystery pickup applies a known, different look that survives a hit until the next pickup', () => {
+  const game=new Flight(30,()=>0);
+  assert.equal(game.activeFilter,null);
+  game.steer(1);
+  const [first]=game.advance(4);
+  assert.ok(FACE_FILTERS.some(f=>f.id===first.filter));
+  assert.equal(first.filter,game.activeFilter);
+  const firstLook=game.activeFilter;
+  game.steer(0);game.advance(2.2);
+  assert.equal(game.health,2);
+  assert.equal(game.activeFilter,firstLook,'a collision does not remove the cosmetic reward');
+  game.steer(1);
+  const [second]=game.advance(2.1);
+  assert.notEqual(second.filter,firstLook);
+  assert.equal(game.pickups,2);
+  const snapshot=game.activeFilter;
+  game.advance(0);game.advance(NaN);
+  assert.equal(game.activeFilter,snapshot);
+  assert.equal(new Flight().activeFilter,null,'looks do not leak into a new round');
+});
+
+test('only the buddy collecting the box changes their face', () => {
+  const game=new CoopFlight(30,12345);
+  game.advance(.8);
+  const lane=game.games[0].gates[0].lane;
+  game.steer(lane,0);game.steer(1-lane,1);
+  game.advance(3.2);
+  assert.equal(game.games[0].activeFilter,null);
+  assert.ok(game.games[1].activeFilter);
+  assert.equal(game.pickups,1);
 });
