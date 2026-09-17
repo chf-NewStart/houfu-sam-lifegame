@@ -1,5 +1,5 @@
 // Frames stay in this browser. Only landmark coordinates and an expression score
-// leave this controller; neither video nor images are recorded or uploaded.
+// leave this controller; no video or images are uploaded; the renderer keeps ephemeral pixel avatars in memory.
 const VISION_VERSION = '0.10.32';
 const VISION_ROOT = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VISION_VERSION}`;
 const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
@@ -75,6 +75,7 @@ export class PlankCamera {
       lastFrameAt: performance.now(),
       lastX: 0.5,
       resumeId: 0,
+      playbackPending: false,
       removers: [],
     };
     run.cancelPromise = new Promise(resolve => { run.cancel = () => resolve(CANCELLED); });
@@ -194,9 +195,9 @@ export class PlankCamera {
       baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
       runningMode: 'VIDEO',
       numFaces: run.numFaces,
-      minFaceDetectionConfidence: 0.6,
-      minFacePresenceConfidence: 0.6,
-      minTrackingConfidence: 0.6,
+      minFaceDetectionConfidence: 0.5,
+      minFacePresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
       outputFaceBlendshapes: true,
       outputFacialTransformationMatrixes: false,
     };
@@ -259,6 +260,15 @@ export class PlankCamera {
   _tick(run) {
     if (!this._isCurrent(run) || run.paused) return;
     const time = performance.now();
+    // Safari can pause only the video element after a transient interruption.
+    // Recover it once, without duplicating the inference loop or camera stream.
+    if (this.video.paused && !run.playbackPending) {
+      run.playbackPending = true;
+      Promise.resolve().then(() => this._isCurrent(run) && !run.paused ? this.video.play() : undefined)
+        .catch(error => {
+          if (this._isCurrent(run) && !run.paused) this._fail(run, new Error('Camera playback could not resume. Start the camera again to continue.', { cause: error }));
+        }).finally(() => { run.playbackPending = false; });
+    }
     try {
       if (this.video.readyState >= 2 && this.video.videoWidth > 0 && this.video.currentTime !== run.lastVideoTime) {
         run.lastVideoTime = this.video.currentTime;

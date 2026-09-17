@@ -86,3 +86,31 @@ test('a changed camera resolution discards old pixel crops without a canvas resi
     assert.deepEqual(images[index].args.slice(1, 5), [expected.x, expected.y, expected.width, expected.height]);
   }
 });
+
+test('pixel selfies are mirrored, reduced to 20 square pixels and retained through a lost frame', t => {
+  const crops=[],buffers=[];
+  const previousDocument = globalThis.document;
+  t.after(() => { if (previousDocument === undefined) delete globalThis.document; else globalThis.document = previousDocument; });
+  globalThis.document = {createElement(tag) {
+    assert.equal(tag,'canvas');
+    const calls=[];
+    const ctx={
+      setTransform(...args){calls.push(args);},drawImage(...args){crops.push(args);},
+      getImageData(){return {data:new Uint8ClampedArray(20*20*4).fill(145)};},
+      putImageData(pixels){buffers.push(pixels.data);}
+    };
+    return {width:0,height:0,getContext:()=>ctx,calls};
+  }};
+  const {renderer}=harness(),video={readyState:2,videoWidth:640,videoHeight:480};
+  renderer.captureFaces(video,[face(.65),face(.1)]);
+  assert.equal(renderer.avatars.length,2);
+  assert.ok(renderer.avatars.every(a=>a.width===20&&a.height===20));
+  assert.deepEqual(renderer.avatars[0].calls[0],[-1,0,0,1,20,0]);
+  assert.notEqual(crops[0][1],crops[1][1]);
+  assert.equal(buffers[0][3],0,'cut-out corner is transparent');
+  assert.equal(buffers[0][(10*20+10)*4],160,'colors are quantized into pixel shades');
+  const avatar=renderer.avatars[0];
+  renderer.captureFaces({...video,readyState:1},[]);
+  assert.equal(renderer.avatars[0],avatar);
+  renderer.clearFaces();assert.deepEqual(renderer.avatars,[]);
+});

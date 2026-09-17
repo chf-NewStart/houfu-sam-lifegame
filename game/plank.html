@@ -7,7 +7,7 @@
   <meta name="description" content="A tiny hands-free space dodger. Turn a short plank into a flight through the stars.">
   <title>Plank Pilot · GAME LIFE</title>
   <link rel="icon" type="image/svg+xml" href="thumbs/plank.svg">
-  <link rel="stylesheet" href="plank.css?v=6">
+  <link rel="stylesheet" href="plank.css?v=7">
 </head>
 <body>
   <div class="cockpit">
@@ -18,13 +18,14 @@
     <main id="flight">
       <canvas id="space" aria-label="Two flight lanes. Avoid coral barriers and fly through the open lane."></canvas>
       <div class="hud" id="hud" hidden>
-        <div><small data-key="remaining">FLIGHT TIME</small><strong id="clock">0:30</strong></div>
-        <div class="hud-right"><small data-key="score">SCORE</small><strong id="score">0000</strong></div>
+        <div><small data-key="remaining">FLIGHT TIME</small><strong id="clock">0:30</strong><span id="hearts" class="hearts" aria-label="3 hearts">♥♥♥</span></div>
+        <div class="hud-right"><small data-key="score">COINS</small><strong id="score">0000</strong></div>
       </div>
-      <div class="player-scores" id="player-scores" hidden aria-label="Player scores">
-        <div><span data-key="playerOne">PLAYER 1</span><strong id="p1-score">0000</strong></div>
-        <div><span data-key="playerTwo">PLAYER 2</span><strong id="p2-score">0000</strong></div>
+      <div class="player-scores" id="player-scores" hidden aria-label="Player coins and hearts">
+        <div><span data-key="playerOne">PLAYER 1</span><strong id="p1-score">0</strong><span class="hearts" id="p1-hearts">♥♥♥</span></div>
+        <div><span data-key="playerTwo">PLAYER 2</span><strong id="p2-score">0</strong><span class="hearts" id="p2-hearts">♥♥♥</span></div>
       </div>
+      <div id="tracking-notice" class="tracking-notice" role="status" hidden></div>
       <div class="flight-label" id="flight-label"><span class="dot"></span> <span data-key="sector">SECTOR 01 — THE QUIET BELT</span></div>
       <section class="panel" id="setup">
         <div class="setup-intro">
@@ -33,6 +34,11 @@
         <p class="intro" data-key="intro">A little space adventure for your next plank. Dodge the barriers. Finish your flight.</p>
         <p class="buddy-copy" id="buddy-copy" hidden data-key="buddyCopy">One phone, two pilots. Get both faces in view; each person controls their half.</p>
         <p class="rotate-hint" id="rotate-hint" data-key="rotateHint">Turn your phone sideways for two roomy flight zones.</p>
+        </div>
+        <div class="setup-actions">
+        <button class="primary wide" id="camera-start" data-key="cameraStart">Enable camera & set up <span>↗</span></button>
+        <button class="secondary wide" id="practice-start" data-key="practiceStart">Try with touch / keyboard</button>
+        <p class="privacy" data-key="privacy">Pixel selfies stay on your device for the round. No photos or video are saved or uploaded.</p>
         </div>
         <div class="setup-options">
         <fieldset><legend data-key="playersLegend">WHO'S FLYING?</legend><div class="segments" id="players"><button data-players="1" aria-pressed="true" data-key="soloMode">Solo</button><button data-players="2" aria-pressed="false" data-key="buddyMode">With a buddy</button></div></fieldset>
@@ -46,11 +52,6 @@
         </fieldset>
         <fieldset><legend data-key="control">CAMERA CONTROL</legend><div class="segments controls"><button data-control="face" aria-pressed="true" data-key="faceControl">Small face shift</button><button data-control="brow" aria-pressed="false" data-key="browControl">Eyebrow switch</button></div></fieldset>
         <p class="control-copy" id="control-copy"></p>
-        </div>
-        <div class="setup-actions">
-        <button class="primary wide" id="camera-start" data-key="cameraStart">Enable camera & set up <span>↗</span></button>
-        <button class="secondary wide" id="practice-start" data-key="practiceStart">Try with touch / keyboard</button>
-        <p class="privacy" data-key="privacy">Video stays on your device. Nothing is recorded. Camera mode downloads a tracking model.</p>
         </div>
       </section>
       <section class="panel" id="camera-panel" data-stage="frame" hidden>
@@ -72,6 +73,7 @@
         </div>
         </div>
         <div class="camera-visual">
+        <div class="prep-cue" id="prep-cue" data-action="frame"><i class="cue-arrow" aria-hidden="true"></i><strong id="prep-cue-label">FACE THE CAMERA</strong></div>
         <div class="viewfinder"><video id="camera" muted playsinline autoplay></video><span id="face-left" class="face-label" hidden>P1</span><span id="face-right" class="face-label face-label-two" hidden>P2</span><div class="frame-corner tl"></div><div class="frame-corner tr"></div><div class="frame-corner bl"></div><div class="frame-corner br"></div><span id="tracking-label"></span></div>
         <div class="prep-pilots" id="prep-pilots"><span id="prep-p1" data-state="waiting">P1 · waiting</span><span id="prep-p2" data-state="waiting" hidden>P2 · waiting</span></div>
         <div class="signal" id="camera-signal"><span data-key="left">LEFT</span><div class="signal-track"><i id="signal-dot"></i></div><span data-key="right">RIGHT</span></div>
@@ -81,7 +83,7 @@
         </div>
         </div>
         <div class="camera-actions" id="camera-actions">
-        <button class="primary wide" id="calibrate" disabled data-key="calibrate">Start setup · 5s to get into position</button>
+        <button class="primary wide" id="calibrate" disabled data-key="calibrate">Start now · otherwise automatic</button>
         <button class="secondary wide" id="camera-cancel" data-key="back">Back</button>
         </div>
       </section>
@@ -106,7 +108,7 @@
         </div>
         <div class="result-content">
         <p class="result-line result-buddy" id="result-buddy" hidden></p>
-        <div class="result-stats"><div><small data-key="flightSeconds">FLIGHT SECONDS</small><strong id="result-time"></strong></div><div><small data-key="score">SCORE</small><strong id="result-score"></strong></div></div>
+        <div class="result-stats"><div><small data-key="flightSeconds">FLIGHT SECONDS</small><strong id="result-time"></strong></div><div><small data-key="score">COINS</small><strong id="result-score"></strong></div></div>
         <div class="result-line"><span data-key="gates">Gates cleared</span><strong id="result-gates"></strong></div>
         <div class="result-line"><span data-key="best">Best this mode & duration</span><strong id="result-best"></strong></div>
         </div>
@@ -125,6 +127,6 @@
     </main>
     <footer><span><i class="dot"></i> <span id="status" data-key="ready">READY WHEN YOU ARE</span></span><a href="../wip.html" data-key="lab">← WIP Lab</a></footer>
   </div>
-  <script type="module" src="plank.js?v=4"></script>
+  <script type="module" src="plank.js?v=7"></script>
 </body>
 </html>

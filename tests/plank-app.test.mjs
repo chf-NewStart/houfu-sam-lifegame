@@ -64,21 +64,27 @@ function harness() {
   }
   const context = vm.createContext(Object.assign(target(), {
     document, navigator: {}, performance: { now: () => now }, devicePixelRatio: 1, console,
-    Flight, BrowSwitch, CoopFlight, PlankCamera: MockCamera,
-    PlankRenderer: class { resize() {} draw() {} },
+    Flight: class extends Flight { constructor(duration) { super(duration, () => 0); } }, BrowSwitch, CoopFlight, PlankCamera: MockCamera,
+    PlankRenderer: class { resize() {} draw() {} clearFaces() {} captureFaces() {} },
     matchMedia: () => ({ matches: false }), requestAnimationFrame: callback => { animation = callback; },
     ResizeObserver: class { constructor(callback) { this.callback = callback; } observe() { this.callback(); } },
     localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, String(value)) },
   }));
   context.window = context;
   vm.runInContext(`'use strict';\n${source}`, context, { filename: 'game/plank.js' });
-  const state = () => JSON.parse(JSON.stringify(vm.runInContext('({phase, players, mode, duration, gameDuration: game?.duration, calibrated, elapsed: game?.elapsed, score: game?.score, done: game?.done, lanes: flightGames().map(g => g.lane), clocks: flightGames().map(g => g.elapsed)})', context)));
+  const state = () => JSON.parse(JSON.stringify(vm.runInContext('({phase, players, mode, duration, gameDuration: game?.duration, calibrated, elapsed: game?.elapsed, score: game?.score, done: game?.done, lanes: flightGames().map(g => g.lane), clocks: flightGames().map(g => g.elapsed), health: game?.health})', context)));
   function frame(face = true) {
     now += 50;
     if (camera.active && !camera.paused && now % 100 === 0) camera.emit(face);
     const callback = animation; animation = null; callback(now);
     assert.equal(typeof animation, 'function', 'Application must schedule its next frame');
   }
+  const avoid = seconds => {
+    for (let i = 0; i < Math.round(seconds * 20); i++) {
+      vm.runInContext('for (const [i,g] of flightGames().entries()) { const gate = g.gates.find(x => !x.resolved); if (gate) game.steer(1-gate.lane,i); }',context); frame();
+    }
+  };
+  const stall = seconds => { now += seconds * 1000; const callback = animation; animation = null; callback(now); };
   const advance = (seconds, face = true) => { for (let i = 0; i < Math.round(seconds * 20); i++) frame(face); };
   const until = (phase, seconds = 20) => {
     for (let n = 0; state().phase !== phase && n < seconds * 20; n++) frame();
@@ -113,21 +119,21 @@ function harness() {
   const key = key => context.dispatch('keydown', { key });
   const rotate = () => context.dispatch('orientationchange');
   const pointer = id => ids.get(id).dispatch('pointerdown');
-  return { ids, storage, camera, document, state, advance, until, click, choose, key, rotate, pointer, launchCamera, finishCalibration };
+  return { ids, storage, camera, document, state, advance, avoid, stall, until, click, choose, key, rotate, pointer, launchCamera, finishCalibration };
 }
 
 test('practice countdown does not spend flight time and completion lands at exactly 30 seconds', async () => {
   const app = harness();
   await app.click('practice-start'); app.advance(2.9);
   assert.equal(app.state().phase, 'countdown'); assert.equal(app.state().elapsed, 0);
-  app.until('playing'); app.advance(29.9);
+  app.until('playing'); app.avoid(29.9);
   assert.equal(app.state().phase, 'playing');
   app.advance(.2);
   assert.equal(app.state().phase, 'results'); assert.equal(app.state().elapsed, 30);
   assert.equal(app.state().done, true);
   assert.equal(app.ids.get('result-time').textContent, '30 / 30');
   assert.equal(app.ids.get('result-kicker').textContent, 'FLIGHT COMPLETE');
-  assert.ok(app.storage.has('plank_pilot_best_v1_practice_30'));
+  assert.ok(app.storage.has('plank_pilot_coins_v3_practice_30'));
 });
 
 for (const buddy of [false,true]) {
@@ -140,12 +146,12 @@ for (const buddy of [false,true]) {
     await app.click('practice-start'); app.until('playing');
     assert.equal(app.state().gameDuration,seconds);
     assert.equal(app.state().elapsed,0);
-    app.advance(seconds-.1); assert.equal(app.state().phase,'playing');
+    app.avoid(seconds-.1); assert.equal(app.state().phase,'playing');
     app.advance(.2); assert.equal(app.state().phase,'results');
     assert.equal(app.state().elapsed,seconds);
     assert.ok(app.state().clocks.every(clock => clock === seconds));
     assert.equal(app.ids.get('result-time').textContent,`${seconds} / ${seconds}`);
-    assert.ok(app.storage.has(buddy ? `plank_pilot_best_v2_buddy_practice_${seconds}` : `plank_pilot_best_v1_practice_${seconds}`));
+    assert.ok(app.storage.has(buddy ? `plank_pilot_coins_v3_buddy_practice_${seconds}` : `plank_pilot_coins_v3_practice_${seconds}`));
   });
 }
 
@@ -219,24 +225,31 @@ test('backgrounding during recalibration returns to framing while preserving fli
   const elapsed = app.state().elapsed;
   await app.click('recalibrate'); app.advance(.1); await app.click('calibrate'); app.until('neutral'); app.advance(.5);
   app.document.hidden = true; app.document.dispatch('visibilitychange');
-  assert.equal(app.state().phase, 'paused');
+  app.advance(2); assert.equal(app.state().elapsed, elapsed);
   app.document.hidden = false; app.document.dispatch('visibilitychange');
-  await app.click('resume'); assert.equal(app.state().phase, 'framing');
+  assert.equal(app.state().phase, 'prep');
   assert.equal(app.state().elapsed, elapsed);
-  app.advance(.1); await app.click('calibrate'); app.finishCalibration();
+  app.finishCalibration();
   assert.equal(app.state().elapsed, elapsed);
 });
 
-test('lost tracking freezes gameplay immediately and recovery includes a fresh countdown', async () => {
+test('brief tracking misses freeze hazards silently; longer losses recover automatically', async () => {
   const app = harness(); await app.launchCamera(); app.advance(1);
-  const elapsed = app.state().elapsed, score = app.state().score;
-  app.camera.emit(false); assert.equal(app.state().phase, 'tracking');
-  app.advance(3, false);
-  assert.equal(app.state().elapsed, elapsed); assert.equal(app.state().score, score);
-  app.advance(1); assert.equal(app.state().phase, 'tracking');
-  app.until('countdown'); assert.equal(app.state().elapsed, elapsed);
-  app.advance(2.9); assert.equal(app.state().elapsed, elapsed);
-  app.until('playing'); app.advance(.5); assert.ok(app.state().elapsed > elapsed);
+  const elapsed = app.state().elapsed, coins = app.state().score, health = app.state().health;
+  app.camera.emit(false); app.advance(.5,false);
+  assert.equal(app.state().phase, 'playing');
+  assert.equal(app.ids.get('message').hidden,true);
+  assert.equal(app.state().elapsed,elapsed);
+  app.advance(.1); assert.equal(app.state().phase,'playing');
+  assert.ok(app.state().elapsed>elapsed);
+  const before = app.state().elapsed;
+  app.camera.emit(false); app.advance(2,false);
+  assert.equal(app.state().phase,'tracking');
+  assert.equal(app.state().elapsed,before);
+  assert.equal(app.state().score,coins); assert.equal(app.state().health,health);
+  app.advance(.5); assert.equal(app.state().phase,'tracking');
+  app.until('playing'); assert.equal(app.state().elapsed,before);
+  app.advance(.2); assert.ok(app.state().elapsed>before);
 });
 
 test('buddy practice uses independent keyboard and pointer lanes on one shared clock', async () => {
@@ -389,25 +402,58 @@ test('a single remaining face freezes both flights and cannot take over the othe
   assert.deepEqual(app.state().lanes, [1, 0]);
   const before = app.state(), both = app.camera.faces;
   app.camera.faces = [{...both[1], x: .1, brow: .9}]; app.camera.emit();
-  assert.equal(app.state().phase, 'tracking');
+  assert.equal(app.state().phase, 'playing');
   app.key('ArrowRight'); app.pointer('p2-right'); app.advance(3);
   assert.equal(app.state().elapsed, before.elapsed);
   assert.equal(app.state().score, before.score);
   assert.deepEqual(app.state().clocks, before.clocks);
   assert.deepEqual(app.state().lanes, before.lanes);
-  app.camera.faces = both; app.until('countdown'); app.advance(2.9);
+  app.camera.faces = both; app.advance(.5);
   assert.equal(app.state().elapsed, before.elapsed);
   app.until('playing'); app.advance(.2);
   assert.ok(app.state().elapsed > before.elapsed);
 });
 
-test('rotating during buddy camera play requires fresh calibration without spending either clock', async () => {
-  const app = harness(); await app.launchCamera({buddy: true}); app.advance(1);
+test('rotation preserves calibration and neither rotation nor a stalled frame needs a tap', async () => {
+  const app = harness(); await app.launchCamera({buddy:true}); app.advance(1);
   const elapsed = app.state().elapsed;
-  app.rotate(); assert.equal(app.state().phase, 'framing');
-  app.advance(4); assert.deepEqual(app.state().clocks, [elapsed, elapsed]);
-  await app.click('calibrate'); app.finishCalibration();
-  assert.deepEqual(app.state().clocks, [elapsed, elapsed]);
-  app.advance(.2); assert.ok(app.state().elapsed > elapsed);
-  assert.equal(app.camera.starts.length, 1, 'rotation reuses the shared camera');
+  app.rotate(); assert.equal(app.state().phase,'playing');
+  assert.equal(app.state().calibrated,true);
+  app.stall(2); assert.equal(app.state().elapsed,elapsed);
+  app.until('playing'); app.advance(.2);
+  assert.ok(app.state().elapsed>elapsed);
+  assert.equal(app.camera.starts.length,1);
+});
+
+test('camera setup starts itself once framed and shows directional cues without another tap', async () => {
+  const app = harness();
+  await app.click('camera-start'); app.until('prep');
+  assert.equal(app.ids.get('prep-cue').attributes['data-action'],'stay');
+  app.until('neutral'); assert.equal(app.ids.get('prep-cue-label').textContent,'STAY HERE');
+  app.until('testLeft'); assert.equal(app.ids.get('prep-cue').attributes['data-action'],'left');
+  app.camera.faces[0].x=.6; app.until('testRight');
+  assert.equal(app.ids.get('prep-cue').attributes['data-action'],'right');
+  app.camera.faces[0].x=.4; app.until('playing');
+});
+
+test('returning from the background recovers hands-free, but manual pause stays paused', async () => {
+  const app = harness(); await app.launchCamera(); app.advance(1);
+  const elapsed=app.state().elapsed;
+  app.document.hidden=true;app.document.dispatch('visibilitychange');app.advance(10);
+  assert.equal(app.state().elapsed,elapsed);
+  app.document.hidden=false;app.document.dispatch('visibilitychange');
+  assert.equal(app.state().phase,'tracking');
+  app.until('playing');assert.equal(app.state().elapsed,elapsed);
+  await app.click('pause');
+  app.document.hidden=true;app.document.dispatch('visibilitychange');app.advance(2);
+  app.document.hidden=false;app.document.dispatch('visibilitychange');app.advance(2);
+  assert.equal(app.state().phase,'paused');
+});
+
+test('running out of hearts renders an honest early finish and saves coins separately from old points', async () => {
+  const app=harness(); await app.click('practice-start');app.until('playing');app.advance(30);
+  assert.equal(app.state().phase,'results');assert.equal(app.state().health,0);
+  assert.equal(app.ids.get('result-kicker').textContent,'OUT OF HEARTS');
+  assert.ok(app.state().elapsed<30);
+  assert.ok(app.storage.has('plank_pilot_coins_v3_practice_30'));
 });

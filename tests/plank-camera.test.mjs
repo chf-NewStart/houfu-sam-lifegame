@@ -388,3 +388,19 @@ test('face crops use full landmarks, clamp the video boundary, and preserve eye-
   assert.equal(samples[0].x, face.x);
   assert.equal(samples[0].brow, face.brow);
 });
+
+test('a video-only interruption restarts playback without starting another stream', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const media=stream(), tracker=model(), element=video();
+  let plays=0;
+  element.play=async()=>{plays++;element.paused=false;};
+  const {camera}=controller(media,tracker,{},element);
+  t.after(()=>camera.stop());
+  await camera.start(); assert.equal(plays,1);
+  element.paused=true;
+  t.mock.timers.tick(70);await flush();
+  assert.equal(plays,2);assert.equal(element.paused,false);
+  assert.equal(media.track.stops,0);
+  element.currentTime=1;t.mock.timers.tick(70);
+  assert.equal(tracker.detections,2);
+});

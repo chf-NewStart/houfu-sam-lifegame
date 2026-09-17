@@ -1,31 +1,31 @@
-import { Flight, BrowSwitch, CoopFlight } from './plank-engine.js?v=2';
-import { PlankCamera } from './plank-camera.js?v=2';
-import { PlankRenderer } from './plank-renderer.js?v=2';
+import { Flight, BrowSwitch, CoopFlight } from './plank-engine.js?v=7';
+import { PlankCamera } from './plank-camera.js?v=7';
+import { PlankRenderer } from './plank-renderer.js?v=7';
 
 const $ = id => document.getElementById(id);
 const copy = {
-  soundOff:['Sound off','声音关'], soundOn:['Sound on','声音开'], remaining:['FLIGHT TIME','剩余时间'], score:['SCORE','得分'],
+  soundOff:['Sound off','声音关'], soundOn:['Sound on','声音开'], remaining:['FLIGHT TIME','剩余时间'], score:['COINS','金币'],
   sector:['SECTOR 01 — THE QUIET BELT','第 01 区 — 静谧星带'], tagline:['HANDS FREE. EYES ON THE STARS.','解放双手，目光飞向星空。'],
-  title:['Make the<br>seconds fly.','让每一秒<br>飞起来。'], intro:['A little space adventure for your next plank. Dodge the barriers. Finish your flight.','平板支撑时来一场太空冒险。躲开障碍，完成飞行。'],
+  title:['Make the<br>seconds fly.','让每一秒<br>飞起来。'], intro:['A little space adventure for your next plank. Your face. Three hearts. Dodge rocks, grab coins.','平板支撑时来一场太空冒险。像素大头，三颗爱心。躲障碍，捡金币。'],
   duration:['CHOOSE YOUR FLIGHT','选择飞行时长'], control:['CAMERA CONTROL','摄像头操控'], faceControl:['Small face shift','轻微左右移动'], browControl:['Eyebrow switch','抬眉切换'],
   customSeconds:['Custom seconds','自定秒数'], durationInvalid:['Enter a whole number from 1 to 3,600 seconds.','请输入 1 至 3,600 之间的整数秒数。'],
-  faceCopy:['A small left / right shift steers your ship. Keep both hands planted.','面部轻微左右移动即可转向，双手保持支撑。'], browCopy:['Raise your eyebrows once to switch lanes. Relax to prepare the next switch.','抬眉一次切换航道，放松后可再次切换。'],
+  faceCopy:['A small left / right shift steers your pixel face. Keep both hands planted.','面部轻微左右移动即可转向，双手保持支撑。'], browCopy:['Raise your eyebrows once to switch lanes. Relax to prepare the next switch.','抬眉一次切换航道，放松后可再次切换。'],
   cameraStart:['Enable camera & set up <span>↗</span>','开启摄像头并设置 <span>↗</span>'], practiceStart:['Try with touch / keyboard','触屏 / 键盘试玩'],
-  privacy:['Video stays on your device. Nothing is recorded. Camera mode downloads a tracking model.','画面仅在本机处理，不录制。摄像头模式需要下载追踪模型。'],
+  privacy:['Your pixel selfie stays in memory for this round. No photos or video are saved or uploaded. Camera mode downloads a tracking model.','像素头像仅留在本轮内存中，不保存或上传照片和视频。摄像头模式需下载追踪模型。'],
   cameraTag:['PREFLIGHT CHECK','飞行前检查'], left:['LEFT','左'], right:['RIGHT','右'], sensitivity:['Movement needed','移动幅度'], small:['small → more','小 → 大'],
   position:['Rest the phone securely in front of you, with your face in view. Keep movement comfortable and small. This tracks controls, not plank form.','把手机稳妥放在面前，让镜头能看见脸。动作保持轻微舒适。此功能只用于操控，不判断平板支撑姿势。'],
-  calibrate:['Start setup · 5s to get into position','开始准备 · 5 秒就位'], back:['Back','返回'], resume:['Resume flight','继续飞行'], recalibrate:['Reposition & recalibrate','重新摆放并校准'],
-  finish:['Finish here','到这里结束'], flightSeconds:['FLIGHT SECONDS','飞行秒数'], gates:['Gates cleared','通过障碍'], best:['Best this mode & duration','本模式与时长的最高分'],
+  calibrate:['Start now · otherwise automatic','立即开始 · 也会自动开始'], back:['Back','返回'], resume:['Resume flight','继续飞行'], recalibrate:['Reposition & recalibrate','重新摆放并校准'],
+  finish:['Finish here','到这里结束'], flightSeconds:['FLIGHT SECONDS','飞行秒数'], gates:['Gates cleared','通过障碍'], best:['Most coins · this mode & duration','本模式与时长的最多金币'],
   again:['Back to the launchpad ↗','返回发射台 ↗'], rest:['Take a breather. Your next flight can wait.','先休息一下，下一次飞行可以等等。'], pause:['Ⅱ Pause','Ⅱ 暂停'], end:['End','结束'],
   practiceBadge:['PRACTICE · NO CAMERA','试玩 · 无摄像头'], ready:['READY WHEN YOU ARE','准备好就出发'], lab:['← WIP Lab','← 实验室'],
   loading:['Waking up the camera…','正在开启摄像头…'], loadingCopy:['Allow camera access. The first model download may take a moment.','请允许访问摄像头，首次下载模型可能需要一点时间。'],
-  framing:['Get your face in view.','让脸进入镜头。'], framingCopy:['Position the phone so you can see your whole face. Tap Start setup when the framing looks right.','摆好手机，让整张脸出现在预览中。取景合适后，点击开始准备。'],
+  framing:['Get your face in view.','让脸进入镜头。'], framingCopy:['Position the phone so you can see your whole face. Setup starts automatically when your face is in view. You have five seconds to settle.','摆好手机，让整张脸出现在预览中。入镜后自动开始，你有五秒时间调整姿势。'],
   faceSeen:['FACE IN VIEW','已看到面部'], noFace:['FACE NOT VISIBLE','未看到面部'], cameraWaiting:['WAITING FOR CAMERA','等待摄像头'],
   prep:['Settle into your plank.','进入平板支撑姿势。'], prepCopy:['You have five seconds to get comfortable. We are not measuring your center yet.','你有五秒时间调整到舒适姿势，此时还没有开始记录中心位置。'],
   neutral:['Center & hold still.','确定中心，保持不动。'], neutralCopy:['Look at the screen with a relaxed face. Hold your comfortable position for two seconds: this becomes your steering center.','自然看向屏幕，放松面部。在舒适位置保持两秒，这就是你的转向中心。'],
   brow:['Raise your eyebrows.','抬起眉毛。'], browCalCopy:['Hold the raised expression for two seconds so we can learn your gesture.','保持抬眉两秒，让游戏学习你的动作。'],
   relax:['Gesture found. Now relax.','已识别抬眉，现在放松。'], relaxCopy:['Lower your eyebrows and hold your relaxed expression for two seconds. Then we will count you in.','放下眉毛，保持自然表情两秒，然后进入起飞倒计时。'],
-  launch:['Ready for liftoff?','准备起飞？'], launchCopy:['Fly through the open lane. Coral barriers cost points.','穿过空航道，珊瑚色障碍会扣分。'],
+  launch:['Ready for liftoff?','准备起飞？'], launchCopy:['Fly through the open lane. Rocks cost a heart. Gold coins are in the safe lane.','穿过空航道，碰到障碍少一颗心，金币在安全航道。'],
   practiceCopy:['Use ← →, A / D, or the buttons to steer. Space pauses.','用 ← →、A / D 或屏幕按钮转向。空格键暂停。'],
   tracked:['CAMERA CONTROL · LOCAL PROCESSING','摄像头操控 · 本机处理'], practiceStatus:['PRACTICE FLIGHT · NO CAMERA','试玩飞行 · 无摄像头'],
   faceHint:['Small shift ← / →','轻微移动 ← / →'], browHint:['Raise eyebrows to switch','抬眉切换航道'], keysHint:['← → to dodge · Space to pause','← → 闪避 · 空格暂停'],
@@ -38,22 +38,22 @@ const copy = {
   weakBrow:['The eyebrow change was too small to distinguish. Try again, or choose small face shifts on the launchpad.','抬眉变化不够明显。请重试，或返回发射台选择轻微左右移动。'],
   complete:['FLIGHT COMPLETE','飞行完成'], landed:['Nicely landed.','顺利着陆。'], stopped:['FLIGHT SAVED','飞行已保存'], stoppedTitle:['A good place to stop.','在这里休息一下。'],
   completeCopy:['You made it through the belt. Time for a breather.','你已穿越星带，休息一下吧。'], stoppedCopy:['Your flight ends here. No need to finish the timer.','飞行在这里结束，不必坚持到计时结束。'],
-  practiceResult:['Practice flight. Camera controls were not used.','试玩飞行，本轮未使用摄像头。'], resultStatus:['BACK AT BASE','已返回基地'], clear:['Clear!','通过！'], hit:['Shield hit · −25','护盾受击 · −25'],
+  practiceResult:['Practice flight. Camera controls were not used.','试玩飞行，本轮未使用摄像头。'], resultStatus:['BACK AT BASE','已返回基地'], clear:['Coin +1','金币 +1'], hit:['Ouch! −1 heart','哎哟！−1 颗心'],
   playersLegend:['WHO’S FLYING?','几人飞行？'], soloMode:['Solo','单人'], buddyMode:['Buddy · one phone','双人 · 一部手机'],
-  buddyCopy:['One sideways phone, two pilots. P1 takes the left half; P2 takes the right. Clear gates together for bonus points.','一部横屏手机，两位飞行员。P1 操控左半屏，P2 操控右半屏，同时通过障碍可获额外分数。'],
+  buddyCopy:['One sideways phone, two pilots. P1 takes the left half; P2 takes the right. Clear gates together for bonus coins.','一部横屏手机，两位飞行员。P1 操控左半屏，P2 操控右半屏，同时通过障碍可获额外金币。'],
   rotateHint:['Turn your phone sideways for two-player flight.','双人飞行建议将手机横放。'], playerOne:['P1 · LEFT','P1 · 左侧'], playerTwo:['P2 · RIGHT','P2 · 右侧'],
-  faceBackground:['Live face background','实时面部背景'], teamScore:['TEAM SCORE','团队得分'],
+  faceBackground:['Live face background','实时面部背景'], teamScore:['TEAM COINS','团队金币'],
   buddyPosition:['Set the phone sideways between you, far enough away to see both faces. Keep your preview sides: P1 left, P2 right.','将手机横放在你们中间，调整距离让两张脸都进入镜头。保持预览中的左右位置：P1 左，P2 右。'],
-  buddyFramingCopy:['Fit both faces in the preview: P1 left, P2 right. Tap Start setup when you can both see yourselves.','让两张脸同时进入预览：P1 在左，P2 在右。两人都能看到自己后，点击开始准备。'],
+  buddyFramingCopy:['Fit both faces in the preview: P1 left, P2 right. Setup starts automatically once both faces are in view.','让两张脸同时进入预览：P1 在左，P2 在右。两人入镜后自动开始准备。'],
   buddyNeutralCopy:['Each look at your own half and hold a relaxed, comfortable position for two seconds. We save a separate center for each of you.','各自看向自己的半屏，在舒适位置放松保持两秒。游戏会分别记录两人的中心位置。'],
-  buddyBrowCopy:['Both raise your eyebrows for two seconds. Each gesture will control only your own ship.','两人抬眉保持两秒，之后每人的动作只操控自己的飞船。'],
+  buddyBrowCopy:['Both raise your eyebrows for two seconds. Each gesture will control only your own pixel face.','两人抬眉保持两秒，之后每人的动作只操控自己的像素头像。'],
   buddyRelaxCopy:['Both lower your eyebrows and hold relaxed for two seconds. The countdown waits until you are both ready.','两人放下眉毛，保持自然表情两秒。两人都准备好后才会进入倒计时。'],
   buddyPracticeCopy:['P1 uses A / D. P2 uses ← / →. Or use the arrows in your half. Space pauses both.','P1 用 A / D，P2 用 ← / →，也可点击各自半屏箭头。空格暂停双方。'],
   buddyKeysHint:['P1: A / D · P2: ← / →','P1：A / D · P2：← / →'],
   buddyTrackingCopy:['Both faces must be visible on their original sides. Both flights and the clock are paused.','两张脸都需回到原来的预览侧，两人的飞行和计时均已暂停。'],
   buddyLostCal:['Bring both faces into view, with one on each side, to continue calibration.','让两张脸回到镜头中，一左一右，继续校准。'],
   buddyWeakBrow:['We could not distinguish both eyebrow raises. Try together again, or choose small face shifts.','未能清楚识别两人的抬眉动作。请同时再试一次，或选择轻微左右移动。'],
-  bothFaces:['BOTH FACES READY','两张脸已就位'], needBoth:['NEED TWO SEPARATE FACES','需要两张分开的脸'], together:['Together! +25 team bonus','默契通过！团队加 25'],
+  bothFaces:['BOTH FACES READY','两张脸已就位'], needBoth:['NEED TWO SEPARATE FACES','需要两张分开的脸'], together:['Together! +1 bonus coin','默契通过！奖励 1 金币'],
   buddyResult:['Two pilots, one flight. Take a breather together.','两位飞行员，一起完成飞行。一起休息一下吧。'],
   prepFrame:['Frame','入镜'], prepCenter:['Center','定中心'], prepControls:['Controls','试操控'], prepLaunch:['Fly','起飞'],
   frameStep:['STEP 1 / 4 · CAMERA FRAMING','第 1 / 4 步 · 镜头取景'], settleStep:['GET INTO POSITION · CENTERING IS NEXT','先就位 · 下一步确定中心'],
@@ -76,6 +76,9 @@ const copy = {
   leftStatus:['Shift left','向左移动'], rightStatus:['Shift right','向右移动'], controlReady:['Ready ✓','就绪 ✓'],
   waitingFaces:['Waiting for faces · progress paused','等待入镜 · 进度暂停'], centerRetry:['Movement detected. Hold still again; the center check has restarted.','检测到移动，请重新保持不动，定中心进度已重置。'],
   waitingBoth:['Both faces needed','等待两人入镜'],
+  hearts:['HEARTS','生命'], out:['OUT OF HEARTS','爱心用完啦'], outTitle:['Bonk. Back to base!','撞晕啦，返回基地！'], outCopy:['Three bumps, one goofy face. Your coins are kept for this round. Take a breather.','撞了三次，大头回家。本轮金币保留，先休息一下吧。'],
+  reconnect:['Finding your face… time and hearts are safe.','正在寻找面部…时间和爱心已冻结。'], reconnectBuddy:['Finding both pilots… time and hearts are safe.','正在寻找两位玩家…时间和爱心已冻结。'], returning:['Found you! Back in 1…','找到啦！1 秒后继续…'],
+  cueStay:['STAY HERE','保持不动'], cueLeft:['MOVE LEFT','向左移动'], cueRight:['MOVE RIGHT','向右移动'], cueBrow:['EYEBROWS UP','抬起眉毛'], cueRelax:['RELAX','放松眉毛'], cueFrame:['FACE THE CAMERA','看向镜头'], cueGo:['GET READY','准备起飞'], autoSetup:['Starting automatically…','即将自动开始…'],
   steeringRoom:['Leave a little more room to steer: keep each face away from the preview edges and each other, or reduce Movement needed. Then start setup again.','请给转向留出更多空间：让脸离开预览边缘，两人之间留出距离，或调小移动幅度，然后重新开始准备。'],
 };
 let lang = 'en';
@@ -89,13 +92,15 @@ let continuing = false, stableTime = 0, sound = false, audioContext = null, wake
 let phaseDetail = '', previousTime = performance.now(), hitGlows = [0,0], toastUntil = 0;
 let pausedPhase = null;
 let centerResetUntil = 0;
+let missingSince = null, recoveryPhase = 'playing', hiddenPhase = null, autoFrameTime = 0, avatarTime = -Infinity;
+const TRACKING_GRACE_MS = 1000;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const calibrationPhases = new Set(['prep','neutral','brow','relax','testLeft','testRight']);
-const activePhases = new Set([...calibrationPhases,'countdown','playing','tracking']);
+const activePhases = new Set([...calibrationPhases,'starting','framing','countdown','playing','tracking']);
 const cameraPrep = () => isCamera() && (['starting','framing','countdown'].includes(phase) || calibrationPhases.has(phase));
 const isCamera = () => mode !== 'practice';
 const getFaces = sample => sample.faces ?? (players === 1 ? [{x:sample.x,brow:sample.brow,width:.15}] : []);
-const freshFace = now => lastSample.visible && getFaces(lastSample).length >= players && now - lastSample.time < 650;
+const freshFace = now => lastSample.visible && getFaces(lastSample).length >= players && now - lastSample.time < 1000;
 const median = values => [...values].sort((a,b)=>a-b)[Math.floor(values.length / 2)];
 const flightGames = () => game ? (players === 2 ? game.games : [game]) : [];
 const newFlight = () => players === 2 ? new CoopFlight(duration) : new Flight(duration);
@@ -112,11 +117,14 @@ const camera = new PlankCamera($('camera'), {
     }
     lastSample = sample;
     if (!sample.visible) {
-      if (phase === 'playing' || phase === 'countdown') enterTracking();
+      resetGestures();
       if (calibrationPhases.has(phase) && phase !== 'prep') { stepTime = 0; samples = []; }
       return;
     }
     if (faces.length < players) return;
+    if (sample.time - avatarTime >= 750 && ['neutral','brow','relax','testLeft','testRight','countdown','playing'].includes(phase)) {
+      renderer.captureFaces($('camera'), faces); avatarTime = sample.time;
+    }
     if (phase === 'neutral') {
       const trial = [...samples, faces];
       const moved = faces.some((_,player) => {
@@ -130,7 +138,7 @@ const camera = new PlankCamera($('camera'), {
       else { samples = []; stepTime = 0; }
     }
     for (let player = 0; player < players; player++) filteredXs[player] += (faces[player].x - filteredXs[player]) * .4;
-    if (phase === 'playing' || phase === 'countdown') {
+    if (phase === 'playing' || phase === 'countdown' || phase === 'tracking') {
       for (let player = 0; player < players; player++) {
         if (mode === 'face') {
           const offset = centers[player] - filteredXs[player];
@@ -189,7 +197,7 @@ function acceptDuration() {
   return true;
 }
 function setPhase(next) {
-  phase = next; stepTime = 0; samples = []; stableTime = 0;
+  phase = next; stepTime = 0; samples = []; stableTime = 0; missingSince = null; autoFrameTime = 0;
   if (next === 'neutral') centerResetUntil = 0;
   renderPhase();
   if (cameraPrep()) $('camera-panel').scrollTop = 0;
@@ -211,7 +219,10 @@ function renderPhase() {
       $('p2-score').textContent = game.games[1].score;
     }
   }
-  $('inflight-controls').hidden = phase !== 'playing';
+  $('inflight-controls').hidden = !['playing','tracking'].includes(phase);
+  $('tracking-notice').hidden = phase !== 'tracking';
+  $('hearts').hidden = !game || players !== 1 || $('hud').hidden;
+  renderHealth();
   $('touch-controls').hidden = phase !== 'playing' || mode !== 'practice' || players !== 1;
   $('buddy-touch').hidden = phase !== 'playing' || mode !== 'practice' || players !== 2;
   document.body.classList.toggle('playing', !!game && !['setup','starting','framing'].includes(phase));
@@ -219,7 +230,7 @@ function renderPhase() {
   $('status').textContent = t(phase === 'setup' ? 'ready' : phase === 'results' ? 'resultStatus' : isCamera() ? 'tracked' : 'practiceStatus');
   if (phase === 'setup') { $('setup').hidden = false; return; }
   if (cameraPrep()) { renderPrep(); return; }
-  if (phase === 'playing') return;
+  if (phase === 'playing' || phase === 'tracking') return;
   if (phase === 'results') { $('results').hidden = false; renderResults(); return; }
   $('message').hidden = false;
   $('message-kicker').textContent = t(mode === 'practice' ? 'practiceBadge' : 'cameraTag');
@@ -248,6 +259,9 @@ function renderPrep() {
   const titles = {starting:'loading',framing:phaseDetail?'calibrationError':'framing',prep:'prep',neutral:'neutral',brow:'brow',relax:'relax',testLeft:'testLeft',testRight:'testRight',countdown:'launchReady'};
   const details = {starting:'loadingCopy',framing:phaseDetail||(players===2?'buddyFramingCopy':'framingCopy'),prep:'prepCopy',neutral:calibrationCopy(),brow:calibrationCopy(),relax:calibrationCopy(),testLeft:players===2?'buddyTestLeftCopy':'testLeftCopy',testRight:players===2?'buddyTestRightCopy':'testRightCopy',countdown:'launchCopy'};
   const next = {starting:'nextSettle',framing:'nextSettle',prep:'nextCenter',neutral:mode==='brow'?'nextBrow':'nextShift',brow:'nextRelax',relax:'nextCountdown',testLeft:'nextRight',testRight:'nextCountdown'};
+  const cue = {starting:['frame','cueFrame'],framing:['frame','cueFrame'],prep:['stay','cueStay'],neutral:['stay','cueStay'],brow:['up','cueBrow'],relax:['stay','cueRelax'],testLeft:['left','cueLeft'],testRight:['right','cueRight'],countdown:['go','cueGo']}[phase];
+  $('prep-cue').setAttribute('data-action',cue[0]);
+  $('prep-cue-label').textContent = t(cue[1]);
   $('camera-title').textContent = t(titles[phase]);
   $('camera-copy').textContent = t(details[phase]);
   $('prep-next').hidden = phase === 'countdown';
@@ -260,7 +274,7 @@ function renderPrep() {
   $('camera-cancel').textContent = t(framing ? 'back' : 'finish');
   $('sensitivity-label').hidden = mode !== 'face';
   $('prep-p2').hidden = players !== 2;
-  $('prep-progress-wrap').hidden = framing;
+  $('prep-progress-wrap').hidden = phase === 'starting';
   $('prep-progress-label').textContent = t({prep:'centerStarts',neutral:'holdProgress',brow:'browProgress',relax:'relaxProgress',testLeft:'shiftProgress',testRight:'shiftProgress',countdown:'launchProgress'}[phase] || 'holdProgress');
   updatePrep(performance.now());
 }
@@ -283,8 +297,9 @@ function updatePrep(now) {
     el.textContent = `${players === 2 ? `P${player+1} · ` : ''}${t(key)}`;
     el.setAttribute('data-state',ready ? 'ready' : 'waiting');
   }
-  const limit = phase === 'prep' ? 5 : phase === 'countdown' ? 3 : phase === 'testLeft' || phase === 'testRight' ? .35 : 2;
-  $('prep-progress').value = Math.min(1,stepTime / limit);
+  const limit = phase === 'framing' ? .8 : phase === 'prep' ? 5 : phase === 'countdown' ? 3 : phase === 'testLeft' || phase === 'testRight' ? .35 : 2;
+  $('prep-progress').value = Math.min(1,(phase === 'framing' ? autoFrameTime : stepTime) / limit);
+  if (phase === 'framing') $('prep-progress-label').textContent = t(phaseDetail ? 'cameraTag' : visible ? 'autoSetup' : 'notInView');
   $('prep-timer').textContent = phase === 'prep' || phase === 'countdown' ? String(Math.max(1,Math.ceil(limit-stepTime))) : `${Math.round(Math.min(1,stepTime/limit)*100)}%`;
   if (!visible && calibrationPhases.has(phase) && phase !== 'prep') {
     $('camera-copy').textContent = t(players === 2 ? 'buddyLostCal':'lostCal');
@@ -308,7 +323,9 @@ async function requestWake() {
     const lock = await navigator.wakeLock.request('screen');
     if (epoch !== wakeEpoch || !activePhases.has(phase)) { await lock.release(); return; }
     wakeLock = lock;
-    lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+    lock.addEventListener('release', () => {
+      if (wakeLock === lock) { wakeLock = null; if (!document.hidden && activePhases.has(phase)) requestWake(); }
+    });
   } catch { /* Screen Wake Lock is an optional enhancement. */ }
 }
 function releaseWake() { wakeEpoch++; const lock = wakeLock; wakeLock = null; if (lock) lock.release().catch(()=>{}); }
@@ -319,20 +336,22 @@ function unlockAudio() {
 function tone(frequency, length = .12) {
   if (!sound || !audioContext || audioContext.state !== 'running') return;
   const osc = audioContext.createOscillator(), gain = audioContext.createGain();
-  osc.type = 'sine'; osc.frequency.value = frequency;
+  osc.type = 'square'; osc.frequency.value = frequency;
   gain.gain.setValueAtTime(.055, audioContext.currentTime);
   gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + length);
   osc.connect(gain).connect(audioContext.destination); osc.start(); osc.stop(audioContext.currentTime + length);
 }
 function backToSetup() {
   camera.stop(); releaseWake(); game = null; continuing = false; lastSample = {visible:false,time:0};
-  calibrated = false;
+  calibrated = false; hiddenPhase = null; renderer.clearFaces(); avatarTime = -Infinity;
   phaseDetail = ''; mode = document.querySelector('[data-control][aria-pressed=true]').dataset.control;
   $('toast').textContent = ''; setPhase('setup'); translate();
 }
 function enterTracking() {
   if (!isCamera()) return;
+  if (phase !== 'tracking') recoveryPhase = phase === 'countdown' ? 'countdown' : 'playing';
   resetGestures(); setPhase('tracking');
+  $('tracking-notice').textContent = t(players === 2 ? 'reconnectBuddy' : 'reconnect');
 }
 function startCountdown() {
   resetGestures(); filteredXs = centers.slice();
@@ -340,26 +359,37 @@ function startCountdown() {
 }
 function pause() {
   if (!activePhases.has(phase)) return;
-  pausedPhase = phase; setPhase('paused'); camera.pause(); releaseWake();
+  hiddenPhase = null; pausedPhase = phase; setPhase('paused'); camera.pause(); releaseWake();
 }
 function stopFlight() {
   camera.stop(); releaseWake();
   if (!game || game.elapsed === 0) { backToSetup(); return; }
-  const key = players === 2 ? `plank_pilot_best_v2_buddy_${mode}_${duration}` : `plank_pilot_best_v1_${mode}_${duration}`;
+  const key = players === 2 ? `plank_pilot_coins_v3_buddy_${mode}_${duration}` : `plank_pilot_coins_v3_${mode}_${duration}`;
   let best = game.score;
   try { best = Math.max(Number(localStorage.getItem(key)) || 0, game.score); localStorage.setItem(key, String(best)); } catch {}
   game.best = best; $('toast').textContent = ''; setPhase('results'); tone(660, .3);
 }
+function renderHealth() {
+  const hearts = flight => '♥'.repeat(flight.health) + '♡'.repeat(flight.maxHealth - flight.health);
+  if (!game) return;
+  if (players === 1) {
+    $('hearts').textContent = hearts(game); $('hearts').setAttribute('aria-label',`${t('hearts')}: ${game.health}/3`);
+  } else for (const [i,flight] of game.games.entries()) {
+    $(`p${i+1}-hearts`).textContent = hearts(flight);
+    $(`p${i+1}-hearts`).setAttribute('aria-label',`P${i+1} ${t('hearts')}: ${flight.health}/3`);
+  }
+}
 function renderResults() {
   if (!game) return;
-  $('result-kicker').textContent = t(game.done ? 'complete' : 'stopped');
-  $('result-title').textContent = t(game.done ? 'landed' : 'stoppedTitle');
-  $('result-copy').textContent = t(mode === 'practice' ? 'practiceResult' : players === 2 ? 'buddyResult' : game.done ? 'completeCopy' : 'stoppedCopy');
+  const out = game.health === 0;
+  $('result-kicker').textContent = t(out ? 'out' : game.done ? 'complete' : 'stopped');
+  $('result-title').textContent = t(out ? 'outTitle' : game.done ? 'landed' : 'stoppedTitle');
+  $('result-copy').textContent = t(out ? 'outCopy' : mode === 'practice' ? 'practiceResult' : players === 2 ? 'buddyResult' : game.done ? 'completeCopy' : 'stoppedCopy');
   $('result-time').textContent = `${Math.floor(game.elapsed)} / ${duration}`;
   $('result-score').textContent = game.score; $('result-gates').textContent = game.cleared;
   $('result-best').textContent = game.best ?? game.score;
   $('result-buddy').hidden = players !== 2;
-  if (players === 2) $('result-buddy').textContent = `P1: ${game.games[0].score} · P2: ${game.games[1].score} · ${lang==='zh'?'默契加分':'Together bonus'}: +${game.teamBonus}`;
+  if (players === 2) $('result-buddy').textContent = `P1: ${game.games[0].score} · P2: ${game.games[1].score} · ${lang==='zh'?'默契金币':'Bonus coins'}: +${game.teamBonus}`;
 }
 
 document.querySelectorAll('[data-players]').forEach(button => button.addEventListener('click', () => {
@@ -398,7 +428,8 @@ $('camera-start').onclick = async () => {
   if (!acceptDuration()) return;
   unlockAudio(); phaseDetail = ''; continuing = false;
   if (window.Capacitor?.isNativePlatform?.()) { phaseDetail = 'nativeError'; setPhase('error'); return; }
-  setPhase('starting');
+  renderer.clearFaces(); avatarTime = -Infinity;
+  setPhase('starting'); requestWake();
   try { if (await camera.start({numFaces:players}) && phase === 'starting') setPhase('framing'); } catch { /* onError renders recovery. */ }
 };
 $('camera-cancel').onclick = () => game?.elapsed > 0 ? stopFlight() : backToSetup();
@@ -406,7 +437,8 @@ $('practice-start').onclick = () => {
   if (!acceptDuration()) return;
   camera.stop(); unlockAudio(); mode = 'practice'; game = newFlight(); continuing = false; startCountdown();
 };
-$('calibrate').onclick = () => { phaseDetail = ''; calibrated = false; unlockAudio(); setPhase('prep'); requestWake(); };
+function beginPrep() { phaseDetail = ''; calibrated = false; unlockAudio(); setPhase('prep'); requestWake(); }
+$('calibrate').onclick = beginPrep;
 $('resume').onclick = () => {
   unlockAudio();
   const interruptedCalibration = calibrationPhases.has(pausedPhase);
@@ -437,26 +469,54 @@ window.addEventListener('keydown', e => {
   }
   if ((e.code === 'Space' || e.key === 'Escape') && activePhases.has(phase)) { e.preventDefault(); pause(); }
 });
+// Ignore focus/blur: browser chrome and permission UI can steal focus while the
+// page remains visible. Only real backgrounding suspends the camera/round.
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    if (phase === 'starting') backToSetup();
-    else if (activePhases.has(phase)) pause();
-    else camera.pause();
-  } else if (phase === 'framing') camera.resume();
-});
-window.addEventListener('pagehide', () => { camera.stop(); releaseWake(); });
-window.addEventListener('pageshow', e => { if (e.persisted) backToSetup(); });
-window.addEventListener('orientationchange', () => {
-  if (isCamera() && activePhases.has(phase)) {
-    continuing = !!game; phaseDetail = ''; setPhase('framing'); releaseWake(); camera.resume();
+    if (phase !== 'paused' && activePhases.has(phase)) hiddenPhase = phase;
+    camera.pause(); releaseWake();
+  } else {
+    previousTime = performance.now();
+    if (hiddenPhase) {
+      const resumePhase = hiddenPhase; hiddenPhase = null;
+      lastSample = {visible:false,time:0,faces:[],count:0};
+      if (game && ['playing','tracking','countdown'].includes(resumePhase)) {
+        if (isCamera()) { enterTracking(); camera.resume(); } else startCountdown();
+      } else {
+        if (resumePhase !== 'starting') setPhase(calibrationPhases.has(resumePhase) ? 'prep' : 'framing');
+        camera.resume();
+      }
+      requestWake();
+    }
   }
 });
+window.addEventListener('pagehide', e => {
+  // A cached page can return to its round. A real navigation releases tracks.
+  if (e.persisted) { camera.pause(); releaseWake(); }
+  else { camera.stop(); releaseWake(); }
+});
+window.addEventListener('pageshow', e => {
+  if (e.persisted && isCamera() && activePhases.has(phase) && !document.hidden) {
+    if (game) enterTracking();
+    camera.resume(); requestWake();
+  }
+});
+// ResizeObserver handles rotation without throwing away calibration or progress.
 
 function progress(dt, now) {
   const visible = freshFace(now);
   if (cameraPrep()) updatePrep(now);
-  if (phase === 'playing') {
-    if (isCamera() && !visible) { enterTracking(); return; }
+  if (['playing','countdown'].includes(phase) && isCamera() && !visible) {
+    missingSince ??= now;
+    // Brief misses freeze hazards quietly. Never charge health for lost input.
+    if (now - missingSince >= TRACKING_GRACE_MS) enterTracking();
+    return;
+  }
+  if (visible) missingSince = null;
+  if (phase === 'framing' && !phaseDetail) {
+    autoFrameTime = visible ? autoFrameTime + dt : 0;
+    if (autoFrameTime >= .8) beginPrep();
+  } else if (phase === 'playing') {
     for (const event of game.advance(dt)) {
       const pilot = event.player ?? 0;
       $('toast').textContent = (players === 2 && !event.together ? `P${pilot+1} · ` : '') + t(event.together ? 'together' : event.type === 'hit' ? 'hit' : 'clear'); toastUntil = now + 1000;
@@ -466,10 +526,15 @@ function progress(dt, now) {
     $('clock').textContent = `${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
     $('score').textContent = String(game.score).padStart(4,'0');
     if (players === 2) { $('p1-score').textContent = game.games[0].score; $('p2-score').textContent = game.games[1].score; }
+    renderHealth();
     if (game.done) stopFlight();
   } else if (phase === 'tracking') {
     stableTime = visible ? stableTime + dt : 0;
-    if (stableTime >= 1.2) startCountdown();
+    $('tracking-notice').textContent = t(visible ? 'returning' : players === 2 ? 'reconnectBuddy' : 'reconnect');
+    if (stableTime >= .75) {
+      if (recoveryPhase === 'countdown') startCountdown();
+      else { resetGestures(); setPhase('playing'); requestWake(); }
+    }
   } else if (phase === 'prep') {
     stepTime += dt;
     if (stepTime >= 5) setPhase('neutral');
@@ -514,7 +579,6 @@ function progress(dt, now) {
       else { if (!continuing) game = newFlight(); startCountdown(); }
     }
   } else if (phase === 'countdown') {
-    if (isCamera() && !visible) { enterTracking(); return; }
     const old = Math.ceil(3-stepTime); stepTime += dt;
     if (mode === 'practice') $('countdown').textContent = Math.max(1,Math.ceil(3-stepTime));
     if (old !== Math.ceil(3-stepTime)) tone(330,.07);
@@ -542,8 +606,8 @@ function draw(now,dt) {
 }
 function frame(now) {
   const gap = (now-previousTime)/1000; previousTime=now;
-  if (gap > .8 && phase === 'playing') pause(); // Never fast-forward through a browser stall.
-  const dt = Math.max(0,Math.min(.8,gap));
+  // Drop stalled time instead of forcing a manual pause or fast-forwarding hits.
+  const dt = gap > .25 ? 0 : Math.max(0,gap);
   if (!document.hidden) { progress(dt,now); draw(now,Math.min(.1,dt)); }
   requestAnimationFrame(frame);
 }

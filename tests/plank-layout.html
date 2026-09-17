@@ -35,8 +35,8 @@
     // These display strings mirror plank.js; all prep indicators below are simulated.
     const prepCopy={
       framing:['Get your face in view.','让脸进入镜头。'],
-      framingCopy:['Position the phone so you can see your whole face. Tap Start setup when the framing looks right.','摆好手机，让整张脸出现在预览中。取景合适后，点击开始准备。'],
-      buddyFramingCopy:['Fit both faces in the preview: P1 left, P2 right. Tap Start setup when you can both see yourselves.','让两张脸同时进入预览：P1 在左，P2 在右。两人都能看到自己后，点击开始准备。'],
+      framingCopy:['Position the phone so you can see your whole face. Setup starts automatically when the framing looks right.','摆好手机，让整张脸出现在预览中。取景合适后，点击开始准备。'],
+      buddyFramingCopy:['Fit both faces in the preview: P1 left, P2 right. Setup starts automatically when you can both see yourselves.','让两张脸同时进入预览：P1 在左，P2 在右。两人都能看到自己后，点击开始准备。'],
       position:['Rest the phone securely in front of you, with your face in view. Keep movement comfortable and small. This tracks controls, not plank form.','把手机稳妥放在面前，让镜头能看见脸。动作保持轻微舒适。此功能只用于操控，不判断平板支撑姿势。'],
       buddyPosition:['Set the phone sideways between you, far enough away to see both faces. Keep your preview sides: P1 left, P2 right.','将手机横放在你们中间，调整距离让两张脸都进入镜头。保持预览中的左右位置：P1 左，P2 右。'],
       faceSeen:['FACE IN VIEW','已看到面部'],
@@ -56,7 +56,7 @@
       relaxCopy:['Lower your eyebrows and hold your relaxed expression for two seconds. Then we will count you in.','放下眉毛，保持自然表情两秒，然后进入起飞倒计时。'],
       buddyRelaxCopy:['Both lower your eyebrows and hold relaxed for two seconds. The countdown waits until you are both ready.','两人放下眉毛，保持自然表情两秒。两人都准备好后才会进入倒计时。'],
       launchReady:['Controls ready. Liftoff in…','操控就绪，起飞倒计时…'],
-      launchCopy:['Fly through the open lane. Coral barriers cost points.','穿过空航道，珊瑚色障碍会扣分。'],
+      launchCopy:['Fly through the open lane. Rocks cost a heart. Grab coins in the safe lane.','穿过空航道，障碍扣爱心，安全航道有金币。'],
       frameStep:['STEP 1 / 4 · CAMERA FRAMING','第 1 / 4 步 · 镜头取景'],
       settleStep:['GET INTO POSITION · CENTERING IS NEXT','先就位 · 下一步确定中心'],
       centerStep:['STEP 2 / 4 · SET YOUR CENTER','第 2 / 4 步 · 确定中心'],
@@ -110,7 +110,7 @@
       const panel=prepStates.has(fixtureState)?'camera-panel':{setup:'setup',pause:'message',error:'message',results:'results'}[fixtureState];
       for(const el of doc.querySelectorAll('.panel')){el.hidden=el.id!==panel;el.scrollTop=0;}
       const flight=fixtureState==='solo'||fixtureState==='buddy';
-      byId('hud').hidden=!flight;byId('player-scores').hidden=!flight||!buddy;
+      byId('hud').hidden=!flight;byId('hearts').hidden=!flight||buddy;byId('player-scores').hidden=!flight||!buddy;
       byId('inflight-controls').hidden=!flight;byId('touch-controls').hidden=!flight||buddy;byId('buddy-touch').hidden=!flight||!buddy;
       byId('flight-label').hidden=fixtureState!=='setup';byId('toast').textContent='';
       byId('buddy-copy').hidden=!buddy;
@@ -119,6 +119,8 @@
         const stage=['brow','relax','testLeft','testRight'].includes(state)?'controls':state;
         const stages=['frame','center','controls','launch'],current=stages.indexOf(stage==='settle'?'frame':stage);
         byId('camera-panel').dataset.stage=stage;
+        const cue={frame:['frame','FACE THE CAMERA','看向镜头'],settle:['stay','STAY HERE','保持不动'],center:['stay','STAY HERE','保持不动'],brow:['up','EYEBROWS UP','抬起眉毛'],relax:['stay','RELAX','放松眉毛'],testLeft:['left','MOVE LEFT','向左移动'],testRight:['right','MOVE RIGHT','向右移动'],launch:['go','GET READY','准备起飞']}[state];
+        byId('prep-cue').dataset.action=cue[0];byId('prep-cue-label').textContent=cue[language==='zh'?2:1];
         for(const [index,step]of stages.entries()){
           const el=byId(`prep-step-${step}`);
           el.dataset.state=index<current?'done':index===current?'current':'pending';
@@ -156,8 +158,8 @@
       byId('countdown').hidden=true;byId('resume').hidden=fixtureState==='error';byId('recalibrate').hidden=fixtureState==='error';byId('finish').hidden=false;
       byId('result-kicker').textContent=text.kicker;byId('result-title').textContent=text.resultTitle;byId('result-copy').textContent=text.resultCopy;
       byId('result-buddy').hidden=!buddy;byId('result-buddy').textContent=text.resultBuddy;
-      byId('result-time').textContent='30s';byId('result-score').textContent='700';byId('result-gates').textContent='12';byId('result-best').textContent='700';
-      byId('clock').textContent='0:22';byId('score').textContent='0700';byId('p1-score').textContent='0240';byId('p2-score').textContent='0360';byId('control-hint').textContent=text.hint;
+      byId('result-time').textContent='30s';byId('result-score').textContent='12';byId('result-gates').textContent='12';byId('result-best').textContent='12';
+      byId('clock').textContent='0:22';byId('score').textContent='0012';byId('p1-score').textContent='4';byId('p2-score').textContent='5';byId('control-hint').textContent=text.hint;
       for(const button of document.querySelectorAll('[data-state]'))button.setAttribute('aria-pressed',String(button.dataset.state===fixtureState));
       win.requestAnimationFrame(()=>win.requestAnimationFrame(measure));
     }
