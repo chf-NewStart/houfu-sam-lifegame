@@ -20,6 +20,7 @@ What began as a Conway's Game of Life implementation grew into a terminal-themed
 | **grow_a_tomato.exe** | Grow the biggest, sweetest tomato — powered by a real plant-metabolism model. |
 | **tomatoswipe.exe** | Minesweeper, but the mines are tomatoes. |
 | **sudoku.exe** | Backtracking generator with a guaranteed unique solution; pencil marks, hints, one-click solver. |
+| **truco.exe** | Brazilian bid-and-tricks: declare your tricks, mind the manilha, don't sink to −5. You vs 1–3 CPU, blind one-card rounds included. |
 
 Every game is bilingual (English / 中文, toggle in the header) and touch-friendly.
 
