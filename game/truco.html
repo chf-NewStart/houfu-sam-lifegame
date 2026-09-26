@@ -34,53 +34,106 @@
     .seat-chip .sc { font-size: 0.95rem; font-weight: 700; }
     .seat-chip .meta { color: #556; font-size: 0.62rem; }
     .seat-chip .bidn { color: #e8b04a; }
+    .seat-chip.team-chip { min-width: 230px; border-top: 2px solid #1db954; }
+    .seat-chip.team-chip.cpu-team { border-top-color: #e8b04a; }
+    .team-line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .team-name { color: #1db954; font-weight: 700; letter-spacing: .08em; }
+    .cpu-team .team-name { color: #e8b04a; }
+    .team-members { margin-top: 4px; color: #777; font-size: .64rem; line-height: 1.65; }
+
+    /* card strength guide */
+    .power-panel { padding: 9px 12px; overflow: hidden; }
+    .power-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .power-label { flex: 0 0 auto; color: #666; font-size: .61rem; letter-spacing: 1.5px; text-transform: uppercase; }
+    .power-strip { display: flex; align-items: center; gap: 5px; min-width: 0; overflow-x: auto; padding: 3px 2px 5px; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+    .power-token { flex: 0 0 auto; min-width: 28px; padding: 4px 6px; border: 1px solid #292929; border-radius: 4px; background: linear-gradient(145deg,#181816,#0b0b0a); color: #cfcfc9; font-size: .68rem; font-weight: 700; text-align: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
+    .power-token.red { color: #eb6868; }
+    .power-token.manilha { border-color: #a77b24; color: #ffd36f; box-shadow: 0 0 10px rgba(232,176,74,.22), inset 0 0 12px rgba(232,176,74,.06); }
+    .power-arrow { color: #3f3f3f; font-size: .67rem; flex: 0 0 auto; }
+    .power-note { color: #575757; font-size: .58rem; white-space: nowrap; }
 
     /* table */
-    .table-wrap { position: relative; height: 400px; background: #0b0b0b; border: 1px solid #1a1a1a; overflow: hidden; }
-    @media (max-width: 640px) { .table-wrap { height: 430px; } }
+    .table-wrap { position: relative; height: 480px; background: radial-gradient(circle at 50% 47%,#11150f 0,#0b0d0a 35%,#080808 73%); border: 1px solid #1a1a1a; overflow: hidden; box-shadow: inset 0 0 80px rgba(0,0,0,.6); }
+    .table-wrap::after { content:''; position:absolute; inset:0; pointer-events:none; background: repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0,rgba(255,255,255,.012) 1px,transparent 1px,transparent 4px); z-index: 1; }
+    .table-status { position: absolute; z-index: 8; top: 7px; left: 9px; right: 9px; display: flex; justify-content: space-between; align-items: center; gap: 8px; pointer-events: none; }
+    .stage-pill { padding: 4px 7px; border: 1px solid #263128; background: rgba(8,13,9,.9); color: #1db954; font-size: .59rem; letter-spacing: 1px; text-transform: uppercase; }
+    .dealer-pill { color: #686868; border-color: #222; }
+    .stage-pill.dealing { color: #ffd36f; border-color: #71551d; box-shadow: 0 0 9px rgba(232,176,74,.14); }
+    @media (max-width: 640px) { .table-wrap { height: 520px; } }
 
-    .seat-zone { position: absolute; text-align: center; }
+    .seat-zone { position: absolute; text-align: center; z-index: 3; }
     .pos-s { left: 50%; bottom: 6px; transform: translateX(-50%); }
-    .pos-n { left: 50%; top: 6px; transform: translateX(-50%); }
-    .pos-w { left: 4%;  top: 42%; }
-    .pos-e { right: 4%; top: 42%; }
+    .pos-n { left: 50%; top: 34px; transform: translateX(-50%); }
+    .pos-w { left: 3%;  top: 39%; }
+    .pos-e { right: 3%; top: 39%; }
+    .pos-s, .pos-n { width: min(94%, 760px); }
     @media (max-width: 640px) {
-      .pos-w { left: 2%; top: 34%; }
-      .pos-e { right: 2%; top: 34%; }
+      .pos-w { left: 2%; top: 38%; }
+      .pos-e { right: 2%; top: 38%; }
     }
     .seat-name { color: #666; font-size: 0.64rem; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
     .seat-name .you { color: #1db954; }
+    .seat-name .team-tag { color: #4b4b4b; font-size: .52rem; }
 
     /* cards */
-    .card-row { display: flex; gap: 5px; justify-content: center; min-height: 66px; align-items: flex-end; }
-    .card { width: 50px; height: 70px; background: #101010; border: 1px solid #2a2a2a; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; user-select: none; }
-    .card .rk { font-size: 1.02rem; font-weight: 700; line-height: 1; }
-    .card .st { font-size: 0.95rem; line-height: 1.25; }
-    .card.red { color: #e05a5a; }
-    .card.blk { color: #d8d8d8; }
-    .card.mnh { border-color: #e8b04a; box-shadow: 0 0 7px rgba(232,176,74,.4); }
-    .card.mnh::after { content: '★'; position: absolute; top: 2px; right: 4px; color: #e8b04a; font-size: 0.58rem; }
-    .card.back { background: #141414; color: #2e2e2e; }
-    .card.back::before { content: '?'; color: #333; font-size: 1.2rem; }
-    .card.clickable { cursor: pointer; border-color: #1db954; transition: transform .08s, box-shadow .08s; }
-    .card.clickable:hover { transform: translateY(-5px); box-shadow: 0 0 9px rgba(29,185,84,.45); }
-    .card.played { opacity: 0.96; }
-    .card.tiny { width: 42px; height: 59px; }
-    .card.tiny .rk { font-size: 0.85rem; }
-    .card.tiny .st { font-size: 0.78rem; }
+    .card-row { display: flex; gap: 6px; justify-content: center; min-height: 84px; align-items: flex-end; }
+    .card-row.human-hand { justify-content: safe center; overflow-x: auto; overflow-y: hidden; padding: 8px 6px 3px; scroll-snap-type: x proximity; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+    .card-row.deal-row { gap: 0; }
+    .card-row.deal-row .card:not(:first-child) { margin-left: -46px; }
+    .card-row.human-hand .card { flex: 0 0 auto; scroll-snap-align: center; }
+    .card { --ink:#deded8; width: 58px; height: 82px; padding: 0; appearance: none; color: var(--ink); font-family: inherit; background: radial-gradient(circle at 32% 18%,rgba(255,255,255,.075),transparent 35%),repeating-linear-gradient(0deg,rgba(255,255,255,.017) 0,rgba(255,255,255,.017) 1px,transparent 1px,transparent 4px),linear-gradient(145deg,#1b1b19,#090a09 74%); border: 1px solid #3a3a35; border-radius: 9px; display: block; position: relative; overflow: hidden; user-select: none; box-shadow: 0 7px 15px rgba(0,0,0,.48),inset 0 0 0 1px rgba(255,255,255,.025),inset 0 -10px 20px rgba(0,0,0,.2); }
+    .card::before { content:''; position:absolute; inset:3px; border:1px solid rgba(255,255,255,.055); border-radius:6px; pointer-events:none; }
+    .card.red { --ink:#ef6767; }
+    .card.blk { --ink:#e3e3dc; }
+    .card-corner { position:absolute; left:7px; top:6px; display:flex; flex-direction:column; align-items:center; color:var(--ink); font-weight:700; line-height:.9; text-shadow:0 1px 5px rgba(0,0,0,.8); }
+    .card-corner b { font-size:.83rem; }
+    .card-corner i { margin-top:3px; font-size:.61rem; font-style:normal; }
+    .card-corner.br { left:auto; top:auto; right:7px; bottom:6px; transform:rotate(180deg); }
+    .card-suit { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink); font-size:1.72rem; text-shadow:0 0 14px color-mix(in srgb,var(--ink) 28%,transparent); }
+    .manilha-mark { display:none; position:absolute; top:5px; right:6px; color:#ffd36f; font-size:.61rem; filter:drop-shadow(0 0 4px rgba(255,197,70,.75)); }
+    .card.mnh { border-color:#c39029; box-shadow:0 8px 20px rgba(0,0,0,.5),0 0 14px rgba(232,176,74,.38),inset 0 0 20px rgba(232,176,74,.08); }
+    .card.mnh .manilha-mark { display:block; }
+    .card.mnh::after { content:''; position:absolute; inset:-45% -80%; background:linear-gradient(105deg,transparent 43%,rgba(255,222,135,.18) 49%,transparent 55%); transform:translateX(-42%); animation:cardGlint 3.8s ease-in-out infinite; pointer-events:none; }
+    .card.back { background:radial-gradient(circle at 50% 45%,rgba(29,185,84,.1),transparent 37%),repeating-linear-gradient(135deg,#111 0,#111 5px,#171717 5px,#171717 7px); border-color:#303630; }
+    .card.back::before { content:'TRUCO'; inset:10px; display:grid; place-items:center; border:1px solid rgba(29,185,84,.22); border-radius:5px; color:#315f3e; font-size:.51rem; letter-spacing:1px; transform:none; }
+    .card.back::after { content:''; position:absolute; inset:0; background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(29,185,84,.035) 3px,rgba(29,185,84,.035) 4px); }
+    .card.clickable { cursor:pointer; border-color:#1db954; transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease; }
+    .card.clickable:hover,.card.clickable:focus-visible { outline:none; transform:translateY(-7px) rotate(-1deg); border-color:#54d87d; box-shadow:0 13px 22px rgba(0,0,0,.52),0 0 15px rgba(29,185,84,.45); }
+    .card.clickable:active { transform:translateY(-2px) scale(.98); }
+    .card.played { opacity:.98; transform:rotate(var(--play-tilt,0deg)); }
+    .card.tiny { width:48px; height:68px; border-radius:7px; }
+    .card.tiny .card-corner { left:6px; top:5px; }
+    .card.tiny .card-corner.br { left:auto; top:auto; right:6px; bottom:5px; }
+    .card.tiny .card-corner b { font-size:.72rem; }
+    .card.tiny .card-corner i { font-size:.52rem; }
+    .card.tiny .card-suit { font-size:1.42rem; }
+    .card.deal-in { opacity:0; transform:translateY(-115px) scale(.55) rotate(-12deg); animation:dealIn .42s cubic-bezier(.2,.8,.2,1) var(--deal-delay,0ms) forwards; }
+    .card.indicator-flip { animation:indicatorFlip .62s cubic-bezier(.2,.8,.2,1) both; }
+    .card-stack { position:relative; width:70px; height:82px; margin:0 auto; }
+    .card-stack .card { position:absolute; left:7px; top:0; }
+    .card-stack::before,.card-stack::after { content:''; position:absolute; width:58px; height:82px; left:2px; top:3px; border:1px solid #292e29; border-radius:9px; background:#101210; transform:rotate(-5deg); }
+    .card-stack::after { left:11px; transform:rotate(5deg); }
+    .card-stack .card { z-index:2; }
+    .card-count { position:absolute; z-index:3; right:-1px; bottom:-2px; min-width:23px; padding:3px 5px; border:1px solid #3c493e; border-radius:10px; background:#0a0d0a; color:#8ea895; font-size:.58rem; }
+    @keyframes dealIn { to { opacity:1; transform:translateY(0) scale(1) rotate(0); } }
+    @keyframes indicatorFlip { from { opacity:0; transform:perspective(300px) rotateY(90deg) scale(.85); } to { opacity:1; transform:perspective(300px) rotateY(0) scale(1); } }
+    @keyframes cardGlint { 0%,62% { transform:translateX(-42%); } 82%,100% { transform:translateX(42%); } }
 
     /* centre */
-    .centre { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); text-align: center; width: 92%; }
+    .centre { position:absolute; z-index:3; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:72%; pointer-events:none; }
     .indicator { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .mnh-label { font-size: 0.66rem; color: #e8b04a; letter-spacing: 1px; text-transform: uppercase; }
+    .trick-caption { min-height:15px; margin-bottom:4px; color:#59615a; font-size:.57rem; letter-spacing:1.4px; text-transform:uppercase; }
     .trick-pile { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; min-height: 62px; align-items: center; }
-    .tp-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .tp-slot { display:flex; flex-direction:column; align-items:center; gap:2px; position:relative; }
+    .tp-slot + .tp-slot::before { content:'›'; position:absolute; left:-7px; top:25px; color:#394039; font-size:.8rem; }
+    .play-order { position:absolute; z-index:4; left:-4px; top:-4px; width:17px; height:17px; display:grid; place-items:center; border:1px solid #344036; border-radius:50%; background:#090d0a; color:#84a18b; font-size:.52rem; }
     .tp-owner { font-size: 0.56rem; color: #556; letter-spacing: 1px; }
     .tp-owner.win { color: #1db954; font-weight: 700; }
     .tp-owner.dead { color: #e05a5a; }
 
     /* controls / banner */
-    .ctl { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); width: 94%; text-align: center; z-index: 5; }
+    .ctl { position:absolute; left:50%; bottom:124px; transform:translateX(-50%); width:94%; text-align:center; z-index:6; }
     .ctl-msg { font-size: 0.74rem; color: #ccc; margin-bottom: 7px; line-height: 1.5; }
     .ctl-msg b { color: #e8b04a; }
     .btn-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
@@ -90,11 +143,15 @@
     .btn.primary:hover { background: rgba(29,185,84,.12); }
     .btn:disabled { opacity: .35; cursor: default; }
 
-    .banner { position: absolute; inset: 0; background: rgba(4,8,4,.88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; z-index: 20; text-align: center; padding: 18px; cursor: pointer; }
+    .banner { position:absolute; inset:0; background:rgba(4,8,4,.9); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; z-index:20; text-align:center; padding:18px; cursor:pointer; }
     .banner .big { color: #1db954; font-size: 1.15rem; font-weight: 700; }
     .banner .sub { color: #888; font-size: 0.72rem; line-height: 1.7; }
     .banner .sub b { color: #e8b04a; }
     .banner .skip { color: #444; font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; }
+    .banner.trick-banner { inset:auto auto 112px 50%; width:min(90%,440px); transform:translateX(-50%); padding:9px 14px; gap:3px; border:1px solid #314134; border-radius:6px; background:linear-gradient(90deg,rgba(7,12,8,.93),rgba(13,20,14,.96),rgba(7,12,8,.93)); box-shadow:0 10px 28px rgba(0,0,0,.55),0 0 14px rgba(29,185,84,.1); }
+    .banner.trick-banner .big { font-size:.79rem; letter-spacing:.08em; }
+    .banner.trick-banner .sub { font-size:.61rem; line-height:1.45; }
+    .banner.trick-banner .skip { font-size:.48rem; }
 
     /* lobby + end overlay */
     .overlay { position: absolute; inset: 0; background: rgba(4,8,4,.94); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 30; text-align: center; padding: 18px; }
@@ -109,6 +166,28 @@
     .log .imp { color: #1db954; }
     .log .warn { color: #e05a5a; }
     .log .gold { color: #e8b04a; }
+
+    @media (max-width:640px) {
+      body { padding:14px 10px 44px; }
+      .panel { padding:10px; }
+      .power-wrap { display:block; }
+      .power-label { display:block; margin:0 0 4px 2px; }
+      .card { width:54px; height:76px; }
+      .card-row { min-height:78px; gap:5px; }
+      .card-stack { height:76px; }
+      .card-stack::before,.card-stack::after { width:54px; height:76px; }
+      .centre { width:82%; top:51%; }
+      .ctl { bottom:116px; }
+      .banner.trick-banner { bottom:108px; }
+      .pos-w .card-row,.pos-e .card-row { transform:scale(.86); transform-origin:center; }
+      .pos-w { transform:translateX(-7%); }
+      .pos-e { transform:translateX(7%); }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      .card,.card.clickable,.card.mnh::after { animation:none!important; transition:none!important; }
+      .card.deal-in { opacity:1; transform:none; }
+    }
   </style>
 </head>
 <body>
@@ -129,7 +208,18 @@
       <div class="sb" id="scoreboard"></div>
     </div>
 
+    <div class="panel power-panel">
+      <div class="power-wrap">
+        <div class="power-label" data-en="card power · strongest → weakest" data-zh="牌力 · 由强到弱">card power · strongest → weakest</div>
+        <div class="power-strip" id="powerStrip" aria-live="polite"></div>
+      </div>
+    </div>
+
     <div class="table-wrap" id="tableWrap">
+      <div class="table-status">
+        <span class="stage-pill" id="stagePill"></span>
+        <span class="stage-pill dealer-pill" id="dealerPill"></span>
+      </div>
       <div id="seatsLayer"></div>
       <div class="centre">
         <div class="indicator">
@@ -137,6 +227,7 @@
           <span id="indicatorCard"></span>
           <span class="mnh-label">→ <span id="manilhaName"></span></span>
         </div>
+        <div class="trick-caption" id="trickCaption"></div>
         <div class="trick-pile" id="trickPile"></div>
       </div>
       <div class="ctl" id="ctl"></div>
@@ -154,7 +245,7 @@
     </div>
   </div>
 
-<script src="/game/truco-engine.js?v=1"></script>
+<script src="/game/truco-engine.js?v=2"></script>
 <script>
 'use strict';
 /* ── i18n ─────────────────────────────────────────────────────────────── */
@@ -176,19 +267,32 @@ try { if (localStorage.getItem('arcade_lang') === 'zh') lang = 'zh'; } catch (e)
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SUIT = TrucoEngine.SUIT_CHARS;
-const SEAT_NAMES = [
+const SOLO_SEAT_NAMES = [
   { en: 'You',   zh: '你' },
-  { en: 'CPU-A', zh: '电脑A' },
-  { en: 'CPU-B', zh: '电脑B' },
-  { en: 'CPU-C', zh: '电脑C' },
+  { en: 'AI-A', zh: '电脑A' },
+  { en: 'AI-B', zh: '电脑B' },
+  { en: 'AI-C', zh: '电脑C' },
 ];
+const TEAM_SEAT_NAMES = [
+  { en: 'Player 1', zh: '玩家1' },
+  { en: 'AI-A', zh: '电脑A' },
+  { en: 'Player 2', zh: '玩家2' },
+  { en: 'AI-B', zh: '电脑B' },
+];
+const NORMAL_POWER = Object.keys(TrucoEngine.STRENGTH).sort((a, b) => TrucoEngine.STRENGTH[b] - TrucoEngine.STRENGTH[a]);
 let g = null;              // engine game
 let uiLog = [];            // {en, zh, cls}
 let lastSeenTrick = null;  // identity of last resolved trick already shown
 let running = false;       // async chain guard
-let roundNo = 0;
+let gameMode = 'solo';
+let humanSeats = new Set([0]);
+let seatNames = SOLO_SEAT_NAMES;
+let dealState = null;      // presentation lock while cards/indicator animate
+let showingTrickResult = false;
 
-function seatName(s) { const n = SEAT_NAMES[s]; return lang === 'zh' ? n.zh : n.en; }
+function seatName(s) { const n = seatNames[s] || { en: 'Seat ' + (s + 1), zh: '座位' + (s + 1) }; return lang === 'zh' ? n.zh : n.en; }
+function teamName(id) { return id === 0 ? t('HUMAN TEAM', '玩家队') : t('AI TEAM', '电脑队'); }
+function isHumanSeat(s) { return humanSeats.has(s); }
 function cardLabel(c) { return c.rank + SUIT[c.suit]; }
 function logLine(en, zh, cls) { uiLog.push({ en, zh, cls: cls || '' }); if (uiLog.length > 120) uiLog.shift(); }
 function logHtml() { return uiLog.slice().reverse().map(l => `<div class="${l.cls}">&gt; ${lang === 'zh' ? l.zh : l.en}</div>`).join(''); }
@@ -201,34 +305,60 @@ function showLobby() {
       <div class="sub">${t(
         'Bid how many tricks you will win — miss and the difference comes off your score. Manilha cards (the rank after the indicator) beat everything. Hit −5 and you are eliminated. Last player standing wins.',
         '报出你要赢的墩数——报错就按差值扣分。王权牌（指示牌点数的下一张）压过一切牌。跌到 −5 分即出局，坚持到最后者胜。')}</div>
+      <button class="btn primary" onclick="startGame(4,'teams')">${t('2 PLAYERS vs 2 AI · TEAM UP', '双人 vs 双电脑 · 组队')}</button>
+      <div class="sub" style="color:#66756a">${t('Shared-screen co-op · Player 1 + Player 2 share one score', '同屏合作 · 玩家1 与玩家2 共用队伍分数')}</div>
+      <div class="sub" style="color:#3d3d3d">── ${t('or play solo', '或单人对战')} ──</div>
       <div class="btn-row">
-        ${[1,2,3].map(n => `<button class="btn primary" onclick="startGame(${n + 1})">${t(`${n} CPU opponent${n>1?'s':''}`, `${n} 个电脑对手`)}</button>`).join('')}
+        ${[1,2,3].map(n => `<button class="btn" onclick="startGame(${n + 1},'solo')">${t(`${n} AI opponent${n>1?'s':''}`, `${n} 个电脑对手`)}</button>`).join('')}
       </div>
-      <div class="sub" style="color:#555">${t('2–4 players · you vs CPU', '2–4 人 · 你对战电脑')}</div>
+      <div class="sub" style="color:#555">${t('2–4 seats · solo or local co-op', '2–4 座 · 单人或本地合作')}</div>
     </div>`;
 }
 
-function startGame(numPlayers) {
-  g = TrucoEngine.newGame(numPlayers);
-  uiLog = []; lastSeenTrick = null; roundNo = 0;
-  logLine('new game — ' + numPlayers + ' players, first dealer drawn at random',
-          '新局——' + numPlayers + ' 名玩家，庄家随机指定', 'imp');
+async function startGame(numPlayers, mode) {
+  gameMode = mode === 'teams' ? 'teams' : 'solo';
+  humanSeats = gameMode === 'teams' ? new Set([0, 2]) : new Set([0]);
+  seatNames = gameMode === 'teams' ? TEAM_SEAT_NAMES : SOLO_SEAT_NAMES;
+  g = TrucoEngine.newGame(numPlayers, undefined, gameMode === 'teams' ? { teams: [0, 1, 0, 1] } : undefined);
+  uiLog = []; lastSeenTrick = null; dealState = null; showingTrickResult = false; running = false;
+  logLine(
+    gameMode === 'teams' ? 'new team game — Player 1 + Player 2 vs AI-A + AI-B' : 'new game — ' + numPlayers + ' players, first dealer drawn at random',
+    gameMode === 'teams' ? '新组队局——玩家1 + 玩家2 对战电脑A + 电脑B' : '新局——' + numPlayers + ' 名玩家，庄家随机指定',
+    'imp');
   $('overlayLayer').innerHTML = '';
-  startRound();
+  await beginRound();
+  chain();
 }
 
-function startRound() {
+async function beginRound() {
   g.startRound();
-  roundNo = g.round;
+  const seats = [];
+  let seat = g.trickLeader;
+  for (let i = 0; i < g.activeSeats().length; i++) { seats.push(seat); seat = g.nextActive(seat); }
+  const total = seats.length * g.handSize;
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const step = reduced ? 24 : Math.max(55, Math.min(210, Math.floor(1800 / Math.max(1, total - 1))));
+  const order = {};
+  for (let card = 0; card < g.handSize; card++) {
+    seats.forEach((s, i) => { order[s + ':' + card] = card * seats.length + i; });
+  }
+  dealState = { order, step, total, indicatorRevealed: false };
+  logLine(`round ${g.round} · dealer ${seatName(g.dealer)} · dealing ${g.handSize} card${g.handSize > 1 ? 's' : ''} each`,
+          `第 ${g.round} 轮 · 庄家 ${seatName(g.dealer)} · 每人发 ${g.handSize} 张`, 'gold');
+  renderAll();
+  await sleep((total - 1) * step + (reduced ? 80 : 520));
+  dealState.indicatorRevealed = true;
   const ind = cardLabel(g.indicator);
-  logLine(`round ${g.round} · ${g.handSize} card${g.handSize > 1 ? 's' : ''} each · indicator ${ind} → manilha ${g.manilha}`,
-          `第 ${g.round} 轮 · 每人 ${g.handSize} 张 · 指示牌 ${ind} → 王权 ${g.manilha}`, 'gold');
+  logLine(`indicator ${ind} → ${g.manilha} is manilha`, `指示牌 ${ind} → ${g.manilha} 为王权牌`, 'gold');
   if (g.isBlind()) {
     logLine('blind hand: nobody sees their own card — others\' cards are face up',
             '暗牌局：没人能看到自己的牌——其他人的牌明置', 'warn');
   }
   renderAll();
-  chain();
+  await sleep(reduced ? 120 : 900);
+  dealState = null;
+  renderAll();
+  await sleep(reduced ? 40 : 350);
 }
 
 /* ── main async chain ─────────────────────────────────────────────────── */
@@ -240,13 +370,15 @@ async function chain() {
 
 async function drive() {
   for (;;) {
+    if (dealState) return;
     if (g.phase === 'bidding') {
       renderAll();
-      if (g.turn === 0) return;                       // wait for human input
-      await sleep(650);
-      const b = g.cpuBid(g.turn);
-      g.setBid(g.turn, b);
-      logLine(`${seatName(g.turn)} bids ${b}`, `${seatName(g.turn)} 叫 ${b}`);
+      if (isHumanSeat(g.turn)) return;                // wait for either local human
+      const seat = g.turn;
+      await sleep(950);
+      const b = g.cpuBid(seat);
+      g.setBid(seat, b);
+      logLine(`${seatName(seat)} bids ${b}`, `${seatName(seat)} 叫 ${b}`);
       continue;
     }
     if (g.phase === 'reveal') {
@@ -262,11 +394,12 @@ async function drive() {
     }
     if (g.phase === 'playing') {
       renderAll();
-      if (g.turn === 0) return;                       // wait for human card click
-      await sleep(600);
-      const card = g.cpuChooseCard(g.turn);
-      logLine(`${seatName(g.turn)} plays ${cardLabel(card)}`, `${seatName(g.turn)} 打出 ${cardLabel(card)}`);
-      g.playCard(g.turn, card);
+      if (isHumanSeat(g.turn)) return;                // wait for either local human
+      const seat = g.turn;
+      await sleep(900);
+      const card = g.cpuChooseCard(seat);
+      logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`);
+      g.playCard(seat, card);
       renderAll();
       await trickBannerIfNeeded();
       continue;
@@ -275,7 +408,7 @@ async function drive() {
       const res = g.finishRound();
       renderAll();
       await roundBanner(res);
-      if (g.phase === 'lobby') { startRound(); continue; }   // stay in this loop
+      if (g.phase === 'lobby') { await beginRound(); continue; }
       continue;                                        // 'over'
     }
     if (g.phase === 'over') { showEnd(); renderAll(); return; }
@@ -283,10 +416,11 @@ async function drive() {
   }
 }
 
-/* 5-second table pause after each completed trick (per the house rules). */
+/* Keep the completed cards visible; the result sits below instead of covering them. */
 async function trickBannerIfNeeded() {
   if (!g.lastTrick || g.lastTrick === lastSeenTrick) return;
   lastSeenTrick = g.lastTrick;
+  showingTrickResult = true;
   renderAll();
   const lt = g.lastTrick;
   const winSeat = lt.winner;
@@ -299,49 +433,63 @@ async function trickBannerIfNeeded() {
     dead ? t('DEAD TRICK', '死墩')
          : t(`${seatName(winSeat)} takes the trick`, `${seatName(winSeat)} 赢下这一墩`),
     dead ? t('nobody wins — those cards are gone', '无人得墩——牌全部作废')
-         : t(`${winSeat === 0 ? 'you lead' : seatName(winSeat) + ' leads'} the next trick`,
-             `${winSeat === 0 ? '你' : seatName(winSeat)} 先出下一墩`),
-    5000);
-  await sleepSkippable(5000);
+         : t(`${isHumanSeat(winSeat) ? seatName(winSeat) : seatName(winSeat)} leads the next trick`,
+             `${seatName(winSeat)} 先出下一墩`),
+    'trick');
+  await sleepSkippable(4200);
   hideBanner();
+  showingTrickResult = false;
+  renderAll();
 }
 
 async function roundBanner(res) {
   const lines = [];
-  for (const s of g.activeSeats()) {
-    const p = g.players[s];
-    lines.push(`${seatName(s)}: ${t('bid', '叫')} ${p.bid ?? 0} · ${t('won', '赢')} ${p.tricks} · ${res.penalties[s] ? `−${res.penalties[s]}` : '±0'} → <b>${p.score}</b>`);
+  if (g.teamMode) {
+    for (const key of Object.keys(res.teamBids)) {
+      const id = Number(key), team = g.teams[id];
+      lines.push(`${teamName(id)}: ${t('team bid', '队伍叫牌')} ${res.teamBids[id]} · ${t('won', '赢')} ${res.teamTricks[id]} · ${res.teamPenalties[id] ? `−${res.teamPenalties[id]}` : '±0'} → <b>${team.score}</b>`);
+    }
+    const eliminated = res.eliminatedTeams.map(teamName);
+    if (eliminated.length) logLine(`eliminated: ${eliminated.join(', ')}`, `出局：${eliminated.join('、')}`, 'warn');
+  } else {
+    for (const key of Object.keys(res.penalties)) {
+      const s = Number(key), p = g.players[s];
+      lines.push(`${seatName(s)}: ${t('bid', '叫')} ${p.bid ?? 0} · ${t('won', '赢')} ${p.tricks} · ${res.penalties[s] ? `−${res.penalties[s]}` : '±0'} → <b>${p.score}</b>`);
+    }
+    const eliminated = res.eliminated.map(seatName);
+    if (eliminated.length) logLine(`eliminated: ${eliminated.join(', ')}`, `出局：${eliminated.join('、')}`, 'warn');
   }
-  const elimNames = res.eliminated.map(seatName);
-  if (elimNames.length) {
-    logLine(`eliminated: ${elimNames.join(', ')}`, `出局：${elimNames.join('、')}`, 'warn');
-  }
-  logLine(t('scores after round ' + g.round, `第 ${g.round} 轮后计分`),
-          `第 ${g.round} 轮后计分`, '');
-  showBanner(t('ROUND ' + g.round + ' SCORED', '第 ' + g.round + ' 轮结算'), lines.join('<br>'), 3200);
-  await sleepSkippable(3200);
+  logLine('scores after round ' + g.round, `第 ${g.round} 轮后计分`, '');
+  showBanner(t('ROUND ' + g.round + ' SCORED', '第 ' + g.round + ' 轮结算'), lines.join('<br>'));
+  await sleepSkippable(5200);
   hideBanner();
 }
 
-function showBanner(big, sub, ms) {
+function showBanner(big, sub, kind) {
   $('overlayLayer').innerHTML = `
-    <div class="banner" onclick="skipWait()">
+    <div class="banner ${kind === 'trick' ? 'trick-banner' : ''}" onclick="skipWait()">
       <div class="big">${big}</div>
       <div class="sub">${sub}</div>
       <div class="skip">${t('click to skip', '点击跳过')}</div>
     </div>`;
 }
-let skipRequested = false;
-function skipWait() { skipRequested = true; }
-/* banner wait that a click can cut short */
+let skipResolver = null;
+function skipWait() { if (skipResolver) skipResolver(); }
+/* Banner wait bound to the banner that created it, so a last-millisecond click
+   cannot accidentally skip the following round summary too. */
 function sleepSkippable(ms) {
   return new Promise(resolve => {
-    const t0 = Date.now();
-    const iv = setInterval(() => {
-      if (skipRequested || Date.now() - t0 >= ms) {
-        clearInterval(iv); skipRequested = false; hideBanner(); resolve();
-      }
-    }, 100);
+    let finished = false;
+    const timer = setTimeout(finish, ms);
+    function finish() {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      if (skipResolver === finish) skipResolver = null;
+      hideBanner();
+      resolve();
+    }
+    skipResolver = finish;
   });
 }
 function hideBanner() { const el = $('overlayLayer').querySelector('.banner'); if (el) el.remove(); }
@@ -349,23 +497,99 @@ function hideBanner() { const el = $('overlayLayer').querySelector('.banner'); i
 /* ── end screen ───────────────────────────────────────────────────────── */
 function showEnd() {
   const draw = g.winner === 'draw';
-  const title = draw ? t('DRAW — everyone busted together', '平局——所有人一起爆掉')
-                     : t(`${seatName(g.winner)} wins the table`, `${seatName(g.winner)} 拿下整桌`);
+  const title = g.teamMode
+    ? (draw ? t('DRAW — both teams busted', '平局——两队同时出局') : t(`${teamName(g.winnerTeam)} wins`, `${teamName(g.winnerTeam)} 胜出`))
+    : (draw ? t('DRAW — everyone busted together', '平局——所有人一起爆掉') : t(`${seatName(g.winner)} wins the table`, `${seatName(g.winner)} 拿下整桌`));
+  const scores = g.teamMode
+    ? g.teams.map(team => `${teamName(team.id)}: ${team.score}${team.eliminated ? ' · ' + t('eliminated', '已出局') : ''}`).join('<br>')
+    : g.players.map((p, s) => `${seatName(s)}: ${p.score}${p.eliminated ? ' · ' + t('eliminated', '已出局') : ''}`).join('<br>');
   $('overlayLayer').innerHTML = `
     <div class="overlay">
       <div class="big">${title}</div>
-      <div class="sub">${g.players.map((p, s) => `${seatName(s)}: ${p.score}${p.eliminated ? ' · ' + t('eliminated', '已出局') : ''}`).join('<br>')}</div>
+      <div class="sub">${scores}</div>
       <div class="btn-row"><button class="btn primary" onclick="showLobby()">${t('› new game', '› 新局')}</button></div>
     </div>`;
 }
 
 /* ── rendering ────────────────────────────────────────────────────────── */
-function renderAll() { renderScoreboard(); renderSeats(); renderCentre(); renderCtl(); renderRstrip(); renderLog(); }
+function renderAll() { renderPowerGuide(); renderTableStatus(); renderScoreboard(); renderSeats(); renderCentre(); renderCtl(); renderRstrip(); renderLog(); }
+
+function renderPowerGuide() {
+  const el = $('powerStrip');
+  if (!el) return;
+  const current = g && (!dealState || dealState.indicatorRevealed) ? g.manilha : null;
+  const tokens = [];
+  if (current) {
+    for (const suit of ['C', 'H', 'S', 'D']) {
+      const red = suit === 'H' || suit === 'D';
+      tokens.push(`<span class="power-token manilha ${red ? 'red' : ''}">★ ${current}${SUIT[suit]}</span>`);
+    }
+  } else {
+    tokens.push(`<span class="power-token manilha">★ ${t('MANILHA', '王权')}</span>`);
+    tokens.push('<span class="power-note">♣ › ♥ › ♠ › ♦</span>');
+  }
+  for (const rank of NORMAL_POWER.filter(rank => rank !== current)) tokens.push(`<span class="power-token">${rank}</span>`);
+  el.innerHTML = tokens.map((token, i) => (i ? '<span class="power-arrow">›</span>' : '') + token).join('');
+  el.setAttribute('aria-label', current
+    ? t(`Strongest to weakest: manilha ${current}, clubs, hearts, spades, diamonds, then ${NORMAL_POWER.filter(r => r !== current).join(', ')}`,
+        `由强到弱：王权 ${current}，梅花、红心、黑桃、方块，然后 ${NORMAL_POWER.filter(r => r !== current).join('、')}`)
+    : t('Manilha is strongest; normal cards follow from 3 down to 4', '王权牌最强；普通牌从 3 到 4 依次减弱'));
+}
+
+function completedTricks() {
+  if (!g) return 0;
+  const seats = g.activeSeats();
+  const remaining = seats.length ? Math.max(...seats.map(s => g.players[s].hand.length)) : 0;
+  return Math.max(0, g.handSize - remaining);
+}
+
+function renderTableStatus() {
+  const stage = $('stagePill'), dealer = $('dealerPill');
+  if (!stage || !dealer) return;
+  if (!g) { stage.textContent = t('waiting for game', '等待开局'); dealer.textContent = ''; return; }
+  stage.classList.toggle('dealing', !!dealState);
+  if (dealState) {
+    stage.textContent = dealState.indicatorRevealed
+      ? t(`ROUND ${g.round} · INDICATOR REVEAL`, `第 ${g.round} 轮 · 翻指示牌`)
+      : t(`ROUND ${g.round} · DEALING ${g.handSize} EACH`, `第 ${g.round} 轮 · 每人发 ${g.handSize} 张`);
+  } else if (g.phase === 'bidding') {
+    const done = g.activeSeats().filter(s => g.players[s].bid !== null).length;
+    stage.textContent = t(`ROUND ${g.round} · BIDDING ${done + 1}/${g.activeSeats().length}`, `第 ${g.round} 轮 · 叫牌 ${done + 1}/${g.activeSeats().length}`);
+  } else if (showingTrickResult) {
+    const trick = Math.max(1, completedTricks());
+    stage.textContent = t(`ROUND ${g.round} · TRICK ${trick} RESULT`, `第 ${g.round} 轮 · 第 ${trick} 墩结果`);
+  } else if (g.phase === 'playing' || g.phase === 'reveal') {
+    const trick = Math.min(g.handSize, completedTricks() + (g.players.some(p => p.hand.length) ? 1 : 0));
+    stage.textContent = t(`ROUND ${g.round} · TRICK ${trick}/${g.handSize} · PLAY ${g.trick.length}/${g.activeSeats().length}`,
+                          `第 ${g.round} 轮 · 第 ${trick}/${g.handSize} 墩 · 出牌 ${g.trick.length}/${g.activeSeats().length}`);
+  } else if (g.phase === 'roundEnd') {
+    stage.textContent = t(`ROUND ${g.round} · SCORING`, `第 ${g.round} 轮 · 结算`);
+  } else if (g.phase === 'over') {
+    stage.textContent = t('GAME OVER', '游戏结束');
+  } else {
+    stage.textContent = t(`ROUND ${g.round}`, `第 ${g.round} 轮`);
+  }
+  dealer.textContent = t(`DEALER · ${seatName(g.dealer)}`, `庄家 · ${seatName(g.dealer)}`);
+}
 
 function renderScoreboard() {
   if (!g) return;
+  if (g.teamMode) {
+    $('scoreboard').innerHTML = g.teams.map(team => {
+      const turn = !dealState && (g.phase === 'bidding' || g.phase === 'playing' || g.phase === 'reveal') && team.seats.includes(g.turn);
+      const members = team.seats.map(s => {
+        const p = g.players[s];
+        return `${seatName(s)} · ${t('bid', '叫')} <span class="bidn">${p.bid ?? '–'}</span> · ${t('tricks', '墩')} ${p.tricks}`;
+      }).join('<br>');
+      return `<div class="seat-chip team-chip ${team.id === 1 ? 'cpu-team' : ''} ${turn ? 'active-turn' : ''} ${team.eliminated ? 'out' : ''}">
+        <div class="team-line"><span class="team-name">${teamName(team.id)}</span><span class="sc">${team.score}</span></div>
+        <div class="team-members">${members}</div>
+      </div>`;
+    }).join('');
+    return;
+  }
   $('scoreboard').innerHTML = g.players.map((p, s) => {
-    const turn = (g.phase === 'bidding' || g.phase === 'playing' || g.phase === 'reveal') && g.turn === s;
+    const turn = !dealState && (g.phase === 'bidding' || g.phase === 'playing' || g.phase === 'reveal') && g.turn === s;
     return `<div class="seat-chip ${turn ? 'active-turn' : ''} ${p.eliminated ? 'out' : ''}">
       <div><span class="nm">${seatName(s)}</span>${p.eliminated ? ' ✕' : ''}</div>
       <div class="sc">${p.score}</div>
@@ -385,11 +609,24 @@ function cardHtml(c, opts) {
   const red = c && (c.suit === 'H' || c.suit === 'D');
   const cls = ['card', opts.tiny ? 'tiny' : '', opts.back ? 'back' : (red ? 'red' : 'blk'),
                c && g && !opts.back && c.rank === g.manilha ? 'mnh' : '',
-               opts.clickable ? 'clickable' : '', opts.played ? 'played' : ''].filter(Boolean).join(' ');
-  if (opts.back || !c) return `<div class="${cls}"></div>`;
-  return `<div class="${cls}" ${opts.idx !== undefined ? `data-idx="${opts.idx}"` : ''}>
-    <div class="rk">${c.rank}</div><div class="st">${SUIT[c.suit]}</div>
-  </div>`;
+               opts.clickable ? 'clickable' : '', opts.played ? 'played' : '',
+               opts.dealOrder !== undefined ? 'deal-in' : '', opts.flip ? 'indicator-flip' : ''].filter(Boolean).join(' ');
+  const style = [opts.dealOrder !== undefined && dealState ? `--deal-delay:${opts.dealOrder * dealState.step}ms` : '', opts.tilt !== undefined ? `--play-tilt:${opts.tilt}deg` : ''].filter(Boolean).join(';');
+  const attrs = `${opts.idx !== undefined ? ` data-idx="${opts.idx}"` : ''}${opts.seat !== undefined ? ` data-seat="${opts.seat}"` : ''}${style ? ` style="${style}"` : ''}`;
+  if (opts.back || !c) return `<div class="${cls}" role="img" aria-label="${t('face-down card', '背面向上的牌')}"${attrs}></div>`;
+  const label = `${cardLabel(c)}${g && c.rank === g.manilha ? ' · ' + t('manilha', '王权牌') : ''}`;
+  const tag = opts.clickable ? 'button' : 'div';
+  return `<${tag}${opts.clickable ? ' type="button"' : ' role="img"'} class="${cls}" aria-label="${label}"${attrs}>
+    <span class="card-corner"><b>${c.rank}</b><i>${SUIT[c.suit]}</i></span>
+    <span class="card-suit">${SUIT[c.suit]}</span>
+    <span class="card-corner br"><b>${c.rank}</b><i>${SUIT[c.suit]}</i></span>
+    <span class="manilha-mark" aria-hidden="true">★</span>
+  </${tag}>`;
+}
+
+function hiddenStack(count) {
+  if (count <= 1) return count ? cardHtml(null, { back: true }) : '';
+  return `<div class="card-stack">${cardHtml(null, { back: true })}<span class="card-count">×${count}</span></div>`;
 }
 
 function renderSeats() {
@@ -397,67 +634,80 @@ function renderSeats() {
   const n = g.numPlayers;
   const blind = g.isBlind() && (g.phase === 'bidding' || g.phase === 'reveal');
   $('seatsLayer').innerHTML = g.players.map((p, s) => {
-    const isHuman = s === 0;
+    const isHuman = isHumanSeat(s);
     let cards;
     if (g.phase === 'bidding' || g.phase === 'reveal' || g.phase === 'playing') {
-      if (isHuman && !blind && g.phase !== 'reveal') {
-        const canPlay = g.phase === 'playing' && g.turn === 0;
-        cards = p.hand.map((c, i) => cardHtml(c, { idx: i, clickable: canPlay })).join('');
+      if (dealState) {
+        cards = p.hand.map((c, i) => cardHtml(null, { back: true, dealOrder: dealState.order[s + ':' + i] })).join('');
+      } else if (isHuman && !blind && g.phase !== 'reveal') {
+        const canPlay = g.phase === 'playing' && g.turn === s;
+        cards = p.hand.map((c, i) => cardHtml(c, { idx: i, seat: s, clickable: canPlay })).join('');
       } else if (isHuman && blind) {
-        cards = p.hand.map(() => cardHtml(null, { back: true })).join('');   // your own card is hidden
+        cards = p.hand.map(() => cardHtml(null, { back: true })).join('');
       } else if (blind && g.phase !== 'playing') {
-        cards = p.hand.map(c => cardHtml(c)).join('');                        // others' cards face-up
+        cards = p.hand.map(c => cardHtml(c)).join('');
       } else {
-        cards = p.hand.map(() => cardHtml(null, { back: true })).join('');    // CPU hand hidden
+        cards = hiddenStack(p.hand.length);
       }
     } else {
       cards = '';
     }
-    const turn = (g.phase === 'bidding' || g.phase === 'playing' || g.phase === 'reveal') && g.turn === s;
+    const turn = !dealState && (g.phase === 'bidding' || g.phase === 'playing' || g.phase === 'reveal') && g.turn === s;
     const nm = isHuman ? `<span class="you">${seatName(s)}</span>` : seatName(s);
+    const teamTag = g.teamMode ? ` <span class="team-tag">${teamName(g.teamBySeat[s])}</span>` : '';
     const tag = p.eliminated ? ' ✕' : '';
     return `<div class="seat-zone ${posClass(s, n)}">
-      <div class="seat-name">${nm}${tag}${turn ? ' ◂' : ''}</div>
-      <div class="card-row">${cards || '&nbsp;'}</div>
+      <div class="seat-name">${nm}${teamTag}${tag}${turn ? ' ◂' : ''}</div>
+      <div class="card-row ${isHuman ? 'human-hand' : ''} ${dealState && !isHuman ? 'deal-row' : ''}">${cards || '&nbsp;'}</div>
     </div>`;
   }).join('');
 
-  if (g.phase === 'playing' && g.turn === 0) {
+  if (!dealState && g.phase === 'playing' && isHumanSeat(g.turn)) {
     $('seatsLayer').querySelectorAll('.card.clickable').forEach(el => {
-      el.addEventListener('click', () => humanPlay(Number(el.dataset.idx)));
+      el.addEventListener('click', () => humanPlay(Number(el.dataset.seat), Number(el.dataset.idx)));
     });
   }
 }
 
 function renderCentre() {
-  if (!g) { $('indicatorCard').innerHTML = ''; $('manilhaName').textContent = ''; $('trickPile').innerHTML = ''; return; }
-  $('indicatorCard').innerHTML = cardHtml(g.indicator, { tiny: true });
-  $('manilhaName').textContent = g.manilha;
+  if (!g) { $('indicatorCard').innerHTML = ''; $('manilhaName').textContent = ''; $('trickCaption').textContent = ''; $('trickPile').innerHTML = ''; return; }
+  const indicatorVisible = !dealState || dealState.indicatorRevealed;
+  $('indicatorCard').innerHTML = indicatorVisible ? cardHtml(g.indicator, { tiny: true, flip: !!dealState }) : cardHtml(null, { tiny: true, back: true });
+  $('manilhaName').textContent = indicatorVisible ? g.manilha : '?';
   const trickShown = (g.trick && g.trick.length) ? g.trick : (g.lastTrick ? g.lastTrick.plays : []);
   const winSeat = (!g.trick || !g.trick.length) && g.lastTrick ? g.lastTrick.winner : null;
-  $('trickPile').innerHTML = trickShown.map(pl => {
+  const trickNo = g.trick.length ? completedTricks() + 1 : completedTricks();
+  $('trickCaption').textContent = trickShown.length
+    ? t(`TRICK ${Math.max(1, trickNo)} · PLAY ORDER 1 → ${trickShown.length}`, `第 ${Math.max(1, trickNo)} 墩 · 出牌顺序 1 → ${trickShown.length}`)
+    : (dealState ? t('cards travel clockwise from the leader', '从首出者开始顺时针发牌') : '');
+  $('trickPile').innerHTML = trickShown.map((pl, i) => {
     const own = winSeat === null ? '' : (winSeat === -1 ? 'dead' : (pl.player === winSeat ? 'win' : ''));
-    return `<div class="tp-slot">${cardHtml(pl.card, { tiny: true, played: true })}<div class="tp-owner ${own}">${seatName(pl.player)}</div></div>`;
+    const tilts = [-4, 3, -2, 5, -5, 2, -3, 4];
+    return `<div class="tp-slot"><span class="play-order">${i + 1}</span>${cardHtml(pl.card, { tiny: true, played: true, tilt: tilts[i % tilts.length] })}<div class="tp-owner ${own}">${seatName(pl.player)}</div></div>`;
   }).join('') || `<div style="color:#333;font-size:0.66rem;letter-spacing:2px">${t('— table empty —', '— 桌面无牌 —')}</div>`;
 }
 
 function renderCtl() {
   const el = $('ctl');
   if (!g) { el.innerHTML = ''; return; }
-  if (g.phase === 'bidding' && g.turn === 0) {
+  if (dealState) {
+    el.innerHTML = `<div class="ctl-msg"><b>${dealState.indicatorRevealed ? t('INDICATOR REVEAL', '翻开指示牌') : t('DEALING', '正在发牌')}</b> · ${t('round', '第')} ${g.round} · ${g.handSize} ${t('card(s) each', '张 / 人')}</div>`;
+  } else if (g.phase === 'bidding' && isHumanSeat(g.turn)) {
     const blind = g.isBlind();
     const msg = blind
-      ? t('<b>BLIND HAND</b> — you cannot see your own card. Bid 0 or 1.', '<b>暗牌局</b>——你看不到自己的牌。只能叫 0 或 1。')
-      : t('your bid — how many tricks will you win?', '轮到你叫牌——你要赢几墩？');
+      ? t(`<b>BLIND HAND</b> — ${seatName(g.turn)}, bid 0 or 1 without seeing your card.`, `<b>暗牌局</b>——${seatName(g.turn)} 看不到自己的牌，叫 0 或 1。`)
+      : t(`${seatName(g.turn)}'s bid — how many tricks will you win?`, `轮到 ${seatName(g.turn)} 叫牌——要赢几墩？`);
     let btns = '';
-    for (let b = 0; b <= g.handSize; b++) btns += `<button class="btn ${b === Math.floor(g.handSize / 2) ? 'primary' : ''}" onclick="humanBid(${b})">${b}</button>`;
+    for (let b = 0; b <= g.handSize; b++) btns += `<button class="btn ${b === Math.floor(g.handSize / 2) ? 'primary' : ''}" onclick="humanBid(${g.turn},${b})">${b}</button>`;
     el.innerHTML = `<div class="ctl-msg">${msg}</div><div class="btn-row">${btns}</div>`;
-  } else if (g.phase === 'playing' && g.turn === 0) {
-    el.innerHTML = `<div class="ctl-msg">${t('your play — click a card', '轮到你出牌——点击一张牌')}</div>`;
+  } else if (g.phase === 'playing' && isHumanSeat(g.turn)) {
+    el.innerHTML = `<div class="ctl-msg">${t(`${seatName(g.turn)}'s play — choose a card`, `轮到 ${seatName(g.turn)} 出牌——选一张牌`)}</div>`;
   } else if (g.phase === 'reveal') {
     el.innerHTML = `<div class="ctl-msg">${t('blind reveal — cards play themselves, one at a time…', '暗牌揭示——牌自动逐张翻开…')}</div>`;
   } else if (g.phase === 'bidding') {
     el.innerHTML = `<div class="ctl-msg">${t('waiting: ', '等待：')}${seatName(g.turn)} ${t('is thinking…', '思考中…')}</div>`;
+  } else if (g.phase === 'playing') {
+    el.innerHTML = `<div class="ctl-msg">${seatName(g.turn)} ${t('is choosing a card…', '正在选牌…')}</div>`;
   } else {
     el.innerHTML = '';
   }
@@ -465,29 +715,33 @@ function renderCtl() {
 
 function renderRstrip() {
   if (!g) { $('rstrip').innerHTML = ''; return; }
-  $('rstrip').innerHTML = g.history.slice(-6).reverse().map(h =>
-    `<div class="rseg"><b>R${h.round}</b> · ${h.handSize}🂠 · ${cardLabel(h.indicator)}→${h.manilha} · ${h.scores.map((v, s) => `${seatName(s).slice(0, 2)}${v}`).join(' ')}</div>`
-  ).join('') || `<div style="color:#444">${t('no completed rounds yet', '还没有完成的回合')}</div>`;
+  $('rstrip').innerHTML = g.history.slice(-6).reverse().map(h => {
+    const scores = g.teamMode && h.teamScores
+      ? h.teamScores.map((v, id) => `${teamName(id)} ${v}`).join(' · ')
+      : h.scores.map((v, s) => `${seatName(s).slice(0, 2)}${v}`).join(' ');
+    return `<div class="rseg"><b>R${h.round}</b> · ${h.handSize}🂠 · ${cardLabel(h.indicator)}→${h.manilha} · ${scores}</div>`;
+  }).join('') || `<div style="color:#444">${t('no completed rounds yet', '还没有完成的回合')}</div>`;
 }
 
 function renderLog() { $('log').innerHTML = logHtml(); }
 
 /* ── human input ──────────────────────────────────────────────────────── */
-function humanBid(b) {
-  if (!g || g.phase !== 'bidding' || g.turn !== 0) return;
-  g.setBid(0, b);
-  logLine(`you bid ${b}`, `你叫 ${b}`, 'gold');
+function humanBid(seat, b) {
+  if (!g || dealState || g.phase !== 'bidding' || g.turn !== seat || !isHumanSeat(seat)) return;
+  g.setBid(seat, b);
+  logLine(`${seatName(seat)} bids ${b}`, `${seatName(seat)} 叫 ${b}`, 'gold');
   renderAll();
   chain();
 }
 
-function humanPlay(idx) {
-  if (!g || g.phase !== 'playing' || g.turn !== 0) return;
-  const card = g.players[0].hand[idx];
+async function humanPlay(seat, idx) {
+  if (!g || dealState || g.phase !== 'playing' || g.turn !== seat || !isHumanSeat(seat)) return;
+  const card = g.players[seat].hand[idx];
   if (!card) return;
-  logLine(`you play ${cardLabel(card)}`, `你打出 ${cardLabel(card)}`, 'gold');
-  g.playCard(0, card);
+  logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`, 'gold');
+  g.playCard(seat, card);
   renderAll();
+  await trickBannerIfNeeded();
   chain();
 }
 

@@ -96,11 +96,11 @@ function makeSeeded(seed) {
   };
 }
 
-function driveGame(seed, numPlayers, bids) {
+function driveGame(seed, numPlayers, bids, options) {
   /* Deterministic driver: bids[i] is either a number (every round) or a
      function(round, seat) → number. CPU plays cards automatically. */
   const rng = makeSeeded(seed);
-  const g = E.newGame(numPlayers, rng);
+  const g = E.newGame(numPlayers, rng, options);
   g.startRound();
   let bidIdx = 0;
   while (g.phase !== 'over') {
@@ -239,6 +239,91 @@ test('cpuBid is always legal (0..handSize) across many deals', () => {
       const b = g.cpuBid(g.turn);
       assert.ok(Number.isInteger(b) && b >= 0 && b <= g.handSize, `illegal bid ${b}`);
       g.setBid(g.turn, b);
+    }
+  }
+});
+
+/* ── partnership mode ────────────────────────────────────────────────── */
+
+test('partnership mode maps opposite seats and validates complete teams', () => {
+  const g = E.newGame(4, makeSeeded(23), { teams: [0, 1, 0, 1] });
+  assert.equal(g.teamMode, true);
+  assert.deepEqual(g.teamBySeat, [0, 1, 0, 1]);
+  assert.deepEqual(g.teams.map(team => team.seats), [[0, 2], [1, 3]]);
+  assert.equal(g.sameTeam(0, 2), true);
+  assert.equal(g.sameTeam(0, 1), false);
+  assert.throws(() => E.newGame(4, makeSeeded(1), { teams: [0, 1, 0] }), /assign every player/);
+  assert.throws(() => E.newGame(4, makeSeeded(1), { teams: [0, 1, 2, 2] }), /at least two players/);
+});
+
+test('partnership scoring pools bids and tricks once per team', () => {
+  const g = E.newGame(4, makeSeeded(29), { teams: [0, 1, 0, 1] });
+  g.startRound();
+  [1, 0, 1, 1].forEach((bid, seat) => { g.players[seat].bid = bid; });
+  [2, 0, 0, 0].forEach((tricks, seat) => { g.players[seat].tricks = tricks; });
+  g.phase = 'roundEnd';
+  const res = g.finishRound();
+  assert.deepEqual(res.teamBids, { 0: 2, 1: 1 });
+  assert.deepEqual(res.teamTricks, { 0: 2, 1: 0 });
+  assert.deepEqual(res.teamPenalties, { 0: 0, 1: 1 });
+  assert.deepEqual(g.teams.map(team => team.score), [0, -1]);
+  assert.deepEqual(g.players.map(player => player.score), [0, -1, 0, -1]);
+  assert.equal(g.phase, 'lobby');
+});
+
+test('a partnership is eliminated and wins atomically', () => {
+  const g = E.newGame(4, makeSeeded(31), { teams: [0, 1, 0, 1] });
+  g.startRound();
+  g.teams[0].score = -4;
+  [0, 0, 0, 0].forEach((bid, seat) => { g.players[seat].bid = bid; });
+  g.players[0].tricks = 1;
+  g.phase = 'roundEnd';
+  const res = g.finishRound();
+  assert.deepEqual(res.eliminatedTeams, [0]);
+  assert.equal(g.players[0].eliminated, true);
+  assert.equal(g.players[2].eliminated, true);
+  assert.equal(g.players[1].eliminated, false);
+  assert.equal(g.players[3].eliminated, false);
+  assert.equal(g.winnerTeam, 1);
+  assert.equal(g.winner, 'team:1');
+  assert.equal(g.phase, 'over');
+});
+
+test('both partnerships busting in the same round is a draw', () => {
+  const g = E.newGame(4, makeSeeded(37), { teams: [0, 1, 0, 1] });
+  g.startRound();
+  g.teams[0].score = -4;
+  g.teams[1].score = -4;
+  for (const player of g.players) { player.bid = 0; player.tricks = 1; }
+  g.phase = 'roundEnd';
+  g.finishRound();
+  assert.equal(g.winnerTeam, 'draw');
+  assert.equal(g.winner, 'draw');
+  assert.ok(g.players.every(player => player.eliminated));
+});
+
+test('team CPU preserves a partner winner instead of wasting or tying a card', () => {
+  const g = E.newGame(4, makeSeeded(41), { teams: [0, 1, 0, 1] });
+  g.manilha = 'Q';
+  g.trick = [
+    { player: 1, card: { rank: '3', suit: 'C' } },
+    { player: 2, card: { rank: '5', suit: 'S' } },
+  ];
+  g.players[3].hand = [
+    { rank: '3', suit: 'H' },
+    { rank: '4', suit: 'D' },
+  ];
+  assert.deepEqual(g.cpuChooseCard(3), { rank: '4', suit: 'D' });
+});
+
+test('partnership game soak completes with one team or a draw', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const g = driveGame(seed, 4, 0, { teams: [0, 1, 0, 1] });
+    assert.equal(g.phase, 'over');
+    assert.ok(g.winnerTeam === 0 || g.winnerTeam === 1 || g.winnerTeam === 'draw');
+    if (g.winnerTeam !== 'draw') {
+      assert.equal(g.teams[g.winnerTeam].eliminated, false);
+      assert.equal(g.teams.filter(team => team.eliminated).length, 1);
     }
   }
 });

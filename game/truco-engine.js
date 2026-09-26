@@ -9,6 +9,7 @@
      (documented house rule: the player who led the dead trick leads the next one)
    · bidding: each active player declares 0..handSize tricks; penalty = |bid − tricks|
    · score ≤ −5 → eliminated; game over when one active player remains
+     (optional partnership mode pools bids, tricks, score, and elimination by team)
    · hand size starts at 1, +1 per round up to floor(39 / activePlayers), then −1 back
      to 1, and up again — forever. Blind rule: hand size 1 → nobody sees their own
      card (everyone sees the others'), and cards auto-play in turn order after bidding.
@@ -84,17 +85,43 @@
 
   function cardId(card) { return card.rank + card.suit; }
 
+  function normalizeTeams(numPlayers, teams) {
+    if (teams == null) return null;
+    if (!Array.isArray(teams) || teams.length !== numPlayers) {
+      throw new Error('truco: teams must assign every player');
+    }
+    const ids = [];
+    for (const id of teams) {
+      if (!Number.isInteger(id) || id < 0) throw new Error('truco: invalid team id');
+      if (!ids.includes(id)) ids.push(id);
+    }
+    if (ids.length < 2) throw new Error('truco: at least two teams required');
+    const compact = teams.map(id => ids.indexOf(id));
+    for (let id = 0; id < ids.length; id++) {
+      if (compact.filter(t => t === id).length < 2) {
+        throw new Error('truco: partnership teams need at least two players');
+      }
+    }
+    return compact;
+  }
+
   /* ── Game state machine ─────────────────────────────────────────────── */
 
-  function newGame(numPlayers, rng) {
+  function newGame(numPlayers, rng, options) {
     if (!Number.isInteger(numPlayers) || numPlayers < 2 || numPlayers > 8) {
       throw new Error('truco: 2–8 players');
     }
     const rand = rng || Math.random;
+    const opts = options || {};
+    const teamBySeat = normalizeTeams(numPlayers, opts.teams);
+    const teamMode = !!teamBySeat;
 
     const game = {
       numPlayers,
-      players: [],            // {score, eliminated, hand:[], bid, tricks}
+      teamMode,
+      teamBySeat,
+      teams: [],              // {id, seats:[], score, eliminated}
+      players: [],            // {score, eliminated, team, hand:[], bid, tricks}
       dealer: -1,
       round: 0,
       handSize: 1,
@@ -108,11 +135,19 @@
       trickLeader: -1,        // seat leading the current trick
       lastTrick: null,        // {winner, tie, plays:[...]} after each trick resolves
       winner: null,           // seat index, or 'draw' if everyone busts together
+      winnerTeam: null,       // team index in partnership mode, or 'draw'
       history: [],
       log: [],
     };
     for (let i = 0; i < numPlayers; i++) {
-      game.players.push({ score: 0, eliminated: false, hand: [], bid: null, tricks: 0 });
+      game.players.push({ score: 0, eliminated: false, team: teamMode ? teamBySeat[i] : null, hand: [], bid: null, tricks: 0 });
+    }
+    if (teamMode) {
+      const count = Math.max.apply(null, teamBySeat) + 1;
+      for (let id = 0; id < count; id++) {
+        game.teams.push({ id, seats: [], score: 0, eliminated: false });
+      }
+      for (let seat = 0; seat < numPlayers; seat++) game.teams[teamBySeat[seat]].seats.push(seat);
     }
 
     game.activeSeats = function () {
@@ -127,6 +162,15 @@
         if (!game.players[s].eliminated) return s;
       }
       return -1;
+    };
+
+    game.activeTeamIds = function () {
+      if (!game.teamMode) return [];
+      return game.teams.filter(team => !team.eliminated).map(team => team.id);
+    };
+
+    game.sameTeam = function (a, b) {
+      return game.teamMode && a >= 0 && b >= 0 && game.teamBySeat[a] === game.teamBySeat[b];
     };
 
     game.maxHand = function () { return maxHandSize(game.activeSeats().length); };
@@ -238,10 +282,64 @@
       return game.lastTrick;
     };
 
-    /* Round scoring: penalty |bid − tricks| for every active player, then
-       eliminations at ≤ −5, then win/draw checks. */
+    /* Round scoring: free-for-all applies |bid − tricks| per player.
+       Partnership mode pools both partners' bids and tricks, applies one shared
+       penalty, and eliminates/wins as a team. */
     game.finishRound = function () {
       if (game.phase !== 'roundEnd') throw new Error('truco: round not finished');
+      if (game.teamMode) {
+        const teamPenalties = {}, teamBids = {}, teamTricks = {}, eliminatedTeams = [];
+        const roundTeams = game.activeTeamIds();
+        for (const id of roundTeams) {
+          const team = game.teams[id];
+          const bid = team.seats.reduce((sum, s) => sum + (game.players[s].bid || 0), 0);
+          const tricks = team.seats.reduce((sum, s) => sum + game.players[s].tricks, 0);
+          const pen = Math.abs(bid - tricks);
+          team.score -= pen;
+          teamBids[id] = bid;
+          teamTricks[id] = tricks;
+          teamPenalties[id] = pen;
+          for (const s of team.seats) game.players[s].score = team.score;
+          if (team.score <= ELIMINATION_SCORE) {
+            team.eliminated = true;
+            eliminatedTeams.push(id);
+            for (const s of team.seats) game.players[s].eliminated = true;
+          }
+        }
+        game.history.push({
+          round: game.round,
+          handSize: game.handSize,
+          indicator: game.indicator,
+          manilha: game.manilha,
+          bids: game.players.map(p => p.bid),
+          tricks: game.players.map(p => p.tricks),
+          scores: game.players.map(p => p.score),
+          eliminated: eliminatedTeams.flatMap(id => game.teams[id].seats),
+          teamBids,
+          teamTricks,
+          teamPenalties,
+          teamScores: game.teams.map(team => team.score),
+          eliminatedTeams: eliminatedTeams.slice(),
+        });
+        const activeTeams = game.activeTeamIds();
+        if (activeTeams.length === 1) {
+          game.winnerTeam = activeTeams[0];
+          game.winner = 'team:' + activeTeams[0];
+          game.phase = 'over';
+        } else if (activeTeams.length === 0) {
+          game.winnerTeam = 'draw';
+          game.winner = 'draw';
+          game.phase = 'over';
+        } else {
+          game.phase = 'lobby';
+        }
+        return {
+          penalties: {}, teamPenalties, teamBids, teamTricks,
+          eliminated: eliminatedTeams.flatMap(id => game.teams[id].seats),
+          eliminatedTeams,
+          over: game.phase === 'over', winner: game.winner, winnerTeam: game.winnerTeam,
+        };
+      }
       const penalties = {}, eliminatedNow = [];
       for (const s of game.activeSeats()) {
         const p = game.players[s];
@@ -303,6 +401,25 @@
           if (compareCards(hand[i], hand[bi], game.manilha) > 0) bi = i;
         }
         return hand[bi];
+      }
+      if (game.teamMode) {
+        const weakestFirst = hand.map((card, index) => ({ card, index })).sort((a, b) => {
+          const cmp = compareCards(a.card, b.card, game.manilha);
+          return cmp || a.index - b.index;
+        });
+        const current = trickWinner(game.trick, game.manilha);
+        if (current.winner >= 0 && game.sameTeam(current.winner, seat)) {
+          const preservesPartner = weakestFirst.find(({ card }) => {
+            const result = trickWinner(game.trick.concat({ player: seat, card }), game.manilha);
+            return result.winner === current.winner;
+          });
+          if (preservesPartner) return preservesPartner.card;
+        }
+        const winsForTeam = weakestFirst.find(({ card }) => {
+          const result = trickWinner(game.trick.concat({ player: seat, card }), game.manilha);
+          return result.winner >= 0 && game.sameTeam(result.winner, seat);
+        });
+        return (winsForTeam || weakestFirst[0]).card;
       }
       /* Follow: beat the current best as cheaply as possible, else dump lowest. */
       let bi = 0;
