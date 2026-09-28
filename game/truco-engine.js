@@ -29,6 +29,7 @@
   const SUIT_POWER = { C: 3, H: 2, S: 1, D: 0 };   // manilha tiebreak: ♣ > ♥ > ♠ > ♦
   const DECK_SIZE = 40;
   const ELIMINATION_SCORE = -5;
+  const STATE_VERSION = 1;
 
   function newDeck() {
     const deck = [];
@@ -246,6 +247,13 @@
       return -1;
     };
 
+    /* Network play refers to cards by their stable rank+suit ID instead of a
+       hand index, which can become stale after another state snapshot. */
+    game.cardById = function (seat, id) {
+      if (!Number.isInteger(seat) || seat < 0 || seat >= numPlayers || typeof id !== 'string') return null;
+      return game.players[seat].hand.find(card => card && cardId(card) === id) || null;
+    };
+
     /* Play a card into the current trick; auto-resolves when all seats played. */
     game.playCard = function (seat, card) {
       if (game.phase !== 'playing' && game.phase !== 'reveal') {
@@ -441,10 +449,54 @@
     return game;
   }
 
+  const STATE_KEYS = [
+    'numPlayers', 'teamMode', 'teamBySeat', 'teams', 'players', 'dealer', 'round',
+    'handSize', 'dir', 'indicator', 'manilha', 'phase', 'turn', 'bids', 'trick',
+    'trickLeader', 'lastTrick', 'winner', 'winnerTeam', 'history', 'log',
+  ];
+
+  function jsonClone(value) { return value == null ? value : JSON.parse(JSON.stringify(value)); }
+  function validCardShape(card) {
+    return !!card && RANK_CYCLE.includes(card.rank) && SUIT_KEYS.includes(card.suit);
+  }
+
+  /* Plain-data boundary used by online rooms and host-session recovery. */
+  function exportState(game) {
+    if (!game || !Number.isInteger(game.numPlayers)) throw new Error('truco: invalid game state');
+    const state = { version: STATE_VERSION };
+    for (const key of STATE_KEYS) state[key] = jsonClone(game[key]);
+    return state;
+  }
+
+  /* Rebuild a closure-backed game from an authoritative snapshot. Projected
+     client views intentionally use a lighter hydrate helper because their
+     hidden cards are null and must never be allowed to mutate the game. */
+  function restoreGame(snapshot, rng) {
+    if (!snapshot || Number(snapshot.version) !== STATE_VERSION) throw new Error('truco: unsupported state version');
+    const numPlayers = Number(snapshot.numPlayers);
+    if (!Number.isInteger(numPlayers) || numPlayers < 2 || numPlayers > 8) throw new Error('truco: invalid state players');
+    if (!Array.isArray(snapshot.players) || snapshot.players.length !== numPlayers) throw new Error('truco: invalid state player list');
+    const phases = ['lobby', 'bidding', 'reveal', 'playing', 'roundEnd', 'over'];
+    if (!phases.includes(snapshot.phase)) throw new Error('truco: invalid state phase');
+    if (!Number.isInteger(snapshot.round) || snapshot.round < 0 || !Number.isInteger(snapshot.handSize) || snapshot.handSize < 1) {
+      throw new Error('truco: invalid state round');
+    }
+    for (const player of snapshot.players) {
+      if (!player || !Array.isArray(player.hand) || player.hand.some(card => !validCardShape(card))) {
+        throw new Error('truco: invalid state hand');
+      }
+    }
+    if (snapshot.indicator != null && !validCardShape(snapshot.indicator)) throw new Error('truco: invalid state indicator');
+    const options = snapshot.teamMode ? { teams: snapshot.teamBySeat } : undefined;
+    const game = newGame(numPlayers, rng, options);
+    for (const key of STATE_KEYS) game[key] = jsonClone(snapshot[key]);
+    return game;
+  }
+
   return {
     RANK_CYCLE, STRENGTH, SUIT_KEYS, SUIT_CHARS, SUIT_POWER,
-    DECK_SIZE, ELIMINATION_SCORE,
+    DECK_SIZE, ELIMINATION_SCORE, STATE_VERSION,
     newDeck, shuffle, manilhaAfter, isManilha, cardKey, compareCards,
-    trickWinner, maxHandSize, cardId, newGame,
+    trickWinner, maxHandSize, cardId, newGame, exportState, restoreGame,
   };
 });

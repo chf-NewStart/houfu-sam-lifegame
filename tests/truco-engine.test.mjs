@@ -316,6 +316,54 @@ test('team CPU preserves a partner winner instead of wasting or tying a card', (
   assert.deepEqual(g.cpuChooseCard(3), { rank: '4', suit: 'D' });
 });
 
+test('authoritative snapshots restore methods and continue a bidding round', () => {
+  const original = E.newGame(4, makeSeeded(43), { teams: [0, 1, 0, 1] });
+  original.handSize = 2;
+  original.startRound();
+  original.setBid(original.turn, 1);
+  const snapshot = E.exportState(original);
+  const restored = E.restoreGame(snapshot, makeSeeded(99));
+  assert.deepEqual(E.exportState(restored), snapshot);
+  assert.equal(typeof restored.setBid, 'function');
+  assert.equal(typeof restored.playCard, 'function');
+  while (original.phase === 'bidding') {
+    const seat = original.turn;
+    original.setBid(seat, 0);
+    restored.setBid(seat, 0);
+  }
+  assert.deepEqual(E.exportState(restored), E.exportState(original));
+});
+
+test('snapshot restored mid-trick accepts stable card IDs and resolves identically', () => {
+  const original = E.newGame(4, makeSeeded(47), { teams: [0, 1, 0, 1] });
+  original.handSize = 2;
+  original.startRound();
+  while (original.phase === 'bidding') original.setBid(original.turn, 0);
+  const firstSeat = original.turn;
+  original.playCard(firstSeat, original.players[firstSeat].hand[0]);
+  const restored = E.restoreGame(E.exportState(original), makeSeeded(101));
+  while (original.phase === 'playing') {
+    const seat = original.turn;
+    const id = E.cardId(original.players[seat].hand[0]);
+    const restoredCard = restored.cardById(seat, id);
+    assert.ok(restoredCard, `restored seat ${seat} should own ${id}`);
+    original.playCard(seat, original.cardById(seat, id));
+    restored.playCard(seat, restoredCard);
+    assert.deepEqual(E.exportState(restored), E.exportState(original));
+  }
+});
+
+test('restore rejects malformed or projected hidden-card snapshots', () => {
+  const game = E.newGame(2, makeSeeded(53));
+  game.startRound();
+  const wrongVersion = E.exportState(game);
+  wrongVersion.version = 999;
+  assert.throws(() => E.restoreGame(wrongVersion), /unsupported state version/);
+  const hidden = E.exportState(game);
+  hidden.players[0].hand[0] = null;
+  assert.throws(() => E.restoreGame(hidden), /invalid state hand/);
+});
+
 test('partnership game soak completes with one team or a draw', () => {
   for (let seed = 0; seed < 20; seed++) {
     const g = driveGame(seed, 4, 0, { teams: [0, 1, 0, 1] });

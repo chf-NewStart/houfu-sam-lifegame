@@ -416,21 +416,21 @@
     </div>
   </div>
 
-  <div class="card glow-truco star" data-players="12">
-    <div class="ribbon p12" data-en="1–2P · NEW" data-zh="1–2P · 新">1–2P · NEW</div>
+  <div class="card glow-truco star" data-players="1234">
+    <div class="ribbon p12" data-en="1–4P · ONLINE" data-zh="1–4P · 联机">1–4P · ONLINE</div>
     <img class="card-thumb" src="/game/thumbs/truco.png?v=1" alt="Truco table — manilha cards glowing gold" loading="lazy" width="440" height="240">
     <div class="card-icon" style="color:#e8b04a">[Q]</div>
     <div class="card-title" data-en="truco.exe" data-zh="特鲁科.exe">truco.exe</div>
-    <div class="card-desc" data-en="Brazilian bid-and-tricks. Declare how many tricks you'll win, follow the visible power order, and mind the manilha. Play solo or team up locally: two humans share a score against two cooperating AI partners." data-zh="巴西叫牌赢墩。报出你要赢的墩数，参照桌面牌力顺序，并留心王权牌。可单人对战，也可两名玩家本地组队，共用分数对战两名会配合的电脑。">Brazilian bid-and-tricks. Declare how many tricks you'll win, follow the visible power order, and mind the manilha. Play solo or team up locally: two humans share a score against two cooperating AI partners.</div>
+    <div class="card-desc" data-en="Brazilian bid-and-tricks. Follow the visible power order, team up locally, or open an unlisted room for up to three friends—four humans total, with AI filling empty seats." data-zh="巴西叫牌赢墩。参照桌面牌力顺序，可本地组队，或创建非公开房间邀请最多三位好友——共四名玩家，空座位由电脑补上。">Brazilian bid-and-tricks. Follow the visible power order, team up locally, or open an unlisted room for up to three friends—four humans total, with AI filling empty seats.</div>
     <div class="card-tags">
       <span class="tag green" data-en="bidding" data-zh="叫牌">bidding</span>
       <span class="tag" data-en="manilha ★" data-zh="王权牌 ★">manilha ★</span>
       <span class="tag" data-en="blind hands" data-zh="暗牌局">blind hands</span>
-      <span class="tag" data-en="1–2 local players" data-zh="1–2 名本地玩家">1–2 local players</span>
+      <span class="tag" data-en="2–4 online players" data-zh="2–4 名联机玩家">2–4 online players</span>
     </div>
     <div class="card-footer">
-      <span class="card-meta" data-en="JS · local co-op · bilingual" data-zh="JS · 本地合作 · 双语">JS · local co-op · bilingual</span>
-      <a class="play-btn" href="/game/truco.html?v=2" data-en="→ deal" data-zh="→ 发牌">→ deal</a>
+      <span class="card-meta" data-en="JS · invite rooms · bilingual" data-zh="JS · 邀请房间 · 双语">JS · invite rooms · bilingual</span>
+      <a class="play-btn" href="/game/truco.html?v=3" data-en="→ deal" data-zh="→ 发牌">→ deal</a>
     </div>
   </div>
 
@@ -1397,7 +1397,7 @@ document.addEventListener('DOMContentLoaded', applyLang);
     const p = c.dataset.p;
     document.querySelectorAll('.grid .card').forEach(card => {
       const cp = card.dataset.players || '1';
-      const show = p === 'all' || cp === p || (cp === '12' && (p === '1' || p === '2'));
+      const show = p === 'all' || cp.includes(p);
       card.style.display = show ? '' : 'none';
     });
   }));
