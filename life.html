@@ -1895,7 +1895,7 @@ const PRESETS = {
   pulsar:  (()=>{
     const p=[];
     [2,3,4,8,9,10].forEach(c=>{ [0,5,7,12].forEach(r=>p.push([c,r])); });
-    [0,5,7,12].forEach(r=>{ [2,3,4,8,9,10].forEach(c=>p.push([c,r])); });
+    [0,5,7,12].forEach(c=>{ [2,3,4,8,9,10].forEach(r=>p.push([c,r])); });
     const seen=new Set(); return p.filter(([c,r])=>{ const k=c+','+r; return seen.has(k)?false:(seen.add(k),true); });
   })(),
   rpento:  [[1,0],[2,0],[0,1],[1,1],[1,2]],
@@ -2372,13 +2372,14 @@ const CHALLENGES = [
   { name: 'Mega City',      nameZh: '超级都市', goal: 'Reach 500 live cells',                goalZh: '达到500个活细胞',       check: (g, c)    => c >= 500 },
   { name: 'Extinction',     nameZh: '灭绝',     goal: 'All cells must die out',              goalZh: '所有细胞必须消亡',      check: (g, c)    => g > 5 && c === 0 },
   { name: 'Equilibrium',    nameZh: '平衡态',   goal: 'Keep population stable for 30 gens',  goalZh: '种群数量稳定持续30代',  check: ()        => stableCountStreak >= 30 },
-  { name: 'Steady State',   nameZh: '稳态',     goal: 'Reach a period-2 oscillating pattern',goalZh: '达到周期2振荡图案',     check: (g, c, s) => !s && g > 5 && prevPrevGridSnap !== null && grid.every((v, i) => v === prevPrevGridSnap[i]) },
+  { name: 'Steady State',   nameZh: '稳态',     goal: 'Reach a period-2 oscillating pattern',goalZh: '达到周期2振荡图案',     check: (g)       => g > 5 && periodTwo },
   { name: 'Zone Control',   nameZh: '区域控制', goal: 'Keep 25+ cells in your zone for 20 gens', goalZh: '区域内保持25+细胞持续20代', check: () => zoneGoalStreak >= 20, fail: (g,c) => g > 5 && c === 0 },
   { name: 'Compressed Gas', nameZh: '压缩气体', goal: 'Survive as the arena shrinks every 5 gens', goalZh: '在每5代缩小的竞技场中存活', check: () => cgWon, fail: (g,c) => g > 2 && c === 0 },
   { name: 'Bridge',         nameZh: '信使',     goal: 'Get 5+ cells into zone B within 200 gens', goalZh: '200代内将5个细胞送入B区', check: () => bridgeStreak >= 5, fail: (g,c) => (g > 5 && c === 0) || g > 200 },
 ];
 
 let activeChallenge = -1, prevGridSnap = null, prevPrevGridSnap = null, challengeStartSeed = null;
+let periodTwo = false;   // board equals the one from two generations ago (and is not still)
 let stableCountStreak = 0, prevCellCount = -1;
 let zoneGoalStreak = 0;
 let cgWon = false, cgInitW = 0, cgInitH = 0;
@@ -2396,7 +2397,7 @@ function startChallenge(i) {
     updateRuleUI();
   }
   clearGrid(); activeChallenge = i;
-  prevGridSnap = null; prevPrevGridSnap = null; challengeStartSeed = null;
+  prevGridSnap = null; prevPrevGridSnap = null; challengeStartSeed = null; periodTwo = false;
   stableCountStreak = 0; prevCellCount = -1;
   zoneGoalStreak = 0; cgWon = false; bridgeStreak = 0;
   zoneA = null; zoneB = null;
@@ -2476,7 +2477,8 @@ function doChallengeTick() {
     bridgeStreak = bc;
   }
 
-  // Steady State 2-gen snapshot
+  // Steady State 2-gen snapshot: check period 2 before the snapshots shift
+  periodTwo = !stable && prevPrevGridSnap !== null && grid.every((v, i) => v === prevPrevGridSnap[i]);
   prevPrevGridSnap = prevGridSnap;
   prevGridSnap = grid.slice();
 
