@@ -206,7 +206,9 @@
       background: radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%), var(--bg2); }
     .feature:hover { border-color: color-mix(in srgb, var(--accent) 50%, transparent); transform: translateY(-2px); }
     .feature-art { background: #050605; overflow: hidden; }
-    .feature-art img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+    .feature-art img, .feature-art video { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+    .eras { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; font-size: 1.05rem; color: var(--accent); }
+    .eras i { font-style: normal; color: var(--faint); font-size: 0.85rem; }
     .feature:hover .feature-art img { transform: scale(1.03); }
     .feature-copy { padding: 36px; display: flex; flex-direction: column; justify-content: center; }
     .feature .kicker { color: var(--accent); }
@@ -492,11 +494,12 @@
     </div>
 
     <a class="feature" href="/game/glyphrun.html?v=b57" style="--accent:#e8b04a">
-      <div class="feature-art"><img src="/game/thumbs/glyphrun.jpg" alt="" loading="lazy" width="880" height="495"></div>
+      <div class="feature-art"><video class="demo" src="/assets/arcade/glyphrun-play.mp4" poster="/assets/arcade/glyphrun-play.webp" width="1100" height="618" muted loop playsinline preload="none" aria-label="Glyph Run gameplay: the 人 glyph fights spirits while fallen glyphs like 貝, cowrie, add riches"></video></div>
       <div class="feature-copy">
         <p class="kicker" data-zh="// 精选">// featured</p>
         <h3>Glyph Run <small>字源</small></h3>
         <p class="blurb" data-zh="你就是一个汉字。躲开群鬼，收集落下的字形，一路回溯三千年，从隶书进化到甲骨文。每个怪物、武器和掉落物都是真实的古文字，每一局都在讲一个字的来历。">You are a Chinese character. Dodge spirits, gather fallen glyphs and evolve 3,000 years back, from clerical script to oracle bone. Every monster, weapon and drop is a real ancient glyph, so each run teaches where a character came from.</p>
+        <p class="eras" aria-label="Script eras, newest to oldest"><span>隸書</span><i>→</i><span>篆書</span><i>→</i><span>金文</span><i>→</i><span>甲骨文</span></p>
         <ul class="tags"><li>1P</li><li data-zh="每日卜辞">daily oracle</li><li>English · 中文</li></ul>
         <span class="btn feature-btn" data-zh="开始游戏 →">Play now →</span>
       </div>
