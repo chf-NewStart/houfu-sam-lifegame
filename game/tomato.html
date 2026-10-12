@@ -3,568 +3,1195 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grow a Tomato // houfu.xyz</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0c0b">
+<meta name="description" content="Run a greenhouse for one tomato season. A digital twin forecasts where your settings lead, and an autopilot grows the same season next door. A free browser game by Houfu Chen.">
+<link rel="canonical" href="https://lifegameproject.com/game/tomato.html">
 <link rel="icon" type="image/png" href="/game/brand-favicon.png?v=3">
+<title>Grow a Tomato // Life Game Project</title>
 <style>
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:Consolas,'Courier New',monospace;background:#080808;color:#ccc;min-height:100vh;padding:24px 20px;}
-  a{color:#1db954;}
-  .hdr{max-width:1000px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-  .hdr .title{color:#1db954;font-size:1.3rem;text-transform:uppercase;letter-spacing:-1px;}
-  .hdr .sub{color:#9a9a9a;font-size:0.76rem;margin-top:5px;line-height:1.65;max-width:640px;}
-  .hdr .back{color:#1db954;font-size:0.7rem;text-decoration:none;display:inline-block;margin-top:6px;}
-  .hdr .back:hover{text-decoration:underline;}
-  .lang-btn{background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.7rem;padding:5px 11px;cursor:pointer;flex-shrink:0;}
-  .lang-btn:hover{background:rgba(29,185,84,0.1);}
-
-  .layout{max-width:1000px;margin:0 auto;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;}
-  .col{flex:1;min-width:260px;}
-  .col.mid{flex:0 0 300px;}
-  .card{background:#0d0d0d;border:1px solid #1a1a1a;padding:14px;margin-bottom:12px;}
-  .card-title{color:#1db954;font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #161616;display:flex;justify-content:space-between;}
-
-  .slider-row{margin-bottom:14px;}
-  .slider-row .lab{display:flex;justify-content:space-between;font-size:0.69rem;margin-bottom:5px;}
-  .slider-row .lab .name{color:#bbb;}
-  .slider-row .lab .val{color:#1db954;}
-  input[type=range]{width:100%;-webkit-appearance:none;height:4px;background:#1a1a1a;outline:none;border-radius:2px;cursor:pointer;}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#1db954;cursor:pointer;}
-  input[type=range].sun::-webkit-slider-thumb{background:#ffce4d;}
-  input[type=range].n::-webkit-slider-thumb{background:#4da6ff;}
-  input[type=range].pk::-webkit-slider-thumb{background:#c77dff;}
-
-  .tip{font-size:0.72rem;color:#a2a2a2;line-height:1.6;border-left:2px solid #1db95455;padding-left:8px;margin-top:4px;}
-  .tip b{color:#1db954;}
-
-  .badge{font-size:0.62rem;padding:2px 6px;border:1px solid #2a2a2a;color:#8c8c8c;border-radius:2px;letter-spacing:.3px;}
-  .badge.on{border-color:#f0533a66;color:#f0533a;background:rgba(240,83,58,0.06);}
-  .badge.warn{border-color:#ffce4d55;color:#ffce4d;background:rgba(255,206,77,0.05);}
-
-  .btn{display:block;width:100%;background:transparent;border:1px solid #1db954;color:#1db954;font-family:inherit;font-size:0.74rem;padding:9px;cursor:pointer;margin-bottom:8px;transition:background .1s;}
-  .btn:hover{background:rgba(29,185,84,0.1);}
-  .btn.primary{background:rgba(29,185,84,0.12);}
-  .btn.ghost{border-color:#2a2a2a;color:#888;}
-  .btn.ghost:hover{background:rgba(255,255,255,0.03);}
-  .btn-row{display:flex;gap:8px;}
-  .btn-row .btn{margin-bottom:0;}
-
-  canvas{display:block;}
-  #plantBox{position:relative;height:284px;overflow:hidden;background:linear-gradient(#0a0d12,#0c0a08);border:1px solid #161616;border-radius:3px;}
-  .artpre{margin:0;line-height:0.92;font-family:Consolas,'Courier New',monospace;white-space:pre;position:absolute;transition:font-size .35s ease,opacity .35s ease;}
-  #tomatoArt{left:50%;top:56%;transform:translate(-50%,-50%);z-index:2;}
-  #sun{position:absolute;top:14px;right:18px;color:#ffce4d;z-index:3;line-height:1;transition:opacity .3s,font-size .3s;text-shadow:0 0 18px rgba(255,206,77,0.7);}
-  #cloud{position:absolute;top:22px;right:10px;color:#d2d8e0;z-index:4;line-height:1;transition:opacity .3s,font-size .3s;text-shadow:0 0 10px rgba(0,0,0,0.75);}
-  .daybar{height:5px;background:#141414;margin-top:8px;position:relative;}
-  .daybar .fill{position:absolute;left:0;top:0;bottom:0;background:#1db954;}
-  .phase-tag{font-size:0.68rem;color:#a0a0a0;margin-top:8px;text-align:center;letter-spacing:1px;text-transform:uppercase;}
-
-  .stat-row{display:flex;justify-content:space-between;align-items:baseline;font-size:0.8rem;margin-bottom:8px;}
-  .stat-row .k{color:#a0a0a0;}
-  .stat-row .v{color:#f0f0f0;}
-  .meter{height:6px;background:#141414;margin:3px 0 12px;position:relative;}
-  .meter .fill{position:absolute;left:0;top:0;bottom:0;}
-  .mlabel{display:flex;justify-content:space-between;font-size:0.74rem;color:#b0b0b0;margin-bottom:3px;}
-
-  #chart{width:100%;background:#0a0a0a;border:1px solid #161616;}
-
-  .harvest{display:none;background:#0d0d0d;border:1px solid #1db95455;padding:16px;text-align:center;margin-bottom:12px;}
-  .harvest.show{display:block;}
-  .harvest .big{font-size:1.5rem;color:#1db954;margin:4px 0;}
-  .harvest .stars{font-size:1.3rem;color:#ffce4d;letter-spacing:3px;margin:6px 0;}
-  .harvest .verdict{font-size:0.74rem;color:#bbb;margin:6px 0 2px;}
-  .harvest .sc{font-size:0.72rem;color:#9a9a9a;}
-  /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch */
-  html, body, button, a, input, select, label { touch-action: manipulation; }
-
-  /* touch: no tap-highlight flash, no double-tap text selection (inputs stay editable) */
-  body{-webkit-tap-highlight-color:transparent;}
-  @media (pointer:coarse){
-    body{-webkit-user-select:none;user-select:none;}
-    input,textarea{-webkit-user-select:text;user-select:text;}
+  :root{
+    --bg:#0a0c0b; --bg2:#0f1311; --card:#0f1412; --line:#1d2521; --line2:#2b3530;
+    --text:#e9eeea; --soft:#c5cec8; --muted:#9aa59e; --faint:#6c7770;
+    --green:#3ee07f; --amber:#f0b84a; --tomato:#ff6a4d; --led:#ff5fd2; --nitro:#5ab8ff; --potash:#c08bff;
+    --sugar:#ffd166; --twin:#36c5d0; --bot:#a78bfa;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
   }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  [hidden]{display:none !important;}
+  html,body{background:var(--bg);}
+  body{color:var(--text);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh;}
+  html,body,button,a,input,label{touch-action:manipulation;}
+  body{-webkit-tap-highlight-color:transparent;}
+  button{font:inherit;color:inherit;cursor:pointer;}
+  a{color:var(--green);}
+
+  .top{max-width:1160px;margin:0 auto;padding:14px 16px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .back{color:var(--muted);text-decoration:none;font-size:0.9rem;}
+  .back:hover{color:var(--text);}
+  .lang{font:500 0.8rem/1 var(--mono);color:var(--green);background:none;border:1px solid rgba(62,224,127,0.4);border-radius:999px;padding:8px 12px;}
+  .wrap{max-width:1160px;margin:0 auto;padding:10px 16px 40px;}
+  .title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:6px 0 14px;}
+  h1{font-size:clamp(1.7rem,3.4vw,2.4rem);line-height:1.05;letter-spacing:-0.03em;font-weight:760;}
+  h1 .tom{color:var(--tomato);}
+  .lede{color:var(--soft);max-width:62ch;margin-top:6px;font-size:0.98rem;}
+
+  /* ── HUD ── */
+  .hud{display:flex;align-items:center;gap:14px 20px;flex-wrap:wrap;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-bottom:12px;}
+  .day{font:600 1.05rem/1 var(--mono);white-space:nowrap;}
+  .day small{color:var(--faint);font-weight:400;}
+  .stages{display:flex;gap:6px;list-style:none;flex-wrap:wrap;}
+  .stages li{font-size:0.78rem;padding:5px 10px;border-radius:999px;border:1px solid var(--line2);color:var(--faint);white-space:nowrap;}
+  .stages li.on{color:#07120b;background:var(--green);border-color:var(--green);font-weight:650;}
+  .stages li.done{color:var(--muted);}
+  .fc{display:flex;gap:4px;align-items:flex-end;margin-left:auto;}
+  .fc .lab{font-size:0.7rem;color:var(--faint);margin-right:4px;align-self:center;white-space:nowrap;}
+  .fcd{display:flex;flex-direction:column;align-items:center;width:40px;border-radius:8px;padding:3px 0 4px;border:1px solid transparent;}
+  .fcd.today{border-color:var(--line2);background:rgba(255,255,255,0.03);}
+  .fcd svg{width:26px;height:22px;}
+  .fcd .n{font:0.66rem/1.1 var(--mono);color:var(--muted);}
+  .fcd .n.spike{color:var(--led);font-weight:700;}
+  .season{font:0.74rem var(--mono);color:var(--faint);white-space:nowrap;}
+
+  /* ── layout ── */
+  .grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);gap:12px;align-items:start;}
+  .colL,.colR{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  @media (max-height:520px) and (orientation:landscape){
+    .grid{grid-template-columns:minmax(0,1.25fr) minmax(270px,1fr);}
+    #scene{max-height:calc(100vh - 20px);}
+    .wrap{padding-top:4px;} .title-row{margin:2px 0 8px;} .lede{display:none;}
+  }
+  @media (max-width:880px) and (orientation:portrait), (max-width:600px){
+    .grid{display:flex;flex-direction:column;}
+    .colL,.colR{display:contents;}
+    .o-scene{order:1;} .o-ctl{order:2;} .o-race{order:3;} .o-twin{order:4;} .o-diag{order:5;}
+    .fc{margin-left:0;}
+  }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .card h2{font-size:0.8rem;font-weight:650;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;gap:8px;align-items:baseline;}
+  .card h2 small{text-transform:none;letter-spacing:0;font-weight:400;color:var(--faint);font-size:0.74rem;}
+
+  /* ── scene ── */
+  .scene{padding:0;overflow:hidden;position:relative;}
+  #scene{display:block;width:100%;aspect-ratio:10/7;background:#0c100e;}
+  .tag{position:absolute;top:10px;font:0.8rem/1.3 var(--mono);background:rgba(8,11,10,0.72);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px 9px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;}
+  .tag small{display:block;color:var(--faint);font-size:0.66rem;font-family:var(--sans);}
+  .tag.tl{left:10px;} .tag.tr{right:10px;text-align:right;}
+  .tag b{color:var(--tomato);font-weight:650;}
+  @media (max-width:560px){ .tag{font-size:0.7rem;padding:4px 7px;top:8px;} .tag.tl{left:8px;} .tag.tr{top:auto;bottom:8px;left:8px;right:auto;text-align:left;} }
+  .labels-btn{position:absolute;right:10px;bottom:10px;font-size:0.72rem;background:rgba(8,11,10,0.72);border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:5px 10px;color:var(--muted);}
+  .labels-btn[aria-pressed="true"]{color:var(--text);}
+
+  /* ── controls ── */
+  .ctl{margin-bottom:12px;}
+  .ctl-h{display:flex;justify-content:space-between;align-items:baseline;font-size:0.9rem;margin-bottom:4px;}
+  .ctl-h b{font:600 0.86rem var(--mono);}
+  .ctl-sub{font:0.72rem/1.4 var(--mono);color:var(--faint);margin-top:3px;}
+  .ctl-sub .warn{color:var(--led);}
+  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:28px;background:transparent;outline:none;cursor:pointer;--c:var(--green);--p:50%;}
+  input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,var(--c) 0 var(--p),#1f2723 var(--p) 100%);}
+  input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(to right,var(--c) 0 var(--p),#1f2723 var(--p) 100%);}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--c);margin-top:-7px;border:3px solid #0b0f0d;box-shadow:0 0 0 1px var(--c);}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--c);border:3px solid #0b0f0d;}
+  input[type=range]:focus-visible{outline:2px solid var(--c);outline-offset:2px;border-radius:4px;}
+  input[type=range]:disabled{opacity:0.75;cursor:default;}
+  #led{--c:var(--led);} #nit{--c:var(--nitro);} #pot{--c:var(--potash);}
+  .toggle{width:100%;display:flex;justify-content:space-between;align-items:center;background:transparent;border:1px solid var(--line2);border-radius:10px;padding:8px 11px;font-size:0.88rem;margin-bottom:12px;}
+  .toggle b{font:600 0.8rem var(--mono);color:var(--muted);}
+  .toggle[aria-pressed="true"]{border-color:var(--amber);background:rgba(240,184,74,0.08);}
+  .toggle[aria-pressed="true"] b{color:var(--amber);}
+  .salt{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:0.78rem;color:var(--muted);margin:2px 0 12px;}
+  .bar{position:relative;height:6px;border-radius:3px;background:#1f2723;overflow:visible;}
+  .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--green);transition:width .2s,background .2s;}
+  .bar em{position:absolute;top:-4px;bottom:-4px;width:2px;background:#e9eeea88;}
+  .salt b{font:600 0.74rem var(--mono);color:var(--soft);}
+  .whatif{border:1px dashed rgba(54,197,208,0.45);border-radius:10px;padding:8px 10px;font-size:0.8rem;color:var(--soft);margin-bottom:12px;}
+  .whatif .k{display:block;font-size:0.7rem;color:var(--twin);margin-bottom:2px;}
+  .whatif b{font-family:var(--mono);color:var(--text);}
+  .play-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .btn{border:1px solid var(--line2);background:transparent;border-radius:999px;padding:9px 16px;font-size:0.9rem;font-weight:600;min-height:40px;}
+  .btn:hover{border-color:var(--muted);}
+  .btn.primary{background:var(--green);color:#07120b;border-color:var(--green);}
+  .btn.primary:hover{filter:brightness(1.08);}
+  .speed{display:flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden;margin-left:auto;}
+  .speed button{background:none;border:0;padding:8px 10px;font:0.76rem var(--mono);color:var(--muted);min-height:38px;}
+  .speed button.on{background:#1f2723;color:var(--text);}
+  .autod{display:flex;gap:8px;align-items:center;font-size:0.84rem;color:var(--soft);margin-top:12px;cursor:pointer;}
+  .autod input{width:18px;height:18px;accent-color:var(--bot);}
+  .keys{font:0.68rem var(--mono);color:var(--faint);margin-top:8px;}
+  @media (pointer:coarse){ .keys{display:none;} }
+
+  /* ── race ── */
+  .race-row{display:grid;grid-template-columns:96px 1fr 46px;gap:8px;align-items:center;font-size:0.86rem;margin-bottom:8px;}
+  .race-row .bar{height:10px;border-radius:5px;}
+  .race-row .bar i{border-radius:5px;}
+  .race-row.you .bar i{background:var(--tomato);}
+  .race-row.bot .bar i{background:var(--bot);}
+  .race-row b{font:600 0.9rem var(--mono);text-align:right;}
+  .fine{font-size:0.76rem;color:var(--faint);line-height:1.5;}
+  .formula{font:0.72rem var(--mono);color:var(--muted);margin-top:6px;}
+
+  /* ── twin chart + diagnosis ── */
+  #chart{display:block;width:100%;height:240px;}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:0.72rem;color:var(--muted);margin-top:8px;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;}
+  .legend i.band{height:9px;background:rgba(54,197,208,0.28);}
+  .legend i.dia{width:8px;height:8px;background:var(--sugar);transform:rotate(45deg);border-radius:1px;}
+  .legend i.dash{background:repeating-linear-gradient(90deg,var(--twin) 0 4px,transparent 4px 7px);}
+  details{margin-top:10px;font-size:0.84rem;color:var(--soft);}
+  summary{cursor:pointer;color:var(--twin);font-size:0.84rem;}
+  details p{margin-top:6px;line-height:1.6;}
+  .limit{display:flex;gap:12px;align-items:flex-start;border-radius:12px;padding:10px;background:rgba(255,255,255,0.025);border:1px solid var(--line);}
+  .lim-ic{flex:0 0 38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:1.25rem;background:#18201c;}
+  .limit b{display:block;font-size:0.95rem;margin-bottom:2px;}
+  .limit p{font-size:0.84rem;color:var(--soft);line-height:1.5;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;min-height:4px;}
+  .chip{font-size:0.74rem;padding:4px 9px;border-radius:999px;border:1px solid rgba(255,95,95,0.4);color:#ff9a8a;background:rgba(255,95,95,0.06);}
+  .chip.amber{border-color:rgba(240,184,74,0.45);color:var(--amber);background:rgba(240,184,74,0.06);}
+  .pools{margin-top:10px;}
+  .pool{display:grid;grid-template-columns:1fr 110px;gap:10px;align-items:center;font-size:0.78rem;color:var(--muted);margin-top:8px;}
+  .pool .bar i{transition:width .3s;}
+  .note{margin-top:22px;font-size:0.8rem;color:var(--faint);line-height:1.6;max-width:80ch;}
+  .note a{color:var(--muted);}
+
+  /* ── modals + toast ── */
+  .modal{position:fixed;inset:0;background:rgba(4,6,5,0.72);display:none;align-items:center;justify-content:center;padding:16px;z-index:50;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+  .modal.show{display:flex;}
+  .sheet{background:#101614;border:1px solid var(--line2);border-radius:18px;max-width:520px;width:100%;padding:22px 22px 18px;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,0.5);}
+  .kicker{font:0.72rem var(--mono);color:var(--green);letter-spacing:0.08em;text-transform:uppercase;}
+  .sheet h2{font-size:1.6rem;letter-spacing:-0.02em;margin:4px 0 10px;line-height:1.15;}
+  .sheet ul{list-style:none;display:grid;gap:8px;margin:10px 0 16px;}
+  .sheet li{font-size:0.94rem;color:var(--soft);line-height:1.5;}
+  .sheet p{color:var(--soft);font-size:0.94rem;line-height:1.6;}
+  .sheet .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+  .stars{font-size:1.6rem;letter-spacing:4px;color:var(--amber);margin:2px 0 4px;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
+  .stats div{background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;}
+  .stats small{display:block;font-size:0.68rem;color:var(--faint);}
+  .stats b{font:650 1.05rem var(--mono);}
+  @media (max-width:440px){ .stats{grid-template-columns:repeat(2,1fr);} }
+  .reveal{font-size:0.88rem;color:var(--soft);border-left:3px solid var(--twin);padding:4px 10px;margin:10px 0;}
+  .coach{display:grid;gap:6px;margin:10px 0;padding:0;}
+  .coach li{font-size:0.88rem;}
+  .why{font-size:0.84rem !important;color:var(--muted) !important;border-top:1px solid var(--line);padding-top:12px;margin-top:12px;}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:#151d19;border:1px solid var(--line2);border-radius:999px;padding:10px 16px;font-size:0.88rem;opacity:0;transition:opacity .25s,transform .25s;z-index:60;pointer-events:none;max-width:calc(100vw - 32px);text-align:center;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+  @media (prefers-reduced-motion:reduce){ .toast,.bar i{transition:none;} }
 </style>
 </head>
 <body>
-<div class="hdr">
-  <div>
-    <div class="title" id="pgTitle">&gt;_ Grow a Tomato</div>
-    <div class="sub" id="pgSub">A tomato-growing sim distilled from a real dFBA metabolic model. What the plant needs shifts each stage — frame → carbon → sweetness — and every input has a sweet spot: too little starves the fruit; too much triggers photoinhibition, light injury or salt stress. Tune the greenhouse across the season (day 8 → 53) to grow the biggest, sweetest fruit.</div>
-    <a class="back" id="pgBack" href="/" data-en="← arcade" data-zh="← 游戏厅">← arcade</a>
+<header class="top">
+  <a class="back" href="/" data-en="← Life Game Project" data-zh="← Life Game Project">← Life Game Project</a>
+  <button class="lang" id="langBtn" type="button">中文</button>
+</header>
+
+<main class="wrap">
+  <div class="title-row">
+    <div>
+      <h1><span class="tom">🍅</span> <span data-en="Grow a Tomato" data-zh="种番茄">Grow a Tomato</span></h1>
+      <p class="lede" data-en="Run a greenhouse for one tomato season. A digital twin forecasts where your settings lead; an autopilot grows the same season next door. Grow the heaviest, sweetest fruit on the least electricity." data-zh="经营一季温室番茄。数字孪生预测你的设定会带来什么结果；隔壁的自动驾驶种着同一季。用最少的电，种出最重、最甜的番茄。">Run a greenhouse for one tomato season. A digital twin forecasts where your settings lead; an autopilot grows the same season next door. Grow the heaviest, sweetest fruit on the least electricity.</p>
+    </div>
   </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
+
+  <section class="hud" aria-label="Season">
+    <div class="day" id="dayLbl">Day 8 <small>/ 53</small></div>
+    <ol class="stages" id="stages">
+      <li data-en="① Set size" data-zh="① 定大小">① Set size</li>
+      <li data-en="② Fill" data-zh="② 膨大">② Fill</li>
+      <li data-en="③ Ripen" data-zh="③ 成熟">③ Ripen</li>
+    </ol>
+    <div class="fc" id="fc" aria-label="Weather forecast"></div>
+    <div class="season" id="seasonLbl"></div>
+  </section>
+
+  <section class="grid">
+    <div class="colL">
+      <div class="o-scene card scene">
+        <canvas id="scene" aria-label="The greenhouse: the tomato plant, its lamps and the flows inside it"></canvas>
+        <div class="tag tl" id="tagFruit"></div>
+        <div class="tag tr" id="tagLight"></div>
+        <button class="labels-btn" id="labelsBtn" type="button" aria-pressed="true" data-en="labels" data-zh="标注">labels</button>
+      </div>
+      <div class="o-twin card">
+        <h2><span data-en="The twin's view" data-zh="孪生视角">The twin's view</span><small id="vigorLbl"></small></h2>
+        <canvas id="chart" aria-label="Twin estimate and forecast of fruit weight and sweetness"></canvas>
+        <div class="legend" id="legend">
+          <span><i class="band"></i><em data-en="estimate ± range" data-zh="估计 ± 范围">estimate ± range</em></span>
+          <span><i class="dia"></i><em data-en="camera reading" data-zh="相机测量">camera reading</em></span>
+          <span><i class="dash"></i><em data-en="forecast if you keep today's settings" data-zh="保持当前设定的预测">forecast if you keep today's settings</em></span>
+          <span><i style="background:var(--sugar)"></i><em data-en="sweetness (°Brix)" data-zh="甜度 (°Brix)">sweetness (°Brix)</em></span>
+          <span><i style="background:var(--bot)"></i><em data-en="autopilot" data-zh="自动驾驶">autopilot</em></span>
+          <span id="lgReal" hidden><i style="background:var(--green)"></i><em data-en="real fruit" data-zh="真实果实">real fruit</em></span>
+        </div>
+        <details>
+          <summary data-en="How does the twin work?" data-zh="孪生是怎么工作的？">How does the twin work?</summary>
+          <p id="twinHow"></p>
+        </details>
+      </div>
+    </div>
+    <div class="colR">
+      <div class="o-ctl card">
+        <h2><span data-en="Greenhouse controls" data-zh="温室控制">Greenhouse controls</span></h2>
+        <div class="ctl">
+          <div class="ctl-h"><span data-en="💡 Grow lights" data-zh="💡 补光灯">💡 Grow lights</span><b id="vLed">0</b></div>
+          <input type="range" id="led" min="0" max="300" step="10" value="0" aria-label="Grow lights">
+          <div class="ctl-sub" id="ledSub"></div>
+        </div>
+        <button class="toggle" id="shadeBtn" type="button" aria-pressed="false"><span data-en="🌂 Shade screen" data-zh="🌂 遮阳网">🌂 Shade screen</span><b id="shadeVal">open</b></button>
+        <div class="ctl">
+          <div class="ctl-h"><span data-en="🅽 Nitrogen feed" data-zh="🅽 氮肥">🅽 Nitrogen feed</span><b id="vNit">60%</b></div>
+          <input type="range" id="nit" min="0" max="100" step="5" value="60" aria-label="Nitrogen feed">
+        </div>
+        <div class="ctl">
+          <div class="ctl-h"><span data-en="🅺 Potassium feed (P·K)" data-zh="🅺 钾肥（磷钾）">🅺 Potassium feed (P·K)</span><b id="vPot">50%</b></div>
+          <input type="range" id="pot" min="0" max="100" step="5" value="50" aria-label="Potassium feed">
+        </div>
+        <div class="salt"><span data-en="Root-zone salt" data-zh="根区盐分">Root-zone salt</span><div class="bar"><i id="saltFill"></i><em id="saltThr"></em></div><b id="saltVal">EC 4.3</b></div>
+        <div class="whatif" id="whatIf"></div>
+        <div class="play-row">
+          <button class="btn primary" id="playBtn" type="button">▶ Grow</button>
+          <button class="btn" id="stepBtn" type="button" data-en="+1 day" data-zh="+1 天">+1 day</button>
+          <div class="speed" id="speed" role="group" aria-label="Speed">
+            <button type="button" data-i="0">½×</button><button type="button" data-i="1" class="on">1×</button><button type="button" data-i="2">2×</button><button type="button" data-i="3">4×</button>
+          </div>
+        </div>
+        <label class="autod"><input type="checkbox" id="autoDrive"> <span data-en="🤖 Let the autopilot drive" data-zh="🤖 让自动驾驶接管">🤖 Let the autopilot drive</span></label>
+        <div class="keys" data-en="Space: grow / pause · →: next day" data-zh="空格：生长 / 暂停 · →：下一天">Space: grow / pause · →: next day</div>
+      </div>
+      <div class="o-race card">
+        <h2><span data-en="Race the autopilot" data-zh="与自动驾驶比赛">Race the autopilot</span><small data-en="projected score" data-zh="预计得分">projected score</small></h2>
+        <div class="race-row you"><span data-en="You" data-zh="你">You</span><div class="bar"><i id="rbYou"></i></div><b id="rvYou">—</b></div>
+        <div class="race-row bot"><span data-en="🤖 Autopilot" data-zh="🤖 自动驾驶">🤖 Autopilot</span><div class="bar"><i id="rbBot"></i></div><b id="rvBot">—</b></div>
+        <p class="fine" data-en="The autopilot grows this same season next door and re-plans every morning with its own twin (model predictive control). Your projection assumes you keep today's settings." data-zh="自动驾驶在隔壁温室种同一季，每天早上用自己的孪生重新规划（模型预测控制）。你的预计得分假设你保持今天的设定。">The autopilot grows this same season next door and re-plans every morning with its own twin (model predictive control). Your projection assumes you keep today's settings.</p>
+        <div class="formula" data-en="score = grams × sweetness bonus − electricity" data-zh="得分 = 克数 × 甜度加成 − 电费">score = grams × sweetness bonus − electricity</div>
+      </div>
+      <div class="o-diag card">
+        <h2><span data-en="What's holding it back" data-zh="生长瓶颈">What's holding it back</span><small data-en="the twin's diagnosis" data-zh="孪生的诊断">the twin's diagnosis</small></h2>
+        <div class="limit"><div class="lim-ic" id="limIc">☀</div><div><b id="limTitle"></b><p id="limText"></p></div></div>
+        <div class="chips" id="chips"></div>
+        <div class="pools">
+          <div class="pool"><span data-en="Sugar on its way to the fruit (phloem)" data-zh="运往果实的糖（韧皮部）">Sugar on its way to the fruit (phloem)</span><div class="bar"><i id="poolSuc" style="background:var(--sugar)"></i></div></div>
+          <div class="pool"><span data-en="Nitrogen in the plant (from the roots)" data-zh="植株内的氮（来自根系）">Nitrogen in the plant (from the roots)</span><div class="bar"><i id="poolN" style="background:var(--nitro)"></i></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="note" id="footNote"></p>
+</main>
+
+<div class="modal show" id="mIntro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div class="sheet">
+    <div class="kicker" data-en="One greenhouse · one season · 45 days" data-zh="一座温室 · 一季 · 45 天">One greenhouse · one season · 45 days</div>
+    <h2 id="introTitle" data-en="Grow a Tomato" data-zh="种番茄">Grow a Tomato</h2>
+    <ul>
+      <li data-en="💡 Lamps make sugar on dull days, but electricity costs points." data-zh="💡 阴天开补光灯能多制糖，但电费会扣分。">💡 Lamps make sugar on dull days, but electricity costs points.</li>
+      <li data-en="🅽 Nitrogen early on sets how big the fruit can get. Late in the season it makes the fruit watery." data-zh="🅽 早期的氮决定果实能长多大；后期的氮会让果实多水寡淡。">🅽 Nitrogen early on sets how big the fruit can get. Late in the season it makes the fruit watery.</li>
+      <li data-en="📈 A digital twin forecasts where your settings lead, live as you drag them." data-zh="📈 拖动设定时，数字孪生会实时预测结果。">📈 A digital twin forecasts where your settings lead, live as you drag them.</li>
+      <li data-en="🤖 An autopilot grows the same season next door. Beat it." data-zh="🤖 自动驾驶在隔壁种同一季。打败它。">🤖 An autopilot grows the same season next door. Beat it.</li>
+    </ul>
+    <div class="btns">
+      <button class="btn primary" id="goBtn" type="button" data-en="Start today's season" data-zh="开始今日这一季">Start today's season</button>
+      <button class="btn" id="watchBtn" type="button" data-en="Watch the autopilot" data-zh="看自动驾驶玩">Watch the autopilot</button>
+    </div>
+  </div>
 </div>
 
-<div class="layout">
-  <!-- LEFT: controls -->
-  <div class="col">
-    <div class="card">
-      <div class="card-title"><span data-en="// greenhouse controls" data-zh="// 温室控制">// greenhouse controls</span></div>
-      <div id="sliders"></div>
-    </div>
-    <div class="card">
-      <div class="card-title"><span data-en="// this phase" data-zh="// 当前阶段">// this phase</span></div>
-      <div class="tip" id="phaseTip"></div>
-    </div>
-    <div class="card">
-      <div class="btn-row">
-        <button class="btn primary" id="btnPlay" onclick="togglePlay()" data-en="▶ Grow" data-zh="▶ 生长">▶ Grow</button>
-        <button class="btn" id="btnStep" onclick="stepOnce()" data-en="› Grow by day" data-zh="› 逐日生长">› Grow by day</button>
-      </div>
-      <button class="btn ghost" onclick="newSeason()" data-en="↺ New season" data-zh="↺ 新一季">↺ New season</button>
-      <div class="slider-row" style="margin:8px 0 0;">
-        <div class="lab"><span class="name" data-en="speed" data-zh="速度">speed</span><span class="val" id="vSpeed">6</span></div>
-        <input type="range" id="speed" min="1" max="20" step="1" value="6">
-      </div>
-    </div>
-  </div>
-
-  <!-- MIDDLE: plant -->
-  <div class="col mid">
-    <div class="card">
-      <div class="card-title"><span data-en="// plant" data-zh="// 植株">// plant</span><span id="dayLabel">DPA 8</span></div>
-      <div id="plantBox">
-        <div id="sun">☼</div>
-        <div id="cloud">☁</div>
-        <pre id="tomatoArt" class="artpre"></pre>
-      </div>
-      <div class="daybar"><div class="fill" id="dayFill" style="width:0%"></div></div>
-      <div class="phase-tag" id="phaseTag">establishing</div>
-    </div>
-    <div class="harvest" id="harvest">
-      <div data-en="HARVEST" data-zh="收获" style="font-size:0.62rem;letter-spacing:2px;color:#666;">HARVEST</div>
-      <div class="big" id="hvFruit">🍅</div>
-      <div class="stars" id="hvStars">★★★☆☆</div>
-      <div class="verdict" id="hvVerdict"></div>
-      <div class="sc" id="hvScore"></div>
-      <div class="sc" id="hvBest" style="margin-top:4px;color:#1db954"></div>
-    </div>
-  </div>
-
-  <!-- RIGHT: stats + chart -->
-  <div class="col">
-    <div class="card">
-      <div class="card-title"><span data-en="// fruit" data-zh="// 果实">// fruit</span><span id="scoreNow">—</span></div>
-      <div class="stat-row"><span class="k" data-en="size" data-zh="大小">size</span><span class="v" id="sSize">0.0 mmol</span></div>
-      <div class="mlabel"><span data-en="sweetness (Brix~)" data-zh="甜度 (Brix~)">sweetness (Brix~)</span><span id="sBrix">0.0</span></div>
-      <div class="meter"><div class="fill" id="mBrix" style="width:0%;background:#ffce4d"></div></div>
-      <div class="mlabel"><span data-en="ripeness (lycopene)" data-zh="成熟 (番茄红素)">ripeness (lycopene)</span><span id="sLyc">0.0</span></div>
-      <div class="meter"><div class="fill" id="mLyc" style="width:0%;background:#f0533a"></div></div>
-    </div>
-    <div class="card">
-      <div class="card-title"><span data-en="// internal pools" data-zh="// 内部库存">// internal pools</span></div>
-      <div class="mlabel"><span data-en="sugar pool (phloem)" data-zh="糖库 (韧皮部)">sugar pool (phloem)</span><span id="sSuc">0%</span></div>
-      <div class="meter"><div class="fill" id="mSuc" style="width:0%;background:#1db954"></div></div>
-      <div class="mlabel"><span data-en="nitrogen pool (xylem)" data-zh="氮库 (木质部)">nitrogen pool (xylem)</span><span id="sN">0%</span></div>
-      <div class="meter"><div class="fill" id="mN" style="width:0%;background:#4da6ff"></div></div>
-      <div class="mlabel"><span data-en="stored starch" data-zh="储存淀粉">stored starch</span><span id="sStarch">0.0</span></div>
-      <div class="meter"><div class="fill" id="mStarch" style="width:0%;background:#9a7b4f"></div></div>
-    </div>
-    <div class="card">
-      <div class="card-title"><span data-en="// how it's doing" data-zh="// 生长状态">// how it's doing</span><span id="objZ">—</span></div>
-      <div id="objSeq" style="display:flex;gap:4px;font-size:0.58rem;margin-bottom:9px;letter-spacing:.3px;"></div>
-      <div class="stat-row"><span class="k" data-en="now:" data-zh="正在：">now:</span><span class="v" id="stageObjLab" style="text-align:right">—</span></div>
-      <div class="mlabel" style="margin-top:6px"><span data-en="held back by" data-zh="受限于">held back by</span><span id="limitNow">—</span></div>
-      <div id="stressBadges" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px"></div>
-      <div class="tip" id="fbaTip" style="margin-top:10px"></div>
-    </div>
-    <div class="card">
-      <div class="card-title"><span data-en="// growth" data-zh="// 生长">// growth</span></div>
-      <canvas id="chart" width="320" height="150"></canvas>
-      <div style="font-size:0.66rem;color:#9a9a9a;margin-top:6px"><span style="color:#1db954">■</span> <span data-en="size" data-zh="大小">size</span> &nbsp; <span style="color:#ffce4d">■</span> <span data-en="sweetness" data-zh="甜度">sweetness</span></div>
-    </div>
-    <div class="card">
-      <div class="card-title"><span data-en="// sensor fusion · Kalman filter" data-zh="// 传感器融合 · 卡尔曼滤波">// sensor fusion · Kalman filter</span><span id="kfErr" style="color:#36c5d0">—</span></div>
-      <canvas id="kfchart" width="320" height="150"></canvas>
-      <div style="font-size:0.66rem;color:#9a9a9a;margin-top:6px;line-height:1.8">
-        <span style="color:#36c5d0">▬</span> <span data-en="Kalman estimate (±σ band)" data-zh="卡尔曼估计 (±σ 带)">Kalman estimate (±σ band)</span> &nbsp;
-        <span style="color:#ffce4d">◆</span> <span data-en="observation" data-zh="观测">observation</span> &nbsp;
-        <span style="color:#4f7050">▬</span> <span data-en="true size" data-zh="真实大小">true size</span> &nbsp;
-        <span style="color:#5a5a5a">┄</span> <span data-en="model (no correction)" data-zh="模型（无校正）">model (no correction)</span>
-      </div>
-      <div class="slider-row" style="margin:11px 0 0;">
-        <div class="lab"><span class="name" data-en="sensor noise (σ)" data-zh="传感器噪声 (σ)">sensor noise (σ)</span><span class="val" id="vKf">2.5</span></div>
-        <input type="range" id="kfNoise" min="0" max="9" step="0.5" value="2.5">
-      </div>
-      <div class="tip" id="kfTip" style="margin-top:10px"></div>
-    </div>
+<div class="modal" id="mStage" role="dialog" aria-modal="true" aria-labelledby="stageTitle">
+  <div class="sheet">
+    <div class="kicker" id="stageKick"></div>
+    <h2 id="stageTitle"></h2>
+    <p id="stageText"></p>
+    <div class="btns"><button class="btn primary" id="stageGo" type="button" data-en="Continue" data-zh="继续">Continue</button></div>
   </div>
 </div>
+
+<div class="modal" id="mHarvest" role="dialog" aria-modal="true" aria-labelledby="hvTitle">
+  <div class="sheet">
+    <div class="kicker" id="hvKick"></div>
+    <div class="stars" id="hvStars"></div>
+    <h2 id="hvTitle"></h2>
+    <div class="stats" id="hvStats"></div>
+    <p id="hvVs"></p>
+    <div class="reveal" id="hvReveal"></div>
+    <ul class="coach" id="hvCoach"></ul>
+    <div class="btns">
+      <button class="btn primary" id="againBtn" type="button" data-en="Replay this season" data-zh="重玩这一季">Replay this season</button>
+      <button class="btn" id="newBtn" type="button" data-en="New season" data-zh="新的一季">New season</button>
+      <button class="btn" id="copyBtn" type="button" data-en="Copy result" data-zh="复制结果">Copy result</button>
+      <button class="btn" id="hvWatch" type="button" data-en="Watch the autopilot" data-zh="看自动驾驶玩">Watch the autopilot</button>
+    </div>
+    <p class="why" id="hvWhy"></p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* ════════════════════════════════════════════════════════════
-   Tomato growth engine — a lightweight reduction of the dFBA model
-   (game/tomato/game/engine.py). No LP solving: Michaelis-Menten nutrient
-   uptake, light-driven leaf carbon, capped phloem/xylem pools, a Gompertz
-   fruit sink, DPA growth phases, and light-driven starch→sugar ripening.
-   Tuned for responsive play (un-throttled caps + ripening fix, as the
-   engine's game knobs recommend).
+   Grow a Tomato — engine (pure, seeded, no DOM)
+   A toy crop model built from textbook plant physiology:
+   · leaves are the SOURCE: light → sugar (saturating, photoinhibited when too bright)
+   · roots take up nitrogen (Michaelis–Menten); P·K helps unloading; too much feed → salty root zone
+   · the fruit is the SINK: sink strength = size × activity (Gompertz), and the scarcer of
+     carbon or nitrogen sets growth (the binding constraint)
+   · stages: build a frame → bank starch → turn starch into sugar
+   A "twin" runs the same model without seeing the real plant; a camera measures the fruit
+   every few days and a Kalman filter corrects the twin (size + this plant's vigour).
    ════════════════════════════════════════════════════════════ */
-const DPA_START=8, DPA_END=53;
-const mm=(c,vmax,km)=>vmax*c/(km+c);
-// Sink strength = sink SIZE × sink ACTIVITY — the classic decomposition.
-//  · activity: a per-unit reaction rate (Gompertz relative growth rate), normalised 0..1;
-//    peaks mid-development (~day 25) and declines as the fruit matures (determinate growth).
-//  · size: the fruit's own structural frame — a physically bigger fruit pulls in more.
-// So sink strength GROWS as both the fruit's size and its reaction rate grow, then falls
-// away in ripening as activity drops even though the fruit stays large.
-function sinkActivity(d){const wmax=100,k=0.15,tm=25;const W=wmax*Math.exp(-Math.exp(-k*(d-tm)));
-  const demand=(W>0&&W<wmax)?k*W*Math.log(wmax/W):0;return Math.min(1,demand/((wmax*k)/Math.E));}
-function sinkSize(P){return 0.2+0.8*Math.min(1,P.structural/7.0);}     // 0.2 (seed) → 1.0 (full frame)
-function sinkStrength(P){return Math.min(0.92,Math.max(0.05,sinkSize(P)*sinkActivity(P.dpa)));}
-function phase(d){return d<=15?'establish':d<=35?'bulk':'ripen';}
-const CFG={capScale:3.0,kC:5.6,kN:2.3,sucCap:1.6,nCap:0.8,Lhalf:230,
-  Lopt:340,LinhibScale:520,inhibMax:0.5,        // light: photoinhibition past the optimum PPFD
-  photoOpt:16,clRate:0.07,clMax:0.45,           // photoperiod: continuous-light injury past 16 h
-  ecThresh:1.3,saltRate:0.55,saltMax:0.45};     // root-zone salinity: stress from over-feeding
+const DAY0 = 8, DAY1 = 53, NDAYS = DAY1 - DAY0;   // days after flowering; harvest on DAY1
+const SUN_CLIM = 160;                              // average sunlight the twin assumes beyond the forecast
+const FORECAST_DAYS = 5;                           // the weather forecast reaches this far ahead
+const LED_MAX = 300, LED_KWH = 0.00533;            // kWh per m² per day, per µmol/m²/s of LED (16 h at ~3 µmol/J)
+const KWH_PRICE = 1.0;                             // points per kWh at normal price
+const GRAMS = 1;                                   // the model works in fresh grams
+const SENSE_EVERY = 4, SENSE_FROM = 12;            // camera reading every 4 days from day 12
 
-function newPlant(){return {dpa:DPA_START,sucPool:0.05,nPool:0.02,biomass:0.01,structural:0,starch:0,sugar:0,lyc:0,daily:0,
-  saltDays:0,inhibDays:0,injDays:0,ripeSize:null,diag:null,
-  trueB:0.01,kfx:0.01,kfP:1,est:0.01,sigma:1,obs:null};}
+const stageOf = d => d <= 15 ? 0 : d <= 35 ? 1 : 2;   // 0 frame · 1 fill (starch) · 2 ripen (sugar)
+const isSenseDay = d => d >= SENSE_FROM && (d - SENSE_FROM) % SENSE_EVERY === 0;
 
-/* ── sensor + Kalman filter (1-D state estimation on fruit size) ──
-   The model predicts each day; a hidden "true" plant deviates from it (process
-   noise); a sensor measures the true size with noise; the Kalman filter fuses the
-   model prediction with the measurement to estimate the true state. */
-let kfSensorNoise=2.5;            // measurement std σ (mmol) — slider-controlled (R = σ²)
-const KF_PROC_REL=0.22;          // hidden true plant deviates ~22% from the model's daily growth
-const KF_Q=1.6;                  // process/model variance added each day → uncertainty grows between obs
-const isObsDay=d=>d>=16 && (d-DPA_START)%8===0;   // a measurement only arrives every ~8 days (sparse)
-function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function mulberry(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-// One day of metabolism solved as a flux balance (no mutation): substrate uptake,
-// the BINDING constraint (carbon vs nitrogen) that sets growth, then the stress
-// penalties that make "more is not always better" — photoinhibition, continuous-
-// light injury, and root-zone salinity. computeStep() is pure so the UI can preview
-// the binding constraint live as you drag the sliders.
-function computeStep(P,c){
-  const d=P.dpa, ph=phase(d);
-  const fbSuc=Math.max(0.5,1-0.5*Math.min(1,P.sucPool/(CFG.sucCap*CFG.capScale)));
-  // light → carbon: a saturating gain MINUS photoinhibition past Lopt (a hump, not a ramp)
-  const satL=c.light/(c.light+CFG.Lhalf);
-  const photoinhib=Math.min(CFG.inhibMax,Math.max(0,c.light-CFG.Lopt)/CFG.LinhibScale);
-  const lightF=Math.max(0.05,satL*(1-photoinhib));
-  // photoperiod: more light-hours help, but a too-long day causes leaf chlorosis (injury) past 16 h
-  const clInjury=Math.min(CFG.clMax,Math.max(0,c.photo-CFG.photoOpt)*CFG.clRate);
-  const photoF=Math.max(0.05,(c.photo/16)*(1-clInjury));
-  const Csource=CFG.kC*lightF*photoF*fbSuc;
-  // nitrogen uptake (Michaelis–Menten, saturating)
-  const upNo3=mm(c.no3,50,0.5),upNh4=mm(c.nh4,10,0.3);
-  const Nsource=CFG.kN*(upNo3*0.15+upNh4*0.20);
-  // minerals (P·K) — non-saturating limiter; K drives phloem unloading. ~0.57 starved → 1.0 rich.
-  const pkLevel=Math.min(1,(c.pi/3+c.k/12)/2);
-  const mineralF=0.5+0.5*pkLevel;
-  // salinity: pushing BOTH feeds high raises root-zone EC and stresses the whole plant
-  const nFeed=Math.min(1,c.no3/30);
-  const ec=nFeed+pkLevel;
-  const saltStress=Math.min(CFG.saltMax,Math.max(0,ec-CFG.ecThresh)*CFG.saltRate);
-  const saltF=1-saltStress;
-  // pools after uptake (capped)
-  const sucPool=Math.min(P.sucPool+Csource,CFG.sucCap*CFG.capScale);
-  const nPool  =Math.min(P.nPool+Nsource,  CFG.nCap*CFG.capScale);
-  // the fruit sink pulls a share of each pool; growth = the binding substrate, then penalties
-  const ss=sinkStrength(P);   // = sink size × sink activity (grows with fruit size & reaction rate)
-  const availC=sucPool*ss, availN=nPool*ss;
-  let cCost,nCost;
-  if(ph==='establish'){cCost=1.0;nCost=0.5;}
-  else if(ph==='bulk'){cCost=1.2;nCost=0.12;}
-  else {cCost=1.1;nCost=0.05;}
-  const gC=availC/cCost, gN=availN/nCost;
-  const growth=Math.max(0,Math.min(gC,gN))*mineralF*saltF;
-  const limit=gC<=gN?'carbon':'nitrogen';
-  return {ph,fbSuc,satL,lightF,photoF,Csource,Nsource,mineralF,saltF,pkLevel,nFeed,
-    photoinhib,clInjury,saltStress,ec,sucPool,nPool,cCost,nCost,gC,gN,growth,limit};
+// One season of weather, prices and hidden plant traits, all from one seed: the
+// player and the autopilot face exactly the same season.
+function makeSeason(seed) {
+  const r = mulberry(seed), gauss = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const sun = [], price = [], noise = [], mnoise = [], events = [];
+  let x = 0;
+  for (let d = 0; d <= DAY1 + 1; d++) { x = 0.55 * x + gauss() * 48; sun[d] = Math.round(Math.max(70, Math.min(330, SUN_CLIM + x))); price[d] = 1; noise[d] = gauss(); mnoise[d] = gauss(); }
+  const spell = (from, to, len, lo, hi, type) => {
+    const s = from + Math.floor(r() * (to - from));
+    for (let d = s; d < s + len; d++) sun[d] = Math.round(lo + r() * (hi - lo));
+    events.push({ type, day: s, len });
+  };
+  spell(17, 26, 4 + Math.floor(r() * 2), 45, 85, 'cloud');        // a dull week while the fruit fills
+  spell(37, 46, 3, 350, 420, 'bright');                           // a scorcher while it ripens
+  if (r() < 0.6) spell(9, 14, 2 + Math.floor(r() * 2), 50, 90, 'cloud');
+  const ps = 20 + Math.floor(r() * 18);                           // an electricity price spike
+  for (let d = ps; d < ps + 3; d++) price[d] = 3;
+  events.push({ type: 'price', day: ps, len: 3 });
+  events.sort((a, b) => a.day - b.day);
+  return { seed, sun, price, noise, mnoise, events, vigor: 0.86 + 0.28 * r() };
 }
 
-function stepDay(P,c){
-  const f=computeStep(P,c), ph=f.ph, g=f.growth, nFeed=f.nFeed, pk=f.pkLevel;
-  // a real tomato reaches full size while still green, then ripens in place — lock the
-  // physical size in at the start of ripening so the fruit reddens without enlarging
-  if(ph==='ripen'&&P.ripeSize==null)P.ripeSize=P.biomass;
-  P.sucPool=Math.max(0,f.sucPool-g*f.cCost);
-  P.nPool  =Math.max(0,f.nPool  -g*f.nCost);
-  if(ph==='establish'){P.structural+=g;}
-  else if(ph==='bulk'){P.starch+=g*0.70;P.structural+=g*0.30;}
-  else {
-    // ripening partition: excess nitrogen keeps the fruit watery & bland (less sugar, more structure)
-    const sugarFrac=0.65-0.30*nFeed, structFrac=0.20+0.30*nFeed;
-    P.sugar+=g*sugarFrac; P.lyc+=g*0.15*(1-0.4*nFeed); P.structural+=g*structFrac;
-  }
-  if(ph==='ripen'&&P.starch>1e-6){
-    // starch → sugar: driven by light & potassium, slowed by excess nitrogen
-    const conv=P.starch*0.11*(0.30+0.70*f.satL)*(1-0.35*nFeed)*(0.7+0.3*pk);
-    P.starch-=conv;P.sugar+=conv;
-  }
-  if(f.saltStress>0.05)P.saltDays++; if(f.photoinhib>0.05)P.inhibDays++; if(f.clInjury>0.05)P.injDays++;
-  P.biomass+=g;P.daily=g;
-  // ── sensor + Kalman filter (sparse observations) ──
-  P.trueB=Math.max(0,P.trueB+g*(1+randn()*KF_PROC_REL));      // hidden true plant deviates from the model
-  // PREDICT every day: roll the model's growth forward; uncertainty grows
-  P.kfx+=g; P.kfP+=KF_Q;
-  P.obs=null;
-  if(isObsDay(P.dpa)){                                        // a measurement only arrives now and then
-    const R=kfSensorNoise*kfSensorNoise;
-    const z=Math.max(0,P.trueB+randn()*kfSensorNoise);        // noisy observation of the true size
-    const Kg=P.kfP/(P.kfP+R);                                 // UPDATE: correct the estimate toward it…
-    P.kfx+=Kg*(z-P.kfx); P.kfP*=(1-Kg);                       // …and uncertainty collapses
-    P.obs=z;
-  }
-  P.est=P.kfx; P.sigma=Math.sqrt(P.kfP);
-  P.dpa++;P.diag=f;
+function newPlant() {
+  return { d: DAY0, suc: 2, n: 0.6, bio: 1, frame: 0, starch: 0, sugar: 0, lyc: 0, saltSum: 0, ripeDays: 0,
+    kwh: 0, cost: 0, wasteKwh: 0, spikeKwh: 0, ripeN: 0, saltDays: 0, inhibDays: 0, sinkDays: 0, nDays: 0, cDays: 0, ripeBio: null, g: 0, lastFlux: null };
 }
-const brixOf=P=>12*P.sugar/(P.sugar+P.starch+1e-9);
+const clonePlant = P => Object.assign({}, P, { lastFlux: null });
 
-/* ── controls (sliders → engine inputs) ── */
-const SLIDERS=[
-  {key:'light',cls:'sun',min:40,max:450,step:5,def:220,en:'☀ light (PPFD)',zh:'☀ 光照 (PPFD)',unit:''},
-  {key:'photo',cls:'sun',min:10,max:20,step:0.5,def:16,en:'⏱ photoperiod (h)',zh:'⏱ 光照时长 (h)',unit:'h'},
-  {key:'n',   cls:'n', min:0,max:100,step:1,def:50,en:'🅽 nitrogen feed',zh:'🅽 氮肥',unit:'%'},
-  {key:'pk',  cls:'pk',min:0,max:100,step:1,def:50,en:'🆦 mineral feed (P·K)',zh:'🆦 磷钾肥',unit:'%'},
-];
-let ctrl={light:220,photo:16,n:50,pk:50};
-function engineInputs(){
-  return {light:ctrl.light, photo:ctrl.photo,
-    no3: ctrl.n/100*30, nh4: 0.3+ctrl.n/100*0.7,
-    pi: 0.3+ctrl.pk/100*2.7, k: 2+ctrl.pk/100*10};
+const CFG = {
+  Cmax: 18, upkeep: 3.5, Lhalf: 250, Lopt: 380, LinhibScale: 450, inhibMax: 0.5,   // leaves: light → sugar
+  Nmax: 1.5, Nhalf: 40,                                                // roots: feed → nitrogen
+  sucCap: 6, nCap: 3,                                                  // what the stem and leaves can hold
+  Gmax: 10,                                                            // fruit: peak growth g/day at full size
+  frameRate: 0.14, frameC: 20, frameN: 6,                              // early cell division (sets fruit size)
+  ecThresh: 1.3, saltRate: 0.6, saltMax: 0.45,                         // root-zone salinity
+  shade: 0.55,                                                         // a closed shade screen lets this much sun through
+};
+const COST = [null, { c: 1.0, n: 0.10 }, { c: 1.0, n: 0.04 }];        // sugar and nitrogen per gram of fruit
+function sinkActivity(d) { const wmax = 100, k = 0.15, tm = 25; const W = wmax * Math.exp(-Math.exp(-k * (d - tm)));
+  const dem = (W > 0 && W < wmax) ? k * W * Math.log(wmax / W) : 0; return Math.min(1, dem / ((wmax * k) / Math.E)); }
+const sinkSize = P => 0.2 + 0.85 * P.frame;                           // more cells → a bigger fruit can fill
+const lightOf = (ctrl, sun) => sun * (ctrl.shade ? CFG.shade : 1) + ctrl.led;
+
+// One day of the plant: pure, so the UI can preview "what is holding it back" live.
+// ctrl = {led (µmol/m²/s), shade (bool), n (%), pk (%)}; sun = natural light this day.
+function flux(P, ctrl, sun, vigor = 1) {
+  const st = stageOf(P.d), light = lightOf(ctrl, sun);
+  const nFeed = ctrl.n / 100, pk = ctrl.pk / 100;
+  const ec = nFeed + pk;
+  const saltStress = Math.min(CFG.saltMax, Math.max(0, ec - CFG.ecThresh) * CFG.saltRate);
+  const fbSuc = 1 - 0.6 * Math.max(0, P.suc / CFG.sucCap - 0.5) * 2;  // full sugar store → leaves slow down
+  const satL = light / (light + CFG.Lhalf);
+  const photoinhib = Math.min(CFG.inhibMax, Math.max(0, light - CFG.Lopt) / CFG.LinhibScale);
+  const made = CFG.Cmax * satL * (1 - photoinhib) * Math.max(0.4, fbSuc) * (1 - 0.5 * saltStress) * vigor;
+  const C = made - CFG.upkeep;                                           // leaves, roots and the other fruit eat first
+  const N = CFG.Nmax * ctrl.n / (ctrl.n + CFG.Nhalf) * vigor;
+  const mineralF = 0.6 + 0.4 * pk;
+  const suc = Math.max(0, Math.min(P.suc + C, CFG.sucCap)), n = Math.min(P.n + N, CFG.nCap);
+  const out = { st, light, satL, photoinhib, made, C, N, pk, nFeed, ec, saltStress, mineralF, suc, n, frameG: 0 };
+  // early on, the fruit is dividing cells: nitrogen- and sugar-hungry, and it sets how big the fruit can get
+  if (st === 0) {
+    const want = CFG.frameRate, byC = suc / CFG.frameC, byN = n / CFG.frameN;
+    out.frameG = Math.max(0, Math.min(want, byC, byN)) * mineralF * (1 - saltStress);
+    out.limit = want <= Math.min(byC, byN) ? 'sink' : byC <= byN ? 'carbon' : 'nitrogen';
+    out.demand = 0.6 * CFG.Gmax * vigor * sinkSize(P) * sinkActivity(P.d);
+    out.growth = Math.min(out.demand, Math.max(0, suc - out.frameG * CFG.frameC)) * mineralF * (1 - saltStress);
+    return out;
+  }
+  const k = COST[st], demand = CFG.Gmax * vigor * sinkSize(P) * sinkActivity(P.d);
+  const byC = suc / k.c, byN = n / k.n;
+  out.demand = demand;
+  out.growth = Math.max(0, Math.min(demand, byC, byN)) * mineralF * (1 - saltStress);
+  out.limit = demand <= Math.min(byC, byN) ? 'sink' : byC <= byN ? 'carbon' : 'nitrogen';
+  out.cCost = k.c; out.nCost = k.n;
+  return out;
 }
 
-/* ── game state ── */
-let P=newPlant(), playing=false, history=[], best=null, harvested=false;
-try{best=JSON.parse(localStorage.getItem('tomato_best')||'null');}catch(e){}
+function step(P, ctrl, sun, price, vigor = 1, noise = 0) {
+  const f = flux(P, ctrl, sun, vigor), st = f.st;
+  const g = f.growth * Math.max(0.5, 1 + 0.10 * noise);
+  if (st === 2 && P.ripeBio == null) P.ripeBio = P.bio;
+  if (st === 0) {
+    P.frame += f.frameG;
+    P.suc = Math.max(0, f.suc - f.frameG * CFG.frameC - g);
+    P.n = Math.max(0, f.n - f.frameG * CFG.frameN);
+  } else {
+    P.suc = Math.max(0, f.suc - g * f.cCost);
+    P.n = Math.max(0, f.n - g * f.nCost);
+  }
+  if (st === 1) P.starch += g * 0.08;
+  if (st === 2) {
+    P.sugar += g * 0.06 * (1 - 0.6 * f.nFeed);                    // extra nitrogen while ripening = watery fruit
+    P.lyc += g * 0.02 * (1 - 0.4 * f.nFeed) + 0.04 * f.satL;
+    P.saltSum += f.saltStress; P.ripeDays++; P.ripeN += f.nFeed;
+    if (P.starch > 1e-6) {
+      const conv = P.starch * 0.13 * (0.35 + 0.65 * f.satL) * (0.6 + 0.4 * f.pk);   // light and potassium drive starch → sugar
+      P.starch -= conv; P.sugar += conv;
+    }
+  }
+  if (f.saltStress > 0.05) P.saltDays++;
+  if (f.photoinhib > 0.05) P.inhibDays++;
+  if (st > 0) { if (f.limit === 'sink') P.sinkDays++; else if (f.limit === 'nitrogen') P.nDays++; else P.cDays++; }
+  const kwh = ctrl.led * LED_KWH;
+  P.kwh += kwh; P.cost += kwh * price * KWH_PRICE;
+  if (f.limit === 'sink') P.wasteKwh += kwh;
+  if (price > 1) P.spikeKwh += kwh;
+  P.bio += g; P.g = g; P.d++; P.lastFlux = f;
+  return f;
+}
 
-function newSeason(){ playing=false; P=newPlant(); history=[]; harvested=false;
-  document.getElementById('harvest').classList.remove('show');
-  document.getElementById('btnPlay').textContent=t('▶ Grow','▶ 生长');
+const sugarFrac = P => P.sugar / (P.sugar + P.starch + 1e-9);
+// Soluble solids: converted sugar per gram of fruit, plus a little from salt stress (salty water → small, sweet fruit)
+const brixOf = P => { const conc = (P.sugar + P.starch * 0.25) / Math.max(1, P.bio) * 100; const salt = P.ripeDays ? P.saltSum / P.ripeDays : 0;
+  return Math.min(12, 2.5 + conc * 0.9 * (0.3 + 0.7 * sugarFrac(P)) + 6 * salt); };
+const gramsOf = bio => bio * GRAMS;
+const quality = brix => 0.35 + 0.13 * brix;                  // 5 °Brix ≈ 1.0×, 9 °Brix ≈ 1.5×
+// Harvest value: heavy AND sweet, minus the electricity the grow lights burned.
+function valueOf(P, bio = P.bio) { return gramsOf(bio) * quality(brixOf(P)) - P.cost; }
+
+// ── the twin: model + Kalman filter on [fruit size, plant vigour] ──
+function newTwin() { const nom = newPlant(); return { nom, s: nom.bio, v: 1, P: [[1e-4, 0], [0, 0.0081]], obs: null }; }
+const Q_REL = 0.10;
+function twinPredict(T, ctrl, sun, price) {
+  const f = step(T.nom, ctrl, sun, price, 1, 0), g = T.nom.g;
+  const [[a, b], [c, d]] = T.P, q = (Q_REL * g * T.v) ** 2;
+  // F = [[1, g], [0, 1]]: size grows by vigour × the model's growth
+  T.s += T.v * g;
+  T.P = [[a + g * (b + c) + g * g * d + q, b + g * d], [c + g * d, d + 1e-6]];
+  T.obs = null;
+  return f;
+}
+function twinUpdate(T, z) {
+  const R = (0.05 * z) ** 2 + 0.01, [[a, b], [c, d]] = T.P, S = a + R;
+  const k0 = a / S, k1 = c / S, y = z - T.s;
+  T.s += k0 * y; T.v = Math.max(0.6, Math.min(1.4, T.v + k1 * y));
+  T.P = [[(1 - k0) * a, (1 - k0) * b], [c - k1 * a, d - k1 * b]];
+  T.obs = z;
+}
+const twinSigma = T => Math.sqrt(Math.max(0, T.P[0][0]));
+
+// What the twin expects if these settings are kept to harvest: per-day size, spread and sweetness.
+function forecast(T, season, ctrlFn, fromDay) {
+  const P = clonePlant(T.nom), out = [];
+  let s = T.s, G = 0, qsum = 0;
+  for (let d = fromDay; d < DAY1; d++) {
+    const known = d < fromDay + FORECAST_DAYS;
+    const sun = known ? season.sun[d] : SUN_CLIM, price = known ? season.price[d] : 1;
+    step(P, ctrlFn(d, sun), sun, price, 1, 0);
+    G += P.g; qsum += (Q_REL * P.g * T.v) ** 2;
+    const [[a, b], [, dd]] = T.P;
+    out.push({ d: d + 1, s: s + T.v * G, sd: Math.sqrt(Math.max(0, a + 2 * G * b + G * G * dd + qsum)), brix: brixOf(P), cost: P.cost });
+  }
+  const last = out[out.length - 1] || { s, brix: brixOf(T.nom), cost: T.nom.cost };
+  return { path: out, s: last.s, brix: last.brix, cost: last.cost, value: gramsOf(last.s) * quality(last.brix) - last.cost };
+}
+
+// ── the autopilot: receding-horizon planning with its own twin ──
+// Plan = per remaining stage {target total light, N %, P·K %}; lamps top up the sun to the target.
+const planCtrl = (plan, d, sun) => { const p = plan[stageOf(d)], shade = sun > p.T && Math.abs(sun * CFG.shade - p.T) < sun - p.T;
+  return { led: shade ? 0 : Math.max(0, Math.min(LED_MAX, Math.round((p.T - sun) / 5) * 5)), shade, n: p.n, pk: p.pk }; };
+function evalPlan(nom, plan, season, fromDay) {
+  const P = clonePlant(nom);
+  for (let d = fromDay; d < DAY1; d++) {
+    const known = d < fromDay + FORECAST_DAYS;
+    const sun = known ? season.sun[d] : SUN_CLIM, price = known ? season.price[d] : 1;
+    step(P, planCtrl(plan, d, sun), sun, price, 1, 0);
+  }
+  return valueOf(P);
+}
+const PLAN0 = [{ T: 300, n: 70, pk: 40 }, { T: 330, n: 45, pk: 55 }, { T: 320, n: 10, pk: 80 }];
+const PSTEP = { T: 20, n: 5, pk: 5 }, PMAX = { T: 600, n: 100, pk: 100 }, PMIN = { T: 60, n: 0, pk: 0 };
+function autopilotPlan(nom, season, fromDay, prev) {
+  const plan = (prev || PLAN0).map(p => Object.assign({}, p));
+  let best = evalPlan(nom, plan, season, fromDay);
+  for (let sweep = 0; sweep < 4; sweep++) {
+    let moved = false;
+    for (let s = stageOf(fromDay); s < 3; s++) for (const k of ['T', 'n', 'pk']) for (const dir of [1, -1]) {
+      for (let mult = 2; mult >= 1; mult--) {
+        const old = plan[s][k], nv = Math.max(PMIN[k], Math.min(PMAX[k], old + dir * PSTEP[k] * mult));
+        if (nv === old) continue;
+        plan[s][k] = nv;
+        const v = evalPlan(nom, plan, season, fromDay);
+        if (v > best + 1e-6) { best = v; moved = true; break; } else plan[s][k] = old;
+      }
+    }
+    if (!moved) break;
+  }
+  return { plan, value: best };
+}
+
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════
+   Game: you vs the autopilot on the same seeded season
+   ════════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+let lang = 'en';
+const t = (en, zh) => lang === 'zh' ? zh : en;
+const fmt = (v, d = 0) => (Math.round(v * 10 ** d) / 10 ** d).toFixed(d);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SANS = getComputedStyle(document.documentElement).getPropertyValue('--sans');
+
+const SPEEDS = [1800, 900, 450, 220];             // ms per day
+let S = null, you = null, bot = null, seed = 0, isDaily = true;
+let playing = false, speedIdx = 1, autoDrive = false, assisted = false, finished = false, acc = 0;
+let announced = new Set(), botView = null, labelsOn = true;
+
+const newRun = () => ({ P: newPlant(), T: newTwin(), plan: null, hist: [], ctrl: { led: 0, shade: false, n: 60, pk: 50 } });
+const snap = r => ({ d: r.P.d, est: r.T.s, sd: twinSigma(r.T), obs: r.T.obs, brix: brixOf(r.T.nom), truth: r.P.bio, tBrix: brixOf(r.P) });
+function todaySeed() { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+function seasonName() {
+  if (!isDaily) return '#' + String(seed).slice(-5);
+  const m = Math.floor(seed / 100) % 100, d = seed % 100;
+  const en = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m - 1] + ' ' + d;
+  return t(en, `${m}月${d}日`);
+}
+
+function startSeason(newSeed, daily, watch) {
+  seed = newSeed; isDaily = daily;
+  S = makeSeason(seed); you = newRun(); bot = newRun();
+  you.hist = [snap(you)]; bot.hist = [snap(bot)];
+  bot.plan = autopilotPlan(bot.T.nom, S, DAY0, null).plan;
+  finished = false; autoDrive = !!watch; assisted = !!watch; acc = 0; announced = new Set();
+  $('autoDrive').checked = autoDrive;
+  if (autoDrive) driveYou();
+  syncSliders();
+  closeModals();
+  $('lgReal').hidden = true;
+  playing = true;
+  announceEvents();
   render();
 }
-function stepOnce(){ if(P.dpa>DPA_END){return;} stepDay(P, engineInputs());
-  history.push({d:P.dpa-1,size:P.biomass,brix:brixOf(P),trueB:P.trueB,est:P.est,sigma:P.sigma,obs:P.obs});
-  if(P.dpa>DPA_END) harvest(); render(); }
-function togglePlay(){ if(P.dpa>DPA_END){ newSeason(); return; } playing=!playing;
-  document.getElementById('btnPlay').textContent=playing?t('⏸ Pause','⏸ 暂停'):t('▶ Grow','▶ 生长');
-  if(playing) loop(); }
-let _acc=0;
-function loop(ts){ if(!playing) return;
-  stepOnce(); if(P.dpa>DPA_END){ playing=false; document.getElementById('btnPlay').textContent=t('↺ New season','↺ 新一季'); return; }
-  const speed=+document.getElementById('speed').value;
-  setTimeout(()=>requestAnimationFrame(loop), 420/speed);
+
+// the autopilot's move for the player's own greenhouse (when asked to drive)
+function driveYou() {
+  const d = you.P.d;
+  you.plan = autopilotPlan(you.T.nom, S, d, you.plan).plan;
+  you.ctrl = planCtrl(you.plan, d, S.sun[d]);
 }
 
-/* ── harvest scoring ── */
-function harvest(){
-  harvested=true;
-  const size=P.biomass, brix=brixOf(P);
-  const sweetYield=size*(brix/12);              // big AND sweet
-  const score=Math.round(sweetYield*12);
-  let stars=1; if(score>120)stars=2; if(score>240)stars=3; if(score>360)stars=4; if(score>460)stars=5;
-  const overSalt=P.saltDays>6, overLight=(P.inhibDays+P.injDays)>8;
-  let verdict;
-  if(brix>=9.5&&size>=50) verdict=t('A perfect tomato — big and candy-sweet. 🍅✨','完美番茄——又大又甜。🍅✨');
-  else if(overSalt&&size<50) verdict=t('Over-fertilised — root-zone salt stress stunted it. Ease off nitrogen / P·K.','施肥过量——根区盐胁迫抑制了生长。减少氮/磷钾。');
-  else if(overLight&&size<50) verdict=t('Light-stressed — too much PPFD or too long a day. Aim for ~340 PPFD / 16 h.','光胁迫——光照过强或时长过长。目标约 340 PPFD / 16 小时。');
-  else if(size>=55&&brix<8.5) verdict=t('Huge, but watery and bland — cut the nitrogen while ripening to sweeten it.','个头很大，但多水寡淡——成熟期降低氮肥以增甜。');
-  else if(brix>=9.5&&size<40) verdict=t('Lovely and sweet, just small — feed it more, earlier.','小巧而甜美，就是偏小——早点多施肥。');
-  else if(size<30) verdict=t('Undersized — it was starved of light or feed.','偏小——光照或养分不足。');
-  else verdict=t('A solid, tasty tomato. Tune the season to push for 5★.','一颗扎实可口的番茄。优化季节策略冲击5★。');
-  document.getElementById('hvStars').textContent='★★★★★'.slice(0,stars)+'☆☆☆☆☆'.slice(0,5-stars);
-  document.getElementById('hvVerdict').textContent=verdict;
-  document.getElementById('hvScore').textContent=t(`size ${size.toFixed(0)} mmol · sweetness ${brix.toFixed(1)} · score ${score}`,`大小 ${size.toFixed(0)} · 甜度 ${brix.toFixed(1)} · 得分 ${score}`);
-  if(!best||score>best.score){best={score,size:+size.toFixed(0),brix:+brix.toFixed(1)};try{localStorage.setItem('tomato_best',JSON.stringify(best));}catch(e){}}
-  document.getElementById('hvBest').textContent=t(`best score: ${best.score}`,`最佳得分：${best.score}`);
-  document.getElementById('harvest').classList.add('show');
-  document.getElementById('btnPlay').textContent=t('↺ New season','↺ 新一季');
+function tick() {
+  if (!S || finished) return;
+  const d = you.P.d;
+  if (d >= DAY1) return harvest();
+  const sun = S.sun[d], price = S.price[d];
+  if (autoDrive) { driveYou(); syncSliders(); }
+  // you
+  twinPredict(you.T, you.ctrl, sun, price);
+  step(you.P, you.ctrl, sun, price, S.vigor, S.noise[d]);
+  let measured = null;
+  if (isSenseDay(you.P.d)) { measured = you.P.bio * (1 + 0.05 * S.mnoise[d]); twinUpdate(you.T, measured); camFlash(measured); }
+  you.hist.push(snap(you));
+  // the autopilot next door: same weather, same plant, its own decisions
+  bot.plan = autopilotPlan(bot.T.nom, S, d, bot.plan).plan;
+  bot.ctrl = planCtrl(bot.plan, d, sun);
+  twinPredict(bot.T, bot.ctrl, sun, price);
+  step(bot.P, bot.ctrl, sun, price, S.vigor, S.noise[d]);
+  if (isSenseDay(bot.P.d)) twinUpdate(bot.T, bot.P.bio * (1 + 0.05 * S.mnoise[d]));
+  bot.hist.push(snap(bot));
+  botView = null;
+  announceEvents();
+  const nd = you.P.d;
+  if (nd >= DAY1) { render(); return harvest(); }
+  if (stageOf(nd) !== stageOf(nd - 1)) stageCard(stageOf(nd));
+  render();
 }
 
-/* ── render ── */
-function render(){
-  const ph=phase(Math.min(P.dpa,DPA_END));
-  const brix=brixOf(P);
-  document.getElementById('dayLabel').textContent=`DPA ${Math.min(P.dpa,DPA_END)}`;
-  document.getElementById('dayFill').style.width=(100*(Math.min(P.dpa,DPA_END)-DPA_START)/(DPA_END-DPA_START))+'%';
-  const phNames={establish:t('establishing','建立期'),bulk:t('bulking','膨大期'),ripen:t('ripening','成熟期')};
-  document.getElementById('phaseTag').textContent=phNames[ph];
-  document.getElementById('sSize').textContent=P.biomass.toFixed(1)+' mmol';
-  document.getElementById('sBrix').textContent=brix.toFixed(1);
-  document.getElementById('mBrix').style.width=Math.min(100,brix/12*100)+'%';
-  document.getElementById('sLyc').textContent=P.lyc.toFixed(2);
-  document.getElementById('mLyc').style.width=Math.min(100,P.lyc/2.4*100)+'%';
-  document.getElementById('sSuc').textContent=Math.round(P.sucPool/(CFG.sucCap*CFG.capScale)*100)+'%';
-  document.getElementById('mSuc').style.width=Math.min(100,P.sucPool/(CFG.sucCap*CFG.capScale)*100)+'%';
-  document.getElementById('sN').textContent=Math.round(P.nPool/(CFG.nCap*CFG.capScale)*100)+'%';
-  document.getElementById('mN').style.width=Math.min(100,P.nPool/(CFG.nCap*CFG.capScale)*100)+'%';
-  document.getElementById('sStarch').textContent=P.starch.toFixed(1);
-  document.getElementById('mStarch').style.width=Math.min(100,P.starch/25*100)+'%';
-  const sc=Math.round(P.biomass*(brix/12)*12);
-  document.getElementById('scoreNow').textContent=t('score '+sc,'得分 '+sc);
-  updatePhaseTip(ph);
-  renderFBA();
-  renderPlant();
-  drawChart();
-  drawKF();
-}
-// What the plant is putting its energy into shifts across development: it builds a
-// frame, then banks carbon as starch, then turns that starch into sugar.
-const STAGE_OBJ={
-  establish:{en:'building its frame',zh:'搭建骨架',val:P=>P.structural.toFixed(1),col:'#1db954'},
-  bulk:     {en:'banking starch',zh:'积累淀粉',val:P=>P.starch.toFixed(1),col:'#9a7b4f'},
-  ripen:    {en:'turning sweet',zh:'转化糖分',val:P=>brixOf(P).toFixed(1),col:'#ffce4d'},
-};
-const OBJ_SEQ=[['establish','frame','框架'],['bulk','carbon','储碳'],['ripen','sweetness','甜度']];
-
-// FBA readout: the CURRENT stage objective, which substrate constraint is binding
-// right now, and the "too much" stress flags — the shadow-price intuition made visible.
-function renderFBA(){
-  const f=computeStep(P, engineInputs()), ph=f.ph;
-  const brix=brixOf(P);
-  document.getElementById('objZ').textContent='yield '+(P.biomass*(brix/12)).toFixed(1);
-  // objective breadcrumb — the active stage is highlighted in its own colour
-  document.getElementById('objSeq').innerHTML=OBJ_SEQ.map(([k,en,zh],i)=>{
-    const on=k===ph, col=on?STAGE_OBJ[k].col:'#444';
-    const sep=i<2?'<span style="color:#2c2c2c"> → </span>':'';
-    return `<span style="color:${col};font-weight:${on?700:400}">${i+1} ${t(en,zh)}</span>${sep}`;
-  }).join('');
-  // what the plant is putting its energy into this stage (plain language, colour-coded)
-  const so=STAGE_OBJ[ph];
-  const labEl=document.getElementById('stageObjLab');
-  labEl.textContent=t(so.en,so.zh); labEl.style.color=so.col;
-  const limEl=document.getElementById('limitNow');
-  limEl.textContent = f.limit==='carbon' ? t('carbon (light)','碳（光照）') : t('nitrogen (feed)','氮（施肥）');
-  limEl.style.color = f.limit==='carbon' ? '#ffce4d' : '#4da6ff';
-  const mk=(on,cls,en,zh)=>`<span class="badge ${on?cls:''}">${t(en,zh)}</span>`;
-  document.getElementById('stressBadges').innerHTML=[
-    mk(f.photoinhib>0.02,'on','☀ photoinhibition','☀ 光抑制'),
-    mk(f.clInjury>0.02,'on','⏱ light injury','⏱ 连续光伤害'),
-    mk(f.saltStress>0.02,'on','🧂 salinity','🧂 盐胁迫'),
-    mk(f.fbSuc<0.95,'warn','🍬 sink full','🍬 库已满'),
-  ].join('');
-  let hint;
-  if(f.saltStress>0.05) hint=t('Root-zone is salty from over-feeding — growth is throttled. Back off nitrogen or P·K.','施肥过量使根区盐分升高——生长受抑。降低氮或磷钾。');
-  else if(f.photoinhib>0.05) hint=t('Light is past its sweet spot — extra PPFD now photoinhibits. Ease it toward ~340.','光照超过最佳点——继续加光会抑制光合。回调至约 340。');
-  else if(f.clInjury>0.05) hint=t('Day length too long — leaves are injuring. Pull the photoperiod back toward 16 h.','光照时长过长——叶片受损。将光照时长回调至约 16 小时。');
-  else if(f.ph==='ripen'&&f.nFeed>0.4) hint=t('Ripening: nitrogen is high — it dilutes sugar. Cut N to sweeten the fruit.','成熟期：氮肥偏高——会稀释糖分。降低氮以增甜。');
-  else if(f.limit==='carbon') hint=t('Growth is carbon-limited — more light / photoperiod helps, up to photoinhibition.','生长受碳限制——增加光照/时长有助，直至光抑制。');
-  else hint=t('Growth is nitrogen-limited — raise the nitrogen feed.','生长受氮限制——提高氮肥。');
-  document.getElementById('fbaTip').innerHTML=hint;
-}
-function updatePhaseTip(ph){
-  const tips={
-    establish:t('<b>Establishing</b> (day 8–15): build a strong frame. Feed <b>nitrogen</b> and give moderate light — don\'t blast it yet.','<b>建立期</b>（第8–15天）：搭建强健框架。施<b>氮肥</b>、给适度光照——先别拉满。'),
-    bulk:t('<b>Bulking</b> (day 16–35): push <b>light</b> to bank starch — but stay near the <b>~340 PPFD / 16 h</b> sweet spot. Past it, photoinhibition and leaf injury cost you.','<b>膨大期</b>（第16–35天）：加<b>光照</b>积累淀粉——但保持在 <b>约 340 PPFD / 16 h</b> 最佳点附近。超过则光抑制与叶伤害得不偿失。'),
-    ripen:t('<b>Ripening</b> (day 36+): keep light up to turn starch → <b>sugar</b>, raise <b>P·K</b>, and <b>cut nitrogen</b> — excess N keeps the fruit watery and bland.','<b>成熟期</b>（第36天起）：保持光照把淀粉转为<b>糖</b>，提高<b>磷钾</b>，并<b>降低氮肥</b>——氮过量会让果实多水寡淡。'),
-  };
-  document.getElementById('phaseTip').innerHTML=tips[ph];
-}
-// braille-art tomato — grows while green, then locks size and ripens green→orange→red
-const TOMATO_ART=[
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠻⣶⡆⠀⠿⠀⣶⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣴⠾⠛⢹⣶⡤⢶⣿⡟⠶⠦⠄⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⣠⣶⣤⣤⣤⣤⣴⠂⠸⠋⢀⣄⡉⠓⠀⠲⣶⣾⣿⣷⣄⠀⠀⠀⠀",
-"⠀⠀⠀⢀⣾⡿⠋⠁⣠⣤⣿⡟⢀⣠⣾⣿⣿⣿⣷⣶⣤⣼⣿⣿⣿⣿⣆⠀⠀⠀",
-"⠀⠀⠀⣾⡟⠀⣰⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀",
-"⠀⠀⢸⡿⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀",
-"⠀⠀⢸⡇⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀",
-"⠀⠀⢸⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀",
-"⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀",
-"⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀",
-"⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
-];
-function renderPlant(){
-  // ripening reddens through a true tomato ramp: green → orange (breaker) → red
-  const ripe=Math.min(1,P.lyc/2.1);
-  const lerp=(a,bb,t)=>a.map((v,i)=>Math.round(v+(bb[i]-v)*t));
-  const green=[86,156,64], orange=[235,150,40], red=[224,52,40];
-  const b=ripe<0.5?lerp(green,orange,ripe/0.5):lerp(orange,red,(ripe-0.5)/0.5);
-  const bodyCol=`rgb(${b[0]},${b[1]},${b[2]})`;
-  const crown='rgb(70,160,68)';                       // green leafy calyx — stays green even when ripe
-  // size is set during bulking (while green); once ripening starts it's locked, so the
-  // fruit reddens in place instead of continuing to grow
-  const sizeM=(P.ripeSize!=null)?P.ripeSize:P.biomass;
-  const grow=Math.min(1, sizeM/48);
-  const tom=document.getElementById('tomatoArt');
-  tom.style.fontSize=(5.5+grow*9).toFixed(1)+'px';
-  tom.innerHTML=TOMATO_ART.map((ln,i)=>`<span style="color:${i<5?crown:bodyCol}">${ln}</span>`).join('\n');
-  // sun grows & brightens with light; a cloud rolls in to cover it when light is low
-  const lf=Math.max(0,Math.min(1,(ctrl.light-40)/410));
-  const sun=document.getElementById('sun');
-  sun.style.fontSize=(28+lf*24).toFixed(0)+'px';      // ~28px (dim) → ~52px (full sun)
-  sun.style.opacity=(0.65+lf*0.35).toFixed(2);
-  const cloud=document.getElementById('cloud');
-  const cl=Math.max(0,Math.min(1,1-lf*1.25));         // cloudy at low light, clear by ~80%
-  cloud.style.opacity=cl.toFixed(2);
-  cloud.style.fontSize=(34+(1-lf)*18).toFixed(0)+'px';
-}
-function drawChart(){
-  const cv=document.getElementById('chart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=6;
-  x.clearRect(0,0,W,H);
-  x.strokeStyle='#161616';for(let i=0;i<=4;i++){const y=pad+(H-2*pad)*i/4;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();}
-  if(history.length<2)return;
-  const maxSize=Math.max(70,...history.map(h=>h.size));
-  const line=(key,max,col)=>{x.strokeStyle=col;x.lineWidth=2;x.beginPath();
-    history.forEach((h,i)=>{const px=pad+(W-2*pad)*(h.d-DPA_START)/(DPA_END-DPA_START);const py=H-pad-(H-2*pad)*Math.min(1,h[key]/max);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();};
-  line('size',maxSize,'#1db954');
-  line('brix',12,'#ffce4d');
-}
-function drawKF(){
-  const cv=document.getElementById('kfchart'),x=cv.getContext('2d'),W=cv.width,H=cv.height,pad=6;
-  x.clearRect(0,0,W,H);
-  x.strokeStyle='#161616';for(let i=0;i<=4;i++){const y=pad+(H-2*pad)*i/4;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();}
-  const tipEl=document.getElementById('kfTip');
-  if(tipEl) tipEl.innerHTML=t('The dFBA model predicts each day, so its uncertainty (the <b>±σ band</b>) keeps growing. A real measurement only arrives every so often (◆) — and when it does, the <b>Kalman filter</b> snaps the estimate toward it and the band collapses. Between obs it drifts again. Raise <b>sensor noise</b> to make the filter trust the measurements less.','dFBA 模型每天预测，所以不确定性（<b>±σ 带</b>）持续增大。真实测量只是偶尔到来（◆）——一旦到来，<b>卡尔曼滤波</b>就把估计拉向它、误差带收缩。两次观测之间又重新漂移。提高<b>传感器噪声</b>会让滤波更不信任测量。');
-  if(history.length<2){document.getElementById('kfErr').textContent='—';return;}
-  const max=Math.max(10,...history.map(h=>Math.max(h.trueB||0,h.est+h.sigma||0,h.obs||0,h.size||0)));
-  const X=d=>pad+(W-2*pad)*(d-DPA_START)/(DPA_END-DPA_START);
-  const Y=v=>H-pad-(H-2*pad)*Math.min(1,Math.max(0,v/max));
-  // ±σ confidence band — grows between observations, collapses at each one
-  x.fillStyle='rgba(54,197,208,0.16)';x.beginPath();
-  history.forEach((h,i)=>{const px=X(h.d),py=Y(h.est+h.sigma);i?x.lineTo(px,py):x.moveTo(px,py);});
-  for(let i=history.length-1;i>=0;i--){const h=history[i];x.lineTo(X(h.d),Y(Math.max(0,h.est-h.sigma)));}
-  x.closePath();x.fill();
-  // dFBA model, no correction — dotted grey (drifts away, no obs to pull it back)
-  x.strokeStyle='#5a5a5a';x.setLineDash([2,3]);x.lineWidth=1;x.beginPath();
-  history.forEach((h,i)=>{const px=X(h.d),py=Y(h.size);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();x.setLineDash([]);
-  // hidden true size — faint green
-  x.strokeStyle='#4f7050';x.lineWidth=1;x.beginPath();
-  history.forEach((h,i)=>{const px=X(h.d),py=Y(h.trueB);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();
-  // Kalman estimate — cyan (jumps toward each observation)
-  x.strokeStyle='#36c5d0';x.lineWidth=2;x.beginPath();
-  history.forEach((h,i)=>{const px=X(h.d),py=Y(h.est);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();
-  // observations — yellow diamonds (sparse)
-  x.fillStyle='#ffce4d';
-  history.forEach(h=>{if(h.obs==null)return;const px=X(h.d),py=Y(h.obs);x.save();x.translate(px,py);x.rotate(Math.PI/4);x.fillRect(-3.2,-3.2,6.4,6.4);x.restore();});
-  // live uncertainty of the estimate (the ±σ half-width)
-  document.getElementById('kfErr').textContent=`σ ±${(history[history.length-1].sigma).toFixed(1)} mmol`;
-}
-
-/* ── lang ── */
-let lang='en';
-function t(en,zh){return lang==='zh'?zh:en;}
-function buildSliders(){
-  const host=document.getElementById('sliders');host.innerHTML='';
-  for(const s of SLIDERS){
-    const row=document.createElement('div');row.className='slider-row';
-    const disp=s.key==='light'?ctrl.light:s.key==='photo'?ctrl.photo:ctrl[s.key];
-    row.innerHTML=`<div class="lab"><span class="name">${lang==='zh'?s.zh:s.en}</span><span class="val" id="lv_${s.key}">${disp}${s.unit}</span></div>
-      <input type="range" class="${s.cls}" id="cs_${s.key}" min="${s.min}" max="${s.max}" step="${s.step}" value="${ctrl[s.key]}">`;
-    host.appendChild(row);
-    row.querySelector('input').addEventListener('input',e=>{ctrl[s.key]=+e.target.value;document.getElementById('lv_'+s.key).textContent=ctrl[s.key]+s.unit;render();});
+function announceEvents() {
+  const d = you.P.d;
+  for (const e of S.events) {
+    const key = e.type + e.day;
+    if (announced.has(key) || e.day > d + FORECAST_DAYS - 1 || e.day + e.len <= d) continue;
+    announced.add(key);
+    const span = `${e.day}–${e.day + e.len - 1}`;
+    if (e.type === 'cloud') toast(t(`☁ Cloudy spell coming: days ${span}`, `☁ 阴天将至：第 ${span} 天`));
+    else if (e.type === 'bright') toast(t(`☀ Scorching days coming: days ${span}`, `☀ 烈日将至：第 ${span} 天`));
+    else toast(t(`⚡ Electricity ×3 on days ${span}`, `⚡ 第 ${span} 天电价 ×3`));
   }
 }
-function applyLang(){
-  document.getElementById('pgTitle').textContent=t('>_ Grow a Tomato','>_ 种番茄');
-  document.getElementById('pgSub').textContent=t('A tomato-growing sim distilled from a real dFBA metabolic model. What the plant needs shifts each stage — frame → carbon → sweetness — and every input has a sweet spot: too little starves the fruit; too much triggers photoinhibition, light injury or salt stress. Tune the greenhouse across the season (day 8 → 53) to grow the biggest, sweetest fruit.','由真实 dFBA 代谢模型提炼的番茄种植模拟。植物的需求随阶段变化——框架 → 储碳 → 甜度——且每个输入都有最佳点：太少则果实挨饿，太多则引发光抑制、连续光伤害或盐胁迫。整季调节温室（第8→53天），种出又大又甜的果实。');
-  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=t(el.dataset.en,el.dataset.zh);});
-  buildSliders();render();
-}
-function toggleLang(){lang=lang==='en'?'zh':'en';document.getElementById('langBtn').textContent=lang==='zh'?'English':'中文';applyLang();try{localStorage.setItem('arcade_lang',lang);}catch(e){}}
-document.getElementById('speed').addEventListener('input',()=>document.getElementById('vSpeed').textContent=document.getElementById('speed').value);
-document.getElementById('kfNoise').addEventListener('input',e=>{kfSensorNoise=+e.target.value;document.getElementById('vKf').textContent=kfSensorNoise.toFixed(1);render();});
-buildSliders();render();
 
-/* remember the language across the whole arcade */
-try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
+let toastTimer = 0;
+function toast(msg) {
+  const el = $('toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/* ── stage cards ── */
+const STAGES = [
+  { en: 'Set the size', zh: '定大小', from: 8, to: 15,
+    ten: 'The young fruit is dividing its cells. How many it makes now sets how big it can ever get, so feed nitrogen and keep sugar coming.',
+    tzh: '幼果正在分裂细胞。现在分裂出多少细胞，决定了它最终能长多大，所以多给氮，保证糖分供应。' },
+  { en: 'Fill up', zh: '膨大期', from: 16, to: 35,
+    ten: 'The cells now swell with water and starch. Sugar from the leaves is the bottleneck, so light pays off most here, especially on dull days. When the fruit is already full, extra light is wasted electricity: watch the diagnosis.',
+    tzh: '细胞开始吸水膨大、储存淀粉。此时叶片供糖是瓶颈，光照回报最高，阴天尤其如此。果实已吃饱时，再加光就是浪费电：留意右边的诊断。' },
+  { en: 'Ripen', zh: '成熟期', from: 36, to: 52,
+    ten: 'Starch turns into sugar and the fruit colours up. Cut nitrogen now (it makes watery fruit) and raise potassium. A little salt stress gives smaller but sweeter fruit, a trick real growers use.',
+    tzh: '淀粉转化为糖，果实开始转色。现在减少氮（会让果实多水）并提高钾。轻微的盐胁迫会让果实变小但更甜，这是真实种植者会用的技巧。' },
+];
+function stageCard(s) {
+  const st = STAGES[s];
+  if (autoDrive) { toast(t(`Stage ${s + 1}: ${st.en}`, `第 ${s + 1} 阶段：${st.zh}`)); return; }
+  playing = false;
+  $('stageKick').textContent = t(`Day ${st.from} · stage ${s + 1} of 3`, `第 ${st.from} 天 · 第 ${s + 1}/3 阶段`);
+  $('stageTitle').textContent = t(st.en, st.zh);
+  $('stageText').textContent = t(st.ten, st.tzh);
+  openModal('mStage');
+}
+
+function openModal(id) { $(id).classList.add('show'); const b = $(id).querySelector('.btn.primary'); if (b) setTimeout(() => b.focus(), 30); }
+function closeModals() { document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show')); }
+const modalOpen = () => !!document.querySelector('.modal.show');
+
+/* ── harvest ── */
+function harvest() {
+  finished = true; playing = false;
+  const P = you.P, grams = gramsOf(P.bio), brix = brixOf(P), score = valueOf(P);
+  const bScore = valueOf(bot.P), ratio = bScore > 0 ? score / bScore : 1;
+  const stars = ratio >= 0.97 ? 5 : ratio >= 0.9 ? 4 : ratio >= 0.8 ? 3 : ratio >= 0.65 ? 2 : 1;
+  $('hvKick').textContent = t(`Harvest · season ${seasonName()}`, `收获 · 赛季 ${seasonName()}`);
+  $('hvStars').textContent = assisted ? '🤖' : '★★★★★'.slice(0, stars) + '☆☆☆☆☆'.slice(0, 5 - stars);
+  $('hvTitle').textContent = assisted ? t('Autopilot-assisted season', '自动驾驶辅助的一季')
+    : ratio >= 1 ? t('You beat the autopilot! 🎉', '你赢了自动驾驶！🎉')
+    : ratio >= 0.97 ? t('Neck and neck with the autopilot', '与自动驾驶不相上下')
+    : ratio >= 0.9 ? t('Close. The autopilot edged it.', '很接近，自动驾驶略胜一筹。')
+    : t('The autopilot won this one', '这一局自动驾驶赢了');
+  const cell = (k, v) => `<div><small>${k}</small><b>${v}</b></div>`;
+  $('hvStats').innerHTML = cell(t('fruit', '果实'), `${fmt(grams)} g`) + cell(t('sweetness', '甜度'), `${fmt(brix, 1)}°`)
+    + cell(t('electricity', '用电'), `${fmt(P.kwh)} kWh`) + cell(t('score', '得分'), fmt(score));
+  const pct = Math.round(Math.abs(ratio - 1) * 100);
+  $('hvVs').innerHTML = t(`🤖 The autopilot grew ${fmt(gramsOf(bot.P.bio))} g at ${fmt(brixOf(bot.P), 1)} °Brix on ${fmt(bot.P.kwh)} kWh: score <b>${fmt(bScore)}</b>. `,
+    `🤖 自动驾驶种出 ${fmt(gramsOf(bot.P.bio))} 克、${fmt(brixOf(bot.P), 1)} °Brix，用电 ${fmt(bot.P.kwh)} kWh：得分 <b>${fmt(bScore)}</b>。`)
+    + (pct === 0 ? t('A tie.', '打平。') : ratio >= 1 ? t(`You won by ${pct}%.`, `你领先 ${pct}%。`) : t(`It won by ${pct}%.`, `它领先 ${pct}%。`));
+  const est = gramsOf(you.T.s), band = 1.64 * gramsOf(twinSigma(you.T)), inside = Math.abs(grams - est) <= band + 0.5;
+  $('hvReveal').textContent = t(`The twin never saw inside the fruit. It estimated ${fmt(est)} ± ${fmt(band)} g; the real fruit weighs ${fmt(grams)} g ${inside ? '✓ inside its range' : '(outside its range)'}. This plant was ${fmt(S.vigor, 2)}× as vigorous as the textbook plant; the twin had learned ${fmt(you.T.v, 2)}×.`,
+    `孪生从未看到果实内部。它估计 ${fmt(est)} ± ${fmt(band)} 克；真实果实重 ${fmt(grams)} 克${inside ? ' ✓ 在范围内' : '（超出范围）'}。这株植物的长势是教科书植株的 ${fmt(S.vigor, 2)} 倍，孪生学到的是 ${fmt(you.T.v, 2)} 倍。`);
+  $('hvCoach').innerHTML = coaching(P).map(s => `<li>${s}</li>`).join('');
+  $('hvWhy').innerHTML = t('Why a twin? You can\'t see the sugar inside a fruit or weigh it on the vine. A model plus a few sensor readings, merged by a filter, gives a live estimate you can plan with and an autopilot can steer by. Simulate, diagnose, steer: that loop is what my PhD builds for real greenhouses. <a href="https://houfu72.com">houfu72.com</a>',
+    '为什么要数字孪生？你看不到果实里的糖，也没法在藤上称重。模型加上少量传感器读数、用滤波器融合，就能得到可用来规划的实时估计，自动控制器也能据此调控。模拟、诊断、调控，这个闭环正是我的博士课题为真实温室构建的东西。<a href="https://houfu72.com">houfu72.com</a>');
+  if (!assisted) {
+    try { const k = 'tomato2_best_' + seed, b = +localStorage.getItem(k) || -1e9; if (score > b) localStorage.setItem(k, String(Math.round(score))); } catch (e) {}
+  }
+  $('lgReal').hidden = false;
+  lastResult = { grams, brix, kwh: P.kwh, score, stars, ratio };
+  render();
+  openModal('mHarvest');
+}
+let lastResult = null;
+
+function coaching(P) {
+  const out = [], days = n => Math.round(n);
+  if (P.frame < 0.75) out.push(t('Early on it made few cells (short of nitrogen or sugar in the first week), so the fruit could never get big.', '前期细胞分裂不足（第一周缺氮或缺糖），果实注定长不大。'));
+  if (P.cDays >= 6 && P.kwh < 10) out.push(t(`It was short of sugar on ${days(P.cDays)} days. Lamps on dull days in the fill stage pay for themselves.`, `有 ${days(P.cDays)} 天缺糖。膨大期阴天开补光灯是值得的。`));
+  if (P.wasteKwh >= 5) out.push(t(`${fmt(P.wasteKwh)} kWh of lamp light went to waste while the fruit was already full (sink-limited).`, `果实已吃饱（库限制）时，仍有 ${fmt(P.wasteKwh)} kWh 灯光被浪费。`));
+  if (P.ripeDays && P.ripeN / P.ripeDays > 0.3) out.push(t('Nitrogen while ripening kept the fruit watery: cut it to 0–20% after day 36.', '成熟期的氮让果实多水寡淡：第 36 天后降到 0–20%。'));
+  if (P.saltDays >= 5) out.push(t(`The root zone was salty on ${P.saltDays} days (nitrogen + P·K too high): smaller fruit, though a bit sweeter.`, `根区盐分过高 ${P.saltDays} 天（氮 + 磷钾太多）：果实变小，但稍甜。`));
+  if (P.inhibDays >= 3) out.push(t(`Too bright on ${P.inhibDays} days: close the shade screen on scorchers.`, `有 ${P.inhibDays} 天光照过强：烈日时拉上遮阳网。`));
+  if (P.spikeKwh >= 2) out.push(t(`Lamps during the price spike cost triple (${fmt(P.spikeKwh)} kWh).`, `电价高峰期开灯，电费三倍（${fmt(P.spikeKwh)} kWh）。`));
+  if (!out.length) out.push(t('A clean season. The autopilot\'s edge is in small daily choices; watch it play to see them.', '这一季很干净。自动驾驶的优势在于每天的小调整，看它玩一局就知道。'));
+  return out.slice(0, 3);
+}
+
+async function copyResult() {
+  if (!lastResult) return;
+  const r = lastResult, pct = Math.round(Math.abs(r.ratio - 1) * 100);
+  const vs = assisted ? t('autopilot-assisted', '自动驾驶辅助') : pct === 0 ? t('tied with the autopilot', '与自动驾驶打平') : r.ratio >= 1 ? t(`beat the autopilot by ${pct}%`, `赢了自动驾驶 ${pct}%`) : t(`autopilot won by ${pct}%`, `自动驾驶领先 ${pct}%`);
+  const text = `🍅 ${t('Grow a Tomato', '种番茄')} · ${seasonName()}\n${fmt(r.grams)} g · ${fmt(r.brix, 1)} °Brix · ${fmt(r.kwh)} kWh${assisted ? '' : ' · ' + '★'.repeat(r.stars) + '☆'.repeat(5 - r.stars)}\n${vs}\nhttps://lifegameproject.com/game/tomato.html`;
+  try { await navigator.clipboard.writeText(text); toast(t('Copied. Paste it anywhere.', '已复制，随处粘贴。')); }
+  catch (e) { toast(t('Couldn\'t copy on this browser.', '此浏览器无法复制。')); }
+}
+
+/* ── controls ── */
+function setRange(el, v) { el.value = v; el.style.setProperty('--p', (100 * (v - el.min) / (el.max - el.min)) + '%'); }
+function syncSliders() {
+  setRange($('led'), you.ctrl.led); setRange($('nit'), you.ctrl.n); setRange($('pot'), you.ctrl.pk);
+  $('shadeBtn').setAttribute('aria-pressed', String(!!you.ctrl.shade));
+  ['led', 'nit', 'pot'].forEach(id => $(id).disabled = autoDrive);
+  $('shadeBtn').disabled = autoDrive;
+}
+function onInput() {
+  if (autoDrive) return;
+  you.ctrl.led = +$('led').value; you.ctrl.n = +$('nit').value; you.ctrl.pk = +$('pot').value;
+  syncSliders(); render();
+}
+['led', 'nit', 'pot'].forEach(id => $(id).addEventListener('input', onInput));
+$('shadeBtn').addEventListener('click', () => { if (autoDrive) return; you.ctrl.shade = !you.ctrl.shade; syncSliders(); render(); });
+$('playBtn').addEventListener('click', () => {
+  if (finished) { openModal('mHarvest'); return; }
+  playing = !playing; acc = 0; render();
+});
+$('stepBtn').addEventListener('click', () => { if (!modalOpen()) { playing = false; tick(); render(); } });
+$('speed').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; speedIdx = +b.dataset.i; document.querySelectorAll('#speed button').forEach(x => x.classList.toggle('on', x === b)); });
+$('autoDrive').addEventListener('change', e => {
+  autoDrive = e.target.checked;
+  if (autoDrive) { assisted = true; if (!finished) driveYou(); }
+  syncSliders(); render();
+});
+$('goBtn').addEventListener('click', () => startSeason(todaySeed(), true, false));
+$('watchBtn').addEventListener('click', () => startSeason(todaySeed(), true, true));
+$('stageGo').addEventListener('click', () => { closeModals(); playing = true; acc = 0; render(); });
+$('againBtn').addEventListener('click', () => startSeason(seed, isDaily, false));
+$('newBtn').addEventListener('click', () => startSeason(1 + Math.floor(Math.random() * 1e9), false, false));
+$('hvWatch').addEventListener('click', () => startSeason(seed, isDaily, true));
+$('copyBtn').addEventListener('click', copyResult);
+$('labelsBtn').addEventListener('click', () => { labelsOn = !labelsOn; $('labelsBtn').setAttribute('aria-pressed', String(labelsOn)); });
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input[type=range]') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
+  if (e.key === 'Escape' && $('mHarvest').classList.contains('show')) { closeModals(); return; }
+  if (modalOpen()) return;
+  if (e.code === 'Space' && !e.target.closest('button,input,summary')) { e.preventDefault(); $('playBtn').click(); }
+  else if (e.key === 'ArrowRight' && !e.target.closest('input')) { e.preventDefault(); $('stepBtn').click(); }
+});
+
+/* ── render ── */
+function weatherIcon(sun, price) {
+  const sunC = '#f0b84a', cl = '#9aa5ae';
+  const sunSvg = (cx, cy, r) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${sunC}"/>` + [0, 45, 90, 135, 180, 225, 270, 315].map(a => { const rad = a * Math.PI / 180; return `<line x1="${cx + Math.cos(rad) * (r + 2)}" y1="${cy + Math.sin(rad) * (r + 2)}" x2="${cx + Math.cos(rad) * (r + 4.5)}" y2="${cy + Math.sin(rad) * (r + 4.5)}" stroke="${sunC}" stroke-width="1.6" stroke-linecap="round"/>`; }).join('');
+  const cloud = (x, y, s, c) => `<g transform="translate(${x} ${y}) scale(${s})" fill="${c}"><circle cx="6" cy="8" r="5"/><circle cx="12" cy="5" r="6"/><circle cx="18" cy="8" r="5"/><rect x="6" y="8" width="12" height="5"/></g>`;
+  let g;
+  if (sun < 110) g = cloud(1, 4, 1, cl) + cloud(5, 8, 0.8, '#6f7a83');
+  else if (sun < 200) g = sunSvg(10, 9, 5) + cloud(5, 7, 0.8, cl);
+  else if (sun < 330) g = sunSvg(13, 11, 6);
+  else g = `<circle cx="13" cy="11" r="9" fill="#ff8a3d" opacity=".35"/>` + sunSvg(13, 11, 6.5).replaceAll(sunC, '#ffb347');
+  return `<svg viewBox="0 0 26 22" aria-hidden="true">${g}</svg>`;
+}
+function renderForecast() {
+  const d = you.P.d;
+  if (finished) { $('fc').innerHTML = ''; return; }
+  let h = `<span class="lab">${t('next 5 days', '未来 5 天')}</span>`;
+  for (let i = 0; i < FORECAST_DAYS; i++) {
+    const dd = d + i; if (dd >= DAY1) break;
+    const spike = S.price[dd] > 1;
+    h += `<div class="fcd${i === 0 ? ' today' : ''}" title="${t('day', '第')} ${dd}: ${S.sun[dd]} µmol${spike ? ' · ⚡×3' : ''}">${weatherIcon(S.sun[dd])}<span class="n${spike ? ' spike' : ''}">${spike ? '⚡×3' : S.sun[dd]}</span></div>`;
+  }
+  $('fc').innerHTML = h;
+}
+
+function render() {
+  if (!S) return;
+  const d = Math.min(you.P.d, DAY1), st = stageOf(Math.min(d, DAY1 - 1)), sun = S.sun[Math.min(d, DAY1 - 1)], price = S.price[Math.min(d, DAY1 - 1)];
+  $('dayLbl').innerHTML = finished ? t('Harvest', '收获') + ` <small>${t('day', '第')} ${DAY1}</small>` : `${t('Day', '第')} ${d}${lang === 'zh' ? ' 天' : ''} <small>/ ${DAY1}</small>`;
+  document.querySelectorAll('#stages li').forEach((li, i) => { li.classList.toggle('on', !finished && i === st); li.classList.toggle('done', finished || i < st); });
+  $('seasonLbl').textContent = t('season ', '赛季 ') + seasonName();
+  renderForecast();
+  $('playBtn').textContent = finished ? t('See harvest', '查看收获') : playing ? t('⏸ Pause', '⏸ 暂停') : t('▶ Grow', '▶ 生长');
+  $('stepBtn').disabled = finished;
+
+  // controls readouts
+  const c = you.ctrl, light = Math.round(lightOf(c, sun));
+  $('vLed').textContent = `${c.led} µmol`;
+  const kwh = c.led * LED_KWH;
+  $('ledSub').innerHTML = `${fmt(kwh, 2)} kWh/${t('day', '天')}` + (price > 1 && c.led > 0 ? ` <span class="warn">⚡ ×3 ${t('today', '今天')}</span>` : '');
+  $('shadeVal').textContent = c.shade ? t('closed', '拉上') : t('open', '收起');
+  $('vNit').textContent = c.n + '%'; $('vPot').textContent = c.pk + '%';
+  const ec = c.n / 100 + c.pk / 100, ecShow = 1.5 + 2.5 * ec, thr = 1.3;
+  $('saltFill').style.width = Math.min(100, ec / 2 * 100) + '%';
+  $('saltFill').style.background = ec > thr ? '#ff7a6a' : ec > thr - 0.15 ? 'var(--amber)' : 'var(--green)';
+  $('saltThr').style.left = (thr / 2 * 100) + '%';
+  $('saltVal').textContent = `EC ${fmt(ecShow, 1)}`;
+
+  // what-if forecast (the player's twin, settings held to harvest)
+  const fy = finished ? null : forecast(you.T, S, () => you.ctrl, you.P.d);
+  if (!finished && !botView) botView = forecast(bot.T, S, (dd, s) => planCtrl(bot.plan, dd, s), bot.P.d);
+  if (fy) {
+    $('whatIf').innerHTML = `<span class="k">${t('If you keep these settings to harvest', '若保持当前设定直到收获')}</span>≈ <b>${fmt(gramsOf(fy.s))} g</b> ± ${fmt(1.64 * gramsOf(fy.path.length ? fy.path[fy.path.length - 1].sd : 0))} · <b>${fmt(fy.brix, 1)}</b> °Brix · ${t('score', '得分')} <b>${fmt(fy.value)}</b>`;
+  } else {
+    $('whatIf').innerHTML = `<span class="k">${t('Harvested', '已收获')}</span>${fmt(gramsOf(you.P.bio))} g · ${fmt(brixOf(you.P), 1)} °Brix · ${t('score', '得分')} <b>${fmt(valueOf(you.P))}</b>`;
+  }
+  const yv = finished ? valueOf(you.P) : fy.value, bv = finished ? valueOf(bot.P) : botView.value, mx = Math.max(1, yv, bv);
+  $('rbYou').style.width = Math.max(0, yv / mx * 100) + '%'; $('rbBot').style.width = Math.max(0, bv / mx * 100) + '%';
+  $('rvYou').textContent = fmt(yv); $('rvBot').textContent = fmt(bv);
+
+  // scene tags
+  const est = gramsOf(you.T.s), band = 1.64 * gramsOf(twinSigma(you.T));
+  $('tagFruit').innerHTML = `<small>${finished ? t('real fruit', '真实果实') : t('twin estimate', '孪生估计')}</small>🍅 <b>${finished ? fmt(gramsOf(you.P.bio)) : '≈ ' + fmt(est)} g</b>${finished ? '' : ' ± ' + fmt(band)} · ${fmt(finished ? brixOf(you.P) : brixOf(you.T.nom), 1)} °Brix`;
+  $('tagLight').innerHTML = `<small>${t('light on the leaves', '叶面光照')}</small>☀ ${Math.round(sun * (c.shade ? CFG.shade : 1))} + 💡 ${c.led} = <b style="color:var(--text)">${light}</b> µmol`;
+  $('vigorLbl').textContent = t(`plant vigour learned: ${fmt(you.T.v, 2)}×`, `已学到的长势：${fmt(you.T.v, 2)}×`);
+  $('twinHow').textContent = t(`The real plant is hidden: the twin can't weigh the fruit. Each day it predicts growth with the model, so its uncertainty (the band) widens. Every ${4} days a camera measures the fruit (◆); a Kalman filter blends model and measurement, narrows the band, and learns how vigorous this particular plant is (${fmt(you.T.v, 2)}× the textbook plant, so far). The dashed cone is where your current settings lead. Sweetness can't be measured without cutting the fruit, so that line is the model alone.`,
+    `真实植株是看不见的：孪生没法给果实称重。它每天用模型预测生长，所以不确定性（色带）逐渐变宽。每 4 天相机测量一次果实（◆）；卡尔曼滤波融合模型与测量，收窄色带，并学习这株植物有多壮（目前估计为教科书植株的 ${fmt(you.T.v, 2)} 倍）。虚线锥形是你当前设定将带来的结果。甜度不切开果实就测不了，所以那条线只来自模型。`);
+
+  renderDiagnosis(sun, price);
+  drawChart(fy);
+}
+
+function renderDiagnosis(sun, price) {
+  const c = you.ctrl, nom = you.T.nom;
+  if (finished) {
+    $('limIc').textContent = '🧺'; $('limTitle').textContent = t('Season over', '本季结束');
+    $('limText').textContent = t('Replay the same season to try another plan, or watch how the autopilot plays it.', '重玩同一季试试别的策略，或看看自动驾驶怎么玩。');
+    $('chips').innerHTML = ''; return;
+  }
+  const f = flux(nom, c, sun, you.T.v), st = f.st;
+  let ic, ti, tx;
+  if (f.limit === 'carbon') { ic = '☁'; ti = t('Short of sugar (light)', '缺糖（光照不足）'); tx = t('The leaves can\'t make sugar as fast as the fruit could use it. More light would grow it faster: open the shade screen or turn up the lamps.', '叶片制糖的速度跟不上果实的需求。更多光照能长得更快：收起遮阳网或调高补光灯。'); }
+  else if (f.limit === 'nitrogen') { ic = '🅽'; ti = t('Short of nitrogen', '缺氮'); tx = t('Growth is waiting on nitrogen from the roots. Raise the nitrogen feed.', '生长在等根系供氮。提高氮肥。'); }
+  else if (st === 0) { ic = '🧬'; ti = t('Cells dividing at full speed', '细胞全速分裂'); tx = t('Nitrogen and sugar are both enough: the fruit is setting its size as fast as it can.', '氮和糖都够：果实正以最快速度确定大小。'); }
+  else { ic = '🍅'; ti = t('The fruit is full', '果实吃饱了'); tx = t('It\'s taking all the sugar it can right now (sink-limited). Extra light is wasted electricity, so dim the lamps.', '它此刻已尽力吸收糖分（库限制）。多余的光只是浪费电，调低补光灯。'); }
+  $('limIc').textContent = ic; $('limTitle').textContent = ti; $('limText').textContent = tx;
+  const chips = [];
+  if (f.photoinhib > 0.03) chips.push(['', t('☀ too bright: leaves shutting down', '☀ 光太强：叶片在自我保护')]);
+  if (f.saltStress > 0.03) chips.push(['', t(`🧂 salty roots: growth −${Math.round(f.saltStress * 100)}%`, `🧂 根区盐分：生长 −${Math.round(f.saltStress * 100)}%`)]);
+  if (st === 2 && c.n > 25) chips.push(['amber', t('💧 nitrogen is diluting the sugar', '💧 氮在稀释糖分')]);
+  if (price > 1 && c.led > 0) chips.push(['amber', t('⚡ electricity ×3 today', '⚡ 今天电价 ×3')]);
+  if (c.shade && sun < 300) chips.push(['amber', t('🌂 the shade screen is blocking light', '🌂 遮阳网挡住了光')]);
+  if (f.limit === 'sink' && st > 0 && c.led > 0) chips.push(['amber', t('💡 lamps are lighting a full fruit', '💡 灯光照在已吃饱的果实上')]);
+  $('chips').innerHTML = chips.map(([cls, s]) => `<span class="chip ${cls}">${s}</span>`).join('');
+  $('poolSuc').style.width = Math.min(100, nom.suc / CFG.sucCap * 100) + '%';
+  $('poolN').style.width = Math.min(100, nom.n / CFG.nCap * 100) + '%';
+}
+
+/* ── the twin chart ── */
+const chart = { cv: $('chart'), dpr: 1, w: 0, h: 0 };
+function drawChart(fy) {
+  const cv = chart.cv, dpr = Math.min(2, devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight;
+  if (!W) return;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, W, H);
+  const L = 34, R = 30, T = 16, B = 30, pw = W - L - R, ph = H - T - B;
+  const X = d => L + pw * (d - DAY0) / (DAY1 - DAY0);
+  const hist = you.hist, bh = bot.hist, path = fy ? fy.path : [];
+  let gMax = 120;
+  for (const h of hist) gMax = Math.max(gMax, gramsOf(h.est + 1.64 * h.sd), finished ? gramsOf(h.truth) : 0);
+  for (const p of path) gMax = Math.max(gMax, gramsOf(p.s + 1.64 * p.sd));
+  for (const h of bh) gMax = Math.max(gMax, gramsOf(h.est));
+  gMax = Math.ceil(gMax / 40) * 40;
+  const Y = g => T + ph * (1 - Math.min(1, Math.max(0, g / gMax)));
+  const YB = b => T + ph * (1 - Math.min(1, Math.max(0, (b - 2) / 10)));
+  x.font = '11px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+  // stage bands
+  const stageCols = ['rgba(62,224,127,0.05)', 'rgba(240,184,74,0.045)', 'rgba(255,106,77,0.055)'];
+  [[DAY0, 16], [16, 36], [36, DAY1]].forEach(([a, b], i) => {
+    x.fillStyle = stageCols[i]; x.fillRect(X(a), T, X(b) - X(a), ph); x.fillStyle = '#6c7770';
+    const full = t(STAGES[i].en, STAGES[i].zh), short = t(['size', 'fill', 'ripen'][i], ['定大小', '膨大', '成熟'][i]);
+    const s = x.measureText(full).width < X(b) - X(a) - 6 ? full : short;
+    x.fillText(s, X(a) + 3, T - 4);
+  });
+  // grid + axes
+  x.strokeStyle = '#1d2521'; x.lineWidth = 1; x.fillStyle = '#6c7770'; x.textAlign = 'right';
+  for (let g = 0; g <= gMax; g += 40) { const y = Y(g); x.beginPath(); x.moveTo(L, y); x.lineTo(W - R, y); x.stroke(); x.fillText(g + 'g', L - 4, y + 3); }
+  x.textAlign = 'left'; x.fillStyle = '#b79a4a';
+  for (let b = 4; b <= 12; b += 4) x.fillText(b + '°', W - R + 4, YB(b) + 3);
+  // weather strip
+  const wy = H - B + 6, today = you.P.d;
+  for (let d = DAY0; d < DAY1; d++) {
+    const known = d < today + FORECAST_DAYS, x0 = X(d) + 0.5, x1 = X(d + 1) - 0.5;
+    if (known) { const s = S.sun[d]; const k = Math.min(1, s / 380); x.fillStyle = `rgb(${Math.round(60 + 180 * k)},${Math.round(68 + 120 * k)},${Math.round(80 - 20 * k)})`; }
+    else x.fillStyle = '#161c19';
+    x.fillRect(x0, wy, x1 - x0, 9);
+    if (known && S.price[d] > 1) { x.fillStyle = '#ff5fd2'; x.fillRect(x0, wy - 3, x1 - x0, 2); }
+  }
+  x.fillStyle = '#6c7770'; x.textAlign = 'center';
+  for (const d of [DAY0, 16, 24, 36, 44, DAY1]) x.fillText(String(d), X(d), H - 4);
+  x.textAlign = 'left';
+  // autopilot (its twin's estimate)
+  x.strokeStyle = 'rgba(167,139,250,0.85)'; x.lineWidth = 1.5; x.beginPath();
+  bh.forEach((h, i) => { const px = X(h.d), py = Y(gramsOf(h.est)); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.stroke();
+  // estimate band + line (past)
+  x.fillStyle = 'rgba(54,197,208,0.22)'; x.beginPath();
+  hist.forEach((h, i) => { const px = X(h.d), py = Y(gramsOf(h.est + 1.64 * h.sd)); i ? x.lineTo(px, py) : x.moveTo(px, py); });
+  for (let i = hist.length - 1; i >= 0; i--) { const h = hist[i]; x.lineTo(X(h.d), Y(gramsOf(Math.max(0, h.est - 1.64 * h.sd)))); }
+  x.closePath(); x.fill();
+  // forecast cone (future)
+  if (path.length) {
+    const last = hist[hist.length - 1];
+    x.fillStyle = 'rgba(54,197,208,0.10)'; x.beginPath(); x.moveTo(X(last.d), Y(gramsOf(last.est + 1.64 * last.sd)));
+    path.forEach(p => x.lineTo(X(p.d), Y(gramsOf(p.s + 1.64 * p.sd))));
+    for (let i = path.length - 1; i >= 0; i--) x.lineTo(X(path[i].d), Y(gramsOf(Math.max(0, path[i].s - 1.64 * path[i].sd))));
+    x.lineTo(X(last.d), Y(gramsOf(Math.max(0, last.est - 1.64 * last.sd)))); x.closePath(); x.fill();
+    x.setLineDash([5, 4]); x.strokeStyle = '#36c5d0'; x.lineWidth = 1.8; x.beginPath(); x.moveTo(X(last.d), Y(gramsOf(last.est)));
+    path.forEach(p => x.lineTo(X(p.d), Y(gramsOf(p.s)))); x.stroke();
+    x.strokeStyle = 'rgba(255,209,102,0.8)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(X(last.d), YB(last.brix));
+    path.forEach(p => x.lineTo(X(p.d), YB(p.brix))); x.stroke(); x.setLineDash([]);
+    // the autopilot's end point
+    if (botView) { x.fillStyle = '#a78bfa'; x.beginPath(); x.arc(X(DAY1), Y(gramsOf(botView.s)), 3.5, 0, 7); x.fill(); }
+  }
+  x.strokeStyle = '#36c5d0'; x.lineWidth = 2.2; x.beginPath();
+  hist.forEach((h, i) => { const px = X(h.d), py = Y(gramsOf(h.est)); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.stroke();
+  x.strokeStyle = '#ffd166'; x.lineWidth = 1.6; x.beginPath();
+  hist.forEach((h, i) => { const px = X(h.d), py = YB(h.brix); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.stroke();
+  // the truth, revealed at harvest
+  if (finished) {
+    x.strokeStyle = '#3ee07f'; x.lineWidth = 2; x.beginPath();
+    hist.forEach((h, i) => { const px = X(h.d), py = Y(gramsOf(h.truth)); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.stroke();
+  }
+  // camera readings
+  x.fillStyle = '#ffd166';
+  hist.forEach(h => { if (h.obs == null) return; x.save(); x.translate(X(h.d), Y(gramsOf(h.obs))); x.rotate(Math.PI / 4); x.fillRect(-3.5, -3.5, 7, 7); x.restore(); });
+  // today
+  if (!finished) {
+    const tx = X(today); x.strokeStyle = 'rgba(233,238,234,0.35)'; x.setLineDash([2, 3]); x.beginPath(); x.moveTo(tx, T); x.lineTo(tx, H - B + 2); x.stroke(); x.setLineDash([]);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   The greenhouse scene (canvas, virtual 800 × 560)
+   ════════════════════════════════════════════════════════════ */
+const sc = { cv: $('scene'), k: 1, dpr: 1, parts: [], photons: [], drips: [], flash: null, fruitR: 6, vis: { yellow: 0, bleach: 0, salt: 0 }, spawnS: 0, spawnN: 0, spawnL: 0, spawnD: 0 };
+const VW = 800, VH = 560;
+function sizeScene() {
+  const cv = sc.cv, w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
+  sc.dpr = Math.min(2, devicePixelRatio || 1); sc.k = w / VW;
+  cv.width = Math.round(w * sc.dpr); cv.height = Math.round(h * sc.dpr);
+}
+new ResizeObserver(() => { sizeScene(); if (S) drawChart(finished ? null : forecast(you.T, S, () => you.ctrl, you.P.d)); }).observe(sc.cv);
+new ResizeObserver(() => { if (S) render(); }).observe($('chart'));
+
+const lerp = (a, b, k) => a + (b - a) * k;
+const mix = (c1, c2, k) => c1.map((v, i) => Math.round(lerp(v, c2[i], k)));
+const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+function geom(time) {
+  const P = you ? you.P : newPlant(), prog = Math.min(1, (P.d - DAY0) / 22);
+  const baseX = 400, baseY = 468, H = 240 + 80 * prog, sway = reduceMotion ? 0 : Math.sin(time * 0.7) * 3;
+  const top = { x: baseX + sway * 1.6, y: baseY - H }, cp = { x: baseX - 12 + sway, y: baseY - H * 0.5 };
+  const at = s => { const u = 1 - s; return { x: u * u * baseX + 2 * u * s * cp.x + s * s * top.x, y: u * u * baseY + 2 * u * s * cp.y + s * s * top.y }; };
+  const leaves = [0.2, 0.33, 0.47, 0.61, 0.74, 0.87].map((s, i) => {
+    const p = at(s), side = i % 2 ? 1 : -1, size = (0.75 + 0.35 * prog) * (1.05 - Math.abs(s - 0.45) * 0.55);
+    const len = 125 * size, wob = reduceMotion ? 0 : Math.sin(time * 1.1 + i) * 4;
+    const end = { x: p.x + side * len, y: p.y + 18 + wob }, mid = { x: p.x + side * len * 0.5, y: p.y - 22 + wob * 0.5 };
+    const pt = q => { const u = 1 - q; return { x: u * u * p.x + 2 * u * q * mid.x + q * q * end.x, y: u * u * p.y + 2 * u * q * mid.y + q * q * end.y }; };
+    return { s, p, side, size, pt, end };
+  });
+  const tn = at(0.54), fr = sc.fruitR;
+  const fruit = { x: tn.x + 78, y: tn.y + 52 + fr * 0.35 };
+  return { at, leaves, tn, fruit, baseX, baseY, top };
+}
+
+function leafletsOf(L) {
+  const out = [];
+  for (const q of [0.38, 0.62, 0.86]) {
+    const c = L.pt(q), c2 = L.pt(Math.min(1, q + 0.02)), ang = Math.atan2(c2.y - c.y, c2.x - c.x);
+    for (const sgn of [-1, 1]) out.push({ x: c.x + Math.cos(ang + sgn * 1.1) * 13 * L.size, y: c.y + Math.sin(ang + sgn * 1.1) * 13 * L.size, a: ang + sgn * 0.9, s: L.size });
+  }
+  const e = L.pt(1), e2 = L.pt(0.97); out.push({ x: e.x, y: e.y, a: Math.atan2(e.y - e2.y, e.x - e2.x), s: L.size * 1.1 });
+  return out;
+}
+
+function pathAlongStem(g, s0, s1, n = 6) { const pts = []; for (let i = 0; i <= n; i++) pts.push(g.at(lerp(s0, s1, i / n))); return pts; }
+function spawnSugar(g) {
+  const L = g.leaves[Math.floor(Math.random() * g.leaves.length)], lf = leafletsOf(L), a = lf[Math.floor(Math.random() * lf.length)];
+  const pts = [{ x: a.x, y: a.y }, L.pt(0.5), L.p, ...pathAlongStem(g, L.s, 0.54), g.tn, { x: g.tn.x + 40, y: g.tn.y + 4 }, g.fruit];
+  sc.parts.push(mkPart(pts, 'sugar', 70 + Math.random() * 30));
+}
+function spawnN(g) {
+  const L = g.leaves[Math.floor(Math.random() * g.leaves.length)];
+  const pts = [{ x: g.baseX + (Math.random() - 0.5) * 50, y: g.baseY + 16 }, { x: g.baseX, y: g.baseY }, ...pathAlongStem(g, 0, L.s), L.pt(0.5), L.pt(0.9)];
+  sc.parts.push(mkPart(pts, 'n', 80 + Math.random() * 30));
+}
+function mkPart(pts, kind, speed) { let len = 0; const seg = []; for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); seg.push(l); len += l; } return { pts, seg, len, pos: 0, kind, speed }; }
+function partXY(p) { let r = p.pos; for (let i = 0; i < p.seg.length; i++) { if (r <= p.seg[i]) { const k = p.seg[i] ? r / p.seg[i] : 0; return { x: lerp(p.pts[i].x, p.pts[i + 1].x, k), y: lerp(p.pts[i].y, p.pts[i + 1].y, k) }; } r -= p.seg[i]; } return p.pts[p.pts.length - 1]; }
+
+function camFlash(z) { sc.flash = { t: 0, z }; }
+
+let lastTs = 0;
+function frame(ts) {
+  const dt = Math.min(0.1, (ts - lastTs) / 1000 || 0); lastTs = ts;
+  if (S && playing && !finished && !modalOpen()) { acc += dt * 1000; if (acc >= SPEEDS[speedIdx]) { acc = 0; tick(); } }
+  drawScene(dt, ts / 1000);
+  requestAnimationFrame(frame);
+}
+
+function drawScene(dt, time) {
+  const cv = sc.cv; if (!cv.width) sizeScene(); if (!cv.width) return;
+  const x = cv.getContext('2d'), k = sc.k * sc.dpr;
+  x.setTransform(k, 0, 0, k, 0, 0);
+  const P = you ? you.P : newPlant(), c = you ? you.ctrl : { led: 0, shade: false, n: 60, pk: 50 };
+  const day = Math.min(P.d, DAY1 - 1), sun = S ? S.sun[day] : SUN_CLIM, f = P.lastFlux;
+  const sunN = Math.min(1, sun / 400), ledN = c.led / LED_MAX, shade = !!c.shade;
+  // smooth visual state
+  const targetR = 5 + 34 * Math.cbrt(Math.min(220, gramsOf(P.ripeBio != null ? Math.max(P.ripeBio, P.bio * 0.97) : P.bio)) / 150);
+  sc.fruitR = lerp(sc.fruitR, targetR, Math.min(1, dt * 3));
+  const v = sc.vis, ease = Math.min(1, dt * 1.5);
+  v.yellow = lerp(v.yellow, f && f.st > 0 && f.limit === 'nitrogen' ? 0.8 : P.n < 0.5 && P.d > DAY0 ? 0.45 : 0, ease);
+  v.bleach = lerp(v.bleach, f ? Math.min(1, f.photoinhib * 2.2) : 0, ease);
+  v.salt = lerp(v.salt, f ? Math.min(1, f.saltStress * 2.4) : 0, ease);
+  const g = geom(time);
+
+  // interior + sky through the glass roof
+  const skyA = mix([58, 66, 78], [92, 150, 205], sunN), skyB = mix([30, 36, 44], [40, 70, 100], sunN);
+  const bg = x.createLinearGradient(0, 0, 0, VH); bg.addColorStop(0, rgb(mix([18, 24, 22], [30, 40, 38], sunN))); bg.addColorStop(0.55, '#0e1311'); bg.addColorStop(1, '#090c0b');
+  x.fillStyle = bg; x.fillRect(0, 0, VW, VH);
+  x.save(); x.beginPath(); x.moveTo(0, 122);
+  for (let i = 0; i < 4; i++) { x.lineTo(i * 200 + 100, 22); x.lineTo(i * 200 + 200, 122); }
+  x.lineTo(800, 0); x.lineTo(0, 0); x.closePath(); x.clip();
+  const sky = x.createLinearGradient(0, 0, 0, 122); sky.addColorStop(0, rgb(skyA)); sky.addColorStop(1, rgb(skyB)); x.fillStyle = sky; x.fillRect(0, 0, VW, 122);
+  if (sun >= 110) {
+    const sx = 400, sy = 70, sr = 14 + 16 * sunN, glow = x.createRadialGradient(sx, sy, sr * 0.4, sx, sy, sr * 3.2);
+    glow.addColorStop(0, `rgba(255,214,120,${0.55 + 0.4 * sunN})`); glow.addColorStop(1, 'rgba(255,214,120,0)');
+    x.fillStyle = glow; x.fillRect(sx - sr * 3.2, sy - sr * 3.2, sr * 6.4, sr * 6.4);
+    x.fillStyle = sun >= 330 ? '#ffc061' : '#ffe08a'; x.beginPath(); x.arc(sx, sy, sr, 0, 7); x.fill();
+  }
+  const nClouds = sun < 110 ? 5 : sun < 200 ? 2 : sun < 280 ? 1 : 0;
+  for (let i = 0; i < nClouds; i++) {
+    const cx = ((i * 190 + time * (6 + i * 2)) % 980) - 90, cy = 40 + (i % 3) * 22, s = sun < 110 ? 1.25 : 0.95;
+    x.fillStyle = sun < 110 ? 'rgba(120,130,140,0.95)' : 'rgba(205,214,222,0.9)';
+    for (const [ox, oy, r] of [[0, 8, 18], [20, -4, 24], [44, 6, 19], [24, 12, 20]]) { x.beginPath(); x.arc(cx + ox * s, cy + oy * s, r * s, 0, 7); x.fill(); }
+  }
+  if (shade) { x.fillStyle = 'rgba(214,200,160,0.55)'; x.fillRect(0, 0, VW, 122); x.strokeStyle = 'rgba(120,108,80,0.5)'; x.lineWidth = 1; for (let i = 0; i < 800; i += 14) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 122); x.stroke(); } }
+  x.restore();
+  // roof frame + posts
+  x.strokeStyle = '#2f3a35'; x.lineWidth = 3; x.beginPath(); x.moveTo(0, 122);
+  for (let i = 0; i < 4; i++) { x.lineTo(i * 200 + 100, 22); x.lineTo(i * 200 + 200, 122); } x.stroke();
+  x.lineWidth = 1.2; x.strokeStyle = 'rgba(80,96,90,0.55)';
+  for (let i = 0; i < 4; i++) for (let j = 1; j < 4; j++) { const ax = i * 200 + 100; x.beginPath(); x.moveTo(ax - j * 25, 22 + j * 25); x.lineTo(ax - j * 25, 122); x.stroke(); x.beginPath(); x.moveTo(ax + j * 25, 22 + j * 25); x.lineTo(ax + j * 25, 122); x.stroke(); }
+  x.fillStyle = '#1a221e'; x.fillRect(0, 122, VW, 6);
+  for (const px of [6, 200, 600, 794]) { x.fillStyle = '#161d1a'; x.fillRect(px - 4, 128, 8, 352); }
+  // sunlight wash (dim on dull days)
+  x.fillStyle = `rgba(255,236,190,${0.02 + 0.07 * sunN * (shade ? 0.5 : 1)})`; x.fillRect(0, 128, VW, 350);
+  // grow lights
+  const fx = [[240, 360], [440, 560]];
+  if (ledN > 0) {
+    for (const [a, b] of fx) {
+      const cone = x.createLinearGradient(0, 160, 0, 470); cone.addColorStop(0, `rgba(255,95,210,${0.32 * ledN})`); cone.addColorStop(1, 'rgba(255,95,210,0)');
+      x.fillStyle = cone; x.beginPath(); x.moveTo(a, 160); x.lineTo(b, 160); x.lineTo(b + 70, 470); x.lineTo(a - 70, 470); x.closePath(); x.fill();
+    }
+  }
+  for (const [a, b] of fx) {
+    x.fillStyle = '#2a332f'; x.fillRect(a, 148, b - a, 10);
+    x.fillStyle = ledN > 0 ? `rgba(255,${Math.round(120 - 30 * ledN)},220,${0.35 + 0.65 * ledN})` : '#3a2a38'; x.fillRect(a + 3, 156, b - a - 6, 4);
+    x.strokeStyle = '#2a332f'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(a + 10, 128); x.lineTo(a + 10, 148); x.moveTo(b - 10, 128); x.lineTo(b - 10, 148); x.stroke();
+  }
+  // floor, slab, drip line
+  x.fillStyle = '#0b0f0d'; x.fillRect(0, 486, VW, 74);
+  x.fillStyle = '#121815'; x.fillRect(250, 492, 300, 8);
+  x.fillStyle = '#d8d0bf'; x.fillRect(340, 466, 120, 26);
+  x.fillStyle = 'rgba(80,110,140,0.45)'; x.fillRect(340, 482, 120, 10);
+  x.strokeStyle = 'rgba(240,236,226,0.25)'; x.lineWidth = 1;
+  for (let i = 0; i < 7; i++) { x.beginPath(); x.moveTo(400, 468); x.quadraticCurveTo(372 + i * 9, 480, 350 + i * 17, 489); x.stroke(); }
+  if (v.salt > 0.02) { x.fillStyle = `rgba(255,255,255,${0.5 + 0.4 * v.salt})`; for (let i = 0; i < Math.round(v.salt * 40); i++) { const sx = 344 + ((i * 37) % 112), sy = 466 + ((i * 13) % 4); x.fillRect(sx, sy, 2.2, 1.6); } }
+  x.strokeStyle = '#1e1e1e'; x.lineWidth = 3; x.beginPath(); x.moveTo(800, 452); x.lineTo(470, 452); x.quadraticCurveTo(440, 452, 436, 466); x.stroke();
+  // drips: fertigation, more with more feed
+  sc.spawnD += dt * (0.4 + 2.2 * (c.n + c.pk) / 200);
+  while (sc.spawnD > 1) { sc.spawnD -= 1; sc.drips.push({ y: 466, v: 0, life: 1 }); }
+  sc.drips = sc.drips.filter(d => (d.life -= dt * 2.5) > 0);
+  for (const d of sc.drips) { x.fillStyle = `rgba(90,184,255,${d.life})`; x.beginPath(); x.arc(436, 469 + (1 - d.life) * 10, 2.2, 0, 7); x.fill(); }
+
+  // stem
+  x.strokeStyle = '#3f7a35'; x.lineWidth = 8; x.lineCap = 'round'; x.beginPath(); x.moveTo(g.baseX, g.baseY);
+  for (let i = 1; i <= 20; i++) { const p = g.at(i / 20); x.lineTo(p.x, p.y); } x.stroke();
+  x.strokeStyle = 'rgba(140,200,110,0.35)'; x.lineWidth = 2; x.stroke();
+  // leaves
+  const base = [58, 128, 56], leafC = mix(mix(mix(base, [182, 176, 64], v.yellow), [196, 206, 160], v.bleach), [34, 92, 58], v.salt * 0.7);
+  for (const L of g.leaves) {
+    x.strokeStyle = rgb(mix(leafC, [30, 60, 30], 0.3)); x.lineWidth = 2.6 * L.size; x.beginPath(); x.moveTo(L.p.x, L.p.y);
+    for (let i = 1; i <= 12; i++) { const q = L.pt(i / 12); x.lineTo(q.x, q.y); } x.stroke();
+    for (const lf of leafletsOf(L)) {
+      x.save(); x.translate(lf.x, lf.y); x.rotate(lf.a);
+      x.fillStyle = rgb(leafC); x.beginPath(); x.ellipse(0, 0, 15 * lf.s, 7.5 * lf.s, 0, 0, 7); x.fill();
+      x.strokeStyle = 'rgba(0,0,0,0.25)'; x.lineWidth = 0.8; x.beginPath(); x.moveTo(-13 * lf.s, 0); x.lineTo(13 * lf.s, 0); x.stroke();
+      if (v.salt > 0.15) { x.fillStyle = `rgba(140,90,40,${v.salt * 0.8})`; x.beginPath(); x.ellipse(12 * lf.s, 0, 4 * lf.s, 3 * lf.s, 0, 0, 7); x.fill(); }
+      x.restore();
+    }
+  }
+  // sugar backing up in full leaves (sink-limited)
+  if (f && f.st > 0 && f.limit === 'sink') {
+    const n = Math.round(Math.min(1, P.suc / CFG.sucCap) * 14);
+    x.fillStyle = 'rgba(255,209,102,0.85)';
+    for (let i = 0; i < n; i++) { const L = g.leaves[i % g.leaves.length], q = L.pt(0.35 + ((i * 0.23) % 0.6)); x.beginPath(); x.arc(q.x, q.y - 3, 2.2, 0, 7); x.fill(); }
+  }
+  // truss + fruit
+  const fruitPos = g.fruit, R = sc.fruitR;
+  x.strokeStyle = '#3f7a35'; x.lineWidth = 4; x.beginPath(); x.moveTo(g.tn.x, g.tn.y); x.quadraticCurveTo(g.tn.x + 50, g.tn.y - 10, fruitPos.x, fruitPos.y - R - 4); x.stroke();
+  const ripe = Math.min(1, P.lyc / 0.7);
+  const fruitCol = r => r < 0.5 ? mix([92, 160, 70], [240, 150, 45], r / 0.5) : mix([240, 150, 45], [222, 48, 38], (r - 0.5) / 0.5);
+  const drawFruit = (fx0, fy0, r, rp) => {
+    const col = fruitCol(Math.max(0, rp)), gr = x.createRadialGradient(fx0 - r * 0.35, fy0 - r * 0.35, r * 0.1, fx0, fy0, r * 1.1);
+    gr.addColorStop(0, rgb(mix(col, [255, 255, 255], 0.35))); gr.addColorStop(0.55, rgb(col)); gr.addColorStop(1, rgb(mix(col, [0, 0, 0], 0.35)));
+    x.fillStyle = gr; x.beginPath(); x.ellipse(fx0, fy0, r * 1.08, r * 0.95, 0, 0, 7); x.fill();
+    x.fillStyle = '#3d8a3a';
+    for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; x.save(); x.translate(fx0, fy0 - r * 0.88); x.rotate(a + Math.PI / 2); x.beginPath(); x.ellipse(0, -r * 0.18, r * 0.07 + 1, r * 0.22 + 2, 0, 0, 7); x.fill(); x.restore(); }
+  };
+  drawFruit(fruitPos.x - R * 0.95, fruitPos.y + R * 0.55, R * 0.72, ripe - 0.18);
+  drawFruit(fruitPos.x + R * 0.9, fruitPos.y + R * 0.75, R * 0.62, ripe - 0.32);
+  drawFruit(fruitPos.x, fruitPos.y, R, ripe);
+
+  // flows: sugar down the phloem to the fruit, water + nitrogen up the xylem
+  if (S && !finished) {
+    const speedK = Math.max(0.6, 900 / SPEEDS[speedIdx]);
+    sc.spawnS += dt * (0.6 + 2.0 * (P.g || 0)) * Math.min(2, speedK);
+    sc.spawnN += dt * (0.6 + 5 * (f ? f.N : 0.5)) * Math.min(2, speedK);
+    sc.spawnL += dt * 30 * ledN;
+    while (sc.spawnS > 1 && sc.parts.length < 160) { sc.spawnS -= 1; spawnSugar(g); }
+    while (sc.spawnN > 1 && sc.parts.length < 160) { sc.spawnN -= 1; spawnN(g); }
+    while (sc.spawnL > 1 && sc.photons.length < 80) { sc.spawnL -= 1; sc.photons.push({ x: 240 + Math.random() * 320, y: 162, vy: 160 + Math.random() * 60, life: 1 }); }
+    sc.spawnS %= 2; sc.spawnN %= 2; sc.spawnL %= 2;
+  }
+  for (const p of sc.parts) p.pos += p.speed * dt * (reduceMotion ? 0.5 : 1);
+  sc.parts = sc.parts.filter(p => p.pos < p.len);
+  for (const p of sc.parts) { const q = partXY(p); x.fillStyle = p.kind === 'sugar' ? 'rgba(255,209,102,0.95)' : 'rgba(90,184,255,0.9)'; x.beginPath(); x.arc(q.x, q.y, p.kind === 'sugar' ? 2.6 : 2.2, 0, 7); x.fill(); }
+  for (const ph of sc.photons) { ph.y += ph.vy * dt; ph.life -= dt * 0.55; }
+  sc.photons = sc.photons.filter(ph => ph.life > 0 && ph.y < 470);
+  for (const ph of sc.photons) { x.fillStyle = `rgba(255,120,220,${0.55 * ph.life})`; x.fillRect(ph.x, ph.y, 1.6, 5); }
+
+  // camera flash on measurement days
+  if (sc.flash) {
+    sc.flash.t += dt; const a = Math.max(0, 1 - sc.flash.t / 1.6);
+    if (a <= 0) sc.flash = null;
+    else {
+      x.fillStyle = `rgba(255,255,255,${0.5 * Math.max(0, 1 - sc.flash.t * 3)})`; x.beginPath(); x.arc(fruitPos.x, fruitPos.y, R * 1.6, 0, 7); x.fill();
+      label(x, `📷 ${fmt(gramsOf(sc.flash.z))} g`, fruitPos.x + R + 14, fruitPos.y - R - 6, `rgba(255,209,102,${a})`, 'left', true);
+    }
+  }
+  // labels
+  if (labelsOn) {
+    const fs = Math.max(15, 10.5 / sc.k);
+    x.font = `600 ${fs}px ` + SANS;
+    const top = g.leaves[4], low = g.leaves[1];
+    label(x, t('leaves = source (make sugar)', '叶片 = 源（制造糖）'), top.end.x - 10, top.end.y - 22, 'rgba(160,220,150,0.9)', 'right');
+    label(x, t('fruit = sink', '果实 = 库'), fruitPos.x + R + 10, fruitPos.y + R + 22, 'rgba(255,150,130,0.95)', 'left');
+    label(x, t('phloem: sugar ↓', '韧皮部：糖 ↓'), g.at(0.6).x + 16, g.at(0.6).y - 6, 'rgba(255,209,102,0.95)', 'left');
+    label(x, t('xylem: water + N ↑', '木质部：水 + 氮 ↑'), g.at(0.12).x - 16, g.at(0.12).y, 'rgba(120,196,255,0.95)', 'right');
+    if (ledN > 0) label(x, t('grow lights', '补光灯'), 300, 186, 'rgba(255,140,225,0.9)', 'center');
+    if (shade) label(x, t('shade screen', '遮阳网'), 120, 112, 'rgba(240,230,200,0.95)', 'center');
+  }
+}
+function label(x, s, px, py, col, align, big) {
+  const fs = Math.max(big ? 17 : 15, (big ? 12 : 10.5) / sc.k);
+  x.font = `600 ${fs}px ` + SANS;
+  const w = x.measureText(s).width, left = align === 'right' ? px - w : align === 'center' ? px - w / 2 : px;
+  const lx = Math.max(6, Math.min(VW - 6 - w, left));
+  x.textAlign = 'left'; x.lineWidth = 4; x.strokeStyle = 'rgba(8,11,10,0.8)'; x.strokeText(s, lx, py); x.fillStyle = col; x.fillText(s, lx, py);
+}
+
+/* ── language ── */
+function applyLang() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-en]').forEach(el => { el.textContent = t(el.dataset.en, el.dataset.zh); });
+  $('langBtn').textContent = lang === 'zh' ? 'English' : '中文';
+  $('footNote').innerHTML = t('A toy model built from textbook plant physiology: source–sink allocation, Michaelis–Menten nutrient uptake, Gompertz fruit growth, a Kalman filter on fruit size and plant vigour, and receding-horizon control for the autopilot. It is not my research model and uses none of my research data. Made by Houfu Chen · <a href="https://houfu72.com">houfu72.com</a>',
+    '一个基于教科书植物生理学的玩具模型：源–库分配、米氏养分吸收、Gompertz 果实生长、对果实大小与植株长势的卡尔曼滤波，以及自动驾驶用的滚动时域控制。它不是我的研究模型，也没有使用任何研究数据。作者 Houfu Chen · <a href="https://houfu72.com">houfu72.com</a>');
+  render();
+}
+$('langBtn').addEventListener('click', () => { lang = lang === 'en' ? 'zh' : 'en'; try { localStorage.setItem('arcade_lang', lang); } catch (e) {} applyLang(); });
+try { if (localStorage.getItem('arcade_lang') === 'zh') lang = 'zh'; } catch (e) {}
+
+// a quiet season preview behind the intro card
+S = makeSeason(todaySeed()); seed = todaySeed(); you = newRun(); bot = newRun(); you.hist = [snap(you)]; bot.hist = [snap(bot)]; bot.plan = autopilotPlan(bot.T.nom, S, DAY0, null).plan;
+syncSliders(); applyLang();
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
