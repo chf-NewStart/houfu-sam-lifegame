@@ -2,1620 +2,702 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game Arcade // houfu.xyz</title>
-  <meta name="description" content="A small arcade of hand-coded browser games — Conway's Game of Life, Qi board games with beginner Go AI, local two-player and private friend rooms, Glyph Run, co-op games, and trainable RL agents.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Life Game Project: small games by Houfu Chen</title>
+  <meta name="description" content="Hand-made games for iPhone, iPad and the browser: Plank Pilot, Game Life, Qi, Manilha and the Phloem paper reader. No ads, no accounts, and the games collect no data.">
 
-  <meta property="og:title"       content="Game Arcade // houfu.xyz">
-  <meta property="og:description" content="Hand-coded browser games and RL agents in training. Qi includes beginner Go AI, local two-player play, private friend rooms, and Gomoku.">
+  <meta property="og:title"       content="Life Game Project">
+  <meta property="og:description" content="Hand-made games for iPhone, iPad and the browser by Houfu Chen. Plank Pilot, Game Life, Qi, Manilha, Phloem and a free web arcade.">
   <meta property="og:url"         content="https://lifegameproject.com/">
   <meta property="og:type"        content="website">
   <meta property="og:image"       content="https://lifegameproject.com/game/brand-og.png">
   <meta name="twitter:card"        content="summary">
-  <meta name="twitter:title"       content="Game Arcade // houfu.xyz">
-  <meta name="twitter:description" content="Hand-coded browser games, including Qi with beginner Go AI and private friend rooms, plus RL agents in training.">
+  <meta name="twitter:title"       content="Life Game Project">
+  <meta name="twitter:description" content="Hand-made games for iPhone, iPad and the browser by Houfu Chen.">
   <meta name="twitter:image"       content="https://lifegameproject.com/game/brand-og.png">
 
-  <!-- The brand mark is still every game page's icon; the front door is his.
-       Pointed at the same file rather than overwriting brand-favicon.png,
-       which nine other pages share. -->
   <link rel="icon" type="image/png" href="/game/guru-favicon.png?v=2">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#0a0c0b">
   <link rel="apple-touch-icon" href="/icon-192.png">
 
   <style>
+    :root {
+      --bg: #0a0c0b; --bg2: #0f1311; --line: #1d2521; --line2: #2b3530;
+      --text: #e9eeea; --soft: #c5cec8; --muted: #9aa59e; --faint: #6c7770;
+      --green: #3ee07f; --amber: #f0b84a;
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      color-scheme: dark;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: Consolas, 'Courier New', monospace; color: #ccc;
-      min-height: 100vh; padding: 32px 20px;
-      background: #080808;
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body { background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+    img, video { display: block; max-width: 100%; height: auto; }
+    a { color: inherit; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 6px; }
+    .wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+    @media (max-width: 600px) { .wrap { padding: 0 16px; } }
+
+    /* ── nav ─────────────────────────────────────────────── */
+    .nav { position: sticky; top: 0; z-index: 20; background: rgba(10,12,11,0.74); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; }
+    .brand svg { width: 20px; height: 20px; flex: none; }
+    .links { display: flex; align-items: center; gap: 2px; }
+    .links a { color: var(--muted); text-decoration: none; font-size: 0.92rem; padding: 8px 12px; border-radius: 999px; transition: color .15s, background .15s; }
+    .links a:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+    .lang { font: 500 0.8rem/1 var(--mono); color: var(--green); background: none; border: 1px solid rgba(62,224,127,0.4); border-radius: 999px; padding: 8px 12px; margin-left: 6px; cursor: pointer; }
+    .lang:hover { background: rgba(62,224,127,0.08); }
+    .links a, .lang { white-space: nowrap; }
+    @media (max-width: 560px) { .links a.opt { display: none; } .links a { padding: 8px 9px; } }
+    @media (max-width: 420px) { .brand { font-size: 0.95rem; gap: 8px; } .links a { padding: 8px 6px; font-size: 0.86rem; } .lang { padding: 7px 10px; margin-left: 4px; } }
+
+    /* ── hero: a live Game of Life runs behind it ───────── */
+    .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+    #life { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+    .hero::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(90deg, rgba(10,12,11,0.94) 0%, rgba(10,12,11,0.8) 36%, rgba(10,12,11,0.25) 68%, rgba(10,12,11,0.55) 100%),
+                  linear-gradient(180deg, rgba(10,12,11,0) 72%, var(--bg) 100%); }
+    .hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: 48px; align-items: center; padding-top: 84px; padding-bottom: 96px; }
+    .hero-logo { width: min(300px, 72%); image-rendering: pixelated; margin-bottom: 26px; }
+    h1 { font-size: clamp(2.3rem, 5.2vw, 4.1rem); line-height: 1.04; letter-spacing: -0.035em; font-weight: 760; max-width: 13ch; }
+    .lede { font-size: clamp(1.05rem, 1.6vw, 1.2rem); color: var(--soft); max-width: 36ch; margin-top: 18px; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 22px; border-radius: 999px; font-weight: 600; font-size: 0.98rem; text-decoration: none; transition: transform .15s, background .15s, border-color .15s; }
+    .btn.primary { background: var(--green); color: #04150b; }
+    .btn.primary:hover { background: #64f39a; transform: translateY(-1px); }
+    .btn.ghost { border: 1px solid var(--line2); color: var(--text); background: rgba(255,255,255,0.03); }
+    .btn.ghost:hover { border-color: #4a5750; background: rgba(255,255,255,0.07); }
+    .hint { margin-top: 22px; font: 0.78rem/1.5 var(--mono); color: var(--faint); }
+
+    /* the app shelf: a home-screen folder of the five apps */
+    .shelf { justify-self: end; width: min(100%, 372px); padding: 26px 20px 18px; border-radius: 34px; background: rgba(17,22,19,0.6); border: 1px solid rgba(255,255,255,0.08); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 30px 80px -30px rgba(0,0,0,0.85); }
+    .shelf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 8px; }
+    .shelf a { display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; font-size: 0.74rem; line-height: 1.25; color: #d3dad5; text-align: center; }
+    .shelf img { width: 74px; height: 74px; border-radius: 22.5%; box-shadow: 0 8px 22px -8px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06); transition: transform .2s; }
+    .shelf a:hover img { transform: translateY(-3px) scale(1.04); }
+    .shelf .web img { background: #0d1410; padding: 9%; }
+    .shelf-cap { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07); font: 0.72rem/1.4 var(--mono); color: var(--faint); text-align: center; }
+
+    @media (max-width: 880px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 36px; padding-top: 52px; padding-bottom: 64px; }
+      .hero::after { background: linear-gradient(180deg, rgba(10,12,11,0.88) 0%, rgba(10,12,11,0.72) 55%, rgba(10,12,11,0.85) 100%); }
+      .shelf { justify-self: stretch; width: 100%; max-width: 420px; padding: 20px 12px 14px; border-radius: 28px; }
+      .shelf-grid { gap: 16px 6px; }
+      .shelf img { width: 62px; height: 62px; }
+      .shelf a { font-size: 0.7rem; }
     }
 
-    .header { max-width: 860px; margin: 0 auto 34px; position: relative; }
-    .hero-logo { display: block; width: 100%; max-width: 360px; height: auto; margin-bottom: 12px; }
-    .header .sub { color: #666; font-size: 0.74rem; line-height: 1.7; letter-spacing: 0.3px; }
-    .lang-btn { position: absolute; top: 0; right: 0; background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; transition: background 0.1s; }
-    .lang-btn:hover { background: rgba(29,185,84,0.1); }
-    /* The arcade is a room in a larger house, and there was no door back to it:
-       every game page has "← arcade" and the arcade itself had nowhere to go. */
-    .home-link { display: inline-block; margin-top: 10px; font-size: 0.72rem; color: #1db954; text-decoration: none; letter-spacing: 0.3px; }
-    .home-link:hover { text-decoration: underline; }
+    /* ── sections ────────────────────────────────────────── */
+    .section { padding: 104px 0; }
+    @media (max-width: 600px) { .section { padding: 72px 0; } }
+    .kicker { font: 500 0.78rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--green); }
+    .section-head { max-width: 680px; margin-bottom: 52px; }
+    .section-head h2 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.03em; line-height: 1.08; margin-top: 14px; }
+    .section-head p { color: var(--muted); font-size: 1.08rem; margin-top: 14px; }
 
-    .grid { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    /* ── app feature blocks ─────────────────────────────── */
+    .app { --accent: var(--green); position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: center;
+      padding: 48px; margin-bottom: 28px; border-radius: 28px; border: 1px solid var(--line); scroll-margin-top: 80px;
+      background: var(--bg2);
+      background: radial-gradient(110% 90% at 88% 50%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 62%), var(--bg2); }
+    .app.flip { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+      background: radial-gradient(110% 90% at 12% 50%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 62%), var(--bg2); }
+    .app.flip .app-copy { order: 2; }
+    .app-id { display: flex; align-items: center; gap: 18px; }
+    .app-icon { width: 84px; height: 84px; flex: none; border-radius: 22.5%; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06); }
+    .app h3 { font-size: clamp(1.5rem, 2.4vw, 2rem); letter-spacing: -0.025em; line-height: 1.1; }
+    .app .sub { color: var(--accent); font-weight: 560; margin-top: 4px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin-top: 22px; }
+    .chips li { font: 500 0.74rem/1 var(--mono); letter-spacing: 0.03em; padding: 7px 10px; border-radius: 999px; border: 1px solid var(--line2); color: var(--muted); }
+    .chips .soon { border-color: rgba(240,184,74,0.45); color: var(--amber); }
+    .chips .live { background: var(--green); border-color: var(--green); color: #04150b; }
+    .chips .soon::before, .chips .live::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 7px; vertical-align: 1px; }
+    .desc { margin-top: 20px; color: var(--soft); font-size: 1.04rem; }
+    .feats { list-style: none; margin-top: 18px; display: grid; gap: 10px; }
+    .feats li { position: relative; padding-left: 22px; color: var(--muted); font-size: 0.96rem; line-height: 1.55; }
+    .feats li::before { content: ""; position: absolute; left: 2px; top: 0.6em; width: 8px; height: 8px; background: var(--accent); }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; align-items: center; }
+    .store { display: inline-flex; flex-direction: column; justify-content: center; min-height: 50px; padding: 6px 18px; border-radius: 12px; line-height: 1.15; text-decoration: none; }
+    .store small { font-size: 0.68rem; letter-spacing: 0.02em; opacity: 0.8; }
+    .store b { font-size: 1.06rem; font-weight: 650; letter-spacing: -0.01em; }
+    .store.live { background: #fff; color: #000; transition: background .15s; }
+    .store.live:hover { background: #e6e6e6; }
+    .store.soon { border: 1px dashed var(--line2); color: var(--muted); cursor: default; }
 
-    .card { border: 1px solid #1c1c1c; padding: 20px; background: #0d0d0d; position: relative; z-index: 0; transition: border-color 0.2s, box-shadow 0.3s; display: flex; flex-direction: column; }
-    .card:hover { border-color: #1db954; }
-    .card.soon { opacity: 0.45; pointer-events: none; }
-    .card.flagship { border-color: rgba(29,185,84,0.4); }
-    .card > * { position: relative; z-index: 1; }   /* content stays above the glow layers */
+    .shots { position: relative; margin: 0; padding-bottom: 15%; }
+    .frame { background: #030403; padding: 7px; border-radius: 22px; box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px -30px rgba(0,0,0,0.9); }
+    .frame img, .frame video { width: 100%; border-radius: 15px; background: #000; }
+    .frame.side { position: absolute; width: 50%; right: -3%; bottom: 0; transform: rotate(1.5deg); }
+    .flip .frame.side { right: auto; left: -3%; transform: rotate(-1.5deg); }
+    .ipad .frame { border-radius: 26px; padding: 9px; }
+    .ipad .frame img { border-radius: 17px; }
 
-    /* ── per-game hover glows ─────────────────────────────────── */
-    /* Tomato — terminal CRT chrome + a rain of little ASCII tomatoes under the cursor */
-    .card.glow-tomato { --crt-green: 29,185,84; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
-    .card.glow-tomato:hover { transform: translateY(-4px); box-shadow: 4px 4px 0 rgba(0,255,0,0.20); border-color: rgba(var(--crt-green),0.4); }
-    /* tomato-rain: little ASCII tomatoes drop wherever the cursor hovers (JS-spawned) */
-    .card.glow-tomato .tomato-rain { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
-    .tdrop { position: absolute; left: 0; top: 0; margin: 0; line-height: 0.9; white-space: pre; font-family: Consolas,'Courier New',monospace; will-change: transform; opacity: 0; transition: opacity .25s ease; }
-    /* phosphor "wake up" — icon glows in its own (red) colour, title in green */
-    .card.glow-tomato .card-icon, .card.glow-tomato .card-title { transition: text-shadow .3s ease; }
-    .card.glow-tomato:hover .card-icon { text-shadow: 0 0 6px currentColor, 0 0 14px currentColor; }
-    .card.glow-tomato:hover .card-title { text-shadow: 0 0 7px rgba(var(--crt-green),0.7); }
-    /* tags + play button — instant "terminal invert" (no fade), like a command-line selection */
-    .card.glow-tomato .tag, .card.glow-tomato .play-btn { transition: none; }
-    .card.glow-tomato .tag:hover { background: #8c8c8c; color: #0a0a0a; border-color: #8c8c8c; }
-    .card.glow-tomato .tag.green:hover, .card.glow-tomato .play-btn:hover { background: rgb(var(--crt-green)); color: #07120b; border-color: rgb(var(--crt-green)); }
+    .between { display: flex; align-items: center; gap: 14px; margin: 52px 0 22px; }
+    .between::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
-    /* Labyrinth — on hover, an A* flood sweeps through a mini-maze (BFS wavefront) */
-    .card.glow-laby:hover { border-color: #2c7a6f; box-shadow: 0 0 22px -8px rgba(54,197,208,0.45); }
-    .glow-laby .laby-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; mix-blend-mode: screen; }
-    .card.glow-laby:hover .laby-canvas { opacity: 1; }
+    /* Phloem is a reading app, so it sits on paper */
+    .app.paper { --accent: #c94f38; background: #f3ebdd; color: #2a2420; border-color: #e2d6c3; }
+    .app.paper .desc { color: #3d352f; }
+    .app.paper .feats li { color: #5d544c; }
+    .app.paper .chips li { border-color: #d6c8b2; color: #6b6157; }
+    .app.paper .chips .live { background: #2f7d4f; border-color: #2f7d4f; color: #fff; }
+    .app.paper .btn.ghost { color: #2a2420; border-color: #cdbfa9; background: transparent; }
+    .app.paper .btn.ghost:hover { background: rgba(0,0,0,0.05); }
+    .app.paper .store.live { background: #141210; color: #fff; }
+    .app.paper .store.live:hover { background: #2c2824; }
+    .app.paper .frame { background: #2a2420; box-shadow: 0 30px 60px -30px rgba(60,40,20,0.55); }
+    .app.paper a:focus-visible { outline-color: #2f7d4f; }
 
-    /* Tomatoswipe — on hover, a tomato plops in, wobbles and explodes into dripping ketchup */
-    .card.glow-tsweep:hover { border-color: #a33c30; box-shadow: 0 0 22px -8px rgba(226,82,62,0.5); }
-    .glow-tsweep .tsw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
-    .card.glow-tsweep:hover .tsw-canvas { opacity: 1; }
+    @media (max-width: 880px) {
+      .app, .app.flip { grid-template-columns: 1fr; gap: 34px; padding: 26px 18px 30px; border-radius: 22px; }
+      .app.flip .app-copy { order: 0; }
+      .app-icon { width: 68px; height: 68px; }
+      .frame.side { width: 48%; right: -1%; }
+      .flip .frame.side { left: -1%; }
+      .frame { padding: 5px; border-radius: 16px; }
+      .frame img, .frame video { border-radius: 11px; }
+    }
 
-    /* Sudoku — on hover, a pencil hand-writes notes and answers into the grid */
-    .card.glow-sudoku:hover { border-color: #2a6e78; box-shadow: 0 0 22px -8px rgba(54,197,208,0.45); }
-    .glow-sudoku .sudoku-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
-    .card.glow-sudoku:hover .sudoku-canvas { opacity: 1; }
+    /* ── browser arcade ──────────────────────────────────── */
+    .arcade { border-top: 1px solid var(--line); background: linear-gradient(180deg, #0c0f0d, var(--bg) 320px); }
+    .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
+    .game { display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--bg2); border-radius: 18px; overflow: hidden; text-decoration: none; transition: transform .18s, border-color .18s; }
+    .game:hover { transform: translateY(-3px); border-color: #3a4a40; }
+    .thumb { aspect-ratio: 11 / 6; background: #050605; overflow: hidden; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+    .game:hover .thumb img { transform: scale(1.04); }
+    .game-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .game-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .game h3 { font-size: 1.06rem; letter-spacing: -0.01em; }
+    .players { font: 500 0.68rem/1 var(--mono); color: var(--green); white-space: nowrap; }
+    .exe { font: 0.72rem/1.4 var(--mono); color: var(--faint); }
+    .game p { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin-top: 4px; }
+    /* Dilemma Lab has no screenshot: its payoff table stands in */
+    .thumb.payoff { display: grid; place-items: center; background: #0b0f0c; font: 600 0.9rem/1 var(--mono); }
+    .payoff table { border-collapse: collapse; }
+    .payoff td, .payoff th { width: 64px; height: 40px; text-align: center; border: 1px solid #23302a; font-weight: 600; }
+    .payoff th { color: var(--faint); font-weight: 500; font-size: 0.72rem; border: none; }
+    .payoff .c { color: var(--green); } .payoff .d { color: #ff6b5b; } .payoff .m { color: var(--amber); }
+    .more { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
 
-    /* Keep-Up — on hover, a ball bounces between two tracking paddles */
-    .card.glow-keepup:hover { border-color: #2a6e78; box-shadow: 0 0 22px -8px rgba(54,197,208,0.5); }
-    .glow-keepup .ku-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
-    .card.glow-keepup:hover .ku-canvas { opacity: 1; }
+    /* ── how these are made ──────────────────────────────── */
+    .values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .value { padding: 28px; border: 1px solid var(--line); border-radius: 20px; background: var(--bg2); }
+    .value .n { font: 500 0.78rem/1 var(--mono); color: var(--green); }
+    .value h3 { font-size: 1.12rem; margin-top: 16px; letter-spacing: -0.01em; }
+    .value p { color: var(--muted); font-size: 0.95rem; margin-top: 8px; }
+    .value a { display: inline-block; margin-top: 12px; color: var(--green); text-decoration: none; font-weight: 560; }
+    .value a:hover { text-decoration: underline; }
+    @media (max-width: 820px) { .values { grid-template-columns: 1fr; } }
 
-    /* Co-op Lander — a little lander descends + thrusts toward a pad on hover */
-    .card.glow-lander:hover { border-color: #6e5a2a; box-shadow: 0 0 22px -8px rgba(232,176,74,0.5); }
-    .glow-lander .ld-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
-    .card.glow-lander:hover .ld-canvas { opacity: 1; }
-
-/* Per-game card accents; Glyph Run is a still cabinet boot screen — 舞 in phosphor. */
-.card.glow-glyph{border-color:rgba(232,176,74,.38);}
-.card.glow-glyph:hover{border-color:#e8b04a;box-shadow:0 0 24px -10px rgba(232,176,74,.6);}
-.glyphlive{background:#080808;}
-.glow-glyph .card-thumb{background:#0c1110;filter:saturate(.88) brightness(.88) contrast(1.04);}
-.glow-glyph:hover .card-thumb{filter:saturate(1) brightness(1) contrast(1.02);}
-.glow-glyph .card-icon{color:#e8b04a;}
-.card.glow-dilemma .dl-canvas{cursor:pointer;touch-action:manipulation;}
-.card.glow-dilemma .dl-canvas:focus-visible{outline:2px solid #e06a8a;outline-offset:-2px;}
-.card.glow-gomoku{ transition: box-shadow .3s ease, border-color .3s ease; }
-.card.glow-gomoku:hover,
-.card.glow-gomoku:focus-within{ border-color:#3e92a0; box-shadow:0 0 22px -8px rgba(77,197,199,.52); }
-.glow-gomoku .gwater{ position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none;
-  opacity:0; transition:opacity .25s steps(4,end); filter:saturate(0.9) brightness(0.82); image-rendering:pixelated; }
-.card.glow-gomoku.ready .gwater{ opacity:1; }
-.card.glow-gomoku:hover .gwater,
-.card.glow-gomoku:focus-within .gwater{ filter:saturate(1.05) brightness(1); }
-.glow-gomoku .gband{ background:transparent; }   /* transparent spacer; water shows through the band */
-.glow-gomoku .qi-cabinet-overlay{
-  position:absolute; top:0; left:0; right:0; z-index:2; aspect-ratio:440/240;
-  overflow:hidden; pointer-events:none; color:#edf0df;
-}
-.glow-gomoku .qi-cabinet-mark{
-  position:absolute; top:16px; left:17px; width:56px; height:auto;
-  image-rendering:auto;
-  filter:invert(94%) sepia(13%) saturate(244%) hue-rotate(93deg) brightness(99%) contrast(91%) drop-shadow(0 0 8px rgba(117,225,208,.36));
-}
-.glow-gomoku .qi-board-key{
-  position:absolute; left:17px; bottom:12px; padding:4px 7px;
-  border:1px solid rgba(172,239,226,.36); background:rgba(4,18,19,.72);
-  color:#b4ded5; font-size:.57rem; letter-spacing:1.3px;
-}
-@media (prefers-reduced-motion: reduce){
-  .glow-gomoku .gwater{transition:none;}
-}
-
-/* ===== Game of Life — live Conway sim in the card BODY (screenshot stays in the band) ===== */
-.card.glow-life:hover{ border-color:#1f7a4a; box-shadow:0 0 22px -8px rgba(29,185,84,.5); }
-.glow-life .lgrid{ position:absolute; left:0; right:0; bottom:0; z-index:0; pointer-events:none; }  /* top set in JS = thumbnail bottom */
-.glow-life .card-icon, .glow-life .card-title, .glow-life .card-desc, .glow-life .card-meta{ text-shadow:0 1px 4px rgba(0,0,0,0.92); }
-
-/* Tether — the two tethered balls live on the card: chip hoppers on a real rope */
-.card.glow-rope:hover { border-color: #2a5a78; box-shadow: 0 0 22px -8px rgba(70,200,255,0.5); }
-.glow-rope .rope-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
-
-/* === Escape — "Escape vs Restraint" two-particle physics (Canvas) === */
-.card.glow-escape{ transition:border-color .25s ease, box-shadow .25s ease; }
-.card.glow-escape:hover{ border-color:#2c4a2c; box-shadow:0 0 22px -8px rgba(29,185,84,.4); }
-.esc-canvas{ position:absolute; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; opacity:0; transition:opacity .3s ease; }
-.card.glow-escape:hover .esc-canvas{ opacity:1; }
-
-    .card-thumb { display: block; width: calc(100% + 40px); height: auto; aspect-ratio: 440/240; margin: -20px -20px 14px; object-fit: cover; border-bottom: 1px solid #1c1c1c; filter: saturate(0.9) brightness(0.82); transition: filter 0.15s; }
-    .card:hover .card-thumb { filter: saturate(1.05) brightness(1); }
-
-    .card-icon { color: #1db954; font-size: 1.25rem; margin-bottom: 10px; }
-    .card-title { color: #f0f0f0; font-size: 1.18rem; font-weight: 700; letter-spacing: 0.4px; margin-bottom: 8px; }
-    .card-desc  { color: #b0b0b0; font-size: 0.86rem; line-height: 1.6; flex: 1; }
-    .card-tags  { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
-    .tag { font-size: 0.7rem; padding: 3px 9px; border: 1px solid #3a3a3a; color: #b0b0b0; background: rgba(255,255,255,0.02); }
-    .tag.green { border-color: rgba(29,185,84,0.45); color: #2bd46a; background: rgba(29,185,84,0.06); }
-    .tag.red   { border-color: rgba(244,67,54,0.45); color: #ff6a5e; background: rgba(244,67,54,0.06); }
-    .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 12px; border-top: 1px solid #141414; }
-    .card-meta { font-size: 0.62rem; color: #333; }
-    .play-btn { color: #1db954; font-size: 0.72rem; text-decoration: none; border: 1px solid #1db954; padding: 5px 12px; transition: all 0.1s; white-space: nowrap; flex-shrink: 0; margin-left: 8px; }
-    .play-btn:hover { background: rgba(29,185,84,0.1); }
-    .soon-badge { font-size: 0.62rem; color: #333; border: 1px solid #1e1e1e; padding: 4px 10px; }
-
-    .section-label { max-width: 860px; margin: 0 auto 12px; font-size: 0.65rem; color: #333; text-transform: uppercase; letter-spacing: 2px; }
-    .divider { max-width: 860px; margin: 28px auto 20px; border: none; border-top: 1px solid #141414; }
-    .footer { max-width: 860px; margin: 54px auto 18px; text-align: center; }
-    .footer-tag { color: #1db954; font-size: 1.1rem; line-height: 1.65; letter-spacing: 0.3px; max-width: 560px; margin: 0 auto 10px; }
-    .footer-sub { color: #6f9079; font-size: 0.84rem; line-height: 1.6; letter-spacing: 0.3px; }
-    /* prevent double-tap-to-zoom on fast taps — keeps scroll + pinch */
-  html, body, button, a, input, select, label { touch-action: manipulation; }
-
-  /* touch: no tap-highlight flash, no double-tap text selection (inputs stay editable) */
-  body{-webkit-tap-highlight-color:transparent;}
-  @media (pointer:coarse){
-    body{-webkit-user-select:none;user-select:none;}
-    input,textarea{-webkit-user-select:text;user-select:text;}
-  }
-
-  /* arcade cabinet feel: CRT scanlines over every card (flicker on hover) + coin-blink play button */
-  .card{position:relative;}
-  .card::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:inherit;
-    background:repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0 1px, transparent 1px 3px);opacity:.30;}
-  .card:hover::after{animation:crtflick .14s steps(2) infinite;}
-  @keyframes crtflick{0%{opacity:.28}50%{opacity:.38}100%{opacity:.28}}
-  .card:hover .play-btn{animation:coinblink 0.9s steps(1) infinite;}
-  @keyframes coinblink{0%,55%{background:#1db954;color:#04150a;}56%,100%{background:transparent;color:#1db954;}}
-
-  /* arcade player plates: neon coin-op badges on the thumb corner */
-  .card{overflow:hidden;}
-  .ribbon{position:absolute;top:10px;right:10px;z-index:4;
-    font-size:0.6rem;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border-radius:3px;
-    font-family:inherit;text-transform:uppercase;pointer-events:none;
-    background:rgba(6,10,8,0.85);color:#1db954;border:1px solid #1db954;
-    box-shadow:0 0 10px rgba(29,185,84,0.35), inset 0 0 6px rgba(29,185,84,0.12);}
-  .ribbon.p2{color:#36c5d0;border-color:#36c5d0;box-shadow:0 0 10px rgba(54,197,208,0.35), inset 0 0 6px rgba(54,197,208,0.12);}
-  .ribbon.p0{color:#b48cff;border-color:#b48cff;box-shadow:0 0 10px rgba(180,140,255,0.35), inset 0 0 6px rgba(180,140,255,0.12);}
-  .ribbon.p12{color:#e8b04a;border-color:#e8b04a;box-shadow:0 0 10px rgba(232,176,74,0.35), inset 0 0 6px rgba(232,176,74,0.12);}
-
-  /* ── star cabinets: backlit marquee topper — the house's three headline machines ──
-     A lit marquee tube along the top edge + a soft light wash on the screen, each in
-     the cabinet's own plate neon (life = green, gomoku = gold, tether = co-op cyan).
-     Dim at rest, full on hover — like walking up to the machine. Star screens also
-     rest brighter than the idle floor. Static (no ambient blink); ribbons stay on top. */
-  .card.star{--mq:29,185,84;--mqwash:.14;
-    border-color:rgba(var(--mq),.40);
-    box-shadow:0 0 18px -12px rgba(var(--mq),.35);}
-  .card.star.glow-glyph{--mq:232,176,74;--mqwash:.08;}
-  .card.star.glow-gomoku{--mq:232,176,74;--mqwash:.09;}
-  .card.star.glow-rope{--mq:54,197,208;}
-  .card.star.glow-dilemma{--mq:224,106,138;--mqwash:.10;}
-  .card.star.glow-truco{--mq:232,176,74;--mqwash:.10;}
-  .card.glow-dilemma{transition:box-shadow .3s ease,border-color .3s ease;}
-  .card.glow-dilemma:hover{border-color:#a04a6e;box-shadow:0 0 22px -8px rgba(224,106,138,.5);}
-  .card.glow-truco{transition:box-shadow .3s ease,border-color .3s ease;}
-  .card.glow-truco:hover{border-color:#8a6e2a;box-shadow:0 0 22px -8px rgba(232,176,74,.5);}
-  .card.glow-truco .card-icon{color:#e8b04a;}
-  /* lamp: the marquee throws a soft spotlight cone down the screen (sized to the thumb,
-     masked out before the text); hovering brings it to full brightness. */
-  .card.star::before{content:'';position:absolute;top:0;left:0;right:0;height:auto;aspect-ratio:440/240;z-index:4;pointer-events:none;
-    opacity:.62;transition:opacity .25s ease;
-    -webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 97%);
-    mask-image:linear-gradient(180deg,#000 55%,transparent 97%);
-    background:
-      linear-gradient(90deg, rgba(var(--mq),0) 2%, rgba(var(--mq),.85) 20%, rgba(var(--mq),.85) 80%, rgba(var(--mq),0) 98%) 50% 0/100% 2px no-repeat,
-      conic-gradient(from 152deg at 50% -6px, rgba(var(--mq),0) 0deg, rgba(var(--mq),.13) 18deg, rgba(var(--mq),.19) 28deg, rgba(var(--mq),.13) 38deg, rgba(var(--mq),0) 56deg),
-      linear-gradient(180deg, rgba(var(--mq),var(--mqwash)), rgba(var(--mq),0) 55%);}
-  .card.star:hover::before{opacity:1;}
-  .card.star:not(:hover) .card-thumb,
-  .card.star:not(:hover) .gwater{filter:saturate(1) brightness(.94);}
-
-  /* sort/filter by player count */
-  .pfilter{max-width:860px;margin:0 auto 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-  .pfilter .plabel{color:#5a5a5a;font-size:0.68rem;letter-spacing:1px;}
-  .pchip{background:transparent;border:1px solid #2a2a2a;color:#9a9a9a;font-family:inherit;font-size:0.68rem;
-    padding:5px 13px;border-radius:4px;cursor:pointer;letter-spacing:1px;transition:all .12s;}
-  .pchip:hover{border-color:#1db954;color:#1db954;}
-  .pchip.on{background:#1db954;border-color:#1db954;color:#04150a;font-weight:700;}
-</style>
+    footer { border-top: 1px solid var(--line); padding: 56px 0 64px; color: var(--faint); font-size: 0.88rem; }
+    footer .tag { color: var(--text); font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
+    footer .sub { margin-top: 6px; }
+    footer nav { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 26px; }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+  </style>
 </head>
 <body>
-<div class="header">
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
-  <img class="hero-logo" src="/game/icon.png?v=3" alt="GAME LIFE — browser game arcade" width="1032" height="616">
-  <div class="sub" id="pgSub">&gt;_ game arcade · hand-coded browser games · RL agents in training</div>
-  <a class="home-link" href="https://houfu72.com" data-en="← houfu72.com" data-zh="← 回到主页 houfu72.com">← houfu72.com</a>
-</div>
 
-<div class="section-label" data-en="// playable now" data-zh="// 可以游玩">// playable now</div>
-<div class="pfilter">
-  <span class="plabel" data-en="// sort by players:" data-zh="// 按玩家数：">// sort by players:</span>
-  <button class="pchip on" data-p="all" data-en="ALL" data-zh="全部">ALL</button>
-  <button class="pchip" data-p="0" data-en="CPU · auto" data-zh="CPU · 自动">CPU · auto</button>
-  <button class="pchip" data-p="1" data-en="1UP" data-zh="1UP 单人">1UP</button>
-  <button class="pchip" data-p="2" data-en="2UP · co-op" data-zh="2UP · 合作">2UP · co-op</button>
-</div>
-<div class="grid">
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="Life Game Project home">
+      <svg viewBox="0 0 3 3" aria-hidden="true" shape-rendering="crispEdges"><g fill="#3ee07f"><rect x="1" y="0" width=".86" height=".86"/><rect x="2" y="1" width=".86" height=".86"/><rect x="0" y="2" width=".86" height=".86"/><rect x="1" y="2" width=".86" height=".86"/><rect x="2" y="2" width=".86" height=".86"/></g></svg>
+      <span>Life Game Project</span>
+    </a>
+    <nav class="links" aria-label="Sections">
+      <a href="#apps" data-zh="应用">Apps</a>
+      <a href="#arcade" data-zh="游戏厅">Arcade</a>
+      <a class="opt" href="/wip.html" data-zh="实验室">Lab</a>
+      <button class="lang" id="langBtn" type="button">中文</button>
+    </nav>
+  </div>
+</header>
 
-  <div class="card flagship glow-life star" data-players="0">
-    <div class="ribbon p0" data-en="CPU · AUTO" data-zh="CPU · 自动">CPU · AUTO</div>
-    <img class="card-thumb" src="/game/thumbs/life.png?v=4" alt="Game of Life grid" loading="lazy" width="440" height="240">
-    <canvas class="lgrid" aria-hidden="true"></canvas>
-    <div class="card-icon">[##]</div>
-    <div class="card-title" data-en="game_of_life.exe" data-zh="生命游戏.exe">game_of_life.exe</div>
-    <div class="card-desc" data-en="Draw patterns, watch them evolve, turn them into music. Sandbox, 11 leaderboard challenges, and a Music Box sequencer." data-zh="绘制图案、观察演化、化作音乐。沙盒、11 个排行榜挑战，以及八音盒音序器。">Draw patterns, watch them evolve, turn them into music. Sandbox, 11 leaderboard challenges, and a Music Box sequencer.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="flagship" data-zh="旗舰">flagship</span>
-      <span class="tag" data-en="sandbox" data-zh="沙盒">sandbox</span>
-      <span class="tag" data-en="challenges" data-zh="挑战">challenges</span>
-      <span class="tag" data-en="music" data-zh="音乐">music</span>
+<main>
+
+<section class="hero">
+  <canvas id="life" aria-hidden="true"></canvas>
+  <div class="wrap hero-inner">
+    <div>
+      <img class="hero-logo" src="/game/icon.png?v=3" alt="Game Life" width="1032" height="616">
+      <h1 data-zh="为真实生活而做的小游戏。">Small games for real life.</h1>
+      <p class="lede" data-zh="Houfu Chen 为 iPhone、iPad 和浏览器手工制作的小游戏。没有广告，无需账号，游戏不收集任何数据。">Hand-made games for iPhone, iPad and your browser, by Houfu Chen. No ads, no accounts, and the games collect no data.</p>
+      <div class="cta">
+        <a class="btn primary" href="#apps" data-zh="查看应用">See the apps</a>
+        <a class="btn ghost" href="#arcade" data-zh="在浏览器里玩">Play in your browser</a>
+      </div>
+      <p class="hint" id="lifeHint" data-zh="在背景上拖动，画出活细胞。">Drag across the background to draw living cells.</p>
     </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · PWA · leaderboard" data-zh="JS · PWA · 排行榜">JS · PWA · leaderboard</span>
-      <a class="play-btn" href="/life.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
+
+    <div class="shelf">
+      <div class="shelf-grid">
+        <a href="#plank-pilot"><img src="/assets/apps/plank-icon.webp" alt="" width="256" height="256">Plank Pilot</a>
+        <a href="#game-life"><img src="/assets/apps/gamelife-icon.webp" alt="" width="256" height="256">Game Life</a>
+        <a href="#qi"><img src="/assets/apps/qi-icon.webp" alt="" width="256" height="256"><span data-zh="棋">Qi</span></a>
+        <a href="#manilha"><img src="/assets/apps/manilha-icon.webp" alt="" width="256" height="256">Manilha</a>
+        <a href="#phloem"><img src="/assets/apps/phloem-icon.webp?v=2" alt="" width="256" height="256">Phloem</a>
+        <a href="#arcade" class="web"><img src="/icon-192.png" alt="" width="192" height="192"><span data-zh="网页游戏厅">Web arcade</span></a>
+      </div>
+      <p class="shelf-cap" data-zh="5 款应用 · 1 位作者">5 apps · 1 maker</p>
     </div>
   </div>
+</section>
 
-  <div class="card glow-glyph star" data-players="1">
-    <div class="ribbon p12" data-en="1UP · FEATURED" data-zh="1UP · 精选">1UP · FEATURED</div>
-    <canvas class="card-thumb glyphlive" role="img" aria-label="舞 — the oracle-bone dancer glyph glowing like a cabinet boot screen, red-eyed spirit glyphs closing in from both sides" width="440" height="240"></canvas>
-    <div class="card-icon">[字]</div>
-    <div class="card-title" data-en="glyph_run.exe" data-zh="字源.exe">glyph_run.exe</div>
-    <div class="card-desc" data-en="A survivor game drawn from the history of Chinese writing. Dodge spirits, collect fallen glyphs, and evolve from clerical script to oracle bone." data-zh="一款取材于汉字演变史的生存游戏。避开群鬼，收集落字，从隶书一路进化至甲骨文。">A survivor game drawn from the history of Chinese writing. Dodge spirits, collect fallen glyphs, and evolve from clerical script to oracle bone.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="survivor" data-zh="生存">survivor</span>
-      <span class="tag" data-en="4 eras" data-zh="四个时代">4 eras</span>
-      <span class="tag" data-en="oracle bone" data-zh="甲骨文">oracle bone</span>
+<!--
+  App Store status: a game still in review shows a "soon" chip and a dashed
+  <span class="store soon">. Once Apple approves it, swap that span for
+    <a class="store live" href="https://apps.apple.com/app/id…"> (copy Phloem's)
+  and the chip for <li class="live">Available now</li>.
+    Manilha 6821476915 · Game Life 6821541367 · Qi 6821608519 · Plank Pilot 6821685257
+-->
+<section class="section" id="apps">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker" data-zh="// App Store 上的应用">// on the App Store</p>
+      <h2 data-zh="iPhone 与 iPad 应用">Apps for iPhone and iPad</h2>
+      <p data-zh="这里的每款应用都起步于下面游戏厅里的一个小网页游戏。四款游戏即将登陆 App Store，Phloem 现已上架。">Every app here started as a small web game in the arcade below. Four games are on their way to the App Store, and Phloem is out now.</p>
     </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · canvas · bilingual" data-zh="JS · canvas · 双语">JS · canvas · bilingual</span>
-      <a class="play-btn" href="/game/glyphrun.html?v=b57" data-en="→ play" data-zh="→ 游玩">→ play</a>
+
+    <article class="app" id="plank-pilot" style="--accent:#ffd23f">
+      <div class="app-copy">
+        <div class="app-id">
+          <img class="app-icon" src="/assets/apps/plank-icon.webp" alt="" width="256" height="256">
+          <div><h3>Plank Pilot</h3><p class="sub" data-zh="免手操作的平板支撑计时游戏">Plank timer games, hands-free</p></div>
+        </div>
+        <ul class="chips"><li>iPhone · iPad</li><li data-zh="免费">Free</li><li class="soon" data-zh="内测中">In beta testing</li></ul>
+        <p class="desc" data-zh="撑住平板支撑，用脸来玩：双手稳稳撑地，时间也不再难熬。两款游戏：穿越流星带的飞行，以及独木桥上的剑盾决斗。">Hold a plank and play with your face, so your hands stay planted and the clock stops dragging. Two games: a flight through a meteor belt, and a sword duel on a plank.</p>
+        <ul class="feats">
+          <li data-zh="飞行：躲开燃烧的流星，收集星星和问号箱，撑过双倍积分的最后冲刺。">Flight: dodge fiery meteors, grab stars and ? boxes, and survive the double-points final stretch.</li>
+          <li data-zh="Plank Plank Plank!：挥剑、举盾，对战山羊、熔岩巨人、雪人、螃蟹和机器人，或通过 FaceTime 与朋友对决。">Plank Plank Plank!: strike and block against a goat, a lava golem, a yeti, a crab and a robot, or duel a friend over FaceTime.</li>
+          <li data-zh="用轻微的头部移动、挑眉或点头摇头来操控。面部追踪只在你的 iPhone 上运行。">Play with small face shifts, your eyebrows, or a nod and a shake. Face tracking never leaves your iPhone.</li>
+        </ul>
+        <div class="actions">
+          <span class="store soon"><small data-zh="即将登陆">Coming soon to the</small><b>App Store</b></span>
+          <a class="btn ghost" href="/game/plank.html" data-zh="试玩网页原型 →">Try the web prototype →</a>
+        </div>
+      </div>
+      <figure class="shots">
+        <div class="frame"><img src="/assets/apps/plank-1.webp" alt="Plank Plank Plank!: a planking fighter strikes a goat on a plank over a mountain river" width="1400" height="644" loading="lazy"></div>
+        <div class="frame side"><img src="/assets/apps/plank-2.webp" alt="Flight: a pixel face dodges fiery meteors during a meteor shower" width="1400" height="836" loading="lazy"></div>
+      </figure>
+    </article>
+
+    <article class="app flip" id="game-life" style="--accent:#3ee07f">
+      <div class="app-copy">
+        <div class="app-id">
+          <img class="app-icon" src="/assets/apps/gamelife-icon.webp" alt="" width="256" height="256">
+          <div><h3 data-zh="Game Life：细胞世界">Game Life: Cellular Worlds</h3><p class="sub" data-zh="康威细胞自动机，重新想象">Conway's automaton, reimagined</p></div>
+        </div>
+        <ul class="chips"><li>iPhone · iPad</li><li data-zh="免费">Free</li><li class="soon" data-zh="审核中">In App Review</li></ul>
+        <p class="desc" data-zh="一个由三条简单规则驱动的微型宇宙。画几个细胞，按下播放，看它们生存、死亡、繁衍。">A tiny universe that runs on three simple rules. Draw a few cells, press Play and watch them live, die and multiply.</p>
+        <ul class="feats">
+          <li data-zh="预见未来：按命运给细胞着色，预测最多 55 代之后的棋盘。">See what's coming: cells coloured by their fate, and Lookahead up to 55 generations ahead.</li>
+          <li data-zh="十一个谜题：从存活 20 代，到在不断缩小的竞技场中坚持到底。">Eleven puzzles, from surviving 20 generations to outlasting a shrinking arena.</li>
+          <li data-zh="八音盒把棋盘奏成旋律。用手指或 Apple Pencil 绘制。">Music Box turns the board into a melody. Draw with a finger or Apple Pencil.</li>
+        </ul>
+        <div class="actions">
+          <span class="store soon"><small data-zh="即将登陆">Coming soon to the</small><b>App Store</b></span>
+          <a class="btn ghost" href="/life.html" data-zh="玩网页版 →">Play the web version →</a>
+        </div>
+      </div>
+      <figure class="shots">
+        <div class="frame"><video class="demo" src="/assets/apps/gamelife-demo.mp4" poster="/assets/apps/gamelife-1.webp" width="1200" height="554" muted loop playsinline preload="none" aria-label="Game Life in Aura mode: cells glow from green to violet as they age"></video></div>
+        <div class="frame side"><img src="/assets/apps/gamelife-2.webp" alt="Placing a Gosper glider gun beside a pixel GAME LIFE pattern" width="1400" height="644" loading="lazy"></div>
+      </figure>
+    </article>
+
+    <article class="app" id="qi" style="--accent:#5fd0b5">
+      <div class="app-copy">
+        <div class="app-id">
+          <img class="app-icon" src="/assets/apps/qi-icon.webp" alt="" width="256" height="256">
+          <div><h3 data-zh="棋：围棋与五子棋">Qi: Go &amp; Gomoku</h3><p class="sub" data-zh="边下边学的围棋和五子棋">Learn Go and five in a row</p></div>
+        </div>
+        <ul class="chips"><li>iPhone · iPad</li><li data-zh="免费">Free</li><li class="soon" data-zh="审核中">In App Review</li></ul>
+        <p class="desc" data-zh="两款最古老的棋类游戏，为触屏和学习而做。">Two of the oldest board games, made for touch and for learning.</p>
+        <ul class="feats">
+          <li data-zh="9×9、13×13、19×19 三种棋盘，对手是耐心的入门电脑，也可与朋友同屏对弈。">Go on 9×9, 13×13 or 19×19 against a patient beginner opponent, or with a friend on one device.</li>
+          <li data-zh="教练用圆环标出最紧急的一手，并用一句话解释原因。">A coach rings the most urgent move and explains why in one sentence.</li>
+          <li data-zh="五子棋有简单、普通、困难三档电脑。支持英文和中文。">Gomoku against Easy, Normal or Hard. In English and 中文.</li>
+        </ul>
+        <div class="actions">
+          <span class="store soon"><small data-zh="即将登陆">Coming soon to the</small><b>App Store</b></span>
+          <a class="btn ghost" href="/game/qi.html" data-zh="玩网页版 →">Play the web version →</a>
+        </div>
+      </div>
+      <figure class="shots">
+        <div class="frame"><img src="/assets/apps/qi-1.webp" alt="A game of Go with black stones and seashell white stones, with the coach's advice beside the board" width="1400" height="644" loading="lazy"></div>
+        <div class="frame side"><img src="/assets/apps/qi-2.webp" alt="Qi's start screen: choose Go or Gomoku" width="1400" height="644" loading="lazy"></div>
+      </figure>
+    </article>
+
+    <article class="app flip" id="manilha" style="--accent:#e8b04a">
+      <div class="app-copy">
+        <div class="app-id">
+          <img class="app-icon" src="/assets/apps/manilha-icon.webp" alt="" width="256" height="256">
+          <div><h3>Manilha</h3><p class="sub" data-zh="叫准墩数，小心王牌">Bid your tricks, mind the trump</p></div>
+        </div>
+        <ul class="chips"><li>iPhone · iPad</li><li data-zh="免费">Free</li><li class="soon" data-zh="审核中">In App Review</li></ul>
+        <p class="desc" data-zh="巴西叫墩纸牌游戏，又名 Fodinha（英文称 Oh Hell）。先叫出你能赢几墩，再恰好赢下那么多。">The Brazilian trick-bidding card game also known as Fodinha, or Oh Hell. Call how many tricks you'll take, then take exactly that many.</p>
+        <ul class="feats">
+          <li data-zh="每局一张新的王牌（manilha）：这个点数压过所有牌。">A new manilha every round: one rank beats every other card.</li>
+          <li data-zh="盲牌局：你能看到所有人的牌，唯独看不到自己的。">Blind rounds: you see everyone's card except your own.</li>
+          <li data-zh="单人对战最多三台电脑，或两人共用一台 iPhone 或 iPad。支持英语、葡萄牙语、西班牙语和中文。">Solo against up to three computers, or two of you on one iPhone or iPad. English, Português, Español and 中文.</li>
+        </ul>
+        <div class="actions">
+          <span class="store soon"><small data-zh="即将登陆">Coming soon to the</small><b>App Store</b></span>
+          <a class="btn ghost" href="/game/truco.html?v=3" data-zh="玩网页版（可联机）→">Play online with friends →</a>
+        </div>
+      </div>
+      <figure class="shots">
+        <div class="frame"><img src="/assets/apps/manilha-1.webp" alt="A round of Manilha: your hand of cards below the table, the manilha indicator on the left" width="1400" height="644" loading="lazy"></div>
+        <div class="frame side"><img src="/assets/apps/manilha-2.webp" alt="Manilha's lobby: play 1, 2 or 3 computer opponents, or two players against two" width="1400" height="644" loading="lazy"></div>
+      </figure>
+    </article>
+
+    <p class="between kicker" data-zh="// 还有一款阅读应用">// and one for reading</p>
+
+    <article class="app paper ipad" id="phloem">
+      <div class="app-copy">
+        <div class="app-id">
+          <img class="app-icon" src="/assets/apps/phloem-icon.webp?v=2" alt="" width="256" height="256">
+          <div><h3>Phloem: Paper Reader</h3><p class="sub" data-zh="安静的论文阅读桌">A calm reading desk for research papers</p></div>
+        </div>
+        <ul class="chips"><li>iPad</li><li data-zh="免费">Free</li><li class="live" data-zh="现已上架">Available now</li></ul>
+        <p class="desc" data-zh="一张安静、本地优先的 iPad 论文阅读桌。导入 PDF 和 Word 文档，专注阅读，把思考留在原文旁边。">A calm, local-first reading desk for research papers on iPad. Import PDFs and Word files, read without distractions, and keep your thinking beside the source.</p>
+        <ul class="feats">
+          <li data-zh="高亮、记笔记，跟随可移动的阅读引导条。">Highlight, take notes and follow a movable reading guide.</li>
+          <li data-zh="用 Apple Pencil 直接在页面上书写：八种墨色、三种笔宽。">Write on the page with Apple Pencil, in eight inks and three pen widths.</li>
+          <li data-zh="在多种专注阅读版式之间切换。">Switch between focused reading layouts.</li>
+        </ul>
+        <div class="actions">
+          <a class="store live" href="https://apps.apple.com/app/id6813510395" rel="noopener"><small data-zh="免费下载于">Download free on the</small><b>App Store</b></a>
+          <a class="btn ghost" href="https://houfu72.com/reading.html" data-zh="打开网页阅读器 →">Open the web reader →</a>
+        </div>
+      </div>
+      <figure class="shots">
+        <div class="frame"><img src="/assets/apps/phloem-1.webp" alt="Phloem reading a paper on iPad, with a highlighted line and notes beside the page" width="1200" height="900" loading="lazy"></div>
+        <div class="frame side"><img src="/assets/apps/phloem-2.webp" alt="Phloem's library: a reading wall of paper cards" width="1200" height="900" loading="lazy"></div>
+      </figure>
+    </article>
+  </div>
+</section>
+
+<section class="section arcade" id="arcade">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker" data-zh="// 浏览器里免费玩">// free in your browser</p>
+      <h2 data-zh="游戏厅">The arcade</h2>
+      <p data-zh="手写的网页游戏，在任何手机或电脑上都能玩，无需安装。部分游戏可与朋友联机。">Hand-coded web games that run on any phone or computer, with nothing to install. Some play online with friends.</p>
+    </div>
+
+    <div class="games">
+      <a class="game" href="/life.html">
+        <div class="thumb"><img src="/game/thumbs/life.png?v=4" alt="" loading="lazy" width="710" height="490"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="生命游戏">Game of Life</h3><span class="players">1P</span></div>
+          <span class="exe">game_of_life.exe</span>
+          <p data-zh="绘制图案、观察演化、化作音乐。">Draw patterns, watch them evolve, turn them into music.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/glyphrun.html?v=b57">
+        <div class="thumb"><img src="/game/thumbs/glyphrun.jpg" alt="" loading="lazy" width="880" height="495"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="字源">Glyph Run</h3><span class="players">1P</span></div>
+          <span class="exe">glyph_run.exe</span>
+          <p data-zh="取材于汉字演变史的生存游戏：从隶书一路进化至甲骨文。">A survivor game drawn from the history of Chinese writing: evolve from clerical script to oracle bone.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/qi.html">
+        <div class="thumb"><img src="/assets/apps/qi-web-thumb.webp" alt="" loading="lazy" width="880" height="480"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="棋">Qi: Go &amp; Gomoku</h3><span class="players" data-zh="1–2P · 联机">1–2P · online</span></div>
+          <span class="exe">qi.exe</span>
+          <p data-zh="带气数显示与实时教练的围棋，外加五子棋。可开私密好友房。">Go with visible liberties and a live coach, plus Gomoku. Private friend rooms.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/truco.html?v=3">
+        <div class="thumb"><img src="/game/thumbs/truco.png?v=1" alt="" loading="lazy" width="440" height="240"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="特鲁科">Truco</h3><span class="players" data-zh="1–4P · 联机">1–4P · online</span></div>
+          <span class="exe">truco.exe</span>
+          <p data-zh="巴西叫牌赢墩，可开非公开房间，最多四人同玩。">Brazilian bid-and-tricks, with unlisted rooms for up to four friends.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/dilemma.html?v=b1">
+        <div class="thumb payoff" aria-hidden="true">
+          <table><tr><th></th><th>C</th><th>D</th></tr><tr><th>C</th><td class="c">3, 3</td><td class="m">0, 5</td></tr><tr><th>D</th><td class="m">5, 0</td><td class="d">1, 1</td></tr></table>
+        </div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="困境实验室">Dilemma Lab</h3><span class="players">1P</span></div>
+          <span class="exe">dilemma_lab.exe</span>
+          <p data-zh="用规则卡拼出策略，投入经典的阿克塞尔罗德锦标赛。">Build a strategy from rule cards and enter Axelrod's classic tournament.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/rope.html?v=b40">
+        <div class="thumb"><img src="/game/thumbs/rope.jpg?v=2" alt="" loading="lazy" width="440" height="240"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="默契绳">Tether</h3><span class="players" data-zh="2P · 合作">2P · co-op</span></div>
+          <span class="exe">tether.exe</span>
+          <p data-zh="两个人，一根绳。互相摆荡、做锚，一起爬上高塔；可联机或同键盘。">Two players, one rope. Swing and anchor each other up a tower, online or on one keyboard.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/labyrinth.html">
+        <div class="thumb"><img src="/game/thumbs/labyrinth.png?v=1" alt="" loading="lazy" width="440" height="240"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="迷宫">Labyrinth</h3><span class="players">1P</span></div>
+          <span class="exe">labyrinth.exe</span>
+          <p data-zh="无尽的火把下潜，每次逃脱都通向更大的迷宫。">An endless torch-lit descent, with a bigger maze every time you escape.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/tomato.html">
+        <div class="thumb"><img src="/game/thumbs/tomato.jpg?v=3" alt="" loading="lazy" width="440" height="240"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="种番茄">Grow a Tomato</h3><span class="players">1P</span></div>
+          <span class="exe">grow_a_tomato.exe</span>
+          <p data-zh="种出又大又甜的番茄，由真实的植物代谢模型驱动。">Grow the biggest, sweetest tomato, powered by a real plant-metabolism model.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/tomatoswipe.html">
+        <div class="thumb"><img src="/game/thumbs/tomatoswipe.png?v=3" alt="" loading="lazy" width="440" height="240"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="扫番茄">Tomatoswipe</h3><span class="players">1P</span></div>
+          <span class="exe">tomatoswipe.exe</span>
+          <p data-zh="扫雷，但地雷是番茄。">Minesweeper, but the mines are tomatoes.</p>
+        </div>
+      </a>
+      <a class="game" href="/game/sudoku.html">
+        <div class="thumb"><img src="/game/thumbs/sudoku.png?v=2" alt="" loading="lazy" width="440" height="240"></div>
+        <div class="game-body">
+          <div class="game-top"><h3 data-zh="数独">Sudoku</h3><span class="players">1P</span></div>
+          <span class="exe">sudoku.exe</span>
+          <p data-zh="每道题都只有唯一解。支持铅笔标记、提示和一键求解。">Every puzzle has exactly one solution. Pencil marks, hints and a solver.</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="more">
+      <a class="btn ghost" href="/arcade.html" data-zh="经典游戏厅 →">The classic arcade floor →</a>
+      <a class="btn ghost" href="/wip.html" data-zh="实验室：未完成的实验 →">The lab: unfinished experiments →</a>
+      <a class="btn ghost" href="/training/" data-zh="训练中的强化学习智能体 →">RL agents in training →</a>
     </div>
   </div>
+</section>
 
-  <div class="card glow-dilemma star" data-players="1">
-    <div class="ribbon" data-en="1UP · NEW" data-zh="1UP · 新">1UP · NEW</div>
-    <canvas class="card-thumb dl-canvas" role="application" tabindex="0" aria-label="Dilemma Lab mini match. Choose cooperate or defect with the mouse, or press C or D." width="440" height="240"></canvas>
-    <div class="card-icon" style="color:#e06a8a">[C|D]</div>
-    <div class="card-title" data-en="dilemma_lab.exe" data-zh="困境实验室.exe">dilemma_lab.exe</div>
-    <div class="card-desc" data-en="Build a strategy from rule cards, enter Axelrod's classic tournament, and prove it across five replayable Trust Trials. Try one live round against Tit for Tat in the screen above." data-zh="用规则卡拼出你的策略，投入经典阿克塞尔罗德锦标赛，再闯过五项可重复挑战的信任试炼。先在上方屏幕与「一报还一报」过一招。">Build a strategy from rule cards, enter Axelrod's classic tournament, and prove it across five replayable Trust Trials. Try one live round against Tit for Tat in the screen above.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="trust trials" data-zh="信任试炼">trust trials</span>
-      <span class="tag" data-en="game theory" data-zh="博弈论">game theory</span>
-      <span class="tag" data-en="DIY strategy" data-zh="自制策略">DIY strategy</span>
-      <span class="tag" data-en="evolution" data-zh="演化">evolution</span>
+<section class="section" id="about">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker" data-zh="// 制作原则">// how these are made</p>
+      <h2 data-zh="小而用心。">Small, and made with care.</h2>
     </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · Axelrod tournament · bilingual" data-zh="JS · 阿克塞尔罗德锦标赛 · 双语">JS · Axelrod tournament · bilingual</span>
-      <a class="play-btn" href="/game/dilemma.html?v=b1" data-en="→ play" data-zh="→ 游玩">→ play</a>
+    <div class="values">
+      <div class="value">
+        <span class="n">01</span>
+        <h3 data-zh="一个人做的">Made by one person</h3>
+        <p data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计、绘制和编写。">Designed, drawn and coded by Houfu Chen, a doctoral researcher at the University of Waterloo.</p>
+        <a href="https://houfu72.com" data-zh="关于 Houfu →">More about Houfu →</a>
+      </div>
+      <div class="value">
+        <span class="n">02</span>
+        <h3 data-zh="注重隐私">Private by design</h3>
+        <p data-zh="游戏不收集任何数据：没有广告、没有统计、没有账号。摄像头玩法完全在你的设备上运行。">The games collect no data: no ads, no analytics, no accounts. Camera play runs entirely on your device.</p>
+        <a href="/privacy" data-zh="隐私政策 →">Privacy policy →</a>
+      </div>
+      <div class="value">
+        <span class="n">03</span>
+        <h3 data-zh="随处可玩">Play anywhere</h3>
+        <p data-zh="应用可离线使用；网页游戏厅在任何浏览器里都能玩，手机也可以，无需安装。">The apps work offline. The arcade runs in any browser, phones included, with nothing to install.</p>
+        <a href="#arcade" data-zh="进入游戏厅 →">Go to the arcade →</a>
+      </div>
     </div>
   </div>
+</section>
 
-  <div class="card glow-gomoku star" data-players="12">
-    <div class="ribbon p12" data-en="1–2UP · COLLECTION" data-zh="1–2UP · 合集">1–2UP · COLLECTION</div>
-    <canvas class="gwater" aria-hidden="true"></canvas>
-    <div class="card-thumb gband" aria-hidden="true"></div>
-    <div class="qi-cabinet-overlay" aria-hidden="true">
-      <img class="qi-cabinet-mark" src="/game/qi-calligraphy.png" alt="" width="512" height="512" aria-hidden="true">
-      <span class="qi-board-key">GO // GOMOKU · WATER TABLE</span>
-    </div>
-    <div class="card-icon">[棋]</div>
-    <div class="card-title" data-en="qi.exe" data-zh="棋.exe">qi.exe</div>
-    <div class="card-desc" data-en="Learn Go with visible liberties, scoring, and a live attack-or-defend guide: practise on 9×9 against a beginner AI, share one device, or open a private friend room. Gomoku adds a minimax rival and the old fisherman's tactical coach." data-zh="学习带有气数、计分提示与实时攻防判断的围棋：在 9×9 棋盘上与入门级 AI 练习、同机双人对弈，或创建私密好友房。五子棋另有极小化极大 AI 与观棋老者战术指导。">Learn Go with visible liberties, scoring, and a live attack-or-defend guide: practise on 9×9 against a beginner AI, share one device, or open a private friend room. Gomoku adds a minimax rival and the old fisherman's tactical coach.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="Go · beginner AI" data-zh="围棋 · 入门 AI">Go · beginner AI</span>
-      <span class="tag" data-en="Gomoku · coach" data-zh="五子棋 · 战术指导">Gomoku · coach</span>
-      <span class="tag" data-en="local 2-player" data-zh="同机双人">local 2-player</span>
-      <span class="tag" data-en="private friend rooms" data-zh="私密好友房">private friend rooms</span>
-    </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="2 games · 1–2P" data-zh="2 款棋 · 1–2 人">2 games · 1–2P</span>
-      <a class="play-btn" href="/game/qi.html" data-en="→ choose a board" data-zh="→ 选择棋盘">→ choose a board</a>
-    </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="tag" data-zh="生活是一场游戏——尽情享受其中的每一刻。">Life is a game — so enjoy every piece of it.</p>
+    <p class="sub" data-zh="别害怕，别着急，别太要面子。">Don't be afraid. Don't rush. Don't let shame hold you back.</p>
+    <nav aria-label="Footer">
+      <a href="#apps" data-zh="应用">Apps</a>
+      <a href="#arcade" data-zh="游戏厅">Arcade</a>
+      <a href="/privacy" data-zh="隐私政策">Privacy policy</a>
+      <a href="https://houfu72.com">houfu72.com</a>
+      <span>© 2026 Houfu Chen</span>
+    </nav>
   </div>
-
-  <div class="card glow-rope star" data-players="2">
-    <div class="ribbon p2" data-en="2UP · CO-OP" data-zh="2UP · 合作">2UP · CO-OP</div>
-    <img class="card-thumb" src="/game/thumbs/rope.jpg?v=2" alt="Tether co-op rope climber" loading="lazy" width="440" height="240">
-    <div class="card-icon" style="color:#46c8ff">[o–o]</div>
-    <div class="card-title" data-en="tether.exe" data-zh="默契绳.exe">tether.exe</div>
-    <div class="card-desc" data-en="Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall." data-zh="两个人，一根绳。你和好友被绳子拴在一起——跳跃、摆荡、互相做锚往上爬。可联机（创建/加入房间）或同键盘双人；拽得太猛就一起摔下去。">Two players, one rope. You and a friend are tethered together — jump, swing and anchor each other up a tower. Play remotely (Create/Join a room) or on one keyboard; pull too hard and you both fall.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="new" data-zh="新">new</span>
-      <span class="tag" data-en="2-player co-op" data-zh="双人合作">2-player co-op</span>
-      <span class="tag" data-en="remote" data-zh="联机">remote</span>
-      <span class="tag" data-en="physics" data-zh="物理">physics</span>
-    </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · Verlet physics · realtime sync" data-zh="JS · Verlet 物理 · 实时同步">JS · Verlet physics · realtime sync</span>
-      <a class="play-btn" href="/game/rope.html?v=b40" data-en="→ play" data-zh="→ 游玩">→ play</a>
-    </div>
-  </div>
-
-  <div class="card glow-laby" data-players="1">
-    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <img class="card-thumb" src="/game/thumbs/labyrinth.png?v=1" alt="Labyrinth maze" loading="lazy" width="440" height="240">
-    <div class="card-icon" style="color:#36c5d0">[▦]</div>
-    <div class="card-title" data-en="labyrinth.exe" data-zh="迷宫.exe">labyrinth.exe</div>
-    <div class="card-desc" data-en="An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, and a bigger maze every time you escape. Go deep, move fast, score high." data-zh="无尽的火把下潜——战争迷雾视野、A* 寻路，每次逃脱都通向更大的迷宫。下得深、走得快、分数高。">An endless torch-lit descent — fog-of-war line-of-sight, A* pathfinding, and a bigger maze every time you escape. Go deep, move fast, score high.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="maze gen" data-zh="迷宫生成">maze gen</span>
-      <span class="tag" data-en="A* path" data-zh="A* 寻路">A* path</span>
-      <span class="tag" data-en="fog of war" data-zh="战争迷雾">fog of war</span>
-    </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · recursive backtracker" data-zh="JS · 递归回溯">JS · recursive backtracker</span>
-      <a class="play-btn" href="/game/labyrinth.html" data-en="→ enter" data-zh="→ 进入">→ enter</a>
-    </div>
-  </div>
-
-
-  <div class="card glow-tomato" data-players="1">
-    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <img class="card-thumb" src="/game/thumbs/tomato.jpg?v=3" alt="Tomato-growing game" loading="lazy" width="440" height="240">
-    <div class="card-icon" style="color:#f0533a">[◍]</div>
-    <div class="card-title" data-en="grow_a_tomato.exe" data-zh="种番茄.exe">grow_a_tomato.exe</div>
-    <div class="card-desc" data-en="Grow the biggest, sweetest tomato. Balance light and feed across the season — powered by a real plant-metabolism model." data-zh="种出又大又甜的番茄。整季权衡光照与施肥——由真实植物代谢模型驱动。">Grow the biggest, sweetest tomato. Balance light and feed across the season — powered by a real plant-metabolism model.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="sim" data-zh="模拟">sim</span>
-      <span class="tag" data-en="metabolism" data-zh="代谢模型">metabolism</span>
-      <span class="tag" data-en="strategy" data-zh="策略">strategy</span>
-    </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · metabolic sim" data-zh="JS · 代谢模拟">JS · metabolic sim</span>
-      <a class="play-btn" href="/game/tomato.html" data-en="→ grow" data-zh="→ 种植">→ grow</a>
-    </div>
-  </div>
-
-  <div class="card glow-tsweep" data-players="1">
-    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <img class="card-thumb" src="/game/thumbs/tomatoswipe.png?v=3" alt="Tomatoswipe board — you are tomatoed!" loading="lazy" width="440" height="240">
-    <div class="card-icon" style="color:#e2523e">[#]</div>
-    <div class="card-title" data-en="tomatoswipe.exe" data-zh="扫番茄.exe">tomatoswipe.exe</div>
-    <div class="card-desc" data-en="Minesweeper, but the mines are tomatoes. Read the numbers, flag the 🍅, and clear the whole garden without squashing a single one." data-zh="扫雷，但地雷是番茄。读数字、标记 🍅，清完整座菜园而不踩烂任何一颗。">Minesweeper, but the mines are tomatoes. Read the numbers, flag the 🍅, and clear the whole garden without squashing a single one.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="logic" data-zh="逻辑">logic</span>
-      <span class="tag red" data-en="🍅 mines" data-zh="🍅 地雷">🍅 mines</span>
-      <span class="tag" data-en="flags" data-zh="标记">flags</span>
-    </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · first-click safe" data-zh="JS · 首击安全">JS · first-click safe</span>
-      <a class="play-btn" href="/game/tomatoswipe.html" data-en="→ dig" data-zh="→ 挖掘">→ dig</a>
-    </div>
-  </div>
-
-  <div class="card glow-sudoku" data-players="1">
-    <div class="ribbon " data-en="1UP" data-zh="1UP">1UP</div>
-    <img class="card-thumb" src="/game/thumbs/sudoku.png?v=2" alt="Sudoku grid" loading="lazy" width="440" height="240">
-    <div class="card-icon" style="color:#36c5d0">[9]</div>
-    <div class="card-title" data-en="sudoku.exe" data-zh="数独.exe">sudoku.exe</div>
-    <div class="card-desc" data-en="Fill every row, column and 3×3 box with 1–9. A backtracking generator guarantees one unique solution — with pencil-mark notes, hints, and a one-click solver." data-zh="让每行、每列、每个 3×3 宫格都填入 1–9。回溯生成器保证唯一解——含铅笔笔记、提示与一键求解。">Fill every row, column and 3×3 box with 1–9. A backtracking generator guarantees one unique solution — with pencil-mark notes, hints, and a one-click solver.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="logic" data-zh="逻辑">logic</span>
-      <span class="tag" data-en="backtracking" data-zh="回溯">backtracking</span>
-      <span class="tag" data-en="unique solution" data-zh="唯一解">unique solution</span>
-    </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · constraint solver" data-zh="JS · 约束求解">JS · constraint solver</span>
-      <a class="play-btn" href="/game/sudoku.html" data-en="→ play" data-zh="→ 游玩">→ play</a>
-    </div>
-  </div>
-
-  <div class="card glow-truco star" data-players="1234">
-    <div class="ribbon p12" data-en="1–4P · ONLINE" data-zh="1–4P · 联机">1–4P · ONLINE</div>
-    <img class="card-thumb" src="/game/thumbs/truco.png?v=1" alt="Truco table — manilha cards glowing gold" loading="lazy" width="440" height="240">
-    <div class="card-icon" style="color:#e8b04a">[Q]</div>
-    <div class="card-title" data-en="truco.exe" data-zh="特鲁科.exe">truco.exe</div>
-    <div class="card-desc" data-en="Brazilian bid-and-tricks. Follow the visible power order, team up locally, or open an unlisted room for up to three friends—four humans total, with AI filling empty seats." data-zh="巴西叫牌赢墩。参照桌面牌力顺序，可本地组队，或创建非公开房间邀请最多三位好友——共四名玩家，空座位由电脑补上。">Brazilian bid-and-tricks. Follow the visible power order, team up locally, or open an unlisted room for up to three friends—four humans total, with AI filling empty seats.</div>
-    <div class="card-tags">
-      <span class="tag green" data-en="bidding" data-zh="叫牌">bidding</span>
-      <span class="tag" data-en="manilha ★" data-zh="王权牌 ★">manilha ★</span>
-      <span class="tag" data-en="blind hands" data-zh="暗牌局">blind hands</span>
-      <span class="tag" data-en="2–4 online players" data-zh="2–4 名联机玩家">2–4 online players</span>
-    </div>
-    <div class="card-footer">
-      <span class="card-meta" data-en="JS · invite rooms · bilingual" data-zh="JS · 邀请房间 · 双语">JS · invite rooms · bilingual</span>
-      <a class="play-btn" href="/game/truco.html?v=3" data-en="→ deal" data-zh="→ 发牌">→ deal</a>
-    </div>
-  </div>
-
-
-
-
-</div>
-
-<div style="text-align:center;margin:26px 0 4px">
-  <a href="/wip.html" style="color:#e8b04a;font-size:0.78rem;text-decoration:none;border:1px dashed #6e5a2a;padding:9px 20px;border-radius:6px;display:inline-block" data-en="&gt;_ wip lab — unfinished experiments →" data-zh="&gt;_ 实验室——未完成的半成品 →">&gt;_ wip lab — unfinished experiments →</a>
-</div>
-
-<div class="footer">
-  <div class="footer-tag" data-en="Life is a game — so enjoy every piece of it. A working cure for any anxiety." data-zh="生活是一场游戏——尽情享受其中的每一刻，此为治愈焦虑的良方。">Life is a game — so enjoy every piece of it. A working cure for any anxiety.</div>
-  <div class="footer-sub" data-en="Don't be afraid. Don't rush. Don't let shame hold you back." data-zh="别害怕，别着急，别太要面子。">Don't be afraid. Don't rush. Don't let shame hold you back.</div>
-</div>
+</footer>
 
 <script>
-let lang = 'en';
-function t(en, zh) { return lang === 'zh' ? zh : en; }
-
-function applyLang() {
-  document.getElementById('pgSub').textContent = t('>_ game arcade · hand-coded browser games · RL agents in training', '>_ 游戏厅 · 手写浏览器游戏 · RL智能体训练中');
-  document.querySelectorAll('[data-en]').forEach(el => { el.textContent = t(el.dataset.en, el.dataset.zh); });
-}
-
-function toggleLang() {
-  lang = lang === 'en' ? 'zh' : 'en';
-  document.getElementById('langBtn').textContent = lang === 'zh' ? 'English' : '中文';
-  applyLang();
-  try { localStorage.setItem('arcade_lang', lang); } catch (e) {}
-}
-
-document.addEventListener('DOMContentLoaded', applyLang);
-
-/* Game of Life card — a live Conway sim is the whole card background: a dense centre
-   seed diffuses outward; alive cells are neon green, dying cells leave a slate-blue
-   trail that fades over ~18 generations. Click/drag paints live cells. */
+/* ── language: shares the arcade's saved choice ─────────── */
 (function () {
-  const card = document.querySelector('.card.glow-life');
-  if (!card) return;
-  const canvas = card.querySelector('.lgrid');
-  const ctx = canvas.getContext('2d', { alpha: false });
-  const CELL = 9, GEN_EVERY = 5, FADE = 0.84;     // ~12 gens/sec, trail ~18 gens
-  let cols, rows, alive, next, trail, raf = 0, frame = 0, gens = 0, visible = false, painting = false, ready = false, topOff = 0;
+  const KEY = 'arcade_lang';
+  const btn = document.getElementById('langBtn');
+  const touch = matchMedia('(hover: none)').matches;
+  const hint = document.getElementById('lifeHint');
+  if (touch) {
+    hint.textContent = 'Tap the background to launch a glider.';
+    hint.dataset.zh = '轻点背景，放出一架滑翔机。';
+  }
+  let lang = 'en';
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved === 'zh' || saved === 'en') lang = saved;
+    else if ((navigator.language || '').toLowerCase().startsWith('zh')) lang = 'zh';
+  } catch (e) {}
 
-  function build() {
-    const cr = card.getBoundingClientRect();
-    const thumb = card.querySelector('.card-thumb');
-    topOff = thumb ? Math.max(0, Math.round(thumb.getBoundingClientRect().bottom - cr.top)) : 0;
-    const w = card.clientWidth | 0, h = (card.clientHeight - topOff) | 0;
-    if (w < 8 || h < 8) return false;
-    canvas.style.top = topOff + 'px';
-    canvas.width = w; canvas.height = h;
-    cols = Math.max(4, Math.floor(w / CELL)); rows = Math.max(4, Math.floor(h / CELL));
-    const n = cols * rows;
-    alive = new Uint8Array(n); next = new Uint8Array(n); trail = new Float32Array(n);
-    seedCentre(); ready = true; render(); return true;
-  }
-  function seedCentre() {
-    alive.fill(0);
-    const cx = cols >> 1, cy = rows >> 1, R = Math.max(3, Math.min(cols, rows) * 0.24);
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      const d = Math.hypot(x - cx, y - cy);
-      if (d < R && Math.random() < 0.2 + 0.55 * (1 - d / R)) alive[y * cols + x] = 1;
-    }
-  }
-  function stepGen() {
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      let nb = 0;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        if (!dx && !dy) continue;
-        const xx = x + dx, yy = y + dy;
-        if (xx >= 0 && xx < cols && yy >= 0 && yy < rows && alive[yy * cols + xx]) nb++;
-      }
-      const i = y * cols + x, a = alive[i];
-      next[i] = ((a && (nb === 2 || nb === 3)) || (!a && nb === 3)) ? 1 : 0;
-    }
-    for (let i = 0; i < alive.length; i++) {
-      if (next[i]) trail[i] = 1;            // alive (drawn green) — keep trail primed
-      else if (alive[i]) trail[i] = 1;      // just died -> start blue trail at full
-      else trail[i] *= FADE;                // keep fading toward black
-    }
-    const t = alive; alive = next; next = t;
-    gens++;
-    let pop = 0; for (let i = 0; i < alive.length; i++) pop += alive[i];
-    if (pop < 6 || gens > 600) { seedCentre(); gens = 0; }   // re-diffuse when it dies/stagnates
-  }
-  function render() {
-    const w = canvas.width, h = canvas.height;
-    ctx.fillStyle = '#080808'; ctx.fillRect(0, 0, w, h);
-    for (let y = 0; y < rows; y++) {
-      const oy = y * CELL;
-      for (let x = 0; x < cols; x++) {
-        const i = y * cols + x;
-        if (alive[i]) { ctx.fillStyle = '#2bff88'; ctx.fillRect(x * CELL, oy, CELL - 1, CELL - 1); }
-        else if (trail[i] > 0.04) {
-          const a = trail[i];
-          ctx.fillStyle = 'rgb(' + ((28 * a) | 0) + ',' + ((58 * a) | 0) + ',' + ((112 * a) | 0) + ')';
-          ctx.fillRect(x * CELL, oy, CELL - 1, CELL - 1);
-        }
-      }
-    }
-    ctx.strokeStyle = 'rgba(70,110,85,0.08)'; ctx.lineWidth = 1; ctx.beginPath();
-    for (let x = 0; x <= cols; x++) { const px = x * CELL + 0.5; ctx.moveTo(px, 0); ctx.lineTo(px, rows * CELL); }
-    for (let y = 0; y <= rows; y++) { const py = y * CELL + 0.5; ctx.moveTo(0, py); ctx.lineTo(cols * CELL, py); }
-    ctx.stroke();
-  }
-  function loop() {
-    if (!visible) { raf = 0; return; }
-    if ((frame++ % GEN_EVERY) === 0) { stepGen(); render(); }
-    raf = requestAnimationFrame(loop);
-  }
-  function start() { if (!ready && !build()) return; visible = true; if (!raf) raf = requestAnimationFrame(loop); }
-  function stop() { visible = false; }
-  function paintAt(ev) {
-    if (!ready) return;
-    const r = card.getBoundingClientRect();
-    const cxp = ((ev.clientX - r.left) / CELL) | 0, cyp = ((ev.clientY - r.top - topOff) / CELL) | 0;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const xx = cxp + dx, yy = cyp + dy;
-      if (xx >= 0 && xx < cols && yy >= 0 && yy < rows) { alive[yy * cols + xx] = 1; trail[yy * cols + xx] = 1; }
-    }
-    render();
-  }
-  card.addEventListener('mousedown', (e) => { painting = true; paintAt(e); });
-  card.addEventListener('mousemove', (e) => { if (painting) paintAt(e); });
-  window.addEventListener('mouseup', () => { painting = false; });
-  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { ready = false; if (visible) start(); }, 200); });
-  if ('IntersectionObserver' in window) {
-    new IntersectionObserver((es) => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0.04 }).observe(card);
-  } else { start(); }
-})();
-
-
-/* Escape card — hover: THE CHASE. A red hunter pursues a green runner lap after
-   lap around the card's border. Red is faster on the straights but slips in the
-   corners; when it closes in, the runner panic-dashes. Now and then red lunges —
-   a real catch bursts, flashes the track, and the runner respawns across the card. */
-(function () {
-  const card = document.querySelector('.glow-escape');
-  if (!card) return;
-  let canvas = card.querySelector('.esc-canvas');
-  if (!canvas) { canvas = document.createElement('canvas'); canvas.className = 'esc-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas); }
-  const ctx = canvas.getContext('2d');
-  const INSET = 7, TRAIL = 26;
-  const green = { s: 0, col: '29,185,84' , trail: [] };
-  const red   = { s: 0, col: '244,67,54', trail: [] };
-  let W = 0, H = 0, P = 0, raf = 0, inside = false;
-  let sparks = [], flash = 0, lunge = 0, lungeCool = 0;
-
-  const mod = (a, m) => ((a % m) + m) % m;
-  function resize() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; P = 2 * ((W - 2 * INSET) + (H - 2 * INSET)); }
-  function reset() { resize(); green.s = 0; red.s = P * 0.55; green.trail.length = 0; red.trail.length = 0; sparks.length = 0; flash = 0; lunge = 0; lungeCool = 90; }
-  function posAt(s) {                                  // distance along the border, clockwise from top-left
-    s = mod(s, P); const w = W - 2 * INSET, h = H - 2 * INSET;
-    if (s < w) return [INSET + s, INSET];
-    s -= w; if (s < h) return [W - INSET, INSET + s];
-    s -= h; if (s < w) return [W - INSET - s, H - INSET];
-    s -= w; return [INSET, H - INSET - s];
-  }
-  function nearCorner(s, dist) {
-    const w = W - 2 * INSET, h = H - 2 * INSET;
-    for (const c of [0, w, w + h, w + h + w]) if (Math.min(mod(s - c, P), mod(c - s, P)) < dist) return true;
-    return false;
-  }
-  function burst(x, y, col, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 0.6 + Math.random() * 2.2; sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, col }); } }
-
-  function step() {
-    const gap = mod(green.s - red.s, P);               // track distance red still has to close
-    const panic = gap < 52;
-    green.s += panic ? 4.6 : 3.0;
-    if (panic && Math.random() < 0.3) { const [x, y] = posAt(green.s); sparks.push({ x, y, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, life: 0.5, col: green.col }); }
-    if (lungeCool > 0) lungeCool--;
-    if (lunge > 0) lunge--;
-    else if (gap < 36 && !lungeCool && Math.random() < 0.02) { lunge = 14; lungeCool = 220; }
-    red.s += lunge ? 7.0 : nearCorner(red.s, 16) ? 2.1 : 4.1;   // lunge > panic-dash > cruise > corner slip
-    if (flash > 0) flash--;
-    if (mod(green.s - red.s, P) < 9) {                 // caught!
-      const [x, y] = posAt(green.s);
-      burst(x, y, green.col, 14); burst(x, y, red.col, 6); flash = 14; lunge = 0;
-      green.s = mod(red.s + P * 0.5, P); green.trail.length = 0;
-    }
-    green.trail.push(green.s); if (green.trail.length > TRAIL) green.trail.shift();
-    red.trail.push(red.s); if (red.trail.length > TRAIL) red.trail.shift();
-    for (const sp of sparks) { sp.x += sp.vx; sp.y += sp.vy; sp.life -= 0.04; }
-    sparks = sparks.filter(sp => sp.life > 0);
-  }
-  function drawTrail(p) {
-    ctx.lineCap = 'round';
-    for (let i = 0; i < p.trail.length - 1; i++) {
-      const a = i / p.trail.length, [x0, y0] = posAt(p.trail[i]), [x1, y1] = posAt(p.trail[i + 1]);
-      if (Math.hypot(x1 - x0, y1 - y0) > 40) continue; // don't stroke across a respawn jump
-      ctx.strokeStyle = 'rgba(' + p.col + ',' + (a * a * 0.7).toFixed(3) + ')';
-      ctx.lineWidth = 0.8 + a * 4.4;
-      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-    }
-  }
-  function drawBall(p, r) {
-    const [x, y] = posAt(p.s);
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.4);
-    g.addColorStop(0, 'rgba(' + p.col + ',0.95)'); g.addColorStop(0.5, 'rgba(' + p.col + ',0.4)'); g.addColorStop(1, 'rgba(' + p.col + ',0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.4, 0, 7); ctx.fill();
-    ctx.fillStyle = '#f2fff6'; ctx.beginPath(); ctx.arc(x, y, r * 0.5, 0, 7); ctx.fill();
-  }
-  function frame() {
-    step();
-    ctx.clearRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(120,150,130,0.14)'; ctx.lineWidth = 1;   // the track they run on
-    ctx.strokeRect(INSET + 0.5, INSET + 0.5, W - 2 * INSET - 1, H - 2 * INSET - 1);
-    if (flash > 0) { ctx.strokeStyle = 'rgba(244,67,54,' + (flash / 14 * 0.5).toFixed(3) + ')'; ctx.lineWidth = 2.5; ctx.strokeRect(INSET + 0.5, INSET + 0.5, W - 2 * INSET - 1, H - 2 * INSET - 1); }
-    drawTrail(green); drawTrail(red);
-    for (const sp of sparks) { ctx.fillStyle = 'rgba(' + sp.col + ',' + (sp.life * 0.8).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(sp.x, sp.y, 1.6, 0, 7); ctx.fill(); }
-    drawBall(green, 5.5); drawBall(red, lunge ? 7.2 : 6);
-    raf = inside ? requestAnimationFrame(frame) : 0;
-  }
-  card.addEventListener('mouseenter', () => { if (raf) return; reset(); inside = true; raf = requestAnimationFrame(frame); });
-  card.addEventListener('mouseleave', () => { inside = false; });
-})();
-
-(function () {
-  const card = document.querySelector('.card.glow-gomoku');
-  if (!card) return;
-  const canvas = card.querySelector('.gwater');
-  const band = card.querySelector('.gband');
-  const ctx = canvas.getContext('2d', { alpha: false });
-  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let DW, DH, bg, out, outData, inited = false;
-  let rafId = 0, lastX = 0, lastY = 0, haveLast = false;
-  let pixelRings = [];
-  function riverStone(c, x, y, r) {
-    const q = Math.max(2, Math.round(r * .24)), rr = Math.round(r), xx = Math.round(x), yy = Math.round(y);
-    c.save(); c.translate(xx, yy);
-    c.fillStyle = '#07100f'; c.beginPath(); c.moveTo(-rr + q, -rr); c.lineTo(rr - q, -rr); c.lineTo(rr, -rr + q);
-    c.lineTo(rr, rr - q); c.lineTo(rr - q, rr); c.lineTo(-rr + q, rr); c.lineTo(-rr, rr - q); c.lineTo(-rr, -rr + q); c.closePath(); c.fill();
-    c.fillStyle = '#1e302d'; c.fillRect(-rr + q, -rr + q, rr * 2 - q * 2, rr * 2 - q * 2);
-    c.fillStyle = '#66756f'; c.fillRect(-rr + q, -rr + q, Math.max(2, rr), Math.max(2, q));
-    c.fillStyle = '#344843'; c.fillRect(rr - q * 2, rr - q * 2, q, q); c.restore();
-  }
-  function shell(c, x, y, r) {
-    const q = Math.max(2, Math.round(r * .25)), rr = Math.round(r), xx = Math.round(x), yy = Math.round(y);
-    c.save(); c.translate(xx, yy);
-    c.fillStyle = '#eef0df'; c.beginPath(); c.moveTo(-q, -rr); c.lineTo(q, -rr); c.lineTo(q * 2, -rr + q);
-    c.lineTo(rr - q, -q); c.lineTo(rr, q); c.lineTo(rr - q, rr - q); c.lineTo(q, rr); c.lineTo(-q, rr);
-    c.lineTo(-rr + q, rr - q); c.lineTo(-rr, q); c.lineTo(-rr + q, -q); c.lineTo(-q * 2, -rr + q); c.closePath(); c.fill();
-    c.strokeStyle = '#819a93'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -rr + q); c.lineTo(0, rr - q); c.stroke();
-    c.beginPath(); c.moveTo(0, -rr + q); c.lineTo(-rr + q, rr - q); c.moveTo(0, -rr + q); c.lineTo(rr - q, rr - q); c.moveTo(-rr + q, rr - q); c.lineTo(rr - q, rr - q); c.stroke();
-    c.fillStyle = '#fffbea'; c.fillRect(-q, -rr + q, q, q); c.restore();
-  }
-  function board(c, x, y, w, h, n, plays) {
-    x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h);
-    const corner = 6;
-    c.fillStyle = '#173331'; c.beginPath(); c.moveTo(x + corner, y + 6); c.lineTo(x + w - corner, y + 6); c.lineTo(x + w, y + corner + 6);
-    c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.lineTo(x, y + corner + 6); c.closePath(); c.fill();
-    c.fillStyle = '#5a716b'; c.beginPath(); c.moveTo(x + corner, y); c.lineTo(x + w - corner, y); c.lineTo(x + w, y + corner);
-    c.lineTo(x + w, y + h - corner); c.lineTo(x + w - corner, y + h); c.lineTo(x + corner, y + h); c.lineTo(x, y + h - corner); c.lineTo(x, y + corner); c.closePath(); c.fill();
-    c.fillStyle = '#6d807a';
-    for (let py = y + 4; py < y + h - 3; py += 8) for (let px = x + 5 + ((py / 8) % 2) * 4; px < x + w - 4; px += 10) c.fillRect(px, py, 2, 2);
-
-    const inset = Math.max(10, Math.min(w, h) * .12), x0 = x + inset, x1 = x + w - inset, y0 = y + inset, y1 = y + h - inset;
-    c.lineWidth = n > 9 ? .72 : 1.05;
-    for (let i = 0; i < n; i++) {
-      const gx = x0 + (x1 - x0) * i / (n - 1), gy = y0 + (y1 - y0) * i / (n - 1);
-      c.strokeStyle = 'rgba(185,208,199,.17)';
-      c.beginPath(); c.moveTo(gx + 1, y0 + 1); c.lineTo(gx + 1, y1 + 1); c.stroke();
-      c.beginPath(); c.moveTo(x0 + 1, gy + 1); c.lineTo(x1 + 1, gy + 1); c.stroke();
-      c.strokeStyle = 'rgba(18,55,54,.88)';
-      c.beginPath(); c.moveTo(gx, y0); c.lineTo(gx, y1); c.stroke();
-      c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.stroke();
-    }
-    const spacing = Math.min((x1 - x0) / (n - 1), (y1 - y0) / (n - 1)), pieceR = spacing * (n > 9 ? .43 : .44);
-    plays.forEach((p) => {
-      const px = x0 + (x1 - x0) * p[0] / (n - 1), py = y0 + (y1 - y0) * p[1] / (n - 1);
-      (p[2] ? shell : riverStone)(c, px, py, pieceR);
+  function apply() {
+    document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
+    document.querySelectorAll('[data-zh]').forEach(el => {
+      if (el.dataset.en === undefined) el.dataset.en = el.textContent;
+      el.textContent = lang === 'zh' ? el.dataset.zh : el.dataset.en;
     });
+    btn.textContent = lang === 'zh' ? 'English' : '中文';
+    btn.setAttribute('aria-label', lang === 'zh' ? 'Switch to English' : '切换到中文');
   }
-  function drawQiTable(c, w, h) {
-    c.imageSmoothingEnabled = false;
-    c.fillStyle = '#08282e'; c.fillRect(0, 0, w, h);
-    c.fillStyle = '#103a40';
-    for (let y = 0; y < h; y += 8) for (let x = ((y / 8) % 2) * 6; x < w; x += 12) c.fillRect(x, y, 4, 3);
-    c.fillStyle = '#061f25';
-    for (let y = 5; y < h; y += 12) for (let x = 7 + ((y / 12) % 2) * 8; x < w; x += 16) c.fillRect(x, y, 3, 2);
-    const margin = w * .07, gap = w * .035, bw = (w - margin * 2 - gap) * .5, by = h * .105, bh = h * .78;
-    board(c, margin, by, bw, bh, 9, [[2,2,0],[3,2,0],[2,3,1],[3,3,1],[4,3,1],[5,4,0],[6,5,1]]);
-    board(c, margin + bw + gap, by, bw, bh, 15, [[4,9,0],[5,8,0],[6,7,0],[7,6,0],[8,5,0],[4,8,1],[5,7,1],[6,6,1],[8,6,1],[9,7,1]]);
-    c.save(); c.globalAlpha = .22; c.strokeStyle = '#b8eee5'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(-8, Math.round(h*.25)); c.lineTo(w*.12,h*.2); c.lineTo(w*.24,h*.25); c.lineTo(w*.36,h*.3); c.lineTo(w*.5,h*.24); c.lineTo(w*.64,h*.2); c.lineTo(w*.78,h*.26); c.lineTo(w+8,h*.2); c.stroke();
-    c.beginPath(); c.moveTo(-8, Math.round(h*.78)); c.lineTo(w*.12,h*.72); c.lineTo(w*.27,h*.77); c.lineTo(w*.42,h*.82); c.lineTo(w*.58,h*.75); c.lineTo(w*.72,h*.7); c.lineTo(w*.86,h*.77); c.lineTo(w+8,h*.71); c.stroke(); c.restore();
-  }
-
-  function setup() {
-    const w = card.clientWidth | 0, h = card.clientHeight | 0;
-    if (!w || !h) return false;
-    DW = w; DH = h; canvas.width = DW; canvas.height = DH;
-    out = ctx.createImageData(DW, DH); outData = out.data;
-    const BAND = Math.min(DH, Math.max(60, (band ? band.offsetHeight : 124)));   // thumbnail band height (px)
-    const off = document.createElement('canvas'); off.width = DW; off.height = DH;
-    const oc = off.getContext('2d');
-    oc.fillStyle = '#0d0d0d'; oc.fillRect(0, 0, DW, DH);                          // dark body
-    drawQiTable(oc, DW, BAND);                                                   // two engraved boards just under the surface
-    oc.fillStyle = 'rgba(28,28,28,1)'; oc.fillRect(0, BAND - 1, DW, 1);           // separator line
-    try { bg = oc.getImageData(0, 0, DW, DH).data; } catch (e) { return false; }
-    inited = true; render(); card.classList.add('ready');
-    return true;
-  }
-  function ensureInit() { return inited || setup(); }
-
-  function poke(dx, dy, strength, radius) {
-    pixelRings.push({ x: Math.round(dx), y: Math.round(dy), age: 0, speed: strength > 20 ? 2 : 1, offset: radius || 0 });
-    if (pixelRings.length > 12) pixelRings.shift();
-    ensureRAF();
-  }
-  function ringPoke(dx, dy, ringR, strength) {
-    pixelRings.push({ x: Math.round(dx), y: Math.round(dy), age: -Math.round(ringR * .65), speed: strength > 12 ? 2 : 1, offset: 0 });
-  }
-  function splash(x, y) { poke(x, y, 46, 2); ringPoke(x, y, 9, 16); ringPoke(x, y, 16, 9); }
-
-  function drawPixelRing(ring) {
-    if (ring.age < 0) return;
-    const frame = Math.floor(ring.age / 3), rx = 8 + ring.offset + frame * 5, ry = Math.max(4, Math.round(rx * .42));
-    const fade = Math.max(0, 1 - frame / 11);
-    if (!fade) return;
-    const x = ring.x, y = ring.y, sx = Math.max(3, Math.round(rx * .34)), sy = Math.max(2, Math.round(ry * .42));
-    ctx.save(); ctx.globalAlpha = Math.ceil(fade * 4) / 4; ctx.strokeStyle = '#bcefe5'; ctx.lineWidth = frame < 3 ? 2 : 1; ctx.lineJoin = 'miter';
-    ctx.beginPath(); ctx.moveTo(x - rx + sx, y - ry); ctx.lineTo(x + rx - sx, y - ry); ctx.lineTo(x + rx, y - ry + sy);
-    ctx.lineTo(x + rx, y + ry - sy); ctx.lineTo(x + rx - sx, y + ry); ctx.lineTo(x - rx + sx, y + ry);
-    ctx.lineTo(x - rx, y + ry - sy); ctx.lineTo(x - rx, y - ry + sy); ctx.closePath(); ctx.stroke(); ctx.restore();
-  }
-  function render() {
-    outData.set(bg); ctx.putImageData(out, 0, 0);
-    pixelRings.forEach(drawPixelRing);
-  }
-  function frame() {
-    pixelRings.forEach((ring) => { ring.age += ring.speed; });
-    pixelRings = pixelRings.filter((ring) => ring.age < 34);
-    render();
-    rafId = pixelRings.length ? requestAnimationFrame(frame) : 0;
-  }
-  function ensureRAF() { if (!reducedMotion && !rafId) rafId = requestAnimationFrame(frame); }
-  function pos(ev) { const r = card.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
-  function queueWake(x, y) {
-    if (!haveLast || Math.hypot(x - lastX, y - lastY) > 18) poke(x, y, 6, 0);
-    lastX = x; lastY = y; haveLast = true;
-  }
-  card.addEventListener('mouseenter', () => { if (!ensureInit()) return; haveLast = false; ensureRAF(); });
-  card.addEventListener('mouseleave', () => { haveLast = false; });
-  card.addEventListener('mousemove', (ev) => { if (reducedMotion || !ensureInit()) return; const [x, y] = pos(ev); queueWake(x, y); ensureRAF(); });
-  card.addEventListener('click', (ev) => { if (reducedMotion || !ensureInit()) return; const [x, y] = pos(ev); splash(x, y); ensureRAF(); });
-  card.addEventListener('focusin', () => {
-    if (reducedMotion || !ensureInit()) return;
-    splash(DW * .5, Math.min(DH, band.offsetHeight) * .5); ensureRAF();
+  btn.addEventListener('click', () => {
+    lang = lang === 'zh' ? 'en' : 'zh';
+    try { localStorage.setItem(KEY, lang); } catch (e) {}
+    apply();
   });
-  // attract: when the card first scrolls into view, one light touch dead center —
-  // the rings spread out and reflect off all four edges in symmetry
-  let attracted = false;
-  function attract() {
-    if (reducedMotion || !ensureInit()) return;
-    poke(DW * 0.5, Math.min(DH, band.offsetHeight) * 0.5, 18, 3); ensureRAF();
-  }
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting && !attracted) { attracted = true; io.disconnect(); setTimeout(attract, 500); } }); }, { threshold: 0.5 });
-    io.observe(card);
-  } else { setTimeout(() => { if (!attracted) { attracted = true; attract(); } }, 1100); }
-  let resizeTimer = 0;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = 0; inited = false; setup();
-    }, 120);
-  });
-  setup();
+  apply();
 })();
 
-/* Tomato card — a rain of little ASCII tomatoes (varied size & ripeness) falls from the cursor */
+/* ── the hero is a live Game of Life ────────────────────────
+   Cells drift behind the headline; dying cells leave a slate-blue trail.
+   Mouse/pen: drag to draw cells. Touch: tap to launch a glider (a drag
+   still scrolls the page). Pauses off-screen and in background tabs;
+   with reduced motion it stays still and only draws what you add. */
 (function () {
-  const card = document.querySelector('.card.glow-tomato');
-  if (!card) return;
-  const ART =
-`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠻⣶⡆⠀⠿⠀⣶⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣴⠾⠛⢹⣶⡤⢶⣿⡟⠶⠦⠄⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⣠⣶⣤⣤⣤⣤⣴⠂⠸⠋⢀⣄⡉⠓⠀⠲⣶⣾⣿⣷⣄⠀⠀⠀⠀
-⠀⠀⠀⢀⣾⡿⠋⠁⣠⣤⣿⡟⢀⣠⣾⣿⣿⣿⣷⣶⣤⣼⣿⣿⣿⣿⣆⠀⠀⠀
-⠀⠀⠀⣾⡟⠀⣰⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀
-⠀⠀⢸⡿⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
-⠀⠀⢸⡇⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
-⠀⠀⢸⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀
-⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀
-⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀
-⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`;
-  const COLORS = ['#6cc24a','#86d15a','#4fb33a','#f0973a','#e8a13a','#e23b2e','#cf3027'];  // green · orange · red(ripe)
-  const G = 0.40, REST = 0.10, WALL = 0.45, FRIC = 0.82, MAXV = 17, MAX_BODIES = 48, WAKEV = 1.2, VDX = 0.92, VDY = 0.99;
-  let layer = null, bodies = [], raf = 0, mx = 0, my = 0, spawning = false, timer = 0, W = 0, H = 0;
-  function ensureLayer(){ if(!layer){ layer = document.createElement('div'); layer.className = 'tomato-rain'; layer.setAttribute('aria-hidden','true'); card.appendChild(layer); } W = card.clientWidth; H = card.clientHeight; }
-  function place(b){ b.el.style.transform = 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px) translate(-50%,-50%) rotate(' + b.rot.toFixed(1) + 'deg)'; }
-  function wakeAll(){ for(const b of bodies){ b.asleep = false; b.sleep = 0; } ensureRAF(); }
-  function removeOldest(){ const b = bodies.shift(); if(b){ b.el.style.opacity = '0'; setTimeout(() => b.el.remove(), 350); wakeAll(); } }
-  function spawnAt(x, y){
-    ensureLayer();
-    if(bodies.length >= MAX_BODIES) removeOldest();
-    const fs = 2.6 + Math.random()*3.3, col = COLORS[(Math.random()*COLORS.length)|0];
-    const el = document.createElement('pre'); el.className = 'tdrop'; el.textContent = ART;
-    el.style.fontSize = fs.toFixed(2) + 'px'; el.style.color = col; el.style.textShadow = '0 0 6px ' + col + 'cc';
-    layer.appendChild(el);
-    const r = (el.offsetWidth * 0.32) || fs * 5.4;                       // collision radius ≈ the tomato body
-    const b = { x:x, y:y, vx:(Math.random()*2-1)*1.3, vy:Math.random()*1.2, r:r, el:el, rot:(Math.random()*30-15), vrot:(Math.random()*3-1.5), sleep:0, asleep:false };
-    place(b); el.style.opacity = '0';
-    requestAnimationFrame(() => { el.style.opacity = '0.96'; });
-    bodies.push(b); ensureRAF();
-  }
-  function collide(){                                                    // 3 relaxation passes: separate; wake only on real impact; impulse on awake only
-    for(let pass=0; pass<3; pass++){
-      for(let i=0;i<bodies.length;i++){ const a = bodies[i];
-        for(let j=i+1;j<bodies.length;j++){ const b = bodies[j];
-          let dx = b.x-a.x, dy = b.y-a.y, d = Math.hypot(dx,dy)||0.01, min = a.r+b.r;
-          if(d < min){
-            const ov = min-d, nx = dx/d, ny = dy/d, push = ov*0.5;
-            a.x -= nx*push; a.y -= ny*push; b.x += nx*push; b.y += ny*push;
-            if(a.asleep && b.asleep) continue;                            // resting contact: separate only, stay asleep
-            const rvx = b.vx-a.vx, rvy = b.vy-a.vy, vn = rvx*nx + rvy*ny;
-            if(vn < -WAKEV){ if(a.asleep){ a.asleep=false; a.sleep=0; } if(b.asleep){ b.asleep=false; b.sleep=0; } }
-            if(vn < 0){ const imp = -vn*0.5*(1+REST); if(!a.asleep){ a.vx -= imp*nx; a.vy -= imp*ny; } if(!b.asleep){ b.vx += imp*nx; b.vy += imp*ny; } }
-          }
-        }
-      }
-    }
-  }
-  function step(){
-    const floor = H - 2;
-    for(const b of bodies){
-      if(b.asleep) continue;
-      b.vy += G; b.vx *= VDX; b.vy *= VDY;
-      if(b.vx > MAXV) b.vx = MAXV; else if(b.vx < -MAXV) b.vx = -MAXV; if(b.vy > MAXV) b.vy = MAXV;
-      b.x += b.vx; b.y += b.vy; b.rot += b.vrot; b.vrot *= 0.92;
-      if(b.x-b.r < 0){ b.x = b.r; b.vx = -b.vx*WALL; } else if(b.x+b.r > W){ b.x = W-b.r; b.vx = -b.vx*WALL; }
-      if(b.y+b.r > floor){ b.y = floor-b.r; if(b.vy > 0) b.vy = 0; b.vx *= FRIC; }   // land: no floor bounce
-    }
-    collide();
-    let active = false;
-    for(const b of bodies){
-      if(!b.asleep){
-        if(Math.abs(b.vx) < 0.3 && Math.abs(b.vy) < 0.8){ if(++b.sleep > 12){ b.asleep = true; b.vx = 0; b.vy = 0; } } else b.sleep = 0;
-        if(!b.asleep) active = true;
-      }
-      place(b);
-    }
-    return active;
-  }
-  function frame(){ raf = (step() || spawning) ? requestAnimationFrame(frame) : 0; }
-  function ensureRAF(){ if(!raf) raf = requestAnimationFrame(frame); }
-  function setPos(e){ const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
-  card.addEventListener('mouseenter', (e) => { ensureLayer(); setPos(e); spawnAt(mx,my); spawning = true; if(!timer) timer = setInterval(() => spawnAt(mx,my), 120); });
-  card.addEventListener('mousemove', setPos);
-  card.addEventListener('mouseleave', () => { spawning = false; if(timer){ clearInterval(timer); timer = 0; } });
-  window.addEventListener('resize', () => { if(layer){ W = card.clientWidth; H = card.clientHeight; wakeAll(); } });
-  // attract: slow horizontal "hover" sweep on first view, raining tomatoes that pile up
-  let attracted = false;
-  function attract(){
-    if(attracted) return; attracted = true; ensureLayer();
-    my = H*0.26; const x0 = W*0.12, x1 = W*0.88, dur = 2400; let t0 = null, last = 0; spawning = true;
-    function sweep(ts){
-      if(t0 == null) t0 = ts; const p = Math.min(1, (ts-t0)/dur); mx = x0 + (x1-x0)*p;
-      if(ts-last > 130){ spawnAt(mx,my); last = ts; }
-      if(p < 1) requestAnimationFrame(sweep); else spawning = false;
-    }
-    requestAnimationFrame(sweep);
-  }
-  if('IntersectionObserver' in window){ const io = new IntersectionObserver((es) => es.forEach(e => { if(e.isIntersecting && !attracted){ io.disconnect(); setTimeout(attract, 400); } }), { threshold: 0.5 }); io.observe(card); }
-  else setTimeout(attract, 1000);
-})();
-
-/* Labyrinth card — on hover, A* light floods through a freshly-carved mini-maze (BFS wavefront) */
-(function () {
-  const card = document.querySelector('.card.glow-laby');
-  if (!card) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'laby-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0], OPP = [2, 3, 0, 1];
-  const C = 18;
-  let W, H, cols, rows, walls, dist, maxd, t = 0, raf = 0, inside = false;
-  function build() {
-    W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
-    cols = Math.max(4, Math.floor(W / C)); rows = Math.max(3, Math.floor(H / C));
-    const idx = (x, y) => y * cols + x, inb = (x, y) => x >= 0 && x < cols && y >= 0 && y < rows;
-    walls = []; for (let i = 0; i < cols * rows; i++) walls[i] = [1, 1, 1, 1];
-    const vis = new Uint8Array(cols * rows), st = [0]; vis[0] = 1;
-    while (st.length) {
-      const cur = st[st.length - 1], cx = cur % cols, cy = (cur / cols) | 0, nb = [];
-      for (let d = 0; d < 4; d++) { const nx = cx + DX[d], ny = cy + DY[d]; if (inb(nx, ny) && !vis[idx(nx, ny)]) nb.push(d); }
-      if (nb.length) { const d = nb[(Math.random() * nb.length) | 0], nx = cx + DX[d], ny = cy + DY[d], ni = idx(nx, ny); walls[cur][d] = 0; walls[ni][OPP[d]] = 0; vis[ni] = 1; st.push(ni); }
-      else st.pop();
-    }
-    dist = new Float32Array(cols * rows).fill(-1); maxd = 0;
-    const q = [0]; dist[0] = 0;
-    while (q.length) { const cur = q.shift(), cx = cur % cols, cy = (cur / cols) | 0;
-      for (let d = 0; d < 4; d++) { if (walls[cur][d]) continue; const ni = (cy + DY[d]) * cols + (cx + DX[d]); if (dist[ni] < 0) { dist[ni] = dist[cur] + 1; if (dist[ni] > maxd) maxd = dist[ni]; q.push(ni); } } }
-  }
-  function frame() {
-    t += 0.03; ctx.clearRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(54,150,140,0.18)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round'; ctx.beginPath();
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      const w = walls[y * cols + x], cx = x * C, cy = y * C;
-      if (w[0]) { ctx.moveTo(cx, cy); ctx.lineTo(cx + C, cy); }
-      if (w[1]) { ctx.moveTo(cx + C, cy); ctx.lineTo(cx + C, cy + C); }
-      if (w[2]) { ctx.moveTo(cx, cy + C); ctx.lineTo(cx + C, cy + C); }
-      if (w[3]) { ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + C); }
-    }
-    ctx.stroke();
-    const wave = (t % 2.6) / 2.6 * (maxd + 9);
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      const dv = dist[y * cols + x]; if (dv < 0) continue; const dd = wave - dv; if (dd < 0 || dd > 7) continue;
-      const a = 1 - dd / 7, front = dd < 1.6, r = front ? 130 : 43, g = front ? 235 : 255, b = front ? 220 : 140;
-      ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (a * 0.42).toFixed(3) + ')';
-      ctx.beginPath(); ctx.arc(x * C + C / 2, y * C + C / 2, C * 0.32, 0, 7); ctx.fill();
-    }
-    raf = inside ? requestAnimationFrame(frame) : 0;
-  }
-  card.addEventListener('mouseenter', () => { if (raf) return; build(); t = 0; inside = true; raf = requestAnimationFrame(frame); });
-  card.addEventListener('mouseleave', () => { inside = false; });
-})();
-
-/* Tomatoswipe card — hover: a tomato plops onto the board, wobbles… and EXPLODES
-   into ketchup. Droplets fly ballistically, splat into stains that drip and slowly
-   fade (offscreen stain layer), and another tomato drops in while you stay. */
-(function () {
-  const card = document.querySelector('.card.glow-tsweep');
-  if (!card) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'tsw-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  const stain = document.createElement('canvas');                  // persistent ketchup layer
-  const sctx = stain.getContext('2d');
-  const KETCHUP = ['rgba(198,40,26,', 'rgba(226,58,38,', 'rgba(170,28,18,'];
-  let W, H, raf = 0, inside = false, mx = 0, my = 0;
-  let tomato = null, drops = [], drips = [], cool = 0, hold = 0;   // cool: frames to next tomato · hold: frames stains stay before fading
-
-  function build() {
-    W = card.clientWidth; H = card.clientHeight;
-    canvas.width = W; canvas.height = H; stain.width = W; stain.height = H;
-  }
-  function newTomato() {
-    // the tomato grows right under the cursor
-    tomato = { x: Math.max(26, Math.min(W - 26, mx)), y: Math.max(22, Math.min(H - 26, my)), r: 15 + Math.random() * 5, age: 0 };
-    cool = 150 + ((Math.random() * 50) | 0);             // ~2.5–3.3 s at 60 fps
-  }
-  function explode() {
-    const { x, y, r } = tomato; tomato = null;
-    for (let i = 0; i < 26 + r * 1.2; i++) {                       // bigger tomato, bigger mess
-      const a = Math.random() * 6.28, sp = 1.4 + Math.random() * 4;
-      drops.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.2, r: 1.6 + Math.random() * 3,
-                   floor: y + 8 + Math.random() * (H - y - 14), col: KETCHUP[(Math.random() * 3) | 0] });
-    }
-    // an immediate splat under the burst point, then let the mess sit before fading
-    splat(x, y, r * 1.15, KETCHUP[0]);
-    hold = 300;                                          // ~5 s of full-strength stains
-  }
-  function splat(x, y, r, col) {
-    sctx.fillStyle = col + '0.75)';
-    sctx.beginPath(); sctx.ellipse(x, y, r, r * 0.72, 0, 0, 7); sctx.fill();
-    for (let i = 0; i < 4; i++) {                                  // ragged blob edges
-      const a = Math.random() * 6.28, d = r * (0.7 + Math.random() * 0.5);
-      sctx.beginPath(); sctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7, r * 0.3, 0, 7); sctx.fill();
-    }
-    if (Math.random() < 0.6) drips.push({ x: x + (Math.random() - 0.5) * r, y, len: 0, max: 6 + Math.random() * 16, w: 1.2 + Math.random() * 1.6, col });
-  }
-  function frame() {
-    // stains stay at full strength for a while (hold), then evaporate
-    if (hold > 0) hold--;
-    else {
-      sctx.globalCompositeOperation = 'destination-out';
-      sctx.fillStyle = 'rgba(0,0,0,0.006)'; sctx.fillRect(0, 0, W, H);
-      sctx.globalCompositeOperation = 'source-over';
-    }
-    for (const d of drips) {
-      if (d.len < d.max) { d.len += 0.4; sctx.fillStyle = d.col + '0.55)'; sctx.fillRect(d.x - d.w / 2, d.y + d.len - 1, d.w, 1.6); }
-    }
-    drips = drips.filter(d => d.len < d.max);
-    for (const p of drops) {
-      p.vy += 0.14; p.x += p.vx; p.y += p.vy;
-      if (p.x < 3 || p.x > W - 3 || p.y > p.floor || p.y > H - 4) { splat(Math.max(3, Math.min(W - 3, p.x)), Math.min(p.y, H - 4), p.r * 1.6, p.col); p.dead = 1; }
-    }
-    drops = drops.filter(p => !p.dead);
-
-    ctx.clearRect(0, 0, W, H);
-    ctx.drawImage(stain, 0, 0);
-    for (const p of drops) { ctx.fillStyle = p.col + '0.9)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
-    if (tomato) {
-      const t = tomato, age = ++t.age;                             // frame-count clock (~60 fps)
-      // trail the cursor while growing, so it bursts where you actually are —
-      // not where the pointer happened to enter the card
-      t.x += (Math.max(26, Math.min(W - 26, mx)) - t.x) * 0.16;
-      t.y += (Math.max(22, Math.min(H - 26, my)) - t.y) * 0.16;
-      const scale = Math.min(1, age / 16);                         // plop in…
-      const shake = age > 26 ? Math.sin(age * 1.5) * Math.min(3.5, (age - 26) / 6) : 0;     // …tremble…
-      const r = t.r * (scale + (age > 22 ? (age - 22) / 62 : 0));  // …and swell to ~1.7× before bursting
-      const x = t.x + shake, y = t.y;
-      const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.2, x, y, r);
-      g.addColorStop(0, '#ff7a5e'); g.addColorStop(0.55, '#e2523e'); g.addColorStop(1, '#b32517');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, r * (1 + Math.abs(shake) * 0.02), r * 0.92, 0, 0, 7); ctx.fill();
-      ctx.strokeStyle = '#3d8c2f'; ctx.lineWidth = 2; ctx.lineCap = 'round';                // the star stem
-      for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * 0.55; ctx.beginPath(); ctx.moveTo(x, y - r * 0.75); ctx.lineTo(x + Math.cos(a) * r * 0.42, y - r * 0.75 + Math.sin(a) * r * 0.3); ctx.stroke(); }
-      if (age > 66) explode();
-    } else if (inside && --cool <= 0) newTomato();
-    raf = (inside || drops.length || drips.length) ? requestAnimationFrame(frame) : 0;
-  }
-  function setPos(e) { const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
-  card.addEventListener('mousemove', setPos);
-  card.addEventListener('mouseenter', (e) => { setPos(e); if (!tomato) cool = 1;   // a tomato grows under the cursor right away
-    if (raf) { inside = true; return; } build(); inside = true; raf = requestAnimationFrame(frame); });
-  card.addEventListener('mouseleave', () => { inside = false; });
-})();
-
-/* Sudoku card — hover: a pencil hand-writes digits in the cell under YOUR
-   cursor — a couple of small corner notes first, then the big answer (erasing
-   the notes, like a real solve). Older marks fade like graphite. */
-(function () {
-  const card = document.querySelector('.card.glow-sudoku');
-  if (!card) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'sudoku-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  const C = 24, MAXMARKS = 20;
-  // each digit: one polyline in unit cell coords (y down), sketched progressively
-  const DIGITS = {
-    1: [[0.35,0.28],[0.52,0.14],[0.52,0.88]],
-    2: [[0.3,0.3],[0.38,0.16],[0.62,0.16],[0.7,0.32],[0.32,0.84],[0.72,0.84]],
-    3: [[0.3,0.2],[0.55,0.14],[0.68,0.3],[0.5,0.47],[0.68,0.64],[0.55,0.84],[0.3,0.78]],
-    4: [[0.62,0.88],[0.62,0.14],[0.28,0.62],[0.76,0.62]],
-    5: [[0.68,0.16],[0.34,0.16],[0.3,0.48],[0.58,0.42],[0.7,0.6],[0.58,0.84],[0.3,0.8]],
-    6: [[0.62,0.14],[0.38,0.3],[0.3,0.6],[0.42,0.84],[0.62,0.78],[0.66,0.56],[0.5,0.46],[0.34,0.56]],
-    7: [[0.28,0.16],[0.72,0.16],[0.44,0.88]],
-    8: [[0.66,0.3],[0.5,0.14],[0.34,0.3],[0.64,0.62],[0.5,0.88],[0.34,0.64],[0.66,0.3]],
-    9: [[0.66,0.42],[0.5,0.5],[0.34,0.36],[0.42,0.16],[0.62,0.14],[0.68,0.36],[0.6,0.88]],
-  };
-  const CORNERS = [[0.28, 0.3], [0.72, 0.3], [0.28, 0.74], [0.72, 0.74]];
-  let W, H, cols, rows, topH, raf = 0, inside = false, marks = [], nextIn = 0;   // nextIn: frames until the next digit
-  let mx = 0, my = 0;                                    // the pencil writes in the cell under the cursor
-
-  function build() {
-    W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H;
-    const th = card.querySelector('.card-thumb'); topH = th ? th.offsetHeight : Math.round(H * 0.4);
-    cols = Math.max(3, Math.floor(W / C)); rows = Math.max(2, Math.floor(topH / C));
-    marks = [];
-  }
-  function newMark() {
-    const cx = Math.max(0, Math.min(cols - 1, (mx / C) | 0));
-    const cy = Math.max(0, Math.min(rows - 1, (my / C) | 0));
-    const inCell = marks.filter(m => !m.dying && m.cx === cx && m.cy === cy);
-    if (inCell.some(m => m.final)) { nextIn = 10; return; }        // cell answered — wait for the cursor to move on
-    const freeCorners = [0, 1, 2, 3].filter(i => !inCell.some(m => m.cornerIdx === i));
-    // a couple of pencil notes first, then commit to the big answer (erasing the notes)
-    const final = !freeCorners.length || (inCell.length >= 2 && Math.random() < 0.6);
-    if (final) inCell.forEach(m => { m.dying = true; });
-    const digit = 1 + ((Math.random() * 9) | 0);
-    const jit = DIGITS[digit].map(() => [(Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.08]);
-    const cornerIdx = final ? -1 : freeCorners[(Math.random() * freeCorners.length) | 0];
-    marks.push({ cx, cy, digit, final, jit, corner: CORNERS[cornerIdx] || CORNERS[0], cornerIdx, prog: 0, alpha: final ? 0.95 : 0.6 });
-    if (marks.length > MAXMARKS) marks[0].dying = true;
-    nextIn = 16 + ((Math.random() * 20) | 0);            // ~0.3–0.6 s at 60 fps
-  }
-  function pts(m) {
-    const base = DIGITS[m.digit], s = m.final ? C * 0.66 : C * 0.34;
-    const ox = m.cx * C + (m.final ? C * 0.5 : m.corner[0] * C) - s / 2;
-    const oy = m.cy * C + (m.final ? C * 0.5 : m.corner[1] * C) - s / 2;
-    return base.map((p, i) => [ox + (p[0] + m.jit[i][0]) * s, oy + (p[1] + m.jit[i][1]) * s]);
-  }
-  function drawMark(m) {
-    const P = pts(m); let total = 0; const seg = [0];
-    for (let i = 1; i < P.length; i++) { total += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); seg.push(total); }
-    const drawn = m.prog * total;
-    ctx.strokeStyle = 'rgba(205,213,224,' + m.alpha.toFixed(3) + ')';
-    ctx.lineWidth = m.final ? 1.8 : 1.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]);
-    let tip = P[0];
-    for (let i = 1; i < P.length; i++) {
-      if (seg[i] <= drawn) { ctx.lineTo(P[i][0], P[i][1]); tip = P[i]; }
-      else { const f = (drawn - seg[i - 1]) / (seg[i] - seg[i - 1]); tip = [P[i - 1][0] + (P[i][0] - P[i - 1][0]) * f, P[i - 1][1] + (P[i][1] - P[i - 1][1]) * f]; ctx.lineTo(tip[0], tip[1]); break; }
-    }
-    ctx.stroke();
-    return tip;
-  }
-  function drawPencil(x, y) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.7);
-    ctx.strokeStyle = '#e0b45a'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(3.5, -3.5); ctx.lineTo(13, -13); ctx.stroke();       // body
-    ctx.strokeStyle = '#f4dede'; ctx.lineWidth = 3.4;
-    ctx.beginPath(); ctx.moveTo(13, -13); ctx.lineTo(15.5, -15.5); ctx.stroke();     // eraser
-    ctx.fillStyle = '#8a9096'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4.6, -1.6); ctx.lineTo(1.6, -4.6); ctx.closePath(); ctx.fill();   // tip
-    ctx.restore();
-  }
-  function frame() {
-    ctx.clearRect(0, 0, W, H);
-    // the thumbnail is a real grid now — no overlay grid, just the pencil work
-    let tip = null, writing = false;
-    for (const m of marks) {
-      if (m.dying) { m.alpha -= 0.02; continue; }
-      if (m.prog < 1) { m.prog = Math.min(1, m.prog + 0.08); writing = true; }
-      const t = drawMark(m);
-      if (m.prog < 1) tip = t;
-    }
-    marks = marks.filter(m => m.alpha > 0.02);
-    for (const m of marks) if (m.dying) drawMark(m);
-    if (tip) drawPencil(tip[0], tip[1]);
-    if (inside && !writing && --nextIn <= 0) newMark();
-    raf = inside ? requestAnimationFrame(frame) : 0;
-  }
-  function setPos(e) { const r = card.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }
-  card.addEventListener('mousemove', setPos);
-  card.addEventListener('mouseenter', (e) => { setPos(e); if (raf) { inside = true; return; } build(); nextIn = 1; inside = true; raf = requestAnimationFrame(frame); });
-  card.addEventListener('mouseleave', () => { inside = false; });
-})();
-
-/* Keep-Up card — a ball bounces in the card while two side paddles track it (hover) */
-(function () {
-  const card = document.querySelector('.card.glow-keepup');
-  if (!card) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'ku-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  let W, H, ball, trail, pL, pR, raf = 0, inside = false;
-  function build() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; ball = { x: W / 2, y: H * 0.4, dx: 2, dy: 1.5, r: 5 }; trail = []; pL = H / 2; pR = H / 2; }
-  function frame() {
-    ctx.clearRect(0, 0, W, H);
-    ball.x += ball.dx; ball.y += ball.dy;
-    if (ball.y < 6) { ball.y = 6; ball.dy = Math.abs(ball.dy); }
-    if (ball.y > H - 6) { ball.y = H - 6; ball.dy = -Math.abs(ball.dy); }
-    const inset = 14;
-    if (ball.x < inset + ball.r) { ball.x = inset + ball.r; ball.dx = Math.abs(ball.dx); ball.dy += (ball.y - pL) * 0.03; }
-    if (ball.x > W - inset - ball.r) { ball.x = W - inset - ball.r; ball.dx = -Math.abs(ball.dx); ball.dy += (ball.y - pR) * 0.03; }
-    const sp = 2.7, m = Math.hypot(ball.dx, ball.dy) || 1; ball.dx = ball.dx / m * sp; ball.dy = ball.dy / m * sp;
-    pL += (ball.y - pL) * 0.08; pR += (ball.y - pR) * 0.08;
-    trail.push([ball.x, ball.y]); if (trail.length > 14) trail.shift();
-    ctx.fillStyle = 'rgba(43,212,106,0.75)'; ctx.fillRect(inset - 3, pL - 16, 4, 32);
-    ctx.fillStyle = 'rgba(54,197,208,0.75)'; ctx.fillRect(W - inset - 1, pR - 16, 4, 32);
-    for (let i = 0; i < trail.length; i++) { const a = i / trail.length; ctx.fillStyle = 'rgba(54,197,208,' + (a * 0.5).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(trail[i][0], trail[i][1], 2 + a * 3, 0, 7); ctx.fill(); }
-    ctx.fillStyle = '#eafdff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, 7); ctx.fill();
-    raf = inside ? requestAnimationFrame(frame) : 0;
-  }
-  card.addEventListener('mouseenter', () => { if (raf) return; build(); inside = true; raf = requestAnimationFrame(frame); });
-  card.addEventListener('mouseleave', () => { inside = false; });
-})();
-
-/* Co-op Lander card — a little lander descends + thrusts toward a pad (hover) */
-(function () {
-  const card = document.querySelector('.card.glow-lander');
-  if (!card) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'ld-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  let W, H, sx, sy, vy, ang, raf = 0, inside = false, stars = [], padx;
-  function reset() { sx = W * 0.5 + (Math.random() * 50 - 25); sy = 10; vy = 0.4; ang = (Math.random() * 0.4 - 0.2); }
-  function build() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; padx = W * 0.5 - 22; stars = []; for (let i = 0; i < 20; i++) stars.push([Math.random() * W, Math.random() * H * 0.75]); reset(); }
-  function frame() {
-    ctx.clearRect(0, 0, W, H);
-    for (const s of stars) { ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(s[0], s[1], 1, 1); }
-    const gy = H - 7;
-    ctx.fillStyle = 'rgba(43,212,106,0.85)'; ctx.fillRect(padx, gy - 2, 44, 3);
-    const thrust = sy > H * 0.32 && Math.sin(sy * 0.28) > -0.25;
-    vy += 0.018; if (thrust) vy -= 0.05; vy = Math.max(-0.6, Math.min(1.1, vy));
-    sy += vy; ang += Math.sin(sy * 0.11) * 0.004;
-    ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
-    if (thrust) { const fl = 4 + Math.random() * 4; ctx.fillStyle = 'rgba(255,170,70,0.85)'; ctx.beginPath(); ctx.moveTo(-3, 7); ctx.lineTo(3, 7); ctx.lineTo(0, 7 + fl); ctx.closePath(); ctx.fill(); }
-    ctx.fillStyle = '#cfd6da'; ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(5, -5); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#36c5d0'; ctx.beginPath(); ctx.arc(0, -1, 1.8, 0, 7); ctx.fill();
-    ctx.strokeStyle = '#8a9499'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-5, 6); ctx.lineTo(-8, 10); ctx.moveTo(5, 6); ctx.lineTo(8, 10); ctx.stroke();
-    ctx.restore();
-    if (sy > gy - 8) reset();
-    raf = inside ? requestAnimationFrame(frame) : 0;
-  }
-  card.addEventListener('mouseenter', () => { if (raf) return; build(); inside = true; raf = requestAnimationFrame(frame); });
-  card.addEventListener('mouseleave', () => { inside = false; });
-})();
-
-/* Tether card — the two tethered balls live down on the card itself. They hop out
-   of the screenshot and split the furniture: the cyan one works along the tag chips,
-   the green one leaps for the 'remote' chip (misses once, sticks the second try)
-   and then takes its seat on the play button. Chips press down and get tugged as
-   the balls come and go. The rope is a real Verlet chain with a fixed length: it
-   hangs and swings when slack, pulls straight and tints amber when taut. Plays once
-   when the card first scrolls into view, then freezes; hover replays. */
-(function () {
-  const card = document.querySelector('.card.glow-rope');
-  if (!card) return;
-  const btn = card.querySelector('.play-btn');
-  const tags = Array.from(card.querySelectorAll('.card-tags .tag'));
-  const thumb = card.querySelector('.card-thumb');
-  if (!btn || tags.length < 2 || !thumb) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'rope-canvas'; canvas.setAttribute('aria-hidden', 'true'); card.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  const G = 0.34, R = 10, RN = 13;                          // gravity · ball radius · rope points
-  const A = mkBall('43,212,106'), B = mkBall('70,200,255'); // P1 green · P2 cyan, as in-game
-  let W, H, raf = 0, playing = false, settled = false, ropeLen = 200, rope = [];
-  function mkBall(col) { return { x: 0, y: 0, vx: 0, vy: 0, q: 0, col, plan: [], act: null, tick: 0, done: false }; }
-
-  const rel = el => { const c = card.getBoundingClientRect(), r = el.getBoundingClientRect();
-    return { x: r.left - c.left + r.width / 2, top: r.top - c.top }; };
-  const spotOf = el => { const r = rel(el); return [r.x, r.top - R + 1]; };
-  function press(el) { el.style.transition = 'transform .12s ease-out'; el.style.transform = 'translateY(2px)'; }
-  function dragOff(el, dir) {                                // tugged along, then springs back
-    el.style.transition = 'transform .13s ease-out';
-    el.style.transform = 'translate(' + (7 * dir) + 'px,1px) rotate(' + (2.5 * dir) + 'deg)';
-    setTimeout(() => { el.style.transition = 'transform .5s cubic-bezier(.2,2.1,.35,1)'; el.style.transform = ''; }, 140);
-  }
-
-  function stepBall(p) {
-    p.q *= 0.86;
-    if (p.done) return;
-    if (!p.act) {
-      if (!p.plan.length) { p.done = true; return; }
-      p.act = p.plan.shift(); p.tick = 0;
-      if (p.act.hop) {                                      // game-style jump: a fixed VERTICAL impulse
-        const J = p.act.j || -7.2;                          // (tall arc), horizontal drift rides on top —
-        const dx = p.act.hop[0] - p.x, dy = p.act.hop[1] - p.y, b = J + G / 2;
-        let T = Math.ceil((-b + Math.sqrt(Math.max(0.2, b * b + 2 * G * dy))) / G);
-        if (!(T > 4)) T = 5;
-        p.act.T = T;                                        // flight time follows from the impulse
-        p.vx = dx / T; p.vy = (dy - G * T * (T + 1) / 2) / T;
-        p.q = -0.18;                                        // launch stretch, like in-game
-        if (p.act.drag) dragOff(p.act.drag[0], p.act.drag[1]);
-      }
-    }
-    p.tick++;
-    if (p.act.w != null) { if (p.tick >= p.act.w) p.act = null; }
-    else {
-      p.vy += G; p.x += p.vx; p.y += p.vy;
-      if (p.tick >= p.act.T) {
-        p.x = p.act.hop[0]; p.y = p.act.hop[1];
-        p.q = Math.min(0.34, Math.abs(p.vy) * 0.05);        // landing squash
-        if (p.act.boing) p.act.boing.q = 0.32;              // landed on the partner's head — boing
-        if (p.act.press) press(p.act.press);
-        p.vx = p.vy = 0; p.act = null;
-      }
-    }
-  }
-
-  function initRope() {
-    rope = [];
-    for (let i = 0; i < RN; i++) { const t = i / (RN - 1);
-      const x = A.x + (B.x - A.x) * t, y = A.y + (B.y - A.y) * t;
-      rope.push({ x, y, px: x, py: y }); }
-  }
-  function stepRope() {                                      // fixed-length Verlet chain between the balls
-    const seg = ropeLen / (RN - 1);
-    for (let i = 1; i < RN - 1; i++) { const p = rope[i];
-      const nx = p.x + (p.x - p.px) * 0.985, ny = p.y + (p.y - p.py) * 0.985 + 0.22;
-      p.px = p.x; p.py = p.y; p.x = nx; p.y = ny; }
-    for (let k = 0; k < 3; k++) {
-      rope[0].x = A.x; rope[0].y = A.y; rope[RN - 1].x = B.x; rope[RN - 1].y = B.y;
-      for (let i = 0; i < RN - 1; i++) {
-        const a = rope[i], b = rope[i + 1];
-        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, off = (d - seg) / d * 0.5;
-        a.x += dx * off; a.y += dy * off; b.x -= dx * off; b.y -= dy * off;
-      }
-    }
-    rope[0].x = A.x; rope[0].y = A.y; rope[RN - 1].x = B.x; rope[RN - 1].y = B.y;
-  }
-
-  function drawBall(p) {
-    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R * 2.1);
-    g.addColorStop(0, 'rgba(' + p.col + ',0.5)'); g.addColorStop(1, 'rgba(' + p.col + ',0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, R * 2.1, 0, 7); ctx.fill();
-    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1 + p.q, 1 - p.q);
-    ctx.fillStyle = 'rgb(' + p.col + ')'; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
-    const lk = Math.max(-1.6, Math.min(1.6, p.vx));          // eyes look where it's going
-    ctx.fillStyle = '#06131a';
-    ctx.beginPath(); ctx.arc(-3.4 + lk, -2.2, 1.7, 0, 7); ctx.arc(3.4 + lk, -2.2, 1.7, 0, 7); ctx.fill();
-    ctx.fillRect(-2.6 + lk, 3.2, 5.2, 1.6);
-    ctx.restore();
-  }
-  function drawFrame() {
-    ctx.clearRect(0, 0, W, H);
-    const taut = Math.hypot(B.x - A.x, B.y - A.y) > ropeLen * 0.99;
-    ctx.strokeStyle = taut ? 'rgba(232,176,74,0.8)' : 'rgba(220,235,240,0.55)';
-    ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(rope[0].x, rope[0].y);
-    for (let i = 1; i < RN; i++) ctx.lineTo(rope[i].x, rope[i].y);
-    ctx.stroke();
-    drawBall(A); drawBall(B);
-  }
-
-  function size() { W = card.clientWidth; H = card.clientHeight; canvas.width = W; canvas.height = H; }
-  function fitRope(d) { ropeLen = Math.max(180, d * 1.15); } // slack enough to hang at rest
-
-  function greenTag() {                                      // green's target chip: 'remote', else the 3rd
-    let i = tags.findIndex(t => /remote|联机/.test(t.textContent));
-    return tags[i < 0 ? Math.min(2, tags.length - 1) : i];
-  }
-
-  function play() {
-    if (playing || !card.offsetParent) return;
-    playing = true; size();
-    const floorY = H - 13, startY = rel(thumb).top + 40;
-    const gTag = greenTag(), bTags = tags.filter(t => t !== gTag);
-    const gSpot = spotOf(gTag), btnSpot = spotOf(btn), endB = spotOf(bTags[bTags.length - 1]);
-    A.x = W * 0.30; A.y = startY; A.q = 0; A.done = false; A.act = null;
-    B.x = W * 0.20; B.y = startY; B.q = 0; B.done = false; B.act = null;
-    fitRope(Math.hypot(btnSpot[0] - endB[0], btnSpot[1] - endB[1]));
-    initRope();
-    const headSpot = [gSpot[0], floorY - (2 * R - 2)];       // standing on the partner's head
-    A.plan = [                                               // green: solo leap misses, boost sticks
-      { w: 8 }, { hop: [W * 0.46, floorY], j: -2.5 }, { w: 16 },   // soft drop-in: hop down out of the screen
-      { hop: [W * 0.62, floorY] }, { w: 70 },
-      { hop: [gSpot[0] - 34, floorY] },                      // the attempt — just misses the chip
-      { w: 26 }, { hop: headSpot, boing: B },                // heads up! bounce off cyan's head...
-      { w: 6 }, { hop: gSpot, j: -8.4, press: gTag },        // ...spring extra high onto the chip
-      { w: 30 }, { hop: btnSpot },
-    ];
-    B.plan = [{ w: 26 }, { hop: [W * 0.15, floorY], j: -2.5 }, { w: 20 }];
-    let prev = null;                                         // cyan: early chips, boost duty, last chip
-    const early = bTags.slice(0, -1), lastTag = bTags[bTags.length - 1];
-    early.forEach(tg => {
-      const to = spotOf(tg);
-      B.plan.push({ hop: to, press: tg, drag: prev ? [prev.el, to[0] > prev.x ? 1 : -1] : null });
-      B.plan.push({ w: 30 });
-      prev = { el: tg, x: to[0] };
-    });
-    B.plan.push({ hop: [gSpot[0], floorY],                  // station under the chip for the boost
-                  drag: prev ? [prev.el, gSpot[0] > prev.x ? 1 : -1] : null });
-    B.plan.push({ w: 58 });
-    B.plan.push({ hop: spotOf(lastTag), press: lastTag });
-    let coolOff = 46;                                        // let squash + rope calm down, then freeze
-    (function loop() {
-      stepBall(A); stepBall(B); stepRope(); drawFrame();
-      if (A.done && B.done && --coolOff <= 0) { playing = false; settled = true; raf = 0; return; }
-      raf = requestAnimationFrame(loop);
-    })();
-  }
-  function resettle() {                                      // redraw the still pose (resize / lang switch)
-    if (playing || !card.offsetParent) return;
-    size();
-    const gTag = greenTag(), bTags = tags.filter(t => t !== gTag);
-    const a = spotOf(btn), b = spotOf(bTags[bTags.length - 1]);
-    A.x = a[0]; A.y = a[1]; A.q = 0; A.vx = 0; A.done = true;
-    B.x = b[0]; B.y = b[1]; B.q = 0; B.vx = 0; B.done = true;
-    fitRope(Math.hypot(a[0] - b[0], a[1] - b[1]));
-    initRope(); for (let i = 0; i < 130; i++) stepRope();    // let the chain hang naturally
-    drawFrame(); settled = true;
-  }
-
+  const hero = document.querySelector('.hero');
+  const cv = document.getElementById('life');
+  const ctx = cv.getContext('2d');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const io = new IntersectionObserver(es => {
-    if (!es.some(e => e.isIntersecting)) return;
-    io.disconnect(); setTimeout(still ? resettle : play, 500);
-  }, { threshold: 0.35 });
-  io.observe(card);
-  card.addEventListener('mouseenter', () => { if (!still && settled) play(); });
-  const _tl = window.toggleLang;
-  if (_tl) window.toggleLang = function () { _tl(); if (settled) requestAnimationFrame(resettle); };
-  let rz = 0;
-  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (settled) resettle(); }, 160); });
+  const STEP_MS = 120, FADE = 0.86;
+  let C = 14, cols = 0, rows = 0, a, b, trail, w = 0, h = 0, dpr = 1;
+  let visible = true, last = 0, gens = 0, painting = false, downAt = null;
+
+  function seed(clear) {
+    if (clear) { a.fill(0); trail.fill(0); }
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const bias = x / cols;                       // denser on the right, away from the text
+      if (Math.random() < 0.06 + 0.3 * bias * bias) a[y * cols + x] = 1;
+    }
+  }
+  function size() {
+    const r = hero.getBoundingClientRect();
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    w = r.width; h = r.height;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    C = w < 600 ? 11 : 14;
+    const nc = Math.ceil(w / C), nr = Math.ceil(h / C);
+    if (nc !== cols || nr !== rows) {
+      const old = a, oc = cols, or = rows;
+      cols = nc; rows = nr;
+      a = new Uint8Array(cols * rows); b = new Uint8Array(cols * rows); trail = new Float32Array(cols * rows);
+      if (old) { for (let y = 0; y < Math.min(or, rows); y++) for (let x = 0; x < Math.min(oc, cols); x++) a[y * cols + x] = old[y * oc + x]; }
+      else seed(false);
+    }
+    draw();
+  }
+  function step() {
+    let pop = 0;
+    for (let y = 0; y < rows; y++) {
+      const up = ((y - 1 + rows) % rows) * cols, mid = y * cols, dn = ((y + 1) % rows) * cols;
+      for (let x = 0; x < cols; x++) {
+        const l = (x - 1 + cols) % cols, r = (x + 1) % cols;
+        const n = a[up + l] + a[up + x] + a[up + r] + a[mid + l] + a[mid + r] + a[dn + l] + a[dn + x] + a[dn + r];
+        const i = mid + x, alive = a[i] ? (n === 2 || n === 3) : n === 3;
+        b[i] = alive ? 1 : 0;
+        if (alive) pop++;
+        trail[i] = a[i] || alive ? 1 : trail[i] * FADE;
+      }
+    }
+    const t = a; a = b; b = t;
+    gens++;
+    // keep the background alive: refill a patch when it thins out or settles
+    if (pop < cols * rows * 0.035 || gens % 700 === 0) sprinkle();
+  }
+  function sprinkle() {
+    const pw = Math.floor(cols * 0.3), ph = Math.floor(rows * 0.4);
+    const x0 = Math.floor(cols * 0.45 + Math.random() * (cols * 0.55 - pw)), y0 = Math.floor(Math.random() * (rows - ph));
+    for (let y = y0; y < y0 + ph; y++) for (let x = x0; x < x0 + pw; x++) if (Math.random() < 0.3) a[y * cols + x] = 1;
+  }
+  function draw() {
+    ctx.fillStyle = '#0a0c0b';
+    ctx.fillRect(0, 0, w, h);
+    const s = C - 2;
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const i = y * cols + x;
+      if (a[i]) { ctx.fillStyle = 'rgba(62,224,127,0.78)'; ctx.fillRect(x * C + 1, y * C + 1, s, s); }
+      else if (trail[i] > 0.04) { ctx.fillStyle = 'rgba(72,104,180,' + (trail[i] * 0.42).toFixed(3) + ')'; ctx.fillRect(x * C + 1, y * C + 1, s, s); }
+    }
+  }
+  function loop(t) {
+    requestAnimationFrame(loop);
+    if (still || !visible || document.hidden) return;
+    if (t - last < STEP_MS) return;
+    last = t; step(); draw();
+  }
+  function cellAt(e) {
+    const r = cv.getBoundingClientRect();
+    return [Math.floor((e.clientX - r.left) / C), Math.floor((e.clientY - r.top) / C)];
+  }
+  function set(x, y) {
+    if (x < 0 || y < 0 || x >= cols || y >= rows) return;
+    a[y * cols + x] = 1; trail[y * cols + x] = 1;
+  }
+  function paint(e) {
+    const [x, y] = cellAt(e);
+    set(x, y); set(x + 1, y); set(x, y + 1);          // a fat brush survives a few generations
+    draw();
+  }
+  function glider(e) {
+    const [x, y] = cellAt(e);
+    const sx = Math.random() < 0.5 ? 1 : -1, sy = Math.random() < 0.5 ? 1 : -1;
+    [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]].forEach(([dx, dy]) => set(x + sx * (dx - 1), y + sy * (dy - 1)));
+    draw();
+  }
+  const ignore = e => e.target.closest('a, button, .shelf, video');
+  hero.addEventListener('pointerdown', e => {
+    if (ignore(e)) return;
+    if (e.pointerType === 'touch') { downAt = [e.clientX, e.clientY]; return; }
+    painting = true; e.preventDefault(); paint(e);
+  });
+  hero.addEventListener('pointermove', e => { if (painting) paint(e); });
+  window.addEventListener('pointerup', e => {
+    painting = false;
+    if (downAt && e.pointerType === 'touch' && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 10 && !ignore(e)) glider(e);
+    downAt = null;
+  });
+  window.addEventListener('pointercancel', () => { painting = false; downAt = null; });
+
+  new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(hero);
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(size, 120); });
+  size();
+  requestAnimationFrame(loop);
 })();
 
-/* sort/filter the arcade floor by player count */
+/* ── demo clips play only while on screen ─────────────────── */
 (function () {
-  const chips = document.querySelectorAll('.pchip');
-  chips.forEach(c => c.addEventListener('click', () => {
-    chips.forEach(x => x.classList.remove('on')); c.classList.add('on');
-    const p = c.dataset.p;
-    document.querySelectorAll('.grid .card').forEach(card => {
-      const cp = card.dataset.players || '1';
-      const show = p === 'all' || cp.includes(p);
-      card.style.display = show ? '' : 'none';
-    });
-  }));
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const vids = document.querySelectorAll('video.demo');
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) e.target.play().catch(() => {}); else e.target.pause();
+  }), { threshold: 0.35 });
+  vids.forEach(v => io.observe(v));
 })();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
-
-/* remember the language across the whole arcade */
-try { if (localStorage.getItem('arcade_lang') === 'zh') toggleLang(); } catch (e) {}
-</script>
-
-<script>
-/* ── dilemma_lab card: a playable one-screen dilemma. Pick C or D against
-      Tit for Tat; it cooperates first, then mirrors the visitor's last move.
-      The saved Trust Trials medal count is pulled into the marquee. ── */
-(function(){
-  const cv = document.querySelector('.card.glow-dilemma .dl-canvas');
-  if(!cv) return;
-  const g = cv.getContext('2d'), W = 440, H = 240;
-  const PAY = { CC:[3,3], CD:[0,5], DC:[5,0], DD:[1,1] };
-  const BTNS = { C:{x:88,y:190,w:122,h:34}, D:{x:230,y:190,w:122,h:34} };
-  let rounds = [], scoreYou = 0, scoreTft = 0, tftMove = 'C', hot = '', flash = null, raf = 0;
-  let reduced = false;
-  try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-
-  function trialMedals(){
-    try { const s=JSON.parse(localStorage.getItem('dilemma_trials_v1')||'{}')||{}; return Object.keys(s).reduce((n,k)=>n+(Number(s[k])||0),0); }
-    catch(e){ return 0; }
-  }
-  function face(x,y,s,skin,hat){
-    const px=(a,b,w,h,c)=>{ g.fillStyle=c; g.fillRect(x+a*s,y+b*s,w*s,h*s); };
-    px(5,4,6,1,skin); px(4,5,8,8,skin); px(5,13,6,1,skin);
-    px(6,8,1,2,'#101010'); px(9,8,1,2,'#101010');
-    if(hat==='mirror'){
-      px(5,7,2,1,'#101010'); px(9,7,2,1,'#101010');
-      px(6,11,1,1,'#101010'); px(7,12,2,1,'#101010'); px(9,11,1,1,'#101010');
-      px(4,2,8,2,'#8d4770'); px(6,1,4,1,'#e06a8a');
-    } else {
-      px(6,11,1,1,'#101010'); px(7,12,2,1,'#101010'); px(9,11,1,1,'#101010');
-      px(4,3,8,1,'#0f6f34'); px(12,4,2,1,'#0f6f34');
-    }
-  }
-  function actionCell(x,y,a,alpha){
-    g.globalAlpha=alpha==null?1:alpha; g.fillStyle=a==='C'?'#1db954':'#f44336'; g.fillRect(x,y,16,16);
-    g.fillStyle='#07110a'; g.font='bold 11px Consolas,monospace'; g.textAlign='center'; g.fillText(a,x+8,y+12); g.globalAlpha=1;
-  }
-  function button(a,now){
-    const b=BTNS[a], active=hot===a, just=flash&&flash.you===a&&now-flash.at<520, col=a==='C'?'#1db954':'#f44336';
-    g.fillStyle=active||just?(a==='C'?'rgba(29,185,84,.18)':'rgba(244,67,54,.16)'):'#101211'; g.fillRect(b.x,b.y,b.w,b.h);
-    g.strokeStyle=active||just?col:'#343434'; g.lineWidth=active||just?2:1; g.strokeRect(b.x+.5,b.y+.5,b.w-1,b.h-1);
-    g.fillStyle=active||just?col:'#aaa'; g.font='bold 11px Consolas,monospace'; g.textAlign='center';
-    g.fillText(a+'  '+(a==='C'?t('COOPERATE','合作'):t('DEFECT','背叛')),b.x+b.w/2,b.y+21);
-  }
-  function updateAria(){
-    cv.setAttribute('aria-label',t(
-      'Dilemma Lab mini match against Tit for Tat. Your score '+scoreYou+', opponent '+scoreTft+'. Choose cooperate or defect with the mouse, or press C or D.',
-      '困境实验室微型对局，对手为一报还一报。你 '+scoreYou+' 分，对手 '+scoreTft+' 分。用鼠标选择合作或背叛，或按 C、D 键。'
-    ));
-  }
-  function draw(now){
-    now=now||performance.now();
-    g.clearRect(0,0,W,H); g.fillStyle='#0b0d0c'; g.fillRect(0,0,W,H);
-    const wash=g.createLinearGradient(0,0,W,0); wash.addColorStop(0,'rgba(29,185,84,.08)'); wash.addColorStop(.5,'rgba(224,106,138,.04)'); wash.addColorStop(1,'rgba(244,67,54,.08)');
-    g.fillStyle=wash; g.fillRect(0,0,W,34);
-    g.font='bold 11px Consolas,monospace'; g.textAlign='left'; g.fillStyle='#e06a8a';
-    g.fillText(t('MICRO MATCH // TIT FOR TAT','微型对局 // 一报还一报'),14,21);
-    g.textAlign='right'; g.fillStyle='#e8b04a'; g.fillText('★ '+trialMedals()+'/15',426,21);
-
-    face(32,43,5,'#3fbf6f','headband'); face(328,43,5,'#b95661','mirror');
-    g.textAlign='center'; g.font='10px Consolas,monospace'; g.fillStyle='#75d997'; g.fillText(t('YOU','你'),72,126);
-    g.fillStyle='#ed8eaa'; g.fillText(t('TIT FOR TAT','一报还一报'),368,126);
-    g.font='bold 22px Consolas,monospace'; g.fillStyle='#e8b04a'; g.fillText(scoreYou,72,153); g.fillText(scoreTft,368,153);
-
-    const recent=rounds.slice(-5);
-    if(!recent.length){
-      g.fillStyle='#777'; g.font='10px Consolas,monospace';
-      g.fillText(t('COOPERATES FIRST','先合作'),220,67); g.fillText(t('THEN COPIES YOU','之后模仿你'),220,84);
-      g.strokeStyle='#333'; g.beginPath(); g.moveTo(203,101); g.lineTo(237,101); g.stroke();
-    } else {
-      const y0=48+(5-recent.length)*9;
-      recent.forEach((r,i)=>{ const y=y0+i*21; actionCell(196,y,r.you); actionCell(228,y,r.tft); });
-    }
-    if(flash&&now-flash.at<650){
-      const p=PAY[flash.you+flash.tft], a=1-(now-flash.at)/650;
-      g.globalAlpha=Math.max(0,a); g.fillStyle='#e8b04a'; g.font='bold 12px Consolas,monospace'; g.textAlign='center';
-      g.fillText(t('YOU +','你 +')+p[0]+'  ·  '+t('TFT +','对手 +')+p[1],220,166); g.globalAlpha=1;
-    } else {
-      g.fillStyle='#686868'; g.font='9px Consolas,monospace'; g.textAlign='center';
-      g.fillText(t('YOUR MOVE · CLICK OR PRESS C / D','轮到你 · 点击或按 C / D'),220,174);
-    }
-    button('C',now); button('D',now);
-  }
-  function animate(){
-    if(reduced){ draw(); return; }
-    if(raf) return;
-    (function frame(now){ draw(now); raf=flash&&now-flash.at<680?requestAnimationFrame(frame):0; })(performance.now());
-  }
-  function choose(a){
-    const theirs=tftMove, p=PAY[a+theirs];
-    rounds.push({you:a,tft:theirs}); scoreYou+=p[0]; scoreTft+=p[1]; tftMove=a;
-    flash={you:a,tft:theirs,at:performance.now()}; hot=a; updateAria(); animate();
-  }
-  function pointerPos(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; }
-  function hit(x,y){ for(const a of ['C','D']){ const b=BTNS[a]; if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h) return a; } return ''; }
-  cv.addEventListener('pointermove',e=>{ const p=pointerPos(e), h=hit(p[0],p[1]); if(h!==hot){ hot=h; draw(); } });
-  cv.addEventListener('pointerleave',()=>{ hot=''; draw(); });
-  cv.addEventListener('click',e=>{ const p=pointerPos(e), h=hit(p[0],p[1]); if(h){ e.preventDefault(); cv.focus({preventScroll:true}); choose(h); } });
-  cv.addEventListener('keydown',e=>{
-    const k=e.key.toUpperCase();
-    if(k==='C'||k==='D'){ e.preventDefault(); choose(k); }
-    else if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); hot=e.key==='ArrowLeft'?'C':'D'; draw(); }
-    else if((e.key==='Enter'||e.key===' ')&&hot){ e.preventDefault(); choose(hot); }
-  });
-  window.addEventListener('pageshow',()=>{ updateAria(); draw(); });
-  window.addEventListener('storage',e=>{ if(e.key==='dilemma_trials_v1') draw(); });
-  const dilemmaToggleLang=window.toggleLang;
-  if(dilemmaToggleLang) window.toggleLang=function(){ dilemmaToggleLang(); updateAria(); draw(); };
-  updateAria(); draw();
-})();
-</script>
-<script>
-/* ── glyph_run card: 舞, the oracle-bone dancer, as a still cabinet boot screen.
-      The tracing is the authentic form from tools/oracle-glyphs.json (via the
-      甲骨文对应表). At rest nothing moves; hovering plays ONE CRT power-on sweep
-      — a scanline passes down, the phosphor lifts, the cursor blinks once. ── */
-(function(){
-  const card = document.querySelector('.card.glow-glyph');
-  const cv = card && card.querySelector('.glyphlive');
-  if(!cv) return;
-  const ctx = cv.getContext('2d');
-  const W = 440, H = 240;
-  const BONE = '#fff6e2', AMBER = '#e8b04a';
-  const WU = 'M53.9 1.8L32.9 3.5 32.0 7.9 45.2 7.0 47.4 16.2 14.5 20.2 12.3 32.9 0.0 44.3 3.9 47.4 11.8 40.4 13.2 58.3 16.2 58.8 18.9 40.4 29.8 46.1 17.5 32.0 19.3 24.1 46.5 21.5 46.5 29.4 34.2 41.7 38.2 43.9 46.1 36.8 47.4 50.4 31.6 73.2 28.1 89.9 30.3 98.2 33.3 96.1 35.1 75.9 49.6 56.1 61.4 63.6 67.5 81.1 69.3 97.8 73.7 96.1 66.7 64.5 52.6 50.4 50.9 40.8 53.9 35.1 63.6 42.1 67.5 39.9 52.6 28.5 53.1 21.1 71.5 21.1 82.5 25.0 83.3 29.4 70.2 39.9 74.1 42.1 83.3 37.3 83.8 57.0 86.8 56.6 88.2 36.8 100.0 43.4 87.7 29.4 86.8 22.4 82.0 17.5 53.9 16.7 52.6 9.2 64.0 5.7 62.7 1.8 53.9 1.8Z';
-  const CX = 214, CY = 126, SIZE = 142;   /* sized so the ribbon corner stays clear at the narrowest grid column */
-  const HERO = { p: WU };
-  /* the arena closing in: 鬼 spirits, the hunched 猱, the 既 vessel-kneeler — all authentic tracings */
-  const MON = [
-    {"p": "M50.9 0.0L39.3 8.1 36.8 21.8 29.9 29.5 31.2 33.3 39.3 32.9 37.6 44.0 45.7 42.7 48.7 48.3 32.1 54.7 27.4 61.1 27.4 66.2 31.6 64.5 33.8 59.0 38.9 63.2 41.5 56.4 46.6 53.8 48.7 56.0 41.9 65.4 40.2 74.8 32.5 79.1 24.8 93.6 28.6 100.0 33.8 89.7 44.4 92.7 35.0 83.3 38.9 79.5 41.9 79.9 45.7 87.2 56.8 87.2 66.2 83.8 75.2 71.4 73.5 55.1 64.1 38.0 64.1 31.2 73.5 24.4 74.4 15.8 66.2 16.2 64.1 7.3 58.5 1.7 50.9 0.0ZM50.4 4.7L56.8 5.1 60.7 9.0 63.7 22.2 70.9 20.9 60.7 27.8 58.5 36.8 47.4 40.2 39.3 26.1 43.6 9.0 50.4 4.7ZM50.9 16.2L47.0 22.6 52.6 27.4 57.3 20.1 50.9 16.2ZM51.3 20.9L53.8 20.9 52.6 23.9 51.3 20.9ZM56.4 41.5L61.1 41.0 67.5 51.7 70.9 72.2 64.5 80.3 48.3 83.8 44.4 72.2 53.0 56.8 52.1 44.0 56.4 41.5Z", "cx": 106, "cy": 138, "s": 40, "a": 0.28, "flip": 0, "eye": null},
-    {"p": "M55.6 0.0L28.4 2.2 27.6 39.2 41.8 37.1 49.1 39.2 44.8 61.6 46.6 72.0 37.1 83.2 37.9 95.3 41.8 100.0 65.9 81.0 68.1 81.5 67.7 97.4 71.6 87.5 72.4 77.2 68.5 75.0 44.4 94.8 42.2 93.5 43.1 79.7 66.4 57.3 55.2 38.4 68.5 37.1 71.6 30.6 71.6 2.2 55.6 0.0ZM62.1 3.9L67.2 7.3 67.2 17.7 55.6 19.0 51.7 15.1 52.6 6.5 62.1 3.9ZM33.6 5.6L47.0 5.2 48.3 17.7 34.1 19.8 33.6 5.6ZM55.2 22.0L65.9 22.4 67.2 30.6 60.8 33.6 53.9 32.8 52.6 22.8 55.2 22.0ZM36.2 22.8L47.0 22.4 48.3 32.3 32.3 33.6 31.9 26.3 36.2 22.8ZM52.6 45.3L57.8 48.7 61.2 58.2 49.6 67.2 52.6 45.3Z", "cx": 68, "cy": 148, "s": 64, "a": 0.45, "flip": 0, "eye": [58, 12]},
-    {"p": "M55.6 0.0L28.4 2.2 27.6 39.2 41.8 37.1 49.1 39.2 44.8 61.6 46.6 72.0 37.1 83.2 37.9 95.3 41.8 100.0 65.9 81.0 68.1 81.5 67.7 97.4 71.6 87.5 72.4 77.2 68.5 75.0 44.4 94.8 42.2 93.5 43.1 79.7 66.4 57.3 55.2 38.4 68.5 37.1 71.6 30.6 71.6 2.2 55.6 0.0ZM62.1 3.9L67.2 7.3 67.2 17.7 55.6 19.0 51.7 15.1 52.6 6.5 62.1 3.9ZM33.6 5.6L47.0 5.2 48.3 17.7 34.1 19.8 33.6 5.6ZM55.2 22.0L65.9 22.4 67.2 30.6 60.8 33.6 53.9 32.8 52.6 22.8 55.2 22.0ZM36.2 22.8L47.0 22.4 48.3 32.3 32.3 33.6 31.9 26.3 36.2 22.8ZM52.6 45.3L57.8 48.7 61.2 58.2 49.6 67.2 52.6 45.3Z", "cx": 334, "cy": 138, "s": 40, "a": 0.3, "flip": 1, "eye": null},
-    {"p": "M27.0 0.0L11.7 28.3 6.1 30.4 3.9 35.2 4.8 57.8 8.7 63.5 17.8 67.4 13.5 88.3 6.5 93.5 7.8 95.7 47.0 95.7 50.9 92.6 44.8 90.9 40.4 64.8 51.7 57.8 54.3 42.2 51.7 33.5 41.3 24.8 36.1 10.0 27.0 0.0ZM75.7 0.0L58.3 0.9 54.3 10.0 57.0 21.3 71.3 25.2 72.6 30.9 72.6 62.2 62.2 71.7 61.3 96.1 67.8 97.4 86.1 82.6 87.4 97.8 91.3 100.0 89.6 76.5 83.5 78.3 68.7 91.3 64.8 90.9 67.4 71.7 82.6 60.9 96.1 45.7 93.0 40.0 76.1 26.5 89.1 23.0 76.1 19.6 77.0 4.8 89.6 5.2 91.7 2.2 75.7 0.0ZM65.7 5.7L72.6 7.4 72.6 17.8 69.6 21.7 59.6 17.0 60.4 7.4 65.7 5.7ZM27.4 7.4L32.6 10.9 37.8 23.9 19.1 27.0 17.8 23.0 27.4 7.4ZM33.5 30.0L43.5 30.4 48.3 35.2 48.3 54.3 36.5 61.7 19.1 62.6 11.3 60.0 8.3 55.2 8.3 36.1 15.7 32.2 33.5 30.0ZM76.1 35.2L80.9 35.7 90.9 43.9 78.3 58.3 75.2 51.7 76.1 35.2ZM31.3 41.7L20.9 42.6 19.6 46.5 35.2 44.8 31.3 41.7ZM23.9 66.5L36.1 67.4 40.0 91.3 17.8 90.9 23.9 66.5Z", "cx": 372, "cy": 148, "s": 64, "a": 0.45, "flip": 1, "eye": [66, 16]}
-  ];
-  let dpr = 1, raf = 0, armed = true, reduced = false;
-  try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) {}
-  function sizeUp(){
-    dpr = Math.min(2, window.devicePixelRatio || 1);
-    cv.width = W * dpr; cv.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  function glyph(g, cx, cy, size, color, blur, alpha, flip){
-    if(!g._P) g._P = new Path2D(g.p);
-    ctx.save(); ctx.translate(cx, cy);
-    const k = size / 100; ctx.scale(flip ? -k : k, k); ctx.translate(-50, -50);
-    if(alpha != null) ctx.globalAlpha = alpha;
-    ctx.fillStyle = color;
-    if(blur){ ctx.shadowColor = color; ctx.shadowBlur = blur * dpr; }  /* shadowBlur ignores the CTM */
-    ctx.fill(g._P, 'evenodd'); ctx.restore();
-  }
-  function draw(sweepY, cursorOn){
-    ctx.fillStyle = '#080808'; ctx.fillRect(0, 0, W, H);
-    const g = ctx.createRadialGradient(CX, CY, 30, CX, CY, 230);
-    g.addColorStop(0, 'rgba(232,176,74,0.038)'); g.addColorStop(0.6, 'rgba(232,176,74,0.014)'); g.addColorStop(1, 'rgba(232,176,74,0)');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    for(const m of MON) glyph(m, m.cx, m.cy, m.s, AMBER, 3, m.a, m.flip);   /* the spirits close in, dim phosphor */
-    glyph(HERO, CX, CY, SIZE, AMBER, 17, 0.22);         /* phosphor halo */
-    if(sweepY != null){                                 /* the sweep lifts the glow as it passes */
-      const lift = Math.exp(-Math.pow(sweepY - CY, 2) / (2 * 70 * 70)) * 0.14;
-      if(lift > 0.01) glyph(HERO, CX, CY, SIZE, AMBER, 22, lift);
-    }
-    glyph(HERO, CX, CY, SIZE, BONE, 4, 1);              /* crisp core */
-    for(const m of MON){                                /* red eye glints — the game's spirits are red-eyed */
-      if(!m.eye) continue;
-      const k = m.s / 100, ex = m.cx + (m.flip ? -1 : 1) * (m.eye[0] - 50) * k, ey = m.cy + (m.eye[1] - 50) * k;
-      ctx.save(); ctx.fillStyle = '#ff4b3e'; ctx.shadowColor = '#ff4b3e';
-      ctx.globalAlpha = 0.5; ctx.shadowBlur = 5 * dpr; ctx.fillRect(ex - 1.6, ey - 1.6, 3.2, 3.2);
-      ctx.globalAlpha = 1; ctx.shadowBlur = 2.5 * dpr; ctx.fillRect(ex - 1.6, ey - 1.6, 3.2, 3.2);
-      ctx.restore();
-    }
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);     /* scanlines live in device pixels */
-    ctx.fillStyle = 'rgba(0,0,0,0.13)';
-    const step = Math.max(3, Math.round(2 * dpr));
-    for(let y = 0; y < cv.height; y += step) ctx.fillRect(0, y, cv.width, 1);
-    ctx.restore();
-    if(sweepY != null){
-      const band = ctx.createLinearGradient(0, sweepY - 26, 0, sweepY + 2);
-      band.addColorStop(0, 'rgba(255,246,226,0)'); band.addColorStop(1, 'rgba(255,246,226,0.10)');
-      ctx.fillStyle = band; ctx.fillRect(0, sweepY - 26, W, 28);
-      ctx.fillStyle = 'rgba(255,246,226,0.35)'; ctx.fillRect(0, sweepY, W, 1.5);
-    }
-    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-    ctx.font = '9.5px Consolas,"Courier New",monospace';
-    ctx.fillStyle = 'rgba(232,176,74,0.75)';
-    const label = '甲骨文 · ORACLE BONE', lx = 18, ly = H - 20;
-    ctx.fillText(label, lx, ly);
-    if(cursorOn){
-      ctx.fillStyle = 'rgba(232,176,74,0.55)';
-      ctx.fillRect(lx + ctx.measureText(label).width + 5, ly - 4, 4.5, 8);
-    }
-  }
-  const SWEEP = 650, BLINK = 140;                       /* one-shot: sweep, then a single cursor blink */
-  function powerOn(){
-    if(raf || reduced) return;
-    const t0 = performance.now();
-    (function step(now){
-      const t = now - t0;
-      if(document.hidden || t >= SWEEP + BLINK){ raf = 0; draw(null, true); return; }
-      if(t < SWEEP) draw(-30 + (H + 60) * (t / SWEEP), true);
-      else draw(null, false);
-      raf = requestAnimationFrame(step);
-    })(t0);
-  }
-  card.addEventListener('mouseenter', () => { if(armed){ armed = false; powerOn(); } });
-  card.addEventListener('mouseleave', () => { armed = true; });
-  window.addEventListener('pageshow', () => { if(!raf) draw(null, true); });
-  sizeUp(); draw(null, true);
-})();
 </script>
 </body>
 </html>
