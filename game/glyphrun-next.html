@@ -101,6 +101,11 @@
   .setup-left{display:flex;flex-direction:column;gap:8px;max-width:440px;}
   /* the two choices sit in their own carved boxes so nobody misses the second one */
   .pick-box{border:1px solid #3a4634;border-radius:10px;padding:8px 10px 4px;background:rgba(10,16,10,0.4);}
+  .diff-row{display:flex;align-items:center;gap:10px;padding:2px 2px 0}
+  .diff-row .dz{font-family:"Ma Shan Zheng",KaiTi,serif;font-size:1.25em;color:#e8b04a}
+  #diffRange{flex:1;accent-color:#e8b04a;min-height:28px}
+  #diffLbl{font-size:0.82em;opacity:0.85;padding:0 2px 4px;min-height:1.3em}
+  #diffLbl b{font-family:"Ma Shan Zheng",KaiTi,serif;font-size:1.3em;color:#e8b04a;margin-right:4px;font-weight:normal}
   .pick-box>.keys{margin:0 0 4px;color:#a9bf9b;letter-spacing:1.4px;}
   #prevBox{background:#0a0a0a;border:1px solid #242424;border-radius:10px;padding:7px;}
   #prevCanvas{display:block;width:100%;max-width:380px;height:auto;border-radius:6px;}
@@ -359,7 +364,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b62 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b63 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -399,6 +404,11 @@
           <div class="pick-box">
             <div class="keys" data-en="② pick your weapon — already cast in bronze" data-zh="② 选兵——初始已铸金文">② pick your weapon — already cast in bronze</div>
             <div class="char-row" id="armRow" style="margin:0"></div>
+          </div>
+          <div class="pick-box">
+            <div class="keys" data-en="③ how hard — slide from 易 to 絕" data-zh="③ 难易——由「易」至「绝」">③ how hard — slide from 易 to 絕</div>
+            <div class="diff-row"><span class="dz">易</span><input type="range" id="diffRange" min="0" max="4" step="1" value="1" aria-label="difficulty"><span class="dz">絕</span></div>
+            <div id="diffLbl"></div>
           </div>
         </div>
         <div id="prevBox">
@@ -1618,6 +1628,23 @@ const SFX = (function(){
     crack(){ burst(3200, 1200, 0.05, 0.18, 'highpass'); tone(180, 0.16, 0.13, 'triangle'); }, // the shell cracks
     tick(){ tone(1240, 0.05, 0.028, 'triangle'); },                              // a glyph caught
     toll(){ tone(524, 0.7, 0.075); tone(786, 0.5, 0.045); },                     // the bronze bell
+    templeBell(gain){                                 // 梵钟: a big temple bell, struck once with a wooden beam
+      const a = actx(); if(!a) return;
+      const t0 = a.currentTime, out = a.createGain(); out.gain.value = gain == null ? 0.12 : gain; out.connect(a.destination);
+      const f = 196;                                  // partials of a cast bell are not harmonic: hum, prime, tierce, quint, nominal…
+      for(const [r, amp, dec] of [[0.5, 1.0, 7], [1.0, 0.8, 5.5], [1.19, 0.45, 3.6], [1.5, 0.3, 2.8], [2.0, 0.5, 3.2], [2.52, 0.22, 1.8], [3.01, 0.15, 1.3], [4.1, 0.08, 0.8]]){
+        for(const det of [-0.35, 0.35]){              // each partial twice, a hair apart: the slow beating of big bronze
+          const o = a.createOscillator(); o.type = 'sine'; o.frequency.value = f*r + det*r;
+          const g = a.createGain(); g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(amp*0.5, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dec);
+          o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dec + 0.05);
+        }
+      }
+      const src = noise(a), flt = a.createBiquadFilter(), g = a.createGain();   // the beam meeting the bronze
+      flt.type = 'lowpass'; flt.frequency.value = 500;
+      g.gain.setValueAtTime(0.6, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      src.connect(flt); flt.connect(g); g.connect(out); src.start(t0); src.stop(t0 + 0.16);
+    },
     chisel(){ burst(2400, 900, 0.06, 0.13); tone(980, 0.08, 0.045, 'square'); }, // the carver's knife bites
     unroll(){ burst(1400, 500, 0.28, 0.05); },                                   // bamboo clatters open
     stamp(){ burst(240, 70, 0.18, 0.19, 'lowpass'); tone(60, 0.2, 0.15); },      // the seal strikes
@@ -2592,8 +2619,33 @@ const Game = (function(){
   const cvs = document.getElementById('cvs');
   const ctx = cvs.getContext('2d');
   const $ = (id)=>document.getElementById(id);
+  /* 難易: one slider from 易 to 絕 on the character screen. It scales how often and how many
+     spirits come, how tough and quick they are, and how many hearts you start with; a harder
+     run pays the carver more cuts. 平 is the game as tuned. */
+  const DIFFS = [
+    {ch:'易', py:'yì',   en:'easy: fewer, slower spirits, two extra hearts, half the carver’s pay', zh:'易：敌少而缓，多两颗心，刻刀减半',
+     spawn:0.8, cap:0.8, spd:0.9, hp:1, hearts:2, pay:0.5},
+    {ch:'平', py:'píng', en:'even: the game as tuned', zh:'平：本来的难度',
+     spawn:1, cap:1, spd:1, hp:1, hearts:0, pay:1},
+    {ch:'難', py:'nán',  en:'hard: more of them, tougher and quicker; 1.5× cuts', zh:'难：敌更多、更硬、更快；刻刀1.5倍',
+     spawn:1.3, cap:1.3, spd:1.08, hp:1.4, hearts:0, pay:1.5},
+    {ch:'險', py:'xiǎn', en:'perilous: one heart fewer, and they keep coming; 2× cuts', zh:'险：少一颗心，敌潮不绝；刻刀2倍',
+     spawn:1.6, cap:1.55, spd:1.15, hp:1.7, hearts:-1, pay:2},
+    {ch:'絕', py:'jué',  en:'desperate: two hearts fewer, for the bold; 3× cuts', zh:'绝：少两颗心，留给勇者；刻刀3倍',
+     spawn:2, cap:1.8, spd:1.22, hp:2, hearts:-2, pay:3},
+  ];
+  let diffI = 1;
+  function showDiff(){ const d = D(), el = $('diffLbl'); if(el) el.innerHTML = '<b>' + d.ch + '</b>' + d.py + ' · ' + t(d.en, d.zh); }
+  try{ const v = localStorage.getItem('glyphrun_diff'); if(v !== null && +v >= 0 && +v <= 4) diffI = +v; }catch(e){}
+  const D = ()=> DIFFS[diffI];
+  (function(){                                       // the slider lives on the character screen and is remembered
+    const r = $('diffRange'); if(!r) return;
+    r.value = diffI; showDiff();
+    r.addEventListener('input', ()=>{ diffI = +r.value; try{ localStorage.setItem('glyphrun_diff', String(diffI)); }catch(e){} showDiff(); });
+  })();
 
   const HP_BASE = 6, LV_XP = [0, 10, 24, 40];   // glyphs needed to reach each form
+  function startHearts(){ return Math.max(2, HP_BASE + (seal.carved.xin ? 1 : 0) + D().hearts); }
   let maxHp = HP_BASE;
   let stageIdx = 0, lives = maxHp, coins = 0, nextHeart = 12, level = 0, running = false, raf = 0, lastTs = 0;
   let era, wave, tGlobal = 0, waveT = 0, spawnT = 1, fireT = 3, gate = null, gateGlow = 0, surgeT = 99, dashHintShown = false, dashBtnEl = null, lastDashF = -1;
@@ -2604,6 +2656,18 @@ const Game = (function(){
   let weather = null, wDrops = [], wFlash = 0, wBoltT = 8;   // the sky has moods from the first night
   let marks = [], eshots = [], shocks = [];                  // 生 spawn omens; archers' arrows; the drum's rings
   let stopT = 0;                                             // hitstop — the brush pauses at the end of a stroke
+  /* Combat weight. Each arm and each character strikes with a weight: heavy ones (斧, 牛, 象)
+     freeze the frame longer, knock harder and kick the camera further; quick ones (刀, 劍)
+     barely pause, so a flurry stays fast. One freeze per blow at most (stopCd), so a swarm
+     can never stall the game. */
+  let hitW = 1, stopCd = 0;
+  const kick = {x:0, y:0};                                   // the camera, nudged along the blow, springing back
+  const ARM_WEIGHT = {jin:2, ge:1.3, mao:1.2, shi:1, gong:0.8, jian:0.8, dao:0.7, wang:0.6};
+  const CHAR_WEIGHT = {niu:1.8, xiang:2, lin:1.2, yang:1.1, ren:1, yan:1, gui:0.8, niao:0.8};
+  function kickCam(ang, amp){
+    kick.x += Math.cos(ang)*amp; kick.y += Math.sin(ang)*amp;
+    const m = Math.hypot(kick.x, kick.y); if(m > 10){ kick.x *= 10/m; kick.y *= 10/m; }
+  }
   let exhaleT = null, calmT = 0;                             // the night's exhale before the gate; the reward for stillness
   let endless = false, endlessN = 0;                         // 永夜 — the endless night beyond the last gate
   let elemHintShown = false;                                 // the 五行 lesson, taught once per run
@@ -2650,7 +2714,7 @@ const Game = (function(){
      full glyph once, without the ink. Every other shot strikes at the size it is held. */
   const BRUSH_FULL = 24, INKC = '#14100c';
   const FIRING = new Set(['gong','jian','ge','mao','jin','dao','shi','wang']);
-  let brushInk = 0, inkMo = null, paperCvs = null, snapCvs = null, dryCvs = null;
+  let brushInk = 0, inkMo = null, inkSlow = 1, paperCvs = null, snapCvs = null, dryCvs = null;
   const canInvert = (()=>{ try{ const t = document.createElement('canvas').getContext('2d'); t.filter = 'invert(1)'; return t.filter === 'invert(1)'; }catch(e){ return false; } })();
   function flourish(w){
     w.shots = (w.shots||0) + 1;
@@ -2679,32 +2743,44 @@ const Game = (function(){
     const px = player.x, py = player.y - 10, pts = [];
     if(a.key === 'jin' || a.key === 'shi'){              // 竖: a heavy vertical, pressed to a stop on the pack
       return {pts: bez({x:a.x + 14, y:a.y - 180}, {x:a.x - 14, y:a.y - 80}, {x:a.x, y:a.y + 12}, 30),
-              wf: u=> u < 0.08 ? 26 : u < 0.86 ? 20 + 6*u : 26 - 14*(u - 0.86)/0.14};
+              wf: u=> u < 0.08 ? 26 : u < 0.86 ? 20 + 6*u : 26 - 14*(u - 0.86)/0.14,
+              area: (x, y)=> Math.hypot(x - a.x, (y - a.y)/0.8) < 95};          // it lands like a hammer: all around the stop
     }
     if(a.key === 'wang'){                                // 圆相: one circle, open where the brush lifted
       const R = (a.r || 90)*1.1;
       for(let i=0; i<=44; i++){ const t = -2.5 + i/44*5.4; pts.push({x:a.x + Math.cos(t)*R, y:a.y + Math.sin(t)*R*0.8}); }
-      return {pts, wf: u=> 5 + 22*Math.sin(Math.PI*Math.pow(u, 0.75))};
+      return {pts, wf: u=> 5 + 22*Math.sin(Math.PI*Math.pow(u, 0.75)),
+              area: (x, y)=> Math.hypot(x - a.x, (y - a.y)/0.8) < R + 14};      // everything inside the circle
     }
     if(a.key === 'mao' || a.key === 'gong'){             // a thrust: pressed at the root, thinning to the point
       const ang = a.key === 'mao' ? a.ang : Math.atan2(a.y - py, a.x - px);
       const L = a.key === 'mao' ? (a.r || 100)*1.6 : Math.hypot(a.x - px, a.y - py) + 40;
       const ux = Math.cos(ang), uy = Math.sin(ang);
-      return {pts: bez({x:px + ux*14, y:py + uy*14}, {x:px + ux*L*0.5 - uy*L*0.1, y:py + uy*L*0.5 + ux*L*0.1}, {x:px + ux*L, y:py + uy*L}, 30),
-              wf: u=> u < 0.08 ? 30 : 30*Math.pow(1 - u, 0.9) + 2};
+      const pts2 = bez({x:px + ux*14, y:py + uy*14}, {x:px + ux*L*0.5 - uy*L*0.1, y:py + uy*L*0.5 + ux*L*0.1}, {x:px + ux*L, y:py + uy*L}, 30);
+      return {pts: pts2, wf: u=> u < 0.08 ? 30 : 30*Math.pow(1 - u, 0.9) + 2,
+              area: (x, y)=> pts2.some(p=> Math.hypot(p.x - x, p.y - y) < 46)};  // along the whole thrust
     }
-    const R = (a.r || 100)*1.2, a0 = (a.ang || 0) - 1.3;   // a sweep: the swing written as one great arc
+    let aim = a.ang || 0;                                // a sweep: one great arc, swung at the nearest pack
+    let R = (a.r || 100)*1.25;
+    const near = spirits.filter(sp=> !sp.dead && sp.type !== 'guo')
+                        .map(sp=> [Math.hypot(sp.x - px, sp.y - py), sp]).filter(d=> d[0] < 320).sort((p, q)=> p[0] - q[0]).slice(0, 5);
+    if(near.length){                                     // the arc runs right through the nearest five
+      let cx = 0, cy = 0; for(const [, sp] of near){ cx += sp.x; cy += sp.y; } cx /= near.length; cy /= near.length;
+      aim = Math.atan2(cy - py, cx - px); R = Math.max(90, Math.min(230, Math.hypot(cx - px, (cy - py)/0.82)));
+    }
+    const a0 = aim - 1.15;
     for(let i=0; i<=40; i++){ const t = a0 + i/40*2.3; pts.push({x:px + Math.cos(t)*R, y:py + Math.sin(t)*R*0.82}); }
-    return {pts, wf: u=> 4 + 30*Math.sin(Math.PI*Math.pow(u, 0.8))};
+    return {pts, wf: u=> 4 + 30*Math.sin(Math.PI*Math.pow(u, 0.8)),
+            area: (x, y)=> {                              // the blade sweeps everything between you and its edge
+              const d = Math.hypot(x - px, (y - py)/0.82); if(d > R + 30) return false;
+              const t = Math.atan2((y - py)/0.82, x - px), da = Math.atan2(Math.sin(t - aim), Math.cos(t - aim));
+              return Math.abs(da) <= 1.25; }};
   }
   function startInkMoment(a){
     const st = inkStrokeOf(a), end = st.pts[st.pts.length - 1];
-    const near = (x, y)=> st.pts.some(p=> Math.hypot(p.x - x, p.y - y) < 60);
-    const hit = spirits.filter(sp=> !sp.dead && sp.type !== 'guo' && near(sp.x, sp.y)).slice(0, 7)
-                       .map(sp=> ({x: sp.x, y: sp.y - 4, rot: (Math.random() - 0.5)*0.3}));
-    inkMo = {t:0, dur:1.6, key:a.key, pts:st.pts, wf:st.wf, end, hit, seed:(Math.random()*1e9)|0, sealRot:(Math.random() - 0.5)*0.25};
+    inkMo = {t:0, dur:4.2, key:a.key, pts:st.pts, wf:st.wf, area:st.area, end, hit:[], dealt:false, seed:(Math.random()*1e9)|0};
     shakeT = Math.max(shakeT, 0.18);
-    SFX.toll();
+    SFX.templeBell(0.13);
   }
   function strokeShape(c, pts, wf, lo, hi, m){
     const n = pts.length - 1, L = [], R = [];
@@ -2722,30 +2798,21 @@ const Game = (function(){
   }
   function drawInkMoment(){
     const m = inkMo, q = m.t;
-    const pa = q < 0.12 ? q/0.12 : q < m.dur - 0.42 ? 1 : Math.max(0, (m.dur - q)/0.42);
-    // a clean sheet: only the player and the spirits come through (inverted, so their glow
-    // reads as ink); coins, rain, motes and the rest stay under the paper until the night returns
-    let sc = null;
+    const pa = q < 0.15 ? q/0.15 : q < m.dur - 0.5 ? 1 : Math.max(0, (m.dur - q)/0.5);
+    // the whole field turns to ink on paper: inverted, so the night becomes the sheet and every
+    // glowing glyph (you, the spirits, your strokes) becomes ink; rain and sky are held back meanwhile
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     if(canInvert){
       if(!snapCvs){ snapCvs = document.createElement('canvas'); snapCvs.width = CW; snapCvs.height = CH; }
-      sc = snapCvs.getContext('2d'); sc.clearRect(0, 0, CW, CH); sc.drawImage(cvs, 0, 0);
-    }
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = pa; ctx.drawImage(paperTex(), 0, 0); ctx.restore();
-    if(sc){
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(player.x + 40, player.y - 8); ctx.arc(player.x, player.y - 8, 40, 0, Math.PI*2);
-      for(const sp of spirits){ if(sp.dead) continue; const rr = sp.boss ? 72 : 30; ctx.moveTo(sp.x + rr, sp.y - 4); ctx.arc(sp.x, sp.y - 4, rr, 0, Math.PI*2); }
-      ctx.clip();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalAlpha = pa; ctx.filter = 'grayscale(1) invert(1) sepia(0.35) contrast(1.3) brightness(1.1)';
+      const sc = snapCvs.getContext('2d'); sc.clearRect(0, 0, CW, CH); sc.drawImage(cvs, 0, 0);
+      ctx.globalAlpha = pa; ctx.filter = 'grayscale(1) invert(1) sepia(0.35) contrast(1.2) brightness(1.06)';
       ctx.drawImage(snapCvs, 0, 0); ctx.filter = 'none';
       ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(paperTex(), 0, 0);
-      ctx.restore();
-    }
+    } else { ctx.globalAlpha = pa*0.8; ctx.drawImage(paperTex(), 0, 0); }
+    ctx.restore();
     // the loaded stroke: a bleed halo, the body, then the bristles running dry in the tail
     const n = m.pts.length - 1, g = 1 - Math.pow(1 - Math.min(1, q/0.42), 3), hi = Math.max(1, Math.ceil(g*n));
-    const sa = q < m.dur - 0.42 ? 1 : Math.max(0.35, pa);
+    const sa = q < m.dur - 0.5 ? 1 : Math.max(0.35, pa);
     ctx.save(); ctx.globalAlpha = 0.12*sa; ctx.fillStyle = INKC; strokeShape(ctx, m.pts, m.wf, 0, hi, 1.35); ctx.restore();
     if(!dryCvs){ dryCvs = document.createElement('canvas'); dryCvs.width = CW; dryCvs.height = CH; }
     const dc = dryCvs.getContext('2d');
@@ -2796,8 +2863,17 @@ const Game = (function(){
       });
     }
   }
+  function inkStrokeHits(){                           // the loaded stroke lands: heavy, on everything it crossed
+    const m = inkMo; m.dealt = true; hitW = 2;
+    for(const sp of spirits){
+      if(sp.dead || sp.type === 'guo') continue;
+      if(m.area(sp.x, sp.y) || m.pts.some(p=> Math.hypot(p.x - sp.x, p.y - sp.y) < 40)){ m.hit.push({x: sp.x, y: sp.y - 4}); sp.iT = 0; hurtSpirit(sp, 3); }
+    }
+    hitW = 1;
+  }
   function endInkMoment(){                            // the stroke soaks into the ground and stays
-    const m = inkMo; inkMo = null;
+    const m = inkMo; inkMo = null; inkSlow = 1;
+    SFX.templeBell(0.05);                             // a softer stroke of the bell as the night comes back
     inkCtx.save(); inkCtx.globalAlpha = 0.45; inkCtx.fillStyle = '#0a0910'; strokeShape(inkCtx, m.pts, m.wf, 0, m.pts.length - 1, 1); inkCtx.restore();
   }
   let testNoStrike = false;   // scripted checks only: hold the character's own strike to see the weapons
@@ -2914,7 +2990,7 @@ const Game = (function(){
   /* 卷: launch one stage of the scroll */
   function startStage(i){
     const def = STAGES[i]; if(!def) return;
-    maxHp = HP_BASE + (seal.carved.xin ? 1 : 0);
+    maxHp = startHearts();
     lives = maxHp; coins = 0; nextHeart = 14; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
     endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = true; glyphToasted = {};
     desk = freshDesk();
@@ -3080,7 +3156,7 @@ const Game = (function(){
 
   /* ---------- lifecycle ---------- */
   function start(){
-    maxHp = HP_BASE + (seal.carved.xin ? 1 : 0);
+    maxHp = startHearts();
     stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 16; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
     endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = false; glyphToasted = {};
     stage = null; stageWinT = null;
@@ -3151,7 +3227,7 @@ const Game = (function(){
       const i = (Math.random()*pool.length)|0;
       const o = pool.splice(i, 1)[0];
       if(o.inv && invTaken) continue;
-      if(o.id === 'hou' && maxHp >= HP_BASE+3) continue;     // the paper can only thicken so far
+      if(o.id === 'hou' && maxHp >= startHearts()+3) continue;     // the paper can only thicken so far
       if(o.inv) invTaken = true;
       picks.push(o);
     }
@@ -3187,7 +3263,7 @@ const Game = (function(){
     if(endless){                                       // 永夜: no ceremony — the gate heals, gifts, and deepens
       endlessN++;
       if(endlessN > bestNight){ bestNight = endlessN; try{ localStorage.setItem('glyphrun_endless', bestNight); }catch(e){} }
-      const pool = DESK_POOL.filter(o => !(o.id === 'hou' && maxHp >= HP_BASE+3));
+      const pool = DESK_POOL.filter(o => !(o.id === 'hou' && maxHp >= startHearts()+3));
       const gift = pool[(Math.random()*pool.length)|0] || null;
       if(gift){
         if(gift.ap) gift.ap(desk);
@@ -3204,7 +3280,7 @@ const Game = (function(){
     const cs = C();
     let gift = null;                                   // the desk's gift arrives by itself now
     if(toIdx < WAVES.length){
-      const pool = DESK_POOL.filter(o => !(o.id === 'hou' && maxHp >= HP_BASE+3));
+      const pool = DESK_POOL.filter(o => !(o.id === 'hou' && maxHp >= startHearts()+3));
       gift = pool[(Math.random()*pool.length)|0] || null;
       if(gift){
         if(gift.ap) gift.ap(desk);
@@ -3253,7 +3329,7 @@ const Game = (function(){
   }
   /* every run pays the carver: a cut per wave survived, one per 15 glyphs */
   function bankSealPts(wavesCleared){
-    const earned = wavesCleared + ((runGlyphs/15)|0);
+    const earned = Math.round((wavesCleared + ((runGlyphs/15)|0)) * D().pay);   // harder runs pay more cuts
     if(earned > 0){ seal.pts += earned; saveJSON('glyphrun_seal', seal); }
     return earned;
   }
@@ -3408,26 +3484,31 @@ const Game = (function(){
   function hurtSpirit(s, dmg){
     if(s.dead || (s.iT||0) > 0) return;
     loadBrush();
+    if(inkMo && inkMo.dealt) dmg += 1;
+    const w = Math.max(hitW, dmg >= 2 ? 1.6 : 1);
     s.hp = (s.hp||1) - dmg;
     s.iT = 0.22;
     tempo = Math.min(tempo, 0.9);                     // the bed eases a touch slower while you land blows (tempo only, pitch held)
     const ang = Math.atan2(s.y - player.y, s.x - player.x);
-    if(s.hp <= 0){ killSpirit(s, ang); return; }      // the kill tolls its own deep bell (killSpirit)
+    s.hitT = 0.14; s.hitAng = ang;                    // it flashes and squashes along the blow
+    if(s.hp <= 0){ killSpirit(s, ang, w); return; }   // the kill tolls its own deep bell (killSpirit)
     SFX.strike();                                     // 编钟: every landed hit rings a bright bell
-    stopT = Math.max(stopT, 0.022);                   // a breath of weight
-    addFx({kind:'flick', x:s.x, y:s.y, ang, r:26, t:0.16});   // one brushstroke through it
-    if(!s.boss && s.type !== 'long' && s.type !== 'guo'){ s.x += Math.cos(ang)*7; s.y += Math.sin(ang)*7; }
+    if(w >= 1.5) SFX.thud();                          // and a heavy arm lands with a thud under it
+    if(stopCd <= 0){ stopT = Math.max(stopT, 0.02 + 0.03*w); stopCd = stopT + 0.25; }   // the blade bites (never twice in a quarter second)
+    kickCam(ang, 1.5 + 2*w);
+    if(!s.boss && s.type !== 'long' && s.type !== 'guo'){ const kb = 140 + 120*w; s.kbx = Math.cos(ang)*kb; s.kby = Math.sin(ang)*kb; }
   }
-  function killSpirit(s, ang){
+  function killSpirit(s, ang, w){
     s.dead = true;
     if(s.type!=='guo'){ runKills++; checkOmen(); }
     if(stage && s.type !== 'guo'){ stageKills++; if(stage.def.goal.kill) syncHud(); }
-    stopT = Math.max(stopT, s.boss ? 0.11 : 0.06);    // the brush lifts
-    addFx({kind:'ripple', x:s.x, y:s.y, t:0.8, r: s.boss ? 64 : 42});   // a drop in still water
-    if(s.type !== 'long')
-      addFx({kind:'inkfade', foe:s.type, x:s.x, y:s.y, face:s.face||1, ph:s.phase||0, t:0.45});  // it sinks into the paper
-    else addFx({kind:'poof', x:s.x, y:s.y, t:0.3, r:20});
-    for(let i=0;i<4;i++){
+    if(s.boss || stopCd <= 0){ stopT = Math.max(stopT, s.boss ? 0.12 : 0.04 + 0.02*(w||1)); stopCd = stopT + 0.25; }   // the brush lifts
+    if(ang !== undefined) kickCam(ang, 3 + 2*(w||1));
+    if(s.type === 'long') addFx({kind:'poof', x:s.x, y:s.y, t:0.3, r:20});
+    else if(ang !== undefined && !s.boss)              // cut in two along the blow; the halves slide apart
+      addFx({kind:'slice', foe:s.type, x:s.x, y:s.y, face:s.face||1, ph:s.phase||0, cut: ang + Math.PI/2 + (Math.random() - 0.5)*0.6, t:0.5});
+    else addFx({kind:'inkfade', foe:s.type, x:s.x, y:s.y, face:s.face||1, ph:s.phase||0, t:0.45});  // it sinks into the paper
+    for(let i=0;i<3;i++){
       const a = (ang===undefined ? Math.random()*6.28 : ang + (Math.random()-0.5)*1.4);
       addFx({kind:'drop', x:s.x, y:s.y-6, vx:Math.cos(a)*(40+Math.random()*70), vy:-60-Math.random()*70,
              gy:s.y+8+Math.random()*12, t:0.9});
@@ -3514,9 +3595,10 @@ const Game = (function(){
       const x = clamp(player.x + Math.cos(a) * SURGE.radius, WALL + 24, CW - WALL - 24);
       const y = clamp(player.y + Math.sin(a) * SURGE.radius * 0.8, WALL + 30, CH - WALL - 24);
       const fast = stageIdx >= 2 && Math.random() < 0.25;
-      const sp = {x, y, phase:Math.random()*6, dead:false, type: fast ? 'yan' : 'gui', hp: fast ? Math.ceil(hpRing * 0.6) : hpRing,
+      const hpR = Math.ceil(hpRing * D().hp);
+      const sp = {x, y, phase:Math.random()*6, dead:false, type: fast ? 'yan' : 'gui', hp: fast ? Math.ceil(hpR * 0.6) : hpR,
                   cr: fast ? 24 : 29, st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
-                  spd: wave.spd * (fast ? 1.6 : 1.05) * (0.9 + Math.random()*0.2)};
+                  spd: wave.spd * (fast ? 1.6 : 1.05) * (0.9 + Math.random()*0.2) * D().spd};
       marks.push({sp, t: SURGE.warn});
     }
     addFx({kind:'ripple', x:player.x, y:player.y, t:1.2, r:SURGE.radius});
@@ -3602,10 +3684,16 @@ const Game = (function(){
 
   /* ---------- update ---------- */
   function update(dt){
-    if(inkMo){
+    const kd = Math.exp(-dt*(stopT > 0 ? 4 : 18)); kick.x *= kd; kick.y *= kd;
+    if(stopCd > 0) stopCd -= dt;
+    if(inkMo){                                      // 墨境: the stroke in bullet-time, then the spirits crawl while you don't
       inkMo.t += dt;
       if(inkMo.t >= inkMo.dur) endInkMoment();
-      else dt *= inkMo.t < 0.8 ? 0.3 : 0.3 + 0.7*(inkMo.t - 0.8)/(inkMo.dur - 0.8);
+      else {
+        if(!inkMo.dealt && inkMo.t >= 0.42) inkStrokeHits();
+        if(inkMo.t < 0.9) dt *= inkMo.t < 0.6 ? 0.3 : 0.3 + 0.7*(inkMo.t - 0.6)/0.3;
+        inkSlow = inkMo && inkMo.t < inkMo.dur - 0.4 ? 0.3 : 1;
+      }
     }
     if(banner){                                   // a boss arrives: the world holds its breath
       banner.t += dt;
@@ -3696,9 +3784,9 @@ const Game = (function(){
 
     // --- 古筝 bed: real recording. Landing blows slows it (pitch-dropping
     //     bullet-time); taking a hit faints it; both ease back. ---
-    tempo += (1 - tempo) * Math.min(1, dt * 1.4);     // playback speed eases back to full
+    tempo += ((inkMo ? 0.8 : 1) - tempo) * Math.min(1, dt * 1.4);     // playback speed eases back to full (slower in 墨境)
     hurtDuck += (1 - hurtDuck) * Math.min(1, dt * 1.1); // the faint recovers
-    bgmVol += (((gate ? 0.35 : 0.6) * hurtDuck) - bgmVol) * Math.min(1, dt * 3);  // sits under the 编钟; softer at the gate, ducked when hurt
+    bgmVol += (((gate ? 0.35 : 0.6) * hurtDuck * (inkMo ? 0.22 : 1)) - bgmVol) * Math.min(1, dt * 3);   // 墨境: the bed falls back behind the bell  // sits under the 编钟; softer at the gate, ducked when hurt
     bgm.set(tempo, bgmVol);
 
     // --- family gifts, woven into the walk ---
@@ -3852,9 +3940,11 @@ const Game = (function(){
         strokeN++;
         const heavy = desk.dmg3 > 0 && strokeN % 3 === 0 ? desk.dmg3 : 0;                 // 濃墨: the third stroke lands loaded
         const burn = player.fireInkT > 0 ? (desk.jiao ? 2 : 1) : 0;                       // 火: the ink burns; 焦墨 twice over
+        hitW = CHAR_WEIGHT[selChar] || 1;
         for(const [,s] of cand.slice(0, c.atk.hits + desk.hits))
           hurtSpirit(s, 1 + heavy + (burn && s.opp==='水' ? 0 : burn)
                         + (selChar==='lin' && tier >= c.vulnTier && (s.rootT||0) > 0 ? 1 : 0));  // 林: the rooted take the axe
+        hitW = 1;
         SFX.swish();
         player.atkT = c.atk.int * ATK_INT[tier] * (buffT>0 ? 0.72 : 1) * desk.atkInt * (seal.carved.huo ? 0.92 : 1);
       } else {
@@ -3877,6 +3967,7 @@ const Game = (function(){
       if(w.recoil > 0) w.recoil = Math.max(0, w.recoil - dt*4);
       if(w.t > 0) continue;
       const W = WEAPONS[w.key], lv = Math.min(2, w.lv - 1 + (w.res ? 1 : 0));   // 合文: one casting older
+      hitW = ARM_WEIGHT[w.key] || 1;
       if(w.key === 'gong'){
         const tgt = nearestSpirit(BOW_SIGHT);
         if(!tgt){ w.t = 0.1; continue; }
@@ -3998,6 +4089,7 @@ const Game = (function(){
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
       }
     }
+    hitW = 1;
     // arrows in flight
     for(const p of projectiles){
       p.t -= dt;
@@ -4014,7 +4106,7 @@ const Game = (function(){
     // --- the archers' bone arrows ---
     for(const e of eshots){
       e.t -= dt;
-      e.x += e.ux*e.spd*dt; e.y += e.uy*e.spd*dt;
+      e.x += e.ux*e.spd*dt*inkSlow; e.y += e.uy*e.spd*dt*inkSlow;
       if(e.x < WALL+4 || e.x > CW-WALL-4 || e.y < WALL+8 || e.y > CH-WALL-4) e.t = 0;
       if(e.t > 0 && player.phasedT <= 0 && player.boatT <= 0 && Math.hypot(e.x-player.x, e.y-player.y) < 16){
         e.t = 0;
@@ -4069,8 +4161,8 @@ const Game = (function(){
       } else if(!(stage && stageWinT !== null)){         // stages spawn until their final breath
         const prog = Math.max(0, 1 - waveT/wave.len);
         spawnT -= dt;
-        if(spawnT <= 0 && spirits.filter(s=>!s.dead && s.type!=='guo').length + marks.length < wave.cap){
-          spawnT = wave.spawn * (1 - 0.35*prog);
+        if(spawnT <= 0 && spirits.filter(s=>!s.dead && s.type!=='guo').length + marks.length < Math.round(wave.cap*D().cap)){
+          spawnT = wave.spawn * (1 - 0.35*prog) / D().spawn;
           for(let tries=0; tries<6; tries++){
             // anywhere on the sheet — the 生 mark gives fair warning, so the
             // spirits no longer file in from the edges
@@ -4094,10 +4186,10 @@ const Game = (function(){
               else if(stageIdx >= 2 && roll >= 0.44 && roll < 0.44 + [0,0,0.05,0.06][stageIdx]){ type = 'xue'; hp = 3; cr = 30; }        // 血 the blood-priest
               else if(stageIdx >= 1 && roll >= 0.20 && roll < 0.20 + [0,0.05,0.06,0.07][stageIdx]){ type = 'yoke'; hp = 4; cr = 32; }    // 央 the yoke
               }
-              hp = Math.ceil(hp * (TOUGH[Math.min(stageIdx, 3)] || 1));
+              hp = Math.ceil(hp * (TOUGH[Math.min(stageIdx, 3)] || 1) * D().hp);
               const sp = {x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
                           st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
-                          spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)};
+                          spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)*D().spd};
               if(type === 'yan') sp.spd *= 1.7;             // the swallow is quick
               /* 相剋: stack an element and its opposite rises against you —
                  hoard 火 and river spirits come to quench it (swift, unburnable);
@@ -4247,10 +4339,17 @@ const Game = (function(){
       if(s.dead) continue;
       s.phase += dt*8;
       if((s.iT||0) > 0) s.iT -= dt;
+      if((s.hitT||0) > 0) s.hitT -= dt;
+      if(s.kbx || s.kby){                             // knocked back: it slides along the blow and stops
+        s.x += s.kbx*dt; s.y += s.kby*dt;
+        const dk = Math.exp(-dt*16); s.kbx *= dk; s.kby *= dk;
+        if(Math.abs(s.kbx) + Math.abs(s.kby) < 8){ s.kbx = 0; s.kby = 0; }
+        s.x = Math.max(WALL + 12, Math.min(CW - WALL - 12, s.x)); s.y = Math.max(WALL + 12, Math.min(CH - WALL - 12, s.y));
+      }
       if((s.slowT||0) > 0) s.slowT -= dt;
       if((s.rootT||0) > 0){ s.rootT -= dt; }
       else {
-        let sf = (slowAllT>0 ? 0.45 : 1) * ((s.slowT||0)>0 ? 0.5 : 1);
+        let sf = (slowAllT>0 ? 0.45 : 1) * ((s.slowT||0)>0 ? 0.5 : 1) * inkSlow;
         if(pools.length && pools.some(pl=>Math.hypot(pl.x-s.x, pl.y-s.y) < pl.r)) sf *= 0.55;  // 墨池: they wade in ink
         const dcy = decoy && !s.boss && s.type!=='long' && Math.hypot(s.x-decoy.x, s.y-decoy.y) < 280 ? decoy : null;   // 人: they chase the ancestor
         const ddx = (dcy ? dcy.x : player.x)-s.x, ddy = (dcy ? dcy.y : player.y)-s.y, d = Math.hypot(ddx,ddy)||1;
@@ -4977,20 +5076,27 @@ const Game = (function(){
       ctx.beginPath(); ctx.moveTo(4, -22); ctx.lineTo(4 - 14*pull, 0); ctx.lineTo(4, 22); ctx.stroke();
     } else if(a.key === 'jian'){                       // the blade sweeps; at 兵 the two hands raise it overhead
       const sw = a.ang - 1.0 + 2.0*ease(p/0.6), R = a.r;
-      ctx.globalAlpha = 0.3*fade; ctx.fillStyle = gold; brushArc(ctx, player.x, player.y - 10, R*0.82, a.ang - 1.0, sw, 10);
+      ctx.globalAlpha = (a.big ? 0.3 : 0.55)*fade; ctx.fillStyle = gold; brushArc(ctx, player.x, player.y - 10, R*0.82, a.ang - 1.0, sw, 10);
+      if(!a.big){ ctx.restore(); return; }            // a plain cut is just the smear; the held 劍 does the swing
       for(const d of [0.3, 0.15])                      // the blade's own after-images, trailing the cut
         if(sw - d > a.ang - 1.0) drawSword(player.x + Math.cos(sw - d)*16, player.y - 10 + Math.sin(sw - d)*16, sw - d, R - 16, 0.22*fade, gold);
       drawSword(player.x + Math.cos(sw)*16, player.y - 10 + Math.sin(sw)*16, sw, R - 16, fade, gold);
       if(a.lv >= 2) inkGlyph('兵', player.x, player.y - 70, 46, (sw - a.ang)*0.25, gold, 0.9*fade);
     } else if(a.key === 'ge'){                         // 戈 itself, swung round behind you blade-first
       const ang = a.ang - 1.0 + 2.0*ease(p/0.65), R = a.r*0.6;
-      ctx.globalAlpha = 0.28*fade; ctx.fillStyle = gold; brushArc(ctx, player.x, player.y - 12, R + 10, a.ang - 1.0, ang, 12);
+      ctx.globalAlpha = (a.big ? 0.28 : 0.55)*fade; ctx.fillStyle = gold; brushArc(ctx, player.x, player.y - 12, R + 10, a.ang - 1.0, ang, 12);
+      if(!a.big){ ctx.restore(); return; }            // the held 戈 swings; the smear shows the arc
       inkGlyph('戈', player.x + Math.cos(ang)*R, player.y - 12 + Math.sin(ang)*R, 56, ang + Math.PI/2, gold, fade);
     } else if(a.key === 'mao'){                        // 矛 thrusts out to full reach and draws back
       const ext = p < 0.38 ? ease(p/0.38) : 1 - 0.55*(p - 0.38)/0.62;
       const ux = Math.cos(a.ang), uy = Math.sin(a.ang);
       const x0 = player.x - ux*12, y0 = player.y - 14 - uy*12, reach = 30 + (a.r - 30)*ext;
-      drawMao(x0, y0, player.x + ux*reach, player.y - 14 + uy*reach, a.big ? 42 : 28, gold, fade);
+      if(a.big) drawMao(x0, y0, player.x + ux*reach, player.y - 14 + uy*reach, 42, gold, fade);
+      else {                                          // the held 矛 lunges; two speed lines show the thrust
+        ctx.globalAlpha = 0.5*fade; ctx.strokeStyle = gold; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        for(const sd of [-7, 7]){ const nx = -uy*sd, ny = ux*sd;
+          ctx.beginPath(); ctx.moveTo(player.x + ux*reach*0.45 + nx, player.y - 14 + uy*reach*0.45 + ny); ctx.lineTo(player.x + ux*reach*0.9 + nx, player.y - 14 + uy*reach*0.9 + ny); ctx.stroke(); }
+      }
     } else if(a.key === 'jin'){                        // 斤 falls head-first; the ground splits where it lands
       const land = 0.28, q = Math.min(1, p/land);
       const y = a.y - 110 + 92*q*q, rot = a.rot0 - 1.3 + 1.6*q;
@@ -5009,8 +5115,8 @@ const Game = (function(){
       }
     } else if(a.key === 'dao'){                        // 刀 at the edge of its circle; 刃's dot flashes on the cut
       const R = a.r*0.85, ang = a.ang, gx = player.x + Math.cos(ang)*R, gy = player.y - 10 + Math.sin(ang)*R;
-      ctx.globalAlpha = 0.3*fade; ctx.fillStyle = gold; brushArc(ctx, player.x, player.y - 10, R, ang - 0.9, ang, 9);
-      inkGlyph(a.lv >= 1 ? '刃' : '刀', gx, gy, 40, ang + Math.PI/2, gold, fade);
+      ctx.globalAlpha = (a.big ? 0.3 : 0.5)*fade; ctx.fillStyle = gold; brushArc(ctx, player.x, player.y - 10, R, ang - 0.9, ang, 9);
+      if(a.big) inkGlyph(a.lv >= 1 ? '刃' : '刀', gx, gy, 40, ang + Math.PI/2, gold, fade);
       if(a.lv >= 1){                                   // the dot that turns 刀 into 刃 — the edge itself
         const glint = Math.max(0, 1 - p*2.2);
         ctx.globalAlpha = glint; ctx.fillStyle = '#fff6e2';
@@ -5264,6 +5370,7 @@ const Game = (function(){
 
     ctx.save();
     if(shakeT > 0) ctx.translate(Math.sin(tGlobal*82)*7*shakeT, Math.cos(tGlobal*90)*5*shakeT);
+    ctx.translate(kick.x, kick.y);
 
     ctx.fillStyle = era.hill;
     ctx.fillRect(WALL, WALL, CW-WALL*2, CH-WALL*2);
@@ -5439,6 +5546,10 @@ const Game = (function(){
       // spirits are spectral — a touch translucent so the solid player reads as the one alive thing
       const spectral = !s.boss && !(s.iT||0);
       ctx.save(); if(spectral) ctx.globalAlpha = 0.82;
+      if((s.hitT||0) > 0){                            // struck: squashed along the blow for a moment
+        const q = s.hitT/0.14, a = s.hitAng || 0;
+        ctx.translate(s.x, s.y); ctx.rotate(a); ctx.scale(1 - 0.28*q, 1 + 0.16*q); ctx.rotate(-a); ctx.translate(-s.x, -s.y);
+      }
       if(s.type==='shi') drawBoar(ctx, s.x, s.y, 38, s.phase, col, s.face||1);
       else if(s.type==='she'){
         ctx.save(); ctx.translate(s.x, s.y); if((s.face||1)<0) ctx.scale(-1,1);
@@ -5607,17 +5718,17 @@ const Game = (function(){
         ctx.rotate(oa + Math.PI/2);
       } else if(w.key === 'mao'){                       // the spear-radical takes the lead
         const fa = Math.atan2(player.lastDir.y, player.lastDir.x);
-        ctx.translate(player.x + Math.cos(fa)*(30 + rec*9), player.y - 6 + Math.sin(fa)*(30 + rec*9));
+        ctx.translate(player.x + Math.cos(fa)*(30 + rec*26), player.y - 6 + Math.sin(fa)*(30 + rec*26));   // a real lunge
         ctx.rotate(fa + Math.PI/2);
       } else if(w.key === 'ge'){                        // the dagger-axe guards the back
         const ba = Math.atan2(-player.lastDir.y, -player.lastDir.x);
         ctx.translate(player.x + Math.cos(ba)*30, player.y - 6 + Math.sin(ba)*30);
-        ctx.rotate(Math.sin(rec*Math.PI)*0.9);
+        ctx.rotate(Math.sin(rec*Math.PI)*1.6);
       } else {
         const pos = RADPOS[w.key] || [26, 0];
         ctx.translate(player.x + pos[0], player.y + pos[1]);
         if(w.key === 'gong') ctx.translate(-rec*5, 0);
-        else if(w.key === 'jin' || w.key === 'jian') ctx.rotate(Math.sin(rec*Math.PI)*0.7);
+        else if(w.key === 'jin' || w.key === 'jian') ctx.rotate(Math.sin(rec*Math.PI)*1.3);
         else if(w.key === 'wang' || w.key === 'shui') ctx.scale(1+rec*0.22, 1+rec*0.22);
         if(w.key === 'mian' && !player.roofOn) ctx.globalAlpha = 0.35;   // the roof, spent, being raised
       }
@@ -5699,6 +5810,23 @@ const Game = (function(){
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1.1-k), 0, Math.PI*2); ctx.stroke();
         ctx.globalAlpha = 0.18*k;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*(1.1-k)*0.62, 0, Math.PI*2); ctx.stroke();
+      } else if(e.kind==='slice'){
+        const p = 1 - k, slide = 4 + 22*(1 - Math.pow(1 - p, 3));
+        for(const sgn of [-1, 1]){
+          ctx.save();
+          ctx.translate(e.x, e.y); ctx.rotate(e.cut);
+          ctx.translate(sgn*slide, sgn*slide*0.35); ctx.rotate(sgn*0.25*p);
+          ctx.beginPath(); ctx.rect(-60, sgn > 0 ? 0 : -60, 120, 60); ctx.clip();
+          ctx.rotate(-e.cut); ctx.translate(-e.x, -e.y);
+          ctx.globalAlpha = 0.85*k;
+          drawFoeGlyph(ctx, e.foe, e.x, e.y + p*6, e.ph, p < 0.12 ? '#ffffff' : GHOST, e.face);
+          ctx.restore();
+        }
+        if(p < 0.3){                                  // the cut itself, a hair of light for an instant
+          ctx.globalAlpha = 1 - p/0.3; ctx.strokeStyle = '#fff6e2'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+          const ux = Math.cos(e.cut), uy = Math.sin(e.cut), L = 34*(0.6 + p*2);
+          ctx.beginPath(); ctx.moveTo(e.x - ux*L, e.y - uy*L); ctx.lineTo(e.x + ux*L, e.y + uy*L); ctx.stroke();
+        }
       } else if(e.kind==='inkfade'){
         /* the slain glyph sinks into the paper */
         ctx.globalAlpha = 0.72*k*k;
@@ -5745,8 +5873,8 @@ const Game = (function(){
       ctx.restore();
     }
 
-    // weather falls over the whole arena (under the chrome, above the fight)
-    if(weather){
+    // weather falls over the whole arena (under the chrome, above the fight); held back in 墨境
+    if(weather && !inkMo){
       ctx.save();
       if(weather === 'snow'){
         ctx.fillStyle = '#f3efe2';
@@ -5772,7 +5900,7 @@ const Game = (function(){
       }
       ctx.restore();
     }
-    if(wFlash > 0){                                   // thunder lights the whole sheet
+    if(wFlash > 0 && !inkMo){                         // thunder lights the whole sheet
       ctx.save(); ctx.globalAlpha = Math.min(0.35, wFlash)*0.55;
       ctx.fillStyle = '#eef2ff'; ctx.fillRect(0, 0, CW, CH); ctx.restore();
     }
@@ -5803,16 +5931,6 @@ const Game = (function(){
     ctx.font = 'bold 13px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
     ctx.fillText('♥', WALL+6, WALL+23);
     ctx.restore();
-    {                                                // 墨: how loaded the brush is
-      const f = brushInk/BRUSH_FULL, full = f >= 1, bx = WALL + 22, by = WALL + 66, bwid = Math.max(60, weapons.length*34 - 4);
-      ctx.save();
-      ctx.globalAlpha = full ? 0.7 + 0.3*Math.sin(tGlobal*6) : 0.8; ctx.fillStyle = era.ink;
-      ctx.font = 'bold 11px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-      ctx.fillText('墨', bx - 4, by + 2);
-      ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.fillRect(bx, by, bwid, 4);
-      ctx.globalAlpha = full ? 0.95 : 0.7; ctx.fillStyle = era.ink; ctx.fillRect(bx, by, bwid*f, 4);
-      ctx.restore();
-    }
     for(let i=0; i<weapons.length; i++){
       const w = weapons[i];
       drawWeaponIcon(ctx, w.key, w.lv, WALL+20+i*34, WALL+46, 20, era.accent);
@@ -6142,7 +6260,7 @@ const Game = (function(){
     running = false; paused = false; hideAll(); overlay('ovStart', true);
     loadStage(0);
   }
-  function onLang(){ syncHud(); buildCharSelect(); buildArmSelect(); PV.refreshLine(); updateOmenUI(); }
+  function onLang(){ syncHud(); buildCharSelect(); buildArmSelect(); PV.refreshLine(); updateOmenUI(); showDiff(); }
   function bookCanvas(w, h, draw){
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     draw(c.getContext('2d'), c);
