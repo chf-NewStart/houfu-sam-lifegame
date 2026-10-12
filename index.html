@@ -140,6 +140,9 @@
     .shots.mix .frame.side { width: 56%; right: -2%; bottom: 0; padding: 6px; border-radius: 22px; }
     .shots.mix .frame.side img { border-radius: 16px; }
     .flip .shots.mix .frame.tablet { margin-left: auto; }
+    /* Manilha's hand runs along the iPad's bottom edge, so its phone hangs lower */
+    .shots.mix.low { padding-bottom: 19%; }
+    .shots.mix.low .frame.side { width: 50%; }
     .shots.mix.tall { padding-bottom: 9%; }
     .shots.mix.tall .frame.tablet { width: 52%; margin-left: 0; }
     .shots.mix.tall .frame.side { width: 56%; right: -2%; bottom: 0; }
@@ -444,7 +447,7 @@
           <a class="btn ghost" href="/game/truco.html?v=3" data-zh="玩网页版（可联机）→">Play online with friends →</a>
         </div>
       </div>
-      <figure class="shots mix">
+      <figure class="shots mix low">
         <div class="frame tablet"><img src="/assets/apps/manilha-ipad.webp" alt="Manilha on iPad: your hand of cards below the table, the manilha indicator on the left" width="1200" height="900" loading="lazy"></div>
         <div class="frame side"><img src="/assets/apps/manilha-2.webp" alt="Manilha on iPhone: the lobby, with 1, 2 or 3 computer opponents or two players against two" width="1400" height="644" loading="lazy"></div>
       </figure>
