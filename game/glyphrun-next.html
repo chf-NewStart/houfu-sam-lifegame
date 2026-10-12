@@ -359,7 +359,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b60 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b61 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -2613,7 +2613,7 @@ const Game = (function(){
   let bestNight = 0; try{ bestNight = +(localStorage.getItem('glyphrun_endless')||0); }catch(e){}
   let forgeDone = false;                                     // the 铸 forge-elite lights once a night
   /* the 古筝 bed: a real guzheng field recording from a Lunar New Year event
-     (kevp888 · freesound 725336, CC BY 4.0), a 65s loop taken from before the
+     (kevp888 · freesound 725336, CC BY 4.0), a 60s loop (opening chatter cut) from before the
      closing applause — plays under the whole run and from the character screen.
      It SLOWS (tempo only, pitch held) while you land blows, and FAINTS then
      recovers when you take one. */
@@ -2641,6 +2641,10 @@ const Game = (function(){
     };
   })();
   let tempo = 1, hurtDuck = 1, bgmVol = 0;                    // tempo<1 = slower; hurtDuck<1 = fainter
+  /* A weapon swells into its full glyph only on a flourish: the first shot after you pick
+     it up or upgrade it, and every 4th shot after that. The rest strike at the size it is
+     held, so the big glyph stays special. */
+  function flourish(w){ w.shots = (w.shots||0) + 1; const f = !!w.fresh || w.shots % 4 === 0; w.fresh = false; return f; }
   let testNoStrike = false;   // scripted checks only: hold the character's own strike to see the weapons
   let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
   let pav = null, treeDone = false, pavDone = false;
@@ -3720,7 +3724,7 @@ const Game = (function(){
         const bx = player.x - 32, by = player.y - 8;   // loosed from the bow-radical's seat
         for(const da of spread) projectiles.push({x:bx, y:by, ux:Math.cos(ang+da), uy:Math.sin(ang+da),
                                                   t:1.2, pierce:2+lv, spd:430+lv*60, lv});
-        addAct({kind:'wpn', key:'gong', x:bx, y:by, ang, lv, dur:0.34});   // 弓 draws and looses
+        addAct({kind:'wpn', key:'gong', big:flourish(w), x:bx, y:by, ang, lv, dur:0.34});   // 弓 draws and looses
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
       } else if(w.key === 'jian'){                    // 劍: quick arcs at whatever comes
         const tgt = nearestSpirit(W.reach[lv]+14);
@@ -3738,7 +3742,7 @@ const Game = (function(){
         if(!cand.length){ w.t = 0.1; continue; }
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
-        addAct({kind:'wpn', key:'jian', ang, r:W.reach[lv], lv, dur:0.28});   // the blade itself sweeps
+        addAct({kind:'wpn', key:'jian', big:flourish(w), ang, r:W.reach[lv], lv, dur:0.28});   // the blade itself sweeps
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
       } else if(w.key === 'ge'){
         const back = Math.atan2(-player.lastDir.y, -player.lastDir.x);
@@ -3754,7 +3758,7 @@ const Game = (function(){
         if(!cand.length){ w.t = 0.12; continue; }
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
-        addAct({kind:'wpn', key:'ge', ang:back, r:W.reach[lv], lv, dur:0.3});   // 戈 swings round behind you, blade first
+        addAct({kind:'wpn', key:'ge', big:flourish(w), ang:back, r:W.reach[lv], lv, dur:0.3});   // 戈 swings round behind you, blade first
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
       } else if(w.key === 'mao'){
         const fwd = Math.atan2(player.lastDir.y, player.lastDir.x);
@@ -3768,7 +3772,7 @@ const Game = (function(){
         if(!cand.length){ w.t = 0.12; continue; }
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
-        addAct({kind:'wpn', key:'mao', ang:fwd, r:W.reach[lv], lv, dur:0.26});   // 矛 lunges and draws back
+        addAct({kind:'wpn', key:'mao', big:flourish(w), ang:fwd, r:W.reach[lv], lv, dur:0.26});   // 矛 lunges and draws back
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
       } else if(w.key === 'jin'){
         const chop = nearestSpirit(210);
@@ -3777,7 +3781,7 @@ const Game = (function(){
         for(const s of spirits){
           if(!s.dead && Math.hypot(s.x-chop.x, s.y-chop.y) <= sr) hurtSpirit(s, 2);
         }
-        addAct({kind:'wpn', key:'jin', x:chop.x, y:chop.y, r:sr, lv, dur:0.45, rot0: (Math.random()-0.5)*0.4});   // 斤 falls head-first
+        addAct({kind:'wpn', key:'jin', big:flourish(w), x:chop.x, y:chop.y, r:sr, lv, dur:0.45, rot0: (Math.random()-0.5)*0.4});   // 斤 falls head-first
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
       } else if(w.key === 'dao'){
         const cand = [];
@@ -3789,15 +3793,15 @@ const Game = (function(){
         if(!cand.length){ w.t = 0.1; continue; }
         cand.sort((a,b)=>a[0]-b[0]);
         for(const [,s] of cand.slice(0, W.hits[lv])) hurtSpirit(s, 1);
-        addAct({kind:'wpn', key:'dao', ang:w.aim, r:W.reach[lv], lv, dur:0.24});   // 刀 cuts as it circles; 刃's dot glints
+        addAct({kind:'wpn', key:'dao', big:flourish(w), ang:w.aim, r:W.reach[lv], lv, dur:0.24});   // 刀 cuts as it circles; 刃's dot glints
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
       } else if(w.key === 'shi'){                     // 矢: arrows out of heaven
         const live = spirits.filter(sp2=>!sp2.dead && sp2.type!=='guo');
         if(!live.length){ w.t = 0.15; continue; }
-        const n = Math.min(W.count[lv], live.length);
+        const n = Math.min(W.count[lv], live.length), big = flourish(w);
         for(let i2 = 0; i2 < n; i2++){
           const tgt2 = live[(Math.random()*live.length)|0];
-          addAct({kind:'wpn', key:'shi', x:tgt2.x, y:tgt2.y, lv, dur:0.5, delay:i2*0.06, rot0:(Math.random()-0.5)*0.25});   // 矢 drops point-first
+          addAct({kind:'wpn', key:'shi', big, x:tgt2.x, y:tgt2.y, lv, dur:0.5, delay:i2*0.06, rot0:(Math.random()-0.5)*0.25});   // 矢 drops point-first
           hurtSpirit(tgt2, 1);
         }
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
@@ -3829,7 +3833,7 @@ const Game = (function(){
         for(const s of spirits){
           if(!s.dead && Math.hypot(s.x-tgt.x, s.y-tgt.y) <= nr) s.rootT = W.root[lv] * (synOn.ni ? 1.5 : 1);
         }
-        addAct({kind:'wpn', key:'wang', x0:player.x, y0:player.y-30, x:tgt.x, y:tgt.y, r:nr, lv, dur:1.4});   // 網 is thrown over them
+        addAct({kind:'wpn', key:'wang', big:flourish(w), x0:player.x, y0:player.y-30, x:tgt.x, y:tgt.y, r:nr, lv, dur:1.4});   // 網 is thrown over them
         w.recoil = 1; w.t = W.int[lv] * desk.wInt * (w.res && w.lv >= 3 ? 0.85 : 1);
       }
     }
@@ -4456,12 +4460,12 @@ const Game = (function(){
         SFX.chisel();
         const W = WEAPONS[pd.key], owned = weapons.find(w=>w.key===pd.key);
         if(owned && owned.lv < 3){
-          owned.lv++;
+          owned.lv++; owned.fresh = true;            // the next shot shows off the new form
           const l = owned.lv-1;
           popToastEx(W.chs[l], `${W.pys[l]} · ${W.eras[l]}`, t(W.tier_en[l], W.tier_zh[l]), 'qi');
         } else if(!owned){
           if(weapons.length >= 3) weapons.shift();          // the oldest is set down
-          weapons.push({key:pd.key, lv:1, t:0.4});
+          weapons.push({key:pd.key, lv:1, t:0.4, fresh:true});
           popToastEx(W.chs[0], `${W.pys[0]} · ${W.eras[0]}`, t(W.tier_en[0], W.tier_zh[0]), 'qi');
         } else {
           popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'), 'qi');
@@ -4766,12 +4770,13 @@ const Game = (function(){
      watching it work: 戈 swings blade-first, 弓 draws, 斤 falls head-first,
      矛 lunges, 刀 circles and 刃's dot glints at the edge, 矢 drops point
      down, 網 is thrown and its mesh settles over the pack.                 */
+  let wpnBig = false;                                   // set per act: is this shot a flourish?
   function inkGlyph(ch, x, y, s, rot, color, alpha){
     if(!ORACLE[ch] || typeof Path2D === 'undefined') return;
-    s *= 1.9;                                           // big enough to read the shape mid-fight
+    s *= wpnBig ? 1.9 : 0.85;                           // held size on a plain shot; full glyph on a flourish
     ctx.save(); ctx.translate(x, y); if(rot) ctx.rotate(rot);
     ctx.globalAlpha = 0.6*alpha; drawOraclePath(ctx, ORACLE[ch], 0, 0, s*1.1, 'rgba(12,9,16,0.85)', 0);
-    ctx.globalAlpha = alpha; drawOraclePath(ctx, ORACLE[ch], 0, 0, s, color, 12);
+    ctx.globalAlpha = alpha; drawOraclePath(ctx, ORACLE[ch], 0, 0, s, color, wpnBig ? 22 : 8);
     ctx.restore();
   }
   function drawJin(x, y, s, rot, color, alpha){       // 斤: the axe — a hafted blade, its handle bent at the head
@@ -4798,6 +4803,7 @@ const Game = (function(){
     ctx.restore();
   }
   function drawWeaponAct(a){
+    wpnBig = !!a.big;
     const p = Math.min(1, a.t / a.dur), gold = era.accent, ease = (q)=>1 - Math.pow(1 - Math.min(1, Math.max(0, q)), 3);
     const fade = p < 0.6 ? 1 : (1 - p)/0.4;
     ctx.save();
@@ -4823,11 +4829,11 @@ const Game = (function(){
       const ext = p < 0.38 ? ease(p/0.38) : 1 - 0.55*(p - 0.38)/0.62;
       const ux = Math.cos(a.ang), uy = Math.sin(a.ang);
       const x0 = player.x - ux*12, y0 = player.y - 14 - uy*12, reach = 30 + (a.r - 30)*ext;
-      drawMao(x0, y0, player.x + ux*reach, player.y - 14 + uy*reach, 30, gold, fade);
+      drawMao(x0, y0, player.x + ux*reach, player.y - 14 + uy*reach, a.big ? 42 : 28, gold, fade);
     } else if(a.key === 'jin'){                        // 斤 falls head-first; the ground splits where it lands
       const land = 0.28, q = Math.min(1, p/land);
       const y = a.y - 110 + 92*q*q, rot = a.rot0 - 1.3 + 1.6*q;
-      if(a.lv >= 2) inkGlyph('斧', a.x, y, 50, rot, gold, fade); else drawJin(a.x, y, 48, rot, gold, fade);
+      if(a.lv >= 2) inkGlyph('斧', a.x, y, 50, rot, gold, fade); else drawJin(a.x, y, a.big ? 70 : 40, rot, gold, fade);
       if(p >= land){
         const g = (p - land)/(1 - land), R = a.r*(0.5 + 0.7*ease(g));
         ctx.globalAlpha = 0.5*(1 - g); ctx.strokeStyle = 'rgba(12,9,16,0.85)'; ctx.lineWidth = 8;
