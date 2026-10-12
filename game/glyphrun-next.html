@@ -359,7 +359,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b61 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b62 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -2641,10 +2641,165 @@ const Game = (function(){
     };
   })();
   let tempo = 1, hurtDuck = 1, bgmVol = 0;                    // tempo<1 = slower; hurtDuck<1 = fainter
-  /* A weapon swells into its full glyph only on a flourish: the first shot after you pick
-     it up or upgrade it, and every 4th shot after that. The rest strike at the size it is
-     held, so the big glyph stays special. */
-  function flourish(w){ w.shots = (w.shots||0) + 1; const f = !!w.fresh || w.shots % 4 === 0; w.fresh = false; return f; }
+  /* ---------- 墨饱 · the loaded brush ----------
+     Every hit you land loads the brush. Once it is full the held weapon drips, and its next
+     shot is written in ink: time slows, the night turns to paper (the frame itself is
+     inverted, so every glyph on the field reads as ink), one heavy stroke goes down with
+     dry-brush streaks and a spray of drops, a blot soaks into each thing it struck. Then the night
+     returns and the stroke stays on the ground. A fresh pickup or upgrade also shows its
+     full glyph once, without the ink. Every other shot strikes at the size it is held. */
+  const BRUSH_FULL = 24, INKC = '#14100c';
+  const FIRING = new Set(['gong','jian','ge','mao','jin','dao','shi','wang']);
+  let brushInk = 0, inkMo = null, paperCvs = null, snapCvs = null, dryCvs = null;
+  const canInvert = (()=>{ try{ const t = document.createElement('canvas').getContext('2d'); t.filter = 'invert(1)'; return t.filter === 'invert(1)'; }catch(e){ return false; } })();
+  function flourish(w){
+    w.shots = (w.shots||0) + 1;
+    if(brushInk >= BRUSH_FULL && !inkMo){ brushInk = 0; w.fresh = false; return 'ink'; }
+    const f = !!w.fresh; w.fresh = false; return f;
+  }
+  function loadBrush(){ if(!inkMo && weapons.some(w=>FIRING.has(w.key))) brushInk = Math.min(BRUSH_FULL, brushInk + 1); }
+  function lcg(seed){ let v = seed >>> 0; return ()=> (v = (v*1664525 + 1013904223) >>> 0) / 4294967296; }
+  function paperTex(){                                  // 宣纸: warm paper, mottled, with fibres
+    if(paperCvs) return paperCvs;
+    paperCvs = document.createElement('canvas'); paperCvs.width = CW; paperCvs.height = CH;
+    const c = paperCvs.getContext('2d'), r = lcg(7);
+    c.fillStyle = '#efe5cc'; c.fillRect(0, 0, CW, CH);
+    for(let i=0; i<50; i++){ const x = r()*CW, y = r()*CH, rr = 40 + r()*140, g = c.createRadialGradient(x, y, 0, x, y, rr);
+      g.addColorStop(0, 'rgba(170,140,95,' + (0.03 + r()*0.05) + ')'); g.addColorStop(1, 'rgba(170,140,95,0)'); c.fillStyle = g; c.fillRect(x-rr, y-rr, 2*rr, 2*rr); }
+    c.lineCap = 'round';
+    for(let i=0; i<1800; i++){ const x = r()*CW, y = r()*CH, a = r()*Math.PI, l = 2 + r()*9;
+      c.strokeStyle = 'rgba(110,85,55,' + (0.04 + r()*0.07) + ')'; c.lineWidth = 0.4 + r()*0.6;
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a)*l, y + Math.sin(a)*l); c.stroke(); }
+    const v = c.createRadialGradient(CW/2, CH/2, CH*0.35, CW/2, CH/2, CW*0.7);
+    v.addColorStop(0, 'rgba(60,40,20,0)'); v.addColorStop(1, 'rgba(60,40,20,0.25)'); c.fillStyle = v; c.fillRect(0, 0, CW, CH);
+    return paperCvs;
+  }
+  // the one loaded stroke each weapon lays down
+  function inkStrokeOf(a){
+    const px = player.x, py = player.y - 10, pts = [];
+    if(a.key === 'jin' || a.key === 'shi'){              // 竖: a heavy vertical, pressed to a stop on the pack
+      return {pts: bez({x:a.x + 14, y:a.y - 180}, {x:a.x - 14, y:a.y - 80}, {x:a.x, y:a.y + 12}, 30),
+              wf: u=> u < 0.08 ? 26 : u < 0.86 ? 20 + 6*u : 26 - 14*(u - 0.86)/0.14};
+    }
+    if(a.key === 'wang'){                                // 圆相: one circle, open where the brush lifted
+      const R = (a.r || 90)*1.1;
+      for(let i=0; i<=44; i++){ const t = -2.5 + i/44*5.4; pts.push({x:a.x + Math.cos(t)*R, y:a.y + Math.sin(t)*R*0.8}); }
+      return {pts, wf: u=> 5 + 22*Math.sin(Math.PI*Math.pow(u, 0.75))};
+    }
+    if(a.key === 'mao' || a.key === 'gong'){             // a thrust: pressed at the root, thinning to the point
+      const ang = a.key === 'mao' ? a.ang : Math.atan2(a.y - py, a.x - px);
+      const L = a.key === 'mao' ? (a.r || 100)*1.6 : Math.hypot(a.x - px, a.y - py) + 40;
+      const ux = Math.cos(ang), uy = Math.sin(ang);
+      return {pts: bez({x:px + ux*14, y:py + uy*14}, {x:px + ux*L*0.5 - uy*L*0.1, y:py + uy*L*0.5 + ux*L*0.1}, {x:px + ux*L, y:py + uy*L}, 30),
+              wf: u=> u < 0.08 ? 30 : 30*Math.pow(1 - u, 0.9) + 2};
+    }
+    const R = (a.r || 100)*1.2, a0 = (a.ang || 0) - 1.3;   // a sweep: the swing written as one great arc
+    for(let i=0; i<=40; i++){ const t = a0 + i/40*2.3; pts.push({x:px + Math.cos(t)*R, y:py + Math.sin(t)*R*0.82}); }
+    return {pts, wf: u=> 4 + 30*Math.sin(Math.PI*Math.pow(u, 0.8))};
+  }
+  function startInkMoment(a){
+    const st = inkStrokeOf(a), end = st.pts[st.pts.length - 1];
+    const near = (x, y)=> st.pts.some(p=> Math.hypot(p.x - x, p.y - y) < 60);
+    const hit = spirits.filter(sp=> !sp.dead && sp.type !== 'guo' && near(sp.x, sp.y)).slice(0, 7)
+                       .map(sp=> ({x: sp.x, y: sp.y - 4, rot: (Math.random() - 0.5)*0.3}));
+    inkMo = {t:0, dur:1.6, key:a.key, pts:st.pts, wf:st.wf, end, hit, seed:(Math.random()*1e9)|0, sealRot:(Math.random() - 0.5)*0.25};
+    shakeT = Math.max(shakeT, 0.18);
+    SFX.toll();
+  }
+  function strokeShape(c, pts, wf, lo, hi, m){
+    const n = pts.length - 1, L = [], R = [];
+    for(let i=lo; i<=hi; i++){
+      const a = pts[Math.max(0, i-1)], b = pts[Math.min(n, i+1)];
+      let tx = b.x - a.x, ty = b.y - a.y; const l = Math.hypot(tx, ty) || 1; tx /= l; ty /= l;
+      const w = wf(i/n)*m/2;
+      L.push({x: pts[i].x - ty*w, y: pts[i].y + tx*w}); R.push({x: pts[i].x + ty*w, y: pts[i].y - tx*w});
+    }
+    c.beginPath(); c.moveTo(L[0].x, L[0].y);
+    for(let i=1; i<L.length; i++) c.lineTo(L[i].x, L[i].y);
+    for(let i=R.length-1; i>=0; i--) c.lineTo(R[i].x, R[i].y);
+    c.closePath(); c.fill();
+    if(lo === 0){ c.beginPath(); c.arc(pts[0].x, pts[0].y, wf(0)*m*0.55, 0, Math.PI*2); c.fill(); }
+  }
+  function drawInkMoment(){
+    const m = inkMo, q = m.t;
+    const pa = q < 0.12 ? q/0.12 : q < m.dur - 0.42 ? 1 : Math.max(0, (m.dur - q)/0.42);
+    // a clean sheet: only the player and the spirits come through (inverted, so their glow
+    // reads as ink); coins, rain, motes and the rest stay under the paper until the night returns
+    let sc = null;
+    if(canInvert){
+      if(!snapCvs){ snapCvs = document.createElement('canvas'); snapCvs.width = CW; snapCvs.height = CH; }
+      sc = snapCvs.getContext('2d'); sc.clearRect(0, 0, CW, CH); sc.drawImage(cvs, 0, 0);
+    }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = pa; ctx.drawImage(paperTex(), 0, 0); ctx.restore();
+    if(sc){
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(player.x + 40, player.y - 8); ctx.arc(player.x, player.y - 8, 40, 0, Math.PI*2);
+      for(const sp of spirits){ if(sp.dead) continue; const rr = sp.boss ? 72 : 30; ctx.moveTo(sp.x + rr, sp.y - 4); ctx.arc(sp.x, sp.y - 4, rr, 0, Math.PI*2); }
+      ctx.clip();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = pa; ctx.filter = 'grayscale(1) invert(1) sepia(0.35) contrast(1.3) brightness(1.1)';
+      ctx.drawImage(snapCvs, 0, 0); ctx.filter = 'none';
+      ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(paperTex(), 0, 0);
+      ctx.restore();
+    }
+    // the loaded stroke: a bleed halo, the body, then the bristles running dry in the tail
+    const n = m.pts.length - 1, g = 1 - Math.pow(1 - Math.min(1, q/0.42), 3), hi = Math.max(1, Math.ceil(g*n));
+    const sa = q < m.dur - 0.42 ? 1 : Math.max(0.35, pa);
+    ctx.save(); ctx.globalAlpha = 0.12*sa; ctx.fillStyle = INKC; strokeShape(ctx, m.pts, m.wf, 0, hi, 1.35); ctx.restore();
+    if(!dryCvs){ dryCvs = document.createElement('canvas'); dryCvs.width = CW; dryCvs.height = CH; }
+    const dc = dryCvs.getContext('2d');
+    dc.setTransform(1, 0, 0, 1, 0, 0); dc.clearRect(0, 0, CW, CH);
+    const tf = ctx.getTransform(); dc.setTransform(tf);          // follow the screen shake
+    dc.globalCompositeOperation = 'source-over'; dc.fillStyle = INKC; strokeShape(dc, m.pts, m.wf, 0, hi, 1);
+    dc.globalCompositeOperation = 'destination-out'; dc.lineCap = 'round';
+    const r = lcg(m.seed);
+    for(let k=0; k<11; k++){                          // 飞白: the dry streaks are the same every frame (seeded)
+      const off = (r() - 0.5)*0.9, u0 = 0.35 + r()*0.4; dc.lineWidth = 0.7 + r()*1.8; dc.strokeStyle = 'rgba(0,0,0,' + (0.55 + r()*0.45) + ')';
+      dc.beginPath(); let first = true;
+      for(let i=Math.floor(u0*n); i<=hi; i++){
+        const a = m.pts[Math.max(0, i-1)], b = m.pts[Math.min(n, i+1)];
+        let tx = b.x - a.x, ty = b.y - a.y; const l = Math.hypot(tx, ty) || 1;
+        const w = m.wf(i/n)*off, x = m.pts[i].x - ty/l*w, y = m.pts[i].y + tx/l*w;
+        if(first){ dc.moveTo(x, y); first = false; } else dc.lineTo(x, y);
+      }
+      dc.stroke();
+    }
+    dc.globalCompositeOperation = 'source-over';
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 0.96*sa;
+    ctx.shadowColor = 'rgba(20,14,8,0.5)'; ctx.shadowBlur = 2.5; ctx.drawImage(dryCvs, 0, 0); ctx.restore();
+    const GL = {gong:'弓', jian:'兵', ge:'戈', jin:'斧', dao:'刀', shi:'矢', wang:'網'}[m.key];
+    if(GL && ORACLE[GL] && typeof Path2D !== 'undefined'){   // the weapon itself is the brush tip
+      const tip = m.pts[hi], prev = m.pts[Math.max(0, hi - 2)], ta = Math.atan2(tip.y - prev.y, tip.x - prev.x);
+      const ga = g < 1 ? 1 : Math.max(0, 1 - (q - 0.42)/0.3);
+      if(ga > 0){ ctx.save(); ctx.translate(tip.x, tip.y); ctx.rotate(ta + Math.PI/2); ctx.globalAlpha = ga*sa;
+        drawOraclePath(ctx, ORACLE[GL], 0, 0, 64, INKC, 2); ctx.restore(); }
+    }
+    if(g >= 1){                                       // the drops flung off the end, then each struck one takes a blot
+      const r2 = lcg(m.seed + 1), dir = Math.atan2(m.end.y - m.pts[n-3].y, m.end.x - m.pts[n-3].x), sp = Math.min(1, (q - 0.42)/0.12);
+      ctx.save(); ctx.fillStyle = INKC; ctx.globalAlpha = sa;
+      for(let i=0; i<14; i++){
+        const a = dir + (r2() - 0.5)*1.2, d = (16 + r2()*60)*sp, rr = 0.8 + r2()*r2()*4.5;
+        const x = m.end.x + Math.cos(a)*d, y = m.end.y + Math.sin(a)*d;
+        ctx.beginPath(); if(rr > 2.6 && r2() < 0.5) ctx.ellipse(x, y, rr*1.8, rr*0.8, a, 0, Math.PI*2); else ctx.arc(x, y, rr, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+      m.hit.forEach((h, i)=>{                         // each one it struck takes a blot that soaks through it
+        const k = Math.min(1, Math.max(0, (q - 0.46 - i*0.05)/0.16)); if(k <= 0) return;
+        const r4 = lcg(m.seed + 10 + i), rr = 15 + 9*k;
+        ctx.save(); ctx.globalAlpha = 0.55*Math.max(0.3, pa); ctx.fillStyle = INKC;
+        ctx.shadowColor = 'rgba(20,14,8,0.55)'; ctx.shadowBlur = 8*k;
+        ctx.beginPath();
+        for(let j=0; j<=18; j++){ const t = j/18*Math.PI*2, w = rr*(0.78 + 0.32*r4()); j ? ctx.lineTo(h.x + Math.cos(t)*w, h.y + Math.sin(t)*w*0.85) : ctx.moveTo(h.x + Math.cos(t)*w, h.y + Math.sin(t)*w*0.85); }
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      });
+    }
+  }
+  function endInkMoment(){                            // the stroke soaks into the ground and stays
+    const m = inkMo; inkMo = null;
+    inkCtx.save(); inkCtx.globalAlpha = 0.45; inkCtx.fillStyle = '#0a0910'; strokeShape(inkCtx, m.pts, m.wf, 0, m.pts.length - 1, 1); inkCtx.restore();
+  }
   let testNoStrike = false;   // scripted checks only: hold the character's own strike to see the weapons
   let weapons = [], wTimes = [], boltT = 5, dragonDone = false, bossDone = false;
   let pav = null, treeDone = false, pavDone = false;
@@ -2738,7 +2893,7 @@ const Game = (function(){
     stageIdx = i;
     era = ERAS[ERA_ORDER[i]];
     wave = WAVES[i];
-    spirits = []; pickups = []; fires = []; fx = []; pedestals = []; projectiles = []; bolts = []; acts = []; hails = []; arcs = [];
+    spirits = []; pickups = []; fires = []; fx = []; pedestals = []; projectiles = []; bolts = []; acts = []; hails = []; arcs = []; inkMo = null;
     marks = []; eshots = []; shocks = []; forgeDone = false;
     rollWeather(i);
     wTimes = [wave.len*0.6, wave.len*0.28];
@@ -2764,7 +2919,7 @@ const Game = (function(){
     endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = true; glyphToasted = {};
     desk = freshDesk();
     elems = {'金':0,'木':0,'水':0,'火':0,'土':0}; synOn = {}; oppSeen = true; runGlyphs = 0; runKills = 0;
-    weapons = [{key:selArm, lv: seal.carved.you ? 3 : 2, t:0.8}];
+    weapons = [{key:selArm, lv: seal.carved.you ? 3 : 2, t:0.8}]; brushInk = 0; inkMo = null;
     checkCompose();
     stage = {i, def}; stageKills = 0; stageHurt = 0; stageWinT = null;
     hideAll();
@@ -2932,7 +3087,7 @@ const Game = (function(){
     desk = freshDesk();
     elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
     synOn = {}; shengT = 18; duanT = 12; oppSeen = false; strokeN = 0; runGlyphs = 0; runKills = 0;
-    weapons = [{key:selArm, lv: seal.carved.you ? 3 : 2, t:0.8}];   // the starting arm is bronze-cast; the carved 又 makes it oracle
+    weapons = [{key:selArm, lv: seal.carved.you ? 3 : 2, t:0.8}]; brushInk = 0; inkMo = null;   // the starting arm is bronze-cast; the carved 又 makes it oracle
     mark('arms', selArm, weapons[0].lv);
     checkCompose();
     mark('forms', selChar, 0);
@@ -3169,7 +3324,7 @@ const Game = (function(){
     const grp = near.filter(b=>Math.hypot(b.x-best.x, b.y-best.y) < 90);
     return {x: grp.reduce((m,s)=>m+s.x, 0)/grp.length, y: grp.reduce((m,s)=>m+s.y, 0)/grp.length};
   }
-  function addAct(o){ o.t = 0; o.hitSet = new Set(); acts.push(o); return o; }
+  function addAct(o){ o.t = 0; o.hitSet = new Set(); acts.push(o); if(o.big === 'ink' && !inkMo) startInkMoment(o); return o; }
   function inkFling(cx, cy, ang, r, dir){            // a few drops fly off the end of the stroke and stain the paper
     const tx = cx + Math.cos(ang)*r, ty = cy + Math.sin(ang)*r;
     for(let i=0; i<3; i++){
@@ -3252,6 +3407,7 @@ const Game = (function(){
   }
   function hurtSpirit(s, dmg){
     if(s.dead || (s.iT||0) > 0) return;
+    loadBrush();
     s.hp = (s.hp||1) - dmg;
     s.iT = 0.22;
     tempo = Math.min(tempo, 0.9);                     // the bed eases a touch slower while you land blows (tempo only, pitch held)
@@ -3446,6 +3602,11 @@ const Game = (function(){
 
   /* ---------- update ---------- */
   function update(dt){
+    if(inkMo){
+      inkMo.t += dt;
+      if(inkMo.t >= inkMo.dur) endInkMoment();
+      else dt *= inkMo.t < 0.8 ? 0.3 : 0.3 + 0.7*(inkMo.t - 0.8)/(inkMo.dur - 0.8);
+    }
     if(banner){                                   // a boss arrives: the world holds its breath
       banner.t += dt;
       if(banner.t >= banner.dur) banner = null;
@@ -3882,14 +4043,14 @@ const Game = (function(){
       } else if(stageGoalMet()){
         stageWinT = 1.2;                                 // one breath of stillness, then the page is inked
         for(const s of spirits) addFx({kind:'poof', x:s.x, y:s.y, t:0.35, r:22});
-        spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = []; acts = []; hails = []; arcs = [];
+        spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = []; acts = []; hails = []; arcs = []; inkMo = null;
         addFx({kind:'ripple', x:player.x, y:player.y, t:1.1, r:110});
       } else {
         waveT -= dt;
         if(waveT <= 0){
           if(stage.def.goal.survive){ stageWinT = 0.9;
             for(const s of spirits) addFx({kind:'poof', x:s.x, y:s.y, t:0.35, r:22});
-            spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = []; acts = []; hails = []; arcs = [];
+            spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = []; acts = []; hails = []; arcs = []; inkMo = null;
           } else { stageEnd(false); return; }            // the sand ran out
         }
       }
@@ -3900,7 +4061,7 @@ const Game = (function(){
         if(exhaleT === null){                            // the night exhales: a held breath of stillness
           exhaleT = 1.6;
           for(const s of spirits) addFx({kind:'poof', x:s.x, y:s.y, t:0.35, r:22});
-          spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = []; acts = []; hails = []; arcs = [];
+          spirits = []; marks = []; eshots = []; shocks = []; bolts = []; fires = []; acts = []; hails = []; arcs = []; inkMo = null;
           addFx({kind:'ripple', x:CW/2, y:CH*0.5, t:1.5, r:130});
         }
         exhaleT -= dt;
@@ -5463,6 +5624,17 @@ const Game = (function(){
       if(w.res){ ctx.shadowColor = era.accent; ctx.shadowBlur = 16; }    // a composed radical hums golden
       drawWeaponIcon(ctx, w.key, w.lv, 0, 0, w.key==='mao' ? 44 : 34, era.accent);   // large enough to read as part of the character
       ctx.restore();
+      if(brushInk >= BRUSH_FULL && !inkMo && FIRING.has(w.key)){   // 墨饱: the loaded weapon drips
+        ctx.save();
+        for(let i=0; i<3; i++){
+          const ph = (tGlobal*1.3 + i/3) % 1, dx = (i - 1)*6;
+          const pos = w.key === 'dao' || w.key === 'mao' || w.key === 'ge' ? [0, 26] : (RADPOS[w.key] || [26, 0]);
+          const x = player.x + pos[0] + dx, y = player.y + pos[1] + 12 + ph*26;
+          ctx.globalAlpha = 0.9*(1 - ph); ctx.fillStyle = '#0d0a08'; ctx.strokeStyle = era.ink; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.ellipse(x, y, 2.6, 3.8, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        }
+        ctx.restore();
+      }
     }
 
     // the sky's own strikes, then the summoned glyphs — above the fight
@@ -5605,6 +5777,8 @@ const Game = (function(){
       ctx.fillStyle = '#eef2ff'; ctx.fillRect(0, 0, CW, CH); ctx.restore();
     }
 
+    if(inkMo) drawInkMoment();
+
     // xp strip along the top, hp segments under it, carried arms below
     ctx.save();
     const bw = CW-WALL*2-8;
@@ -5629,6 +5803,16 @@ const Game = (function(){
     ctx.font = 'bold 13px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
     ctx.fillText('♥', WALL+6, WALL+23);
     ctx.restore();
+    {                                                // 墨: how loaded the brush is
+      const f = brushInk/BRUSH_FULL, full = f >= 1, bx = WALL + 22, by = WALL + 66, bwid = Math.max(60, weapons.length*34 - 4);
+      ctx.save();
+      ctx.globalAlpha = full ? 0.7 + 0.3*Math.sin(tGlobal*6) : 0.8; ctx.fillStyle = era.ink;
+      ctx.font = 'bold 11px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText('墨', bx - 4, by + 2);
+      ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.fillRect(bx, by, bwid, 4);
+      ctx.globalAlpha = full ? 0.95 : 0.7; ctx.fillStyle = era.ink; ctx.fillRect(bx, by, bwid*f, 4);
+      ctx.restore();
+    }
     for(let i=0; i<weapons.length; i++){
       const w = weapons[i];
       drawWeaponIcon(ctx, w.key, w.lv, WALL+20+i*34, WALL+46, 20, era.accent);
@@ -6324,10 +6508,10 @@ const Game = (function(){
            dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, pav, endless, endlessN, exhaleT,
                          stageIdx, selChar, selArm, waveT, gate, hp: lives, maxHp, level, coins, runGlyphs, runKills, daily: todaysOmen(),
                          hat: hatOn, sheng: shengPed, buffT, paused, banner,
-                         desk, elems, synOn, pools, sealSave: seal, codexSave: seen, acts, hails, arcs }),
+                         desk, elems, synOn, pools, sealSave: seal, codexSave: seen, acts, hails, arcs, brushInk, inkMo }),
            // for scripted checks: call a summon, set the sky, jump a level, fire a gift now
            test: { glyph: (ch)=>applyGlyphEffect(ch), sky: (w)=>{ weather = w; wBoltT = 0.3; }, lv: (n)=>{ level = n; },
-                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; } } };
+                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; } } };
 })();
 
 </script>
