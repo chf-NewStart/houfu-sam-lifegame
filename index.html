@@ -248,6 +248,8 @@
     .value p { color: var(--muted); font-size: 0.95rem; margin-top: 8px; }
     .value a { display: inline-block; margin-top: 12px; color: var(--green); text-decoration: none; font-weight: 560; }
     .value a:hover { text-decoration: underline; }
+    .value p a.friend { display: inline; margin: 0; color: var(--soft); font-weight: 500; text-decoration: underline; text-decoration-color: rgba(62,224,127,0.5); text-underline-offset: 3px; }
+    .value p a.friend:hover { color: var(--green); }
     @media (max-width: 820px) { .values { grid-template-columns: 1fr; } }
 
     footer { border-top: 1px solid var(--line); padding: 56px 0 64px; color: var(--faint); font-size: 0.88rem; }
@@ -573,7 +575,7 @@
       <div class="value">
         <span class="n">01</span>
         <h3 data-zh="和朋友（还有 AI）一起做">Made with friends (and AI)</h3>
-        <p data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计，和 AI 助手 Claude 一起编写，再由每次都帮忙试玩、出点子的朋友们打磨：Sam、Ittisak、Sardaar 和 Husam。">Designed by Houfu Chen, a doctoral researcher at the University of Waterloo, coded together with Claude (an AI assistant), and shaped by friends who test every build and bring some of the best ideas: Sam, Ittisak, Sardaar and Husam.</p>
+        <p><span data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计，和 AI 助手 Claude 一起编写，再由每次都帮忙试玩、出点子的朋友们打磨：">Designed by Houfu Chen, a doctoral researcher at the University of Waterloo, coded together with Claude (an AI assistant), and shaped by friends who test every build and bring some of the best ideas: </span>Sam<span data-zh="、">, </span><a class="friend" href="https://www.linkedin.com/in/itpromma/" rel="noopener">Ittisak</a><span data-zh="、">, </span><a class="friend" href="https://www.linkedin.com/in/sardaar-reisi/" rel="noopener">Sardaar</a><span data-zh=" 和 "> and </span><a class="friend" href="https://www.linkedin.com/in/husam-al-araj-291218165/" rel="noopener">Husam</a><span data-zh="。">.</span></p>
         <a href="https://houfu72.com" data-zh="关于 Houfu →">More about Houfu →</a>
       </div>
       <div class="value">
