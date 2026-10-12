@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Life Game Project: small games by Houfu Chen</title>
-  <meta name="description" content="Hand-made games for iPhone, iPad and the browser: Plank Pilot, Game Life, Qi, Manilha and the Phloem paper reader. No ads, no accounts, and the games collect no data.">
+  <meta name="description" content="Small games for iPhone, iPad and the browser, designed by Houfu Chen and built with friends and AI: Plank Pilot, Game Life, Qi, Manilha and the Phloem paper reader. No ads, no accounts, and the games collect no data.">
 
   <meta property="og:title"       content="Life Game Project">
-  <meta property="og:description" content="Hand-made games for iPhone, iPad and the browser by Houfu Chen. Plank Pilot, Game Life, Qi, Manilha, Phloem and a free web arcade.">
+  <meta property="og:description" content="Small games for iPhone, iPad and the browser by Houfu Chen and friends. Plank Pilot, Game Life, Qi, Manilha, Phloem and a free web arcade.">
   <meta property="og:url"         content="https://lifegameproject.com/">
   <meta property="og:type"        content="website">
   <meta property="og:image"       content="https://lifegameproject.com/game/brand-og.png">
   <meta name="twitter:card"        content="summary">
   <meta name="twitter:title"       content="Life Game Project">
-  <meta name="twitter:description" content="Hand-made games for iPhone, iPad and the browser by Houfu Chen.">
+  <meta name="twitter:description" content="Small games for iPhone, iPad and the browser by Houfu Chen and friends.">
   <meta name="twitter:image"       content="https://lifegameproject.com/game/brand-og.png">
 
-  <link rel="icon" type="image/png" href="/game/guru-favicon.png?v=2">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" href="/favicon-64.png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a0c0b">
-  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
   <style>
     :root {
@@ -132,8 +133,31 @@
     .frame img, .frame video { width: 100%; border-radius: 15px; background: #000; }
     .frame.side { position: absolute; width: 50%; right: -3%; bottom: 0; transform: rotate(1.5deg); }
     .flip .frame.side { right: auto; left: -3%; transform: rotate(-1.5deg); }
-    .ipad .frame { border-radius: 26px; padding: 9px; }
-    .ipad .frame img { border-radius: 17px; }
+    /* iPad + iPhone pairs: the tablet is the big frame, the phone overlaps a corner */
+    .shots.mix { padding-bottom: 10%; }
+    .shots.mix .frame.tablet { width: 84%; padding: 10px; border-radius: 30px; }
+    .shots.mix .frame.tablet img, .shots.mix .frame.tablet video { border-radius: 20px; }
+    .shots.mix .frame.side { width: 56%; right: -2%; bottom: 0; padding: 6px; border-radius: 22px; }
+    .shots.mix .frame.side img { border-radius: 16px; }
+    .flip .shots.mix .frame.tablet { margin-left: auto; }
+    .flip .shots.mix .frame.side { right: auto; left: -2%; }
+    /* Phloem's App Store screenshots are finished posters, so they sit as cards */
+    .app .shots.cards .frame { padding: 0; background: none; border-radius: 14px; box-shadow: 0 30px 60px -28px rgba(60,40,20,0.55), 0 0 0 1px rgba(0,0,0,0.06); }
+    .app .shots.cards .frame img { border-radius: 14px; }
+    .shots.cards .frame.side { width: 48%; }
+    .shots figcaption { margin-top: 14px; font: 0.68rem/1.4 var(--mono); color: #8a7f74; }
+    .shots figcaption a { color: inherit; }
+    .btn.beta { border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+    .btn.beta:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
+    /* why these exist */
+    .whys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .why { padding: 28px; border-radius: 22px; border: 1px solid var(--line); background: var(--bg2); }
+    .why .icons { display: flex; gap: 8px; }
+    .why .icons img { width: 40px; height: 40px; border-radius: 22.5%; box-shadow: 0 0 0 1px rgba(255,255,255,0.06); }
+    .why h3 { font-size: 1.18rem; letter-spacing: -0.015em; margin-top: 18px; }
+    .why p { color: var(--muted); margin-top: 10px; font-size: 0.98rem; }
+    @media (max-width: 880px) { .whys { grid-template-columns: 1fr; } }
 
     .between { display: flex; align-items: center; gap: 14px; margin: 52px 0 22px; }
     .between::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -157,6 +181,8 @@
       .app-icon { width: 68px; height: 68px; }
       .frame.side { width: 48%; right: -1%; }
       .flip .frame.side { left: -1%; }
+      .shots.mix .frame.side, .flip .shots.mix .frame.side { width: 58%; }
+      .shots.mix .frame.tablet { width: 88%; padding: 7px; border-radius: 22px; }
       .frame { padding: 5px; border-radius: 16px; }
       .frame img, .frame video { border-radius: 11px; }
     }
@@ -226,7 +252,7 @@
     <div>
       <img class="hero-logo" src="/game/icon.png?v=3" alt="Game Life" width="1032" height="616">
       <h1 data-zh="为真实生活而做的小游戏。">Small games for real life.</h1>
-      <p class="lede" data-zh="Houfu Chen 为 iPhone、iPad 和浏览器手工制作的小游戏。没有广告，无需账号，游戏不收集任何数据。">Hand-made games for iPhone, iPad and your browser, by Houfu Chen. No ads, no accounts, and the games collect no data.</p>
+      <p class="lede" data-zh="由 Houfu Chen 设计、和朋友与 AI 一起做出的小游戏，适用于 iPhone、iPad 和浏览器。没有广告，无需账号，游戏不收集任何数据。">Small games for iPhone, iPad and your browser, designed by Houfu Chen and built with friends and AI. No ads, no accounts, and the games collect no data.</p>
       <div class="cta">
         <a class="btn primary" href="#apps" data-zh="查看应用">See the apps</a>
         <a class="btn ghost" href="#arcade" data-zh="在浏览器里玩">Play in your browser</a>
@@ -243,7 +269,33 @@
         <a href="#phloem"><img src="/assets/apps/phloem-icon.webp?v=2" alt="" width="256" height="256">Phloem</a>
         <a href="#arcade" class="web"><img src="/icon-192.png" alt="" width="192" height="192"><span data-zh="网页游戏厅">Web arcade</span></a>
       </div>
-      <p class="shelf-cap" data-zh="5 款应用 · 1 位作者">5 apps · 1 maker</p>
+      <p class="shelf-cap" data-zh="5 款应用 · 和朋友一起做">5 apps · made with friends</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="why">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker" data-zh="// 为什么会有这些">// why these exist</p>
+      <h2 data-zh="我为什么做这些。">Why I made these.</h2>
+    </div>
+    <div class="whys">
+      <div class="why">
+        <div class="icons"><img src="/assets/apps/plank-icon.webp" alt="" width="256" height="256"><img src="/assets/apps/gamelife-icon.webp" alt="" width="256" height="256"></div>
+        <h3 data-zh="一个能盯着看的东西">Something to stare at</h3>
+        <p data-zh="平板支撑时盯着地板，一分钟漫长得没有尽头，所以我做了 Plank Pilot，让你有东西可看。Game Life 也是同样的想法：一个只靠三条规则就能自己不停变化的画面。">A minute of planking feels endless when you're staring at the floor, so I made something to stare at instead: Plank Pilot. Game Life is the same idea, a screen that keeps changing all by itself.</p>
+      </div>
+      <div class="why">
+        <div class="icons"><img src="/assets/apps/qi-icon.webp" alt="" width="256" height="256"><img src="/assets/apps/manilha-icon.webp" alt="" width="256" height="256"></div>
+        <h3 data-zh="一个一起玩的人">Someone to play with</h3>
+        <p data-zh="有几款是我做来和喜欢的女生一起玩的。后来她们都不回我了，游戏却留了下来。现在你可以和一个不会消失的人一起玩。">A few of these I made to play with girls I liked. They ghosted me; the games stayed. Now you can play them with someone who won't.</p>
+      </div>
+      <div class="why">
+        <div class="icons"><img src="/assets/apps/phloem-icon.webp?v=2" alt="" width="256" height="256"></div>
+        <h3 data-zh="一个真正去读的理由">A reason to actually read</h3>
+        <p data-zh="导师让我别再用 AI 总结论文，而是真正去读。社交媒体把我的专注力消磨得所剩无几，试过的阅读器都帮不上忙，于是我做了 Phloem。">My professor told me to stop letting AI summarize papers and actually read them. Social media had worn my focus thin, and no reader I tried kept me on the page, so I built Phloem.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -254,13 +306,15 @@
     <a class="store live" href="https://apps.apple.com/app/id…"> (copy Phloem's)
   and the chip for <li class="live">Available now</li>.
     Manilha 6821476915 · Game Life 6821541367 · Qi 6821608519 · Plank Pilot 6821685257
+  Public TestFlight betas ("Public beta" group in each app, 100-tester cap):
+    Plank Pilot KWySpVN7 · Game Life PWCubDWf · Qi 8P4GpNKY · Manilha BWHMXEmg
 -->
 <section class="section" id="apps">
   <div class="wrap">
     <div class="section-head">
       <p class="kicker" data-zh="// App Store 上的应用">// on the App Store</p>
       <h2 data-zh="iPhone 与 iPad 应用">Apps for iPhone and iPad</h2>
-      <p data-zh="这里的每款应用都起步于下面游戏厅里的一个小网页游戏。四款游戏即将登陆 App Store，Phloem 现已上架。">Every app here started as a small web game in the arcade below. Four games are on their way to the App Store, and Phloem is out now.</p>
+      <p data-zh="这里的每款应用都起步于下面游戏厅里的一个小网页游戏。四款游戏即将登陆 App Store，Phloem 现已上架。想抢先试玩？加入它们的 TestFlight 测试。">Every app here started as a small web game in the arcade below. Four games are on their way to the App Store, and Phloem is out now. Want to play one early? Join its TestFlight beta.</p>
     </div>
 
     <article class="app" id="plank-pilot" style="--accent:#ffd23f">
@@ -278,6 +332,7 @@
         </ul>
         <div class="actions">
           <span class="store soon"><small data-zh="即将登陆">Coming soon to the</small><b>App Store</b></span>
+          <a class="btn beta" href="https://testflight.apple.com/join/KWySpVN7" rel="noopener" data-zh="加入 TestFlight 测试">Join the TestFlight beta</a>
           <a class="btn ghost" href="/game/plank.html" data-zh="试玩网页原型 →">Try the web prototype →</a>
         </div>
       </div>
@@ -302,12 +357,13 @@
         </ul>
         <div class="actions">
           <span class="store soon"><small data-zh="即将登陆">Coming soon to the</small><b>App Store</b></span>
+          <a class="btn beta" href="https://testflight.apple.com/join/PWCubDWf" rel="noopener" data-zh="加入 TestFlight 测试">Join the TestFlight beta</a>
           <a class="btn ghost" href="/life.html" data-zh="玩网页版 →">Play the web version →</a>
         </div>
       </div>
-      <figure class="shots">
-        <div class="frame"><video class="demo" src="/assets/apps/gamelife-demo.mp4" poster="/assets/apps/gamelife-1.webp" width="1200" height="554" muted loop playsinline preload="none" aria-label="Game Life in Aura mode: cells glow from green to violet as they age"></video></div>
-        <div class="frame side"><img src="/assets/apps/gamelife-2.webp" alt="Placing a Gosper glider gun beside a pixel GAME LIFE pattern" width="1400" height="644" loading="lazy"></div>
+      <figure class="shots mix">
+        <div class="frame tablet"><video class="demo" src="/assets/apps/gamelife-ipad-demo.mp4" poster="/assets/apps/gamelife-ipad.webp" width="1000" height="750" muted loop playsinline preload="none" aria-label="Game Life on iPad in Aura mode: cells glow from green to violet as they age"></video></div>
+        <div class="frame side"><img src="/assets/apps/gamelife-2.webp" alt="Game Life on iPhone: placing a Gosper glider gun beside a pixel GAME LIFE pattern" width="1400" height="644" loading="lazy"></div>
       </figure>
     </article>
 
@@ -326,12 +382,13 @@
         </ul>
         <div class="actions">
           <span class="store soon"><small data-zh="即将登陆">Coming soon to the</small><b>App Store</b></span>
+          <a class="btn beta" href="https://testflight.apple.com/join/8P4GpNKY" rel="noopener" data-zh="加入 TestFlight 测试">Join the TestFlight beta</a>
           <a class="btn ghost" href="/game/qi.html" data-zh="玩网页版 →">Play the web version →</a>
         </div>
       </div>
-      <figure class="shots">
-        <div class="frame"><img src="/assets/apps/qi-1.webp" alt="A game of Go with black stones and seashell white stones, with the coach's advice beside the board" width="1400" height="644" loading="lazy"></div>
-        <div class="frame side"><img src="/assets/apps/qi-2.webp" alt="Qi's start screen: choose Go or Gomoku" width="1400" height="644" loading="lazy"></div>
+      <figure class="shots mix">
+        <div class="frame tablet"><img src="/assets/apps/qi-ipad.webp" alt="Qi on iPad: a game of Go with black stones and seashell white stones, with the coach's advice beside the board" width="1200" height="900" loading="lazy"></div>
+        <div class="frame side"><img src="/assets/apps/qi-phone.webp" alt="Qi on iPhone: Gomoku with the coach ringing the key points" width="1400" height="644" loading="lazy"></div>
       </figure>
     </article>
 
@@ -350,18 +407,19 @@
         </ul>
         <div class="actions">
           <span class="store soon"><small data-zh="即将登陆">Coming soon to the</small><b>App Store</b></span>
+          <a class="btn beta" href="https://testflight.apple.com/join/BWHMXEmg" rel="noopener" data-zh="加入 TestFlight 测试">Join the TestFlight beta</a>
           <a class="btn ghost" href="/game/truco.html?v=3" data-zh="玩网页版（可联机）→">Play online with friends →</a>
         </div>
       </div>
-      <figure class="shots">
-        <div class="frame"><img src="/assets/apps/manilha-1.webp" alt="A round of Manilha: your hand of cards below the table, the manilha indicator on the left" width="1400" height="644" loading="lazy"></div>
-        <div class="frame side"><img src="/assets/apps/manilha-2.webp" alt="Manilha's lobby: play 1, 2 or 3 computer opponents, or two players against two" width="1400" height="644" loading="lazy"></div>
+      <figure class="shots mix">
+        <div class="frame tablet"><img src="/assets/apps/manilha-ipad.webp" alt="Manilha on iPad: your hand of cards below the table, the manilha indicator on the left" width="1200" height="900" loading="lazy"></div>
+        <div class="frame side"><img src="/assets/apps/manilha-2.webp" alt="Manilha on iPhone: the lobby, with 1, 2 or 3 computer opponents or two players against two" width="1400" height="644" loading="lazy"></div>
       </figure>
     </article>
 
     <p class="between kicker" data-zh="// 还有一款阅读应用">// and one for reading</p>
 
-    <article class="app paper ipad" id="phloem">
+    <article class="app paper" id="phloem">
       <div class="app-copy">
         <div class="app-id">
           <img class="app-icon" src="/assets/apps/phloem-icon.webp?v=2" alt="" width="256" height="256">
@@ -379,9 +437,10 @@
           <a class="btn ghost" href="https://houfu72.com/reading.html" data-zh="打开网页阅读器 →">Open the web reader →</a>
         </div>
       </div>
-      <figure class="shots">
-        <div class="frame"><img src="/assets/apps/phloem-1.webp" alt="Phloem reading a paper on iPad, with a highlighted line and notes beside the page" width="1200" height="900" loading="lazy"></div>
-        <div class="frame side"><img src="/assets/apps/phloem-2.webp" alt="Phloem's library: a reading wall of paper cards" width="1200" height="900" loading="lazy"></div>
+      <figure class="shots cards">
+        <div class="frame"><img src="/assets/apps/phloem-store-1.webp" alt="Phloem: Turn passages into ideas. A paper with highlights and handwritten Apple Pencil notes beside extracted passages" width="1400" height="1050" loading="lazy"></div>
+        <div class="frame side"><img src="/assets/apps/phloem-store-2.webp" alt="Phloem: Give every paper room. A two-page book view of a paper with figures" width="1400" height="1050" loading="lazy"></div>
+        <figcaption>Paper shown: Knoblauch et al., <a href="https://doi.org/10.7554/eLife.15341">eLife 2016</a>, CC BY 4.0</figcaption>
       </figure>
     </article>
   </div>
@@ -421,10 +480,10 @@
         </div>
       </a>
       <a class="game" href="/game/truco.html?v=3">
-        <div class="thumb"><img src="/game/thumbs/truco.png?v=1" alt="" loading="lazy" width="440" height="240"></div>
+        <div class="thumb"><img src="/assets/apps/manilha-web-thumb.webp" alt="" loading="lazy" width="880" height="480"></div>
         <div class="game-body">
-          <div class="game-top"><h3 data-zh="特鲁科">Truco</h3><span class="players" data-zh="1–4P · 联机">1–4P · online</span></div>
-          <span class="exe">truco.exe</span>
+          <div class="game-top"><h3>Manilha</h3><span class="players" data-zh="1–4P · 联机">1–4P · online</span></div>
+          <span class="exe">manilha.exe</span>
           <p data-zh="巴西叫牌赢墩，可开非公开房间，最多四人同玩。">Brazilian bid-and-tricks, with unlisted rooms for up to four friends.</p>
         </div>
       </a>
@@ -497,8 +556,8 @@
     <div class="values">
       <div class="value">
         <span class="n">01</span>
-        <h3 data-zh="一个人做的">Made by one person</h3>
-        <p data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计、绘制和编写。">Designed, drawn and coded by Houfu Chen, a doctoral researcher at the University of Waterloo.</p>
+        <h3 data-zh="和朋友（还有 AI）一起做">Made with friends (and AI)</h3>
+        <p data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计，和 AI 助手 Claude 一起编写，再由每次都帮忙试玩、出点子的朋友们打磨。">Designed by Houfu Chen, a doctoral researcher at the University of Waterloo, coded together with Claude (an AI assistant), and shaped by friends who test every build and bring some of the best ideas.</p>
         <a href="https://houfu72.com" data-zh="关于 Houfu →">More about Houfu →</a>
       </div>
       <div class="value">
