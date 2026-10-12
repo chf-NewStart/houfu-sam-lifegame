@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>字源 · Glyph Run // houfu.xyz</title>
+<title>字源 · Glyph Run // Life Game Project</title>
 <meta name="description" content="A top-down arena survivor where you ARE a Chinese character. Spirits swarm, your ink fights back, and every survived wave rewinds the script an era — 隸書 → 篆書 → 金文 → 甲骨文 — your glyph evolving toward its oracle-bone root.">
 <link rel="icon" type="image/png" href="/game/thumbs/glyphrun-icon.png?v=4">
 <link rel="apple-touch-icon" href="/game/thumbs/glyphrun-icon.png?v=4">
@@ -281,13 +281,55 @@
   #elemRow{max-width:960px;margin:6px auto 0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;font-size:0.8rem;}
   .echip{border:1px solid #333;border-radius:6px;padding:2px 9px;color:#7d7d7d;letter-spacing:2px;background:rgba(10,10,10,0.6);}
   .echip b{font-size:0.9rem;}
+  .echip small{font-size:0.62rem;letter-spacing:0;color:#8f8f8f;margin-left:1px;}
+  .echip.lit small{color:#b9b3a2;}
   .echip.lit{color:#e8dfc8;}
   .echip.syn{border-color:var(--cinnabar);color:#f0b9a6;box-shadow:0 0 10px -4px rgba(163,39,27,0.9);}
 
   #muteBtn{position:absolute;top:10px;right:58px;z-index:8;background:rgba(6,10,8,0.7);border:1px solid #3a3a3a;color:#bbb;
     font-size:1.05rem;width:42px;height:42px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   #muteBtn:hover{border-color:#e8b04a;color:#e8b04a;}
+  #dashBtn{position:absolute;right:14px;bottom:14px;z-index:8;width:62px;height:62px;border-radius:50%;
+    border:1px solid #e8b04a;color:#f3e6c4;font-family:var(--brush);font-size:1.45rem;line-height:1;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;
+    background:conic-gradient(rgba(6,10,8,0.82) calc(var(--cd,0) * 360deg), rgba(232,176,74,0.28) 0);
+    box-shadow:0 0 14px -4px rgba(232,176,74,0.7);}
+  #dashBtn small{font-family:var(--mono);font-size:0.52rem;color:#c9b98e;margin-top:2px;letter-spacing:1px;}
+  #dashBtn.cool{border-color:#5a4a2a;box-shadow:none;color:#9a8f76;}
+  body:not(.appfs) #dashBtn{width:50px;height:50px;font-size:1.15rem;right:10px;bottom:10px;}
+  body.appfs #dashBtn{right:calc(18px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:74px;height:74px;font-size:1.7rem;}
   #muteBtn.off{color:#5a5a5a;text-decoration:line-through;}
+
+  /* laptops: the hud, the field and the element row always fit the window's height,
+     so nothing falls off the bottom mid-battle (start() scrolls the field to the top) */
+  body:not(.appfs) .stage-wrap, body:not(.appfs) #elemRow{max-width:min(960px, calc((100vh - 100px) * 16 / 9));}
+
+  /* short landscape screens (sideways phones): the whole start menu fits one screen —
+     the blurb steps aside, the cards shrink into a grid beside the preview */
+  @media (max-height:560px){
+    #ovStart h2{font-size:0.98rem;margin:0 0 4px;}
+    #ovStart > .big{display:none;}
+    #ovStart .daily-omen{margin:0 auto 6px;padding:4px 10px;}
+    #ovStart .daily-omen .og{font-size:1.1rem;}
+    #ovStart .setup{flex-wrap:nowrap;gap:10px;margin:0 0 6px;align-items:stretch;}
+    #ovStart .setup-left{max-width:none;gap:6px;}
+    #ovStart .pick-box{padding:4px 8px 4px;}
+    #ovStart .pick-box>.keys{font-size:0.6rem;margin:0 0 3px;line-height:1.5;}
+    #ovStart .char-row{gap:5px;max-width:290px;}
+    #ovStart .char-card, #ovStart .char-card.arm{width:66px;padding:4px 2px;}
+    #ovStart .char-card canvas, #ovStart .char-card.arm canvas{width:26px;height:30px;margin-bottom:1px;}
+    #ovStart .char-card .cname{font-size:0.6rem;line-height:1.3;}
+    #ovStart .char-card .cskill, #ovStart .char-card .chint{display:none;}
+    #ovStart #prevBox{display:flex;flex-direction:column;justify-content:center;width:210px;padding:5px;}
+    #ovStart #prevLine{min-height:0;font-size:0.56rem;margin-top:4px;}
+    #ovStart .btn{padding:7px 12px;font-size:0.74rem;margin-top:0;}
+  }
+  @media (max-height:400px){
+    #ovStart #prevLine{display:none;}
+    #ovStart .daily-omen{padding:2px 10px;}
+    #ovStart .daily-omen .od{font-size:0.6rem;}
+    #ovStart .char-card canvas, #ovStart .char-card.arm canvas{height:26px;}
+  }
 
   /* ================= app play: fullscreen landscape, thumb on the canvas ================= */
   #rotateHint{display:none;}
@@ -316,7 +358,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b57</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b58</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -338,6 +380,7 @@
 
     <button id="pauseBtn" aria-label="pause"><canvas id="pauseZhi" width="24" height="26"></canvas></button>
     <button id="muteBtn" aria-label="sound">音</button>
+    <button id="dashBtn" aria-label="dash" title="dash (Space)">疾<small data-en="dash" data-zh="疾行">dash</small></button>
     <div id="stampFx"><canvas id="stampCvs" width="300" height="300"></canvas></div>
 
     <!-- START -->
@@ -2166,14 +2209,15 @@ const COMMON_GLYPHS = GLYPH_KEYS.filter(c=>!POWER_GLYPHS.includes(c));
 const ELEM_OF = {'火':'火','日':'火','水':'水','雨':'水','泉':'水','魚':'水','舟':'水',
                  '木':'木','禾':'木','山':'土','田':'土','鼎':'金'};
 const ELEM_COLOR = {'金':'#e8c15a','木':'#8bc34a','水':'#6fb7e8','火':'#f0674a','土':'#c49a6a'};
+const ELEM_EN = {'金':'metal','木':'wood','水':'water','火':'fire','土':'earth'};
 const SYNERGIES = {
-  sheng:{ch:'生', need:{'水':3,'木':2}, name_en:'水木相生 · GROWTH',  name_zh:'水木相生',
+  sheng:{ch:'生', short_en:'growth', need:{'水':3,'木':2}, name_en:'水木相生 · GROWTH',  name_zh:'水木相生',
          en:'the waters feed the wood — a heart mends every 18s',            zh:'水生木——每18秒回复一心'},
-  duan: {ch:'鍛', need:{'金':2,'火':2}, name_en:'金火鍛造 · FORGING', name_zh:'金火鍛造',
+  duan: {ch:'鍛', short_en:'forge', need:{'金':2,'火':2}, name_en:'金火鍛造 · FORGING', name_zh:'金火鍛造',
          en:'fire tempers metal — a 龜 shell re-forms every 12s',            zh:'火炼金——每12秒重铸一层龟甲'},
-  ni:   {ch:'泥', need:{'土':2,'水':2}, name_en:'土水成泥 · MIRE',    name_zh:'土水成泥',
+  ni:   {ch:'泥', short_en:'mire', need:{'土':2,'水':2}, name_en:'土水成泥 · MIRE',    name_zh:'土水成泥',
          en:'earth drinks water — roots, slows and ink pools hold half again as long', zh:'土得水而成泥——缠足、迟缓与墨池更久更广'},
-  liao: {ch:'燎', need:{'木':2,'火':2}, name_en:'木火燎原 · KINDLING', name_zh:'木火燎原',
+  liao: {ch:'燎', short_en:'kindling', need:{'木':2,'火':2}, name_en:'木火燎原 · KINDLING', name_zh:'木火燎原',
          en:'wood feeds fire — every glyph you catch sets your ink burning (3s)',      zh:'木助火势——每拾一字，焚墨三秒'}
 };
 
@@ -2519,11 +2563,16 @@ const FOE_INFO = {
 
 /* per-era wave tuning: survive the timer and the gate opens */
 const WAVES = [
-  {len:35, spawn:1.20, cap:12, spd:58, fireInt:0,   bolt:0},
-  {len:45, spawn:0.95, cap:17, spd:71, fireInt:6.5, bolt:0},
-  {len:55, spawn:0.76, cap:23, spd:84, fireInt:4.6, bolt:5.4},
-  {len:65, spawn:0.62, cap:28, spd:97, fireInt:3.4, bolt:3.4}
+  {len:35, spawn:0.90, cap:18, spd:62, fireInt:0,   bolt:0},
+  {len:45, spawn:0.70, cap:27, spd:75, fireInt:6.5, bolt:0},
+  {len:55, spawn:0.56, cap:36, spd:88, fireInt:4.6, bolt:5.4},
+  {len:65, spawn:0.46, cap:46, spd:101, fireInt:3.4, bolt:3.4}
 ];
+/* the night bites back: spirits take more ink each era, swarms close in as rings
+   (always with a gap to break through), and 疾 the dash carries you out of them */
+const TOUGH = [1.6, 2.0, 2.8, 3.6];                  // health multiplier per wave
+const SURGE = {first:15, every:[22, 19, 16, 14], ring:[8, 13, 17, 21], radius:250, warn:1.8};
+const DASH = {dist:150, time:0.18, after:0.14, cd:2.0};
 /* 電 lightning burns white-hot — neither your gold nor the spirits' teal */
 const BOLTC = '#fff0b8';
 /* wave & level numerals, the oracle way (four was 亖) */
@@ -2541,7 +2590,7 @@ const Game = (function(){
   const HP_BASE = 6, LV_XP = [0, 10, 24, 40];   // glyphs needed to reach each form
   let maxHp = HP_BASE;
   let stageIdx = 0, lives = maxHp, coins = 0, nextHeart = 12, level = 0, running = false, raf = 0, lastTs = 0;
-  let era, wave, tGlobal = 0, waveT = 0, spawnT = 1, fireT = 3, gate = null, gateGlow = 0;
+  let era, wave, tGlobal = 0, waveT = 0, spawnT = 1, fireT = 3, gate = null, gateGlow = 0, surgeT = 99, dashHintShown = false, dashBtnEl = null, lastDashF = -1;
   let selChar = 'ren', selArm = 'gong', lastSkillTxt = '', shakeT = 0, slowAllT = 0, buffT = 0;
   let player, keys = {}, joy = {x:0, y:0, on:false};
   let spirits = [], pickups = [], fires = [], fx = [], pedestals = [], projectiles = [], bolts = [];
@@ -2679,7 +2728,7 @@ const Game = (function(){
     marks = []; eshots = []; shocks = []; forgeDone = false;
     rollWeather(i);
     wTimes = [wave.len*0.6, wave.len*0.28];
-    waveT = wave.len; spawnT = 1.2; fireT = 3.5; boltT = 5; gate = null; slowAllT = 0;
+    waveT = wave.len; spawnT = 1.2; fireT = 3.5; boltT = 5; gate = null; slowAllT = 0; surgeT = SURGE.first;
     dragonDone = false; bossDone = false;
     shengPed = (i === 1 && !hatOn) ? {x:CW*0.3, y:CH*0.35, bob:0} : null;
     pav = null; treeDone = false; pavDone = false;
@@ -2688,7 +2737,8 @@ const Game = (function(){
     player = { x:CW/2, y:CH*0.62, vx:0, vy:0, face:1, runPhase:0, sq:0, inv:1.0,
                atkT:0.5, lastDir:{x:1,y:0},
                slipT:0, penT:0, phaseCdT:2.5, phasedT:0, pulseT:1,
-               speedT:0, fireInkT:0, magnetT:0, boatT:0, shellOn:false, roofOn:false };
+               speedT:0, fireInkT:0, magnetT:0, boatT:0, shellOn:false, roofOn:false,
+               dashT:0, dashCd:0, dashDir:{x:1,y:0} };
     syncHud();
   }
 
@@ -2804,23 +2854,26 @@ const Game = (function(){
   /* the five phases, counted under the arena; woken synergies glow cinnabar */
   function syncElems(){
     const row = $('elemRow'); if(!row) return;
-    let html = `<span class="echip elabel" title="${t('every glyph you catch carries one of the five phases','拾起的每个字都带着五行之一')}">${t('五行','五行')}</span>`;
+    const en = lang() !== 'zh';
+    const word = (w)=> en ? ` <small>${w}</small>` : '';
+    let html = `<span class="echip elabel" title="${t('every glyph you catch carries one of the five phases; pair two that feed each other and a bond wakes for the whole run','拾起的每个字都带着五行之一；相生的两行凑齐，便结成贯穿全局的羁绊')}">五行${word('five phases')}</span>`;
     for(const el of ['金','木','水','火','土']){
       const n = elems[el];
-      html += `<span class="echip${n>0?' lit':''}" data-el="${el}" style="${n>0?`border-color:${ELEM_COLOR[el]}55;`:''}"><b style="color:${n>0?ELEM_COLOR[el]:'#555'}">${el}</b> ${n}</span>`;
+      html += `<span class="echip${n>0?' lit':''}" data-el="${el}" title="${t(ELEM_EN[el] + ': glyphs of this phase you have caught', el + '：已拾得的此行之字')}" style="${n>0?`border-color:${ELEM_COLOR[el]}55;`:''}"><b style="color:${n>0?ELEM_COLOR[el]:'#555'}">${el}</b>${word(ELEM_EN[el])} ${n}</span>`;
     }
     html += `<span class="esep">⇢</span>`;
     // every bond shown from the start, with live progress — the build is visible
     for(const id of Object.keys(SYNERGIES)){
       const S = SYNERGIES[id];
       if(synOn[id]){
-        html += `<span class="echip syn" title="${t(S.en, S.zh)}">${S.ch} ${t(S.name_zh, S.name_zh)} ✓</span>`;
+        html += `<span class="echip syn" title="${t(S.en, S.zh)}">${S.ch} ${t(S.name_en, S.name_zh)} ✓</span>`;
       } else {
         const parts = Object.keys(S.need).map(el=>{
           const have = Math.min(elems[el], S.need[el]);
           return `<b style="color:${have>=S.need[el]?ELEM_COLOR[el]:'#5a5a5a'}">${el}${have}/${S.need[el]}</b>`;
         }).join(' ');
-        html += `<span class="echip dimsyn" title="${t(S.en, S.zh)}">${S.ch} ${parts}</span>`;
+        const recipe = Object.keys(S.need).map(el=>`${S.need[el]} ${ELEM_EN[el]}`).join(' + ');
+        html += `<span class="echip dimsyn" title="${t(recipe + ': ' + S.en, S.zh)}">${S.ch}${word(S.short_en)} ${parts}</span>`;
       }
     }
     row.innerHTML = html;
@@ -2873,6 +2926,10 @@ const Game = (function(){
     loadStage(0);
     stampRun();
     running = true; lastTs = performance.now();
+    if(!APPFS){   // laptops: the field takes the window, the page header scrolls away
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.querySelector('.stage-wrap').scrollIntoView({block:'start', behavior: reduce ? 'auto' : 'smooth'});
+    }
     tempo = 1; hurtDuck = 1; bgmVol = 0.3; bgm.start();        // the guzheng bed swells up (continues from the menu)
     if(!raf) raf = requestAnimationFrame(loop);
   }
@@ -3177,6 +3234,37 @@ const Game = (function(){
     }
     return best;
   }
+  function swarm(){
+    const i = Math.min(stageIdx, 3), n = SURGE.ring[i], hpRing = Math.ceil(TOUGH[i] || 1);
+    const gapAt = (Math.random() * n) | 0, spin = Math.random() * Math.PI * 2;
+    for(let k = 0; k < n; k++){
+      if(k === gapAt || k === (gapAt + 1) % n) continue;               // the way out
+      const a = spin + k / n * Math.PI * 2;
+      const x = clamp(player.x + Math.cos(a) * SURGE.radius, WALL + 24, CW - WALL - 24);
+      const y = clamp(player.y + Math.sin(a) * SURGE.radius * 0.8, WALL + 30, CH - WALL - 24);
+      const fast = stageIdx >= 2 && Math.random() < 0.25;
+      const sp = {x, y, phase:Math.random()*6, dead:false, type: fast ? 'yan' : 'gui', hp: fast ? Math.ceil(hpRing * 0.6) : hpRing,
+                  cr: fast ? 24 : 29, st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
+                  spd: wave.spd * (fast ? 1.6 : 1.05) * (0.9 + Math.random()*0.2)};
+      marks.push({sp, t: SURGE.warn});
+    }
+    addFx({kind:'ripple', x:player.x, y:player.y, t:1.2, r:SURGE.radius});
+    popToastEx('群', 'qún', t('a swarm closes in — break out through the gap', '群鬼合围——从缺口冲出去'), 'guai');
+  }
+  /* 疾: a burst of ink in the way you're steering; nothing touches you mid-dash */
+  function dash(){
+    if(!running || paused || !player || player.dashCd > 0) return;
+    let dx = (keys.left?-1:0)+(keys.right?1:0), dy = (keys.up?-1:0)+(keys.down?1:0);
+    if(joy.on && Math.hypot(joy.x,joy.y) > 0.16){ dx = joy.x; dy = joy.y; }
+    let m = Math.hypot(dx, dy);
+    if(m < 0.01){ dx = player.lastDir ? player.lastDir.x : player.face; dy = player.lastDir ? player.lastDir.y : 0; m = Math.hypot(dx, dy) || 1; }
+    player.dashDir = {x:dx/m, y:dy/m}; player.dashT = DASH.time; player.dashCd = DASH.cd;
+    const ex = clamp(player.x + player.dashDir.x*DASH.dist, WALL+16, CW-WALL-16), ey = clamp(player.y + player.dashDir.y*DASH.dist, WALL+34, CH-WALL-10);
+    inkCtx.save(); inkCtx.strokeStyle = 'rgba(232,223,200,0.22)'; inkCtx.lineWidth = 12; inkCtx.lineCap = 'round';
+    inkCtx.beginPath(); inkCtx.moveTo(player.x, player.y - 14); inkCtx.lineTo(ex, ey - 14); inkCtx.stroke(); inkCtx.restore();
+    addFx({kind:'poof', x:player.x, y:player.y, t:0.3, r:20});
+    SFX.swish();
+  }
   function hit(){
     lives--; player.inv = 1.0; shakeT = 0.3;
     if(stage) stageHurt++;
@@ -3193,7 +3281,7 @@ const Game = (function(){
     if(lives <= 0) gameOver();
   }
   function hurtPlayer(src){
-    if(player.inv > 0 || player.phasedT > 0) return;
+    if(player.inv > 0 || player.phasedT > 0 || player.dashT > 0) return;
     if(waveGuard){                                   // 韌紙: the first blow tears the sheet, not you
       waveGuard = false; player.inv = 0.6;
       addFx({kind:'shieldpop', x:player.x, y:player.y, t:0.3, r:38});
@@ -3301,7 +3389,19 @@ const Game = (function(){
     const yoked = spirits.some(s=>!s.dead && s.type==='yoke' && Math.hypot(s.x-player.x, s.y-player.y) < 130);
     const spd = 200 * c.spd * (buffT>0 ? 1.3 : 1) * (player.speedT>0 ? 1.45 : 1)
               * (seal.carved.zhi ? 1.06 : 1) * (inInk ? 1.1 : 1) * (yoked ? 0.7 : 1);
-    if(c.drift){
+    player.dashCd = Math.max(0, player.dashCd - dt);
+    dashBtnEl = dashBtnEl || document.getElementById('dashBtn');
+    const dashF = player.dashCd / DASH.cd;                       // the 疾 button refills like an ink well
+    if(dashBtnEl && (Math.abs(dashF - lastDashF) > 0.02 || (dashF === 0 && lastDashF !== 0))){
+      dashBtnEl.style.setProperty('--cd', dashF.toFixed(3)); dashBtnEl.classList.toggle('cool', dashF > 0); lastDashF = dashF;
+    }
+    if(player.dashT > 0){
+      const v = DASH.dist / DASH.time;
+      player.x += player.dashDir.x * v * dt; player.y += player.dashDir.y * v * dt;
+      player.vx = player.dashDir.x * spd; player.vy = player.dashDir.y * spd;
+      player.dashT -= dt; player.runPhase += v*dt*0.03;
+      if(player.dashT <= 0) player.inv = Math.max(player.inv, DASH.after);
+    } else if(c.drift){
       const ax = mag>0.01 ? dx*spd*Math.min(1,mag) : 0;
       const ay = mag>0.01 ? dy*spd*Math.min(1,mag) : 0;
       player.vx += (ax - player.vx) * Math.min(1, dt*3.2);
@@ -3714,6 +3814,7 @@ const Game = (function(){
               else if(stageIdx >= 2 && roll >= 0.44 && roll < 0.44 + [0,0,0.05,0.06][stageIdx]){ type = 'xue'; hp = 3; cr = 30; }        // 血 the blood-priest
               else if(stageIdx >= 1 && roll >= 0.20 && roll < 0.20 + [0,0.05,0.06,0.07][stageIdx]){ type = 'yoke'; hp = 4; cr = 32; }    // 央 the yoke
               }
+              hp = Math.ceil(hp * (TOUGH[Math.min(stageIdx, 3)] || 1));
               const sp = {x:px, y:py, phase:Math.random()*6, dead:false, type, hp, cr,
                           st:0, stT:1.5, face:1, dirn:Math.random()<0.5?-1:1,
                           spd: wave.spd*(1+0.35*prog)*(0.85+Math.random()*0.3)};
@@ -3727,8 +3828,9 @@ const Game = (function(){
                 if(elems['水'] >= 3) counters.push('火');
                 if(counters.length){
                   sp.opp = counters[(Math.random()*counters.length)|0];
-                  if(sp.opp === '水'){ sp.spd *= 1.18; sp.hp = 2; }
-                  else sp.hp = 2;
+                  const oppHp = Math.ceil(2 * (TOUGH[Math.min(stageIdx, 3)] || 1));
+                  if(sp.opp === '水'){ sp.spd *= 1.18; sp.hp = oppHp; }
+                  else sp.hp = oppHp;
                   if(!oppSeen){
                     oppSeen = true;
                     popToastEx('剋', 'kè', t('the opposing element rises against you', '相剋之灵，逆流而来'), 'guai');
@@ -3739,6 +3841,16 @@ const Game = (function(){
               break;
             }
           }
+        }
+        // 群 — every so often the night closes in as a ring, with a gap to break through
+        if(!stage){
+          surgeT -= dt;
+          if(surgeT <= 0 && waveT > 4){ surgeT = SURGE.every[Math.min(stageIdx, 3)]; swarm(); }
+        }
+        if(!dashHintShown && tGlobal > 0 && waveT < wave.len - 5){
+          dashHintShown = true;
+          popToastEx('疾', 'jí', t(APPFS ? 'dash — tap 疾 (bottom right); nothing can touch you mid-dash' : 'dash — press Space; nothing can touch you mid-dash',
+                                  APPFS ? '疾行——点右下角的「疾」，疾行时刀枪不入' : '疾行——按空格键，疾行时刀枪不入'), 'wu');
         }
         // 生 — the marks sprout, then the spirits are born
         for(const m of marks){
@@ -4918,7 +5030,7 @@ const Game = (function(){
         if(!running){
           if($('ovStart').classList.contains('show')){ start(); return; }
           if($('ovClear').classList.contains('show')){ toDesk(); return; }
-        }
+        } else { dash(); return; }
       }
       if(['1','2','3'].includes(k) && deskKey(+k)){ e.preventDefault(); return; }   // pick a slat from the keyboard
       if(k==='escape' || k==='p'){
@@ -4954,6 +5066,7 @@ const Game = (function(){
     joyEl.addEventListener('pointercancel', joyUp);
     joyEl.addEventListener('lostpointercapture', joyUp);
     $('pauseBtn').addEventListener('click', ()=>{ paused ? resume() : pause(); });
+    $('dashBtn').addEventListener('pointerdown', (e)=>{ e.preventDefault(); e.stopPropagation(); dash(); });
     /* touch steering: press anywhere on the night and the stick blooms under
        your thumb — drag to steer, lift to stop. Buttons and menus still work. */
     const box = document.getElementById('cvsBox');
