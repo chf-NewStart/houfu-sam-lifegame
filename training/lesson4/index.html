@@ -340,12 +340,18 @@ function clampPan() {
   const { w: ww, h: wh } = computeWrapSize();
   const scaledW = canvas.width  * zoom;
   const scaledH = canvas.height * zoom;
-  panX = Math.min(0, Math.max(ww - scaledW, panX));
-  panY = Math.min(0, Math.max(wh - scaledH, panY));
+  // a board smaller than the window sits in the middle; a bigger one can't be dragged off-screen
+  panX = scaledW <= ww ? (ww - scaledW) / 2 : Math.min(0, Math.max(ww - scaledW, panX));
+  panY = scaledH <= wh ? (wh - scaledH) / 2 : Math.min(0, Math.max(wh - scaledH, panY));
 }
 
+// Default view: 1× where the whole board fits (desktop); on a phone, zoomed out so the
+// whole board shows, with the centre glider in the middle of the screen.
 function resetView() {
-  zoom = 1; panX = 0; panY = 0;
+  const { w: ww, h: wh } = computeWrapSize();
+  zoom = Math.max(ZOOM_MIN, Math.min(1, ww / canvas.width, wh / canvas.height));
+  panX = 0; panY = 0;
+  clampPan();
   applyTransform();
 }
 
@@ -666,8 +672,8 @@ const STAGES = [
   {
     title: 'Reset View',
     titleZh: '重置视图',
-    text: `Lost your place? Click <b>Reset View</b> to return to zoom 1× and the default position.<br><br>Try zooming and panning to a different corner, then click Reset View to snap back. This works at any time during playback.`,
-    textZh: `找不到位置了？点击<b>重置视图</b>即可回到 1× 缩放和默认位置。<br><br>试着缩放、平移到另一个角落，然后点击重置视图快速回到原位。这在播放过程中随时都能用。`,
+    text: `Lost your place? Click <b>Reset View</b> to return to the default zoom and position.<br><br>Try zooming and panning to a different corner, then click Reset View to snap back. This works at any time during playback.`,
+    textZh: `找不到位置了？点击<b>重置视图</b>即可回到默认的缩放和位置。<br><br>试着缩放、平移到另一个角落，然后点击重置视图快速回到原位。这在播放过程中随时都能用。`,
     setup: _setup(() => { resetView(); loadGlider(Math.floor(COLS/2), Math.floor(ROWS/2)); }),
     resetLabel: '⊙ Reset View',
     resetLabelZh: '⊙ 重置视图',
