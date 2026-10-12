@@ -140,14 +140,16 @@
     .shots.mix .frame.side { width: 56%; right: -2%; bottom: 0; padding: 6px; border-radius: 22px; }
     .shots.mix .frame.side img { border-radius: 16px; }
     .flip .shots.mix .frame.tablet { margin-left: auto; }
-    .shots.mix.tall { padding-bottom: 0; }
-    .shots.mix.tall .frame.tablet { width: 54%; margin-left: 4%; }
-    .shots.mix.tall .frame.side { width: 62%; right: 0; bottom: 9%; }
+    .shots.mix.tall { padding-bottom: 9%; }
+    .shots.mix.tall .frame.tablet { width: 52%; margin-left: 0; }
+    .shots.mix.tall .frame.side { width: 56%; right: -2%; bottom: 0; }
     .flip .shots.mix .frame.side { right: auto; left: -2%; }
     /* Phloem's App Store screenshots are finished posters, so they sit as cards */
     .app .shots.cards .frame { padding: 0; background: none; border-radius: 14px; box-shadow: 0 30px 60px -28px rgba(60,40,20,0.55), 0 0 0 1px rgba(0,0,0,0.06); }
     .app .shots.cards .frame img { border-radius: 14px; }
     .shots.cards .frame.side { width: 48%; }
+    .shots.cards .frame.side.page { width: 30%; right: -2%; bottom: -4%; transform: rotate(2deg); }
+    .app .shots.cards .frame video { width: 100%; border-radius: 14px; }
     .shots.cards { margin-bottom: 24px; }
     .shots figcaption { position: absolute; left: 0; bottom: -26px; white-space: nowrap; font: 0.68rem/1.4 var(--mono); color: #8a7f74; }
     .shots figcaption a { color: inherit; }
@@ -187,8 +189,9 @@
       .flip .frame.side { left: -1%; }
       .shots.mix .frame.side, .flip .shots.mix .frame.side { width: 58%; }
       .shots.mix .frame.tablet { width: 88%; padding: 7px; border-radius: 22px; }
-      .shots.mix.tall .frame.tablet { width: 60%; margin-left: 0; }
-      .shots.mix.tall .frame.side { width: 64%; }
+      .shots.mix.tall { padding-bottom: 12%; }
+      .shots.mix.tall .frame.tablet { width: 56%; }
+      .shots.mix.tall .frame.side { width: 58%; right: -1%; }
       .frame { padding: 5px; border-radius: 16px; }
       .frame img, .frame video { border-radius: 11px; }
     }
@@ -445,7 +448,7 @@
       </div>
       <figure class="shots cards">
         <div class="frame"><video class="demo" src="/assets/apps/phloem-demo.mp4" poster="/assets/apps/phloem-guide.webp" width="960" height="720" muted loop playsinline preload="none" aria-label="Phloem demo: a passage becomes a note, Apple Pencil handwriting, Ask AI explaining a passage, the reading guide in light and dark, and real page turns in book view"></video></div>
-        <div class="frame side"><img src="/assets/apps/phloem-ask-ai.webp" alt="Ask AI in Phloem: a DeepSeek explanation of the selected passage, marked Verify" width="1200" height="900" loading="lazy"></div>
+        <div class="frame side page"><video class="demo" src="/assets/apps/phloem-flip.mp4" poster="/assets/apps/phloem-flip.webp" width="540" height="704" muted loop playsinline preload="none" aria-label="Phloem's page view: pages turn with a real paper curl"></video></div>
         <figcaption>Paper: Knoblauch et al., <a href="https://doi.org/10.7554/eLife.15341">eLife 2016</a> · CC BY 4.0</figcaption>
       </figure>
     </article>
