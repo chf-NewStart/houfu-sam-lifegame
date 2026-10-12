@@ -228,7 +228,7 @@
     .thumb::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--accent); opacity: 0.85; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
     .game:hover .thumb img { transform: scale(1.04); }
-    .thumb .exe { position: absolute; left: 10px; top: 10px; padding: 4px 8px; border-radius: 6px; background: rgba(5,6,5,0.72); font: 500 0.68rem/1.2 var(--mono); color: var(--accent); }
+    .game .exe { font: 0.72rem/1.4 var(--mono); color: var(--faint); margin-top: -2px; }
     .game-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
     .game-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
     .game h3 { font-size: 1.08rem; letter-spacing: -0.01em; }
@@ -257,6 +257,7 @@
 
     footer { border-top: 1px solid var(--line); padding: 56px 0 64px; color: var(--faint); font-size: 0.88rem; }
     footer .tag { color: var(--text); font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
+    footer .hope { margin-top: 8px; color: var(--soft); font-size: 1rem; }
     footer .sub { margin-top: 6px; }
     footer nav { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 26px; }
     footer a { color: var(--muted); text-decoration: none; }
@@ -503,49 +504,55 @@
 
     <div class="games">
       <a class="game" href="/game/dilemma.html?v=b1" style="--accent:#8ea2ff">
-        <div class="thumb"><img src="/assets/arcade/dilemma.webp" alt="" loading="lazy" width="880" height="480"><span class="exe">dilemma_lab.exe</span></div>
+        <div class="thumb"><img src="/assets/arcade/dilemma.webp?v=2" alt="" loading="lazy" width="880" height="478"></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="困境实验室">Dilemma Lab</h3><span class="players">1P</span></div>
+          <span class="exe">dilemma_lab.exe</span>
           <p data-zh="用规则卡拼出策略，在经典的阿克塞尔罗德锦标赛里对战「一报还一报」等对手。">Build a strategy from rule cards and enter Axelrod's classic tournament against Tit for Tat and friends.</p>
           <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
       <a class="game" href="/game/rope.html?v=b40" style="--accent:#5ec8ff">
-        <div class="thumb"><img src="/game/thumbs/rope.jpg?v=2" alt="" loading="lazy" width="440" height="240"><span class="exe">tether.exe</span></div>
+        <div class="thumb"><img src="/game/thumbs/rope.jpg?v=2" alt="" loading="lazy" width="440" height="240"></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="默契绳">Tether</h3><span class="players" data-zh="2P · 合作">2P · co-op</span></div>
+          <span class="exe">tether.exe</span>
           <p data-zh="两个人，一根绳。互相摆荡、做锚，一起爬上高塔；可联机或同键盘。">Two players, one rope. Swing and anchor each other up a tower, online or on one keyboard.</p>
           <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
       <a class="game" href="/game/labyrinth.html" style="--accent:#3ee07f">
-        <div class="thumb"><img src="/game/thumbs/labyrinth.png?v=1" alt="" loading="lazy" width="440" height="240"><span class="exe">labyrinth.exe</span></div>
+        <div class="thumb"><img src="/game/thumbs/labyrinth.png?v=1" alt="" loading="lazy" width="440" height="240"></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="迷宫">Labyrinth</h3><span class="players">1P</span></div>
+          <span class="exe">labyrinth.exe</span>
           <p data-zh="无尽的火把下潜，每次逃脱都通向更大的迷宫。">An endless torch-lit descent, with a bigger maze every time you escape.</p>
           <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
       <a class="game" href="/game/tomato.html" style="--accent:#ff7a59">
-        <div class="thumb"><img src="/game/thumbs/tomato.jpg?v=3" alt="" loading="lazy" width="440" height="240"><span class="exe">grow_a_tomato.exe</span></div>
+        <div class="thumb"><img src="/game/thumbs/tomato.jpg?v=3" alt="" loading="lazy" width="440" height="240"></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="种番茄">Grow a Tomato</h3><span class="players">1P</span></div>
+          <span class="exe">grow_a_tomato.exe</span>
           <p data-zh="种出又大又甜的番茄，由真实的植物代谢模型驱动。">Grow the biggest, sweetest tomato, powered by a real plant-metabolism model.</p>
           <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
       <a class="game" href="/game/tomatoswipe.html" style="--accent:#ff5d5d">
-        <div class="thumb"><img src="/game/thumbs/tomatoswipe.png?v=3" alt="" loading="lazy" width="440" height="240"><span class="exe">tomatoswipe.exe</span></div>
+        <div class="thumb"><img src="/game/thumbs/tomatoswipe.png?v=3" alt="" loading="lazy" width="440" height="240"></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="扫番茄">Tomatoswipe</h3><span class="players">1P</span></div>
+          <span class="exe">tomatoswipe.exe</span>
           <p data-zh="扫雷，但地雷是番茄。标出每一颗 🍅，一颗都别踩烂。">Minesweeper, but the mines are tomatoes. Flag every 🍅 without squashing one.</p>
           <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
       <a class="game" href="/game/sudoku.html" style="--accent:#36c5d0">
-        <div class="thumb"><img src="/assets/arcade/sudoku.webp" alt="" loading="lazy" width="880" height="480"><span class="exe">sudoku.exe</span></div>
+        <div class="thumb"><img src="/assets/arcade/sudoku.webp?v=2" alt="" loading="lazy" width="880" height="480"></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="数独">Sudoku</h3><span class="players">1P</span></div>
+          <span class="exe">sudoku.exe</span>
           <p data-zh="每道题都只有唯一解。支持铅笔标记、提示和一键求解。">Every puzzle has exactly one solution. Pencil marks, hints and a solver.</p>
           <span class="play" data-zh="开始 →">Play →</span>
         </div>
@@ -602,6 +609,7 @@
 <footer>
   <div class="wrap">
     <p class="tag" data-zh="生活是一场游戏——尽情享受其中的每一刻。">Life is a game — so enjoy every piece of it.</p>
+    <p class="hope" data-zh="希望这些小游戏能比我走得更远，继续分享笑容、成长与好奇心。">I hope these little games outlast me, and keep sharing smiles, growth and curiosity.</p>
     <p class="sub" data-zh="别害怕，别着急，别太要面子。">Don't be afraid. Don't rush. Don't let shame hold you back.</p>
     <nav aria-label="Footer">
       <a href="#apps" data-zh="应用">Apps</a>
