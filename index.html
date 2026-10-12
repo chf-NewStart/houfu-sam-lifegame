@@ -198,24 +198,46 @@
 
     /* ── browser arcade ──────────────────────────────────── */
     .arcade { border-top: 1px solid var(--line); background: linear-gradient(180deg, #0c0f0d, var(--bg) 320px); }
-    .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
-    .game { display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--bg2); border-radius: 18px; overflow: hidden; text-decoration: none; transition: transform .18s, border-color .18s; }
-    .game:hover { transform: translateY(-3px); border-color: #3a4a40; }
-    .thumb { aspect-ratio: 11 / 6; background: #050605; overflow: hidden; }
+    .feature { --accent: var(--green); display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); margin-bottom: 18px; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; text-decoration: none; transition: border-color .2s, transform .2s;
+      background: var(--bg2);
+      background: radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%), var(--bg2); }
+    .feature:hover { border-color: color-mix(in srgb, var(--accent) 50%, transparent); transform: translateY(-2px); }
+    .feature-art { background: #050605; overflow: hidden; }
+    .feature-art img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+    .feature:hover .feature-art img { transform: scale(1.03); }
+    .feature-copy { padding: 36px; display: flex; flex-direction: column; justify-content: center; }
+    .feature .kicker { color: var(--accent); }
+    .feature h3 { font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.025em; line-height: 1.1; margin-top: 12px; }
+    .feature h3 small { font-size: 0.62em; color: var(--accent); margin-left: 6px; font-weight: 600; letter-spacing: 0; }
+    .feature .blurb { color: var(--soft); margin-top: 12px; }
+    .tags { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .tags li { font: 500 0.72rem/1 var(--mono); padding: 7px 10px; border-radius: 999px; border: 1px solid var(--line2); color: var(--muted); }
+    .feature-btn { margin-top: 24px; align-self: flex-start; background: var(--accent); color: #1a1205; }
+    .feature:hover .feature-btn { filter: brightness(1.08); }
+    @media (max-width: 820px) { .feature { grid-template-columns: 1fr; } .feature-art { aspect-ratio: 16 / 9; } .feature-copy { padding: 24px 20px 26px; } }
+
+    .games { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    @media (max-width: 900px) { .games { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .games { grid-template-columns: 1fr; } }
+    .game { --accent: var(--green); display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--bg2); border-radius: 20px; overflow: hidden; text-decoration: none; transition: transform .18s, border-color .18s, box-shadow .18s; }
+    .game:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--accent) 60%, transparent); }
+    .thumb { position: relative; aspect-ratio: 11 / 6; background: #050605; overflow: hidden; }
+    .thumb::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--accent); opacity: 0.85; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
     .game:hover .thumb img { transform: scale(1.04); }
-    .game-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .thumb .exe { position: absolute; left: 10px; top: 10px; padding: 4px 8px; border-radius: 6px; background: rgba(5,6,5,0.72); font: 500 0.68rem/1.2 var(--mono); color: var(--accent); }
+    .game-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
     .game-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-    .game h3 { font-size: 1.06rem; letter-spacing: -0.01em; }
-    .players { font: 500 0.68rem/1 var(--mono); color: var(--green); white-space: nowrap; }
-    .exe { font: 0.72rem/1.4 var(--mono); color: var(--faint); }
-    .game p { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin-top: 4px; }
-    /* Dilemma Lab has no screenshot: its payoff table stands in */
-    .thumb.payoff { display: grid; place-items: center; background: #0b0f0c; font: 600 0.9rem/1 var(--mono); }
-    .payoff table { border-collapse: collapse; }
-    .payoff td, .payoff th { width: 64px; height: 40px; text-align: center; border: 1px solid #23302a; font-weight: 600; }
-    .payoff th { color: var(--faint); font-weight: 500; font-size: 0.72rem; border: none; }
-    .payoff .c { color: var(--green); } .payoff .d { color: #ff6b5b; } .payoff .m { color: var(--amber); }
+    .game h3 { font-size: 1.08rem; letter-spacing: -0.01em; }
+    .players { font: 500 0.68rem/1 var(--mono); color: var(--accent); white-space: nowrap; }
+    .game p { color: var(--muted); font-size: 0.92rem; line-height: 1.5; }
+    .play { margin-top: auto; padding-top: 10px; font-weight: 600; font-size: 0.9rem; color: var(--accent); transition: transform .18s; }
+    .game:hover .play { transform: translateX(3px); }
+    .also { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 26px; }
+    .also-label { color: var(--muted); font-size: 0.92rem; margin-right: 4px; }
+    .also a { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 999px; border: 1px solid var(--line2); text-decoration: none; font-size: 0.88rem; color: var(--soft); transition: border-color .15s, background .15s; }
+    .also a:hover { border-color: #4a5750; background: rgba(255,255,255,0.05); }
+    .also img { width: 26px; height: 26px; border-radius: 22.5%; }
     .more { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
 
     /* ── how these are made ──────────────────────────────── */
@@ -460,92 +482,77 @@
     <div class="section-head">
       <p class="kicker" data-zh="// 浏览器里免费玩">// free in your browser</p>
       <h2 data-zh="游戏厅">The arcade</h2>
-      <p data-zh="手写的网页游戏，在任何手机或电脑上都能玩，无需安装。部分游戏可与朋友联机。">Hand-coded web games that run on any phone or computer, with nothing to install. Some play online with friends.</p>
+      <p data-zh="这些还没有变成 App（暂时）。在任何手机或电脑上都能玩，无需安装，部分还能和朋友联机。">These ones aren't apps (yet). They run on any phone or computer with nothing to install, and some play online with friends.</p>
     </div>
 
+    <a class="feature" href="/game/glyphrun.html?v=b57" style="--accent:#e8b04a">
+      <div class="feature-art"><img src="/game/thumbs/glyphrun.jpg" alt="" loading="lazy" width="880" height="495"></div>
+      <div class="feature-copy">
+        <p class="kicker" data-zh="// 精选">// featured</p>
+        <h3>Glyph Run <small>字源</small></h3>
+        <p class="blurb" data-zh="你就是一个汉字。躲开群鬼，收集落下的字形，一路回溯三千年，从隶书进化到甲骨文。每个怪物、武器和掉落物都是真实的古文字，每一局都在讲一个字的来历。">You are a Chinese character. Dodge spirits, gather fallen glyphs and evolve 3,000 years back, from clerical script to oracle bone. Every monster, weapon and drop is a real ancient glyph, so each run teaches where a character came from.</p>
+        <ul class="tags"><li>1P</li><li data-zh="每日卜辞">daily oracle</li><li>English · 中文</li></ul>
+        <span class="btn feature-btn" data-zh="开始游戏 →">Play now →</span>
+      </div>
+    </a>
+
     <div class="games">
-      <a class="game" href="/life.html">
-        <div class="thumb"><img src="/game/thumbs/life.png?v=4" alt="" loading="lazy" width="710" height="490"></div>
-        <div class="game-body">
-          <div class="game-top"><h3 data-zh="生命游戏">Game of Life</h3><span class="players">1P</span></div>
-          <span class="exe">game_of_life.exe</span>
-          <p data-zh="绘制图案、观察演化、化作音乐。">Draw patterns, watch them evolve, turn them into music.</p>
-        </div>
-      </a>
-      <a class="game" href="/game/glyphrun.html?v=b57">
-        <div class="thumb"><img src="/game/thumbs/glyphrun.jpg" alt="" loading="lazy" width="880" height="495"></div>
-        <div class="game-body">
-          <div class="game-top"><h3 data-zh="字源">Glyph Run</h3><span class="players">1P</span></div>
-          <span class="exe">glyph_run.exe</span>
-          <p data-zh="取材于汉字演变史的生存游戏：从隶书一路进化至甲骨文。">A survivor game drawn from the history of Chinese writing: evolve from clerical script to oracle bone.</p>
-        </div>
-      </a>
-      <a class="game" href="/game/qi.html">
-        <div class="thumb"><img src="/assets/apps/qi-web-thumb.webp" alt="" loading="lazy" width="880" height="480"></div>
-        <div class="game-body">
-          <div class="game-top"><h3 data-zh="棋">Qi: Go &amp; Gomoku</h3><span class="players" data-zh="1–2P · 联机">1–2P · online</span></div>
-          <span class="exe">qi.exe</span>
-          <p data-zh="带气数显示与实时教练的围棋，外加五子棋。可开私密好友房。">Go with visible liberties and a live coach, plus Gomoku. Private friend rooms.</p>
-        </div>
-      </a>
-      <a class="game" href="/game/truco.html?v=3">
-        <div class="thumb"><img src="/assets/apps/manilha-web-thumb.webp" alt="" loading="lazy" width="880" height="480"></div>
-        <div class="game-body">
-          <div class="game-top"><h3>Manilha</h3><span class="players" data-zh="1–4P · 联机">1–4P · online</span></div>
-          <span class="exe">manilha.exe</span>
-          <p data-zh="巴西叫牌赢墩，可开非公开房间，最多四人同玩。">Brazilian bid-and-tricks, with unlisted rooms for up to four friends.</p>
-        </div>
-      </a>
-      <a class="game" href="/game/dilemma.html?v=b1">
-        <div class="thumb payoff" aria-hidden="true">
-          <table><tr><th></th><th>C</th><th>D</th></tr><tr><th>C</th><td class="c">3, 3</td><td class="m">0, 5</td></tr><tr><th>D</th><td class="m">5, 0</td><td class="d">1, 1</td></tr></table>
-        </div>
+      <a class="game" href="/game/dilemma.html?v=b1" style="--accent:#8ea2ff">
+        <div class="thumb"><img src="/assets/arcade/dilemma.webp" alt="" loading="lazy" width="880" height="480"><span class="exe">dilemma_lab.exe</span></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="困境实验室">Dilemma Lab</h3><span class="players">1P</span></div>
-          <span class="exe">dilemma_lab.exe</span>
-          <p data-zh="用规则卡拼出策略，投入经典的阿克塞尔罗德锦标赛。">Build a strategy from rule cards and enter Axelrod's classic tournament.</p>
+          <p data-zh="用规则卡拼出策略，在经典的阿克塞尔罗德锦标赛里对战「一报还一报」等对手。">Build a strategy from rule cards and enter Axelrod's classic tournament against Tit for Tat and friends.</p>
+          <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
-      <a class="game" href="/game/rope.html?v=b40">
-        <div class="thumb"><img src="/game/thumbs/rope.jpg?v=2" alt="" loading="lazy" width="440" height="240"></div>
+      <a class="game" href="/game/rope.html?v=b40" style="--accent:#5ec8ff">
+        <div class="thumb"><img src="/game/thumbs/rope.jpg?v=2" alt="" loading="lazy" width="440" height="240"><span class="exe">tether.exe</span></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="默契绳">Tether</h3><span class="players" data-zh="2P · 合作">2P · co-op</span></div>
-          <span class="exe">tether.exe</span>
           <p data-zh="两个人，一根绳。互相摆荡、做锚，一起爬上高塔；可联机或同键盘。">Two players, one rope. Swing and anchor each other up a tower, online or on one keyboard.</p>
+          <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
-      <a class="game" href="/game/labyrinth.html">
-        <div class="thumb"><img src="/game/thumbs/labyrinth.png?v=1" alt="" loading="lazy" width="440" height="240"></div>
+      <a class="game" href="/game/labyrinth.html" style="--accent:#3ee07f">
+        <div class="thumb"><img src="/game/thumbs/labyrinth.png?v=1" alt="" loading="lazy" width="440" height="240"><span class="exe">labyrinth.exe</span></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="迷宫">Labyrinth</h3><span class="players">1P</span></div>
-          <span class="exe">labyrinth.exe</span>
           <p data-zh="无尽的火把下潜，每次逃脱都通向更大的迷宫。">An endless torch-lit descent, with a bigger maze every time you escape.</p>
+          <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
-      <a class="game" href="/game/tomato.html">
-        <div class="thumb"><img src="/game/thumbs/tomato.jpg?v=3" alt="" loading="lazy" width="440" height="240"></div>
+      <a class="game" href="/game/tomato.html" style="--accent:#ff7a59">
+        <div class="thumb"><img src="/game/thumbs/tomato.jpg?v=3" alt="" loading="lazy" width="440" height="240"><span class="exe">grow_a_tomato.exe</span></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="种番茄">Grow a Tomato</h3><span class="players">1P</span></div>
-          <span class="exe">grow_a_tomato.exe</span>
           <p data-zh="种出又大又甜的番茄，由真实的植物代谢模型驱动。">Grow the biggest, sweetest tomato, powered by a real plant-metabolism model.</p>
+          <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
-      <a class="game" href="/game/tomatoswipe.html">
-        <div class="thumb"><img src="/game/thumbs/tomatoswipe.png?v=3" alt="" loading="lazy" width="440" height="240"></div>
+      <a class="game" href="/game/tomatoswipe.html" style="--accent:#ff5d5d">
+        <div class="thumb"><img src="/game/thumbs/tomatoswipe.png?v=3" alt="" loading="lazy" width="440" height="240"><span class="exe">tomatoswipe.exe</span></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="扫番茄">Tomatoswipe</h3><span class="players">1P</span></div>
-          <span class="exe">tomatoswipe.exe</span>
-          <p data-zh="扫雷，但地雷是番茄。">Minesweeper, but the mines are tomatoes.</p>
+          <p data-zh="扫雷，但地雷是番茄。标出每一颗 🍅，一颗都别踩烂。">Minesweeper, but the mines are tomatoes. Flag every 🍅 without squashing one.</p>
+          <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
-      <a class="game" href="/game/sudoku.html">
-        <div class="thumb"><img src="/game/thumbs/sudoku.png?v=2" alt="" loading="lazy" width="440" height="240"></div>
+      <a class="game" href="/game/sudoku.html" style="--accent:#36c5d0">
+        <div class="thumb"><img src="/assets/arcade/sudoku.webp" alt="" loading="lazy" width="880" height="480"><span class="exe">sudoku.exe</span></div>
         <div class="game-body">
           <div class="game-top"><h3 data-zh="数独">Sudoku</h3><span class="players">1P</span></div>
-          <span class="exe">sudoku.exe</span>
           <p data-zh="每道题都只有唯一解。支持铅笔标记、提示和一键求解。">Every puzzle has exactly one solution. Pencil marks, hints and a solver.</p>
+          <span class="play" data-zh="开始 →">Play →</span>
         </div>
       </a>
+    </div>
+
+    <div class="also">
+      <span class="also-label" data-zh="上面的 App 也能在浏览器里玩：">The apps above also play in your browser:</span>
+      <a href="/life.html"><img src="/assets/apps/gamelife-icon.webp" alt="" width="256" height="256"><span data-zh="生命游戏">Game of Life</span></a>
+      <a href="/game/qi.html"><img src="/assets/apps/qi-icon.webp" alt="" width="256" height="256"><span data-zh="棋">Qi</span></a>
+      <a href="/game/truco.html?v=3"><img src="/assets/apps/manilha-icon.webp" alt="" width="256" height="256">Manilha</a>
+      <a href="/game/plank.html"><img src="/assets/apps/plank-icon.webp" alt="" width="256" height="256"><span data-zh="Plank Pilot 原型">Plank Pilot prototype</span></a>
     </div>
 
     <div class="more">
@@ -566,7 +573,7 @@
       <div class="value">
         <span class="n">01</span>
         <h3 data-zh="和朋友（还有 AI）一起做">Made with friends (and AI)</h3>
-        <p data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计，和 AI 助手 Claude 一起编写，再由每次都帮忙试玩、出点子的朋友们打磨。">Designed by Houfu Chen, a doctoral researcher at the University of Waterloo, coded together with Claude (an AI assistant), and shaped by friends who test every build and bring some of the best ideas.</p>
+        <p data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计，和 AI 助手 Claude 一起编写，再由每次都帮忙试玩、出点子的朋友们打磨：Sam、Ittisak、Sardaar 和 Husam。">Designed by Houfu Chen, a doctoral researcher at the University of Waterloo, coded together with Claude (an AI assistant), and shaped by friends who test every build and bring some of the best ideas: Sam, Ittisak, Sardaar and Husam.</p>
         <a href="https://houfu72.com" data-zh="关于 Houfu →">More about Houfu →</a>
       </div>
       <div class="value">
