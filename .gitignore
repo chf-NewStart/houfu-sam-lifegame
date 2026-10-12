@@ -39,3 +39,4 @@ refs/*.pdf
 
 # CC-BY guzheng source WAVs (huge) — only the encoded game/media/*.mp3 ships
 guzheng/
+tools/tomato/out/
