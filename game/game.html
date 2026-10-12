@@ -23,6 +23,7 @@
     .pg-back:hover { text-decoration: underline; }
     .lang-btn { background: transparent; border: 1px solid #1db954; color: #1db954; font-family: Consolas, monospace; font-size: 0.72rem; padding: 5px 11px; cursor: pointer; flex-shrink: 0; transition: background 0.1s; }
     .lang-btn:hover { background: rgba(29,185,84,0.1); }
+    #langBtn { position: relative; z-index: 60; }   /* the language switch works even while the mode picker is up */
 
     .layout { display: flex; gap: 20px; align-items: flex-start; max-width: 880px; margin: 0 auto; position: relative; }
     .board-col { flex: 0 0 auto; }
