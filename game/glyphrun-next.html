@@ -101,6 +101,39 @@
   .setup-left{display:flex;flex-direction:column;gap:8px;max-width:440px;}
   /* the two choices sit in their own carved boxes so nobody misses the second one */
   .pick-box{border:1px solid #3a4634;border-radius:10px;padding:8px 10px 4px;background:rgba(10,16,10,0.4);}
+  #ovMarket{gap:8px;justify-content:flex-start;overflow-y:auto}
+  #ovMarket > *{flex-shrink:0}
+  #ovMarket > :first-child{margin-top:auto}
+  #ovMarket > :last-child{margin-bottom:auto}
+  body.appfs #ovMarket{gap:5px;padding-top:6px;padding-bottom:6px}
+  body.appfs #ovMarket h2{margin:0;font-size:1.1em}
+  body.appfs .mkCard{padding:6px 6px 6px;gap:3px}
+  body.appfs .mkCard .nm{font-size:1.5em}
+  body.appfs .mkCard .ds{font-size:0.7em}
+  body.appfs .mkFoot button{min-height:30px;padding:4px}
+  body.appfs #mkNote{font-size:0.74em}
+  #mkPurse{font-size:1.05em;color:#cfc6ae}
+  #mkPurse b{font-family:"Ma Shan Zheng",KaiTi,serif;color:#e8b04a;font-size:1.35em;font-weight:normal;margin-right:4px}
+  #mkPurse .owe{color:#f0674a}
+  #mkNews{font-size:0.85em;color:#8bc34a;min-height:0}
+  #mkOffers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:min(860px,94vw)}
+  .mkCard{border:1px solid #3a4634;border-radius:10px;background:rgba(10,16,10,0.55);padding:10px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .mkCard.locked{border-color:#e8b04a;box-shadow:0 0 0 1px #e8b04a inset}
+  .mkCard.sold{opacity:0.45}
+  .mkCard .cat{font-size:0.75em;color:#8a8a8a;letter-spacing:0.2em}
+  .mkCard .nm{font-family:"Ma Shan Zheng",KaiTi,serif;font-size:2em;color:#e8b04a;line-height:1}
+  .mkCard .ds{font-size:0.78em;color:#cfc6ae;flex:1}
+  .mkFoot{display:flex;gap:6px;width:100%}
+  .mkFoot button{font:inherit;font-size:0.82em;border-radius:6px;border:1px solid #3a4634;background:#16201a;color:#e8b04a;padding:6px 4px;cursor:pointer;min-height:34px}
+  .mkFoot .mkBuy{flex:1}
+  .mkFoot button:disabled{color:#5a5a5a;cursor:default}
+  .mkBar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .mkBar .btn{margin-top:0}
+  .mkBar .btn:disabled{opacity:0.45}
+  #mkNote{font-size:0.82em;color:#cfc6ae;max-width:min(760px,92vw);text-align:center;line-height:1.5}
+  #mkNote .mkCh{font-family:"Ma Shan Zheng",KaiTi,serif;font-size:1.6em;color:#e8b04a;vertical-align:middle;margin-right:4px}
+  #mkNote .mkSave{color:#8a8a8a;font-size:0.92em;margin-top:2px}
+  @media (max-width:700px){ #mkOffers{grid-template-columns:repeat(2,minmax(0,1fr))} }
   .diff-row{display:flex;align-items:center;gap:10px;padding:2px 2px 0}
   .diff-row .dz{font-family:"Ma Shan Zheng",KaiTi,serif;font-size:1.25em;color:#e8b04a}
   #diffRange{flex:1;accent-color:#e8b04a;min-height:28px}
@@ -364,7 +397,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b63 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b64 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -461,6 +494,20 @@
         <div class="deskSub" data-en="One refinement is brushed onto the scroll. Choose what the desk sharpens: 筆 brush · 墨 ink · 硯 stone · 紙 paper." data-zh="卷上题一策。笔、墨、砚、纸——择其一而砺之。">One refinement is brushed onto the scroll. Choose what the desk sharpens: 筆 brush · 墨 ink · 硯 stone · 紙 paper.</div>
         <div class="slats" id="deskSlats"></div>
       </div>
+    </div>
+
+    <!-- 市 THE MARKET: between waves, spend the 貝 the spirits paid -->
+    <div class="overlay shell" id="ovMarket">
+      <h2 data-en="市 · THE MARKET" data-zh="市 · 集市">市 · THE MARKET</h2>
+      <div id="mkPurse"></div>
+      <div id="mkNews"></div>
+      <div id="mkOffers"></div>
+      <div class="mkBar">
+        <button class="btn alt" id="mkReroll"></button>
+        <button class="btn alt" id="mkLoan"></button>
+        <button class="btn" id="mkGo" onclick="Game.leaveMarket()">▶</button>
+      </div>
+      <div id="mkNote"></div>
     </div>
 
     <!-- THE SEAL CARVER: permanent radicals cut into stone -->
@@ -2937,7 +2984,7 @@ const Game = (function(){
   }
 
   function overlay(id, show){ $(id).classList.toggle('show', show); }
-  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin','ovPause','ovDesk','ovSeal','ovScroll','ovStage','ovBook'].forEach(i=>overlay(i,false)); }
+  function hideAll(){ ['ovStart','ovClear','ovOver','ovWin','ovPause','ovDesk','ovMarket','ovSeal','ovScroll','ovStage','ovBook'].forEach(i=>overlay(i,false)); }
   function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
   const C = ()=>CHARS[selChar];
 
@@ -3158,6 +3205,7 @@ const Game = (function(){
   function start(){
     maxHp = startHearts();
     stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 16; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
+    bei = 0; beiAcc = 0; loanOwed = 0; mkLock = null;
     endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = false; glyphToasted = {};
     stage = null; stageWinT = null;
     desk = freshDesk();
@@ -3206,12 +3254,152 @@ const Game = (function(){
     if(!raf) raf = requestAnimationFrame(loop);
   }
 
+  /* ---------- 市 · the market between waves ----------
+     The spirits pay in 貝, cowrie shells, the money of the Shang. Between waves the stall
+     offers four things: buy (買) what you can afford, take new stock (換), lock (鎖) one to
+     keep for the next market, borrow (貸) against the next market, or keep your shells,
+     which earn interest (利). Each visit explains one character built on 貝. */
+  const BEI_LESSONS = [
+    {ch:'貝', en:'貝 is a cowrie shell. In the Shang, cowries were money, so words of value carry 貝.', zh:'「貝」是海贝。商代以贝为币，所以和财货有关的字多从「貝」。'},
+    {ch:'買', en:'買: a net 罒 over 貝, gathering shells in: to buy.', zh:'「買」：网（罒）罩住贝，收贝入手——买。'},
+    {ch:'賣', en:'賣: 出 (out) over 買, putting out what was bought: to sell.', zh:'「賣」：从出从買，把买来的拿出去——卖。'},
+    {ch:'貸', en:'貸: 貝 for the meaning, 代 (to stand in for) for the sound: to lend.', zh:'「貸」：从貝代声——借贷。'},
+    {ch:'貯', en:'貯: in the oracle form a shell 貝 sits inside a chest 宁: to store.', zh:'「貯」：甲骨文是贝藏在箱柜（宁）里——贮藏。'},
+    {ch:'財', en:'財: 貝 for the meaning, 才 for the sound: wealth.', zh:'「財」：从貝才声——财富。'},
+    {ch:'債', en:'債: a person 亻 with 責, shells demanded back: a debt.', zh:'「債」：从人从責，「責」从貝，讨要之贝——债。'},
+    {ch:'利', en:'利: grain 禾 cut by a blade 刂, the harvest you gain: profit, and interest.', zh:'「利」：以刀割禾，收成之得——利，利息。'},
+  ];
+  const BEI_DIFF = [1, 1, 1.15, 1.3, 1.5];
+  const TOUGH_TYPES = new Set(['shi','hu','drum','xue','yoke','she']);
+  let bei = 0, beiAcc = 0, loanOwed = 0, mkLock = null, mkRerolls = 0, mkOffers = [], mkLesson = (Math.random()*8)|0, mkNotes = [];
+  function earnBei(s){                              // every kill pays straight into the purse
+    if(stage) return;
+    beiAcc += (s.boss ? 20 : TOUGH_TYPES.has(s.type) ? 3 : 1) * BEI_DIFF[diffI];
+    while(beiAcc >= 1){ bei++; beiAcc -= 1; }
+  }
+  function grantArm(key){                           // take up a weapon or radical, or cast the one you hold older
+    const W = WEAPONS[key], owned = weapons.find(w=>w.key===key);
+    if(owned && owned.lv < 3){
+      owned.lv++; owned.fresh = true;
+      const l = owned.lv-1;
+      popToastEx(W.chs[l], `${W.pys[l]} · ${W.eras[l]}`, t(W.tier_en[l], W.tier_zh[l]), 'qi');
+    } else if(!owned){
+      if(weapons.length >= 3) weapons.shift();      // the oldest is set down
+      weapons.push({key, lv:1, t:0.4, fresh:true});
+      popToastEx(W.chs[0], `${W.pys[0]} · ${W.eras[0]}`, t(W.tier_en[0], W.tier_zh[0]), 'qi');
+    } else {
+      popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'), 'qi');
+    }
+    const now = weapons.find(w=>w.key===key);
+    if(now) mark('arms', key, now.lv);
+    checkCompose();
+  }
+  const mkPrice = (base)=> Math.round(base * (1 + 0.3*stageIdx));   // the deeper the night, the dearer the stall
+  function mkStock(taken){
+    for(let tries=0; tries<40; tries++){
+      const r = Math.random(); let it = null;
+      if(r < 0.5){                                  // 文房: a refinement for brush, ink, stone or paper
+        const pool = DESK_POOL.filter(o=> !(o.id === 'hou' && maxHp >= startHearts()+3));
+        const o = pool[(Math.random()*pool.length)|0];
+        if(o) it = {id:'d-'+o.id, kind:'desk', o, price: mkPrice(o.inv ? 20 : 28), cat:o.cat + ' · ' + t('desk','文房'), nm:o.nm, en:o.en, zh:o.zh};
+      } else if(r < 0.86){                          // 兵: a new arm, or the one you hold cast older
+        const keys = Object.keys(WEAPONS), key = keys[(Math.random()*keys.length)|0], W = WEAPONS[key];
+        const w = weapons.find(x=>x.key===key);
+        if(w && w.lv >= 3) continue;
+        const l = w ? w.lv : 0, out = !w && weapons.length >= 3 ? WEAPONS[weapons[0].key].chs[weapons[0].lv-1] : '';
+        it = {id:'w-'+key, kind:'arm', key, price: mkPrice(w ? 22 + 10*w.lv : 30), cat: w ? t('cast older','铸更古') : FIRING.has(key) ? t('new arm','新兵') : t('radical','偏旁'), nm:W.chs[l],
+              en: W.tier_en[l] + (out ? ` (sets down ${out})` : ''), zh: W.tier_zh[l] + (out ? `（放下「${out}」）` : '')};
+      } else {
+        if(lives >= maxHp) continue;
+        it = {id:'heart', kind:'heart', price:mkPrice(12), cat:t('mend','补'), nm:'心', en:'mend one heart', zh:'补回一颗心'};
+      }
+      if(it && !taken.some(x=>x.id === it.id)) return it;
+    }
+    return null;
+  }
+  function openMarket(){
+    overlay('ovClear', false);
+    mkRerolls = 0; mkNotes = [];
+    const interest = Math.min(15, Math.floor(bei*0.1));            // 利: what you kept has grown
+    if(interest > 0){ bei += interest; mkNotes.push(t(`利 · your shells earned ${interest} 貝 in interest`, `利 · 存贝生息 ${interest} 贝`)); }
+    if(loanOwed > 0){                                             // 債: the lender is waiting at the gate
+      if(bei >= loanOwed){ bei -= loanOwed; mkNotes.push(t(`償 · you repaid the ${loanOwed} 貝 you owed`, `償 · 已还清 ${loanOwed} 贝`)); }
+      else { mkNotes.push(t(`債 · you couldn’t pay ${loanOwed}: the lender took your ${bei} 貝 and a heart`, `債 · 还不起 ${loanOwed}：债主收走 ${bei} 贝和一颗心`)); bei = 0; lives = Math.max(1, lives - 1); }
+      loanOwed = 0;
+    }
+    mkOffers = [];
+    if(mkLock && !mkLock.sold) mkOffers.push(mkLock); else mkLock = null;
+    while(mkOffers.length < 4){ const it = mkStock(mkOffers); if(!it) break; mkOffers.push(it); }
+    mkLesson = (mkLesson + 1) % BEI_LESSONS.length;
+    renderMarket(); syncHud();
+    overlay('ovMarket', true);
+    SFX.unroll();
+  }
+  function renderMarket(){
+    $('mkPurse').innerHTML = `<b>貝</b>${bei}` + (loanOwed ? ` · <span class="owe">${t('owed at the next market','下次开市须还')} ${loanOwed}</span>` : '');
+    $('mkNews').innerHTML = mkNotes.join('<br>');
+    const row = $('mkOffers'); row.innerHTML = '';
+    mkOffers.forEach((it)=>{
+      const d = document.createElement('div');
+      d.className = 'mkCard' + (it.sold ? ' sold' : '') + (mkLock === it ? ' locked' : '');
+      d.innerHTML = `<span class="cat">${it.cat}</span><span class="nm">${it.nm}</span><span class="ds">${t(it.en, it.zh)}</span>`
+        + `<div class="mkFoot"><button class="mkBuy"${it.sold || bei < it.price ? ' disabled' : ''}>${it.sold ? t('bought','已买') : '買 ' + it.price + ' 貝'}</button>`
+        + (it.sold ? '' : `<button class="mkLock" title="${t('keep it for the next market','留到下次开市')}">${mkLock === it ? '鎖 ✓' : '鎖'}</button>`) + `</div>`;
+      d.querySelector('.mkBuy').onclick = ()=> buyOffer(it);
+      const lk = d.querySelector('.mkLock');
+      if(lk) lk.onclick = ()=>{ mkLock = mkLock === it ? null : it; SFX.tick(); renderMarket(); };
+      row.appendChild(d);
+    });
+    const rc = 4 + 3*mkRerolls;
+    $('mkReroll').textContent = t(`換 · new stock (${rc} 貝)`, `換 · 换一批（${rc} 贝）`);
+    $('mkReroll').disabled = bei < rc;
+    $('mkReroll').onclick = rerollMarket;
+    $('mkLoan').textContent = loanOwed ? t(`償 · repay ${loanOwed} 貝 now`, `償 · 现在还 ${loanOwed} 贝`)
+                                       : t('貸 · borrow 30 貝, repay 45 next market', '貸 · 借 30 贝，下次还 45');
+    $('mkLoan').disabled = loanOwed > 0 && bei < loanOwed;
+    $('mkLoan').onclick = loanMarket;
+    $('mkGo').textContent = t('▶ leave the market, deeper into the past', '▶ 离市，更向古代');
+    const L = BEI_LESSONS[mkLesson];
+    $('mkNote').innerHTML = `<span class="mkCh">${L.ch}</span>${t(L.en, L.zh)} ${zdicLink(L.ch)}`
+      + `<div class="mkSave">${t('貯 · shells you keep earn 10% at the next market (up to 15)', '貯 · 留下的贝，下次开市生息一成（至多 15）')}</div>`;
+  }
+  function buyOffer(it){
+    if(it.sold || bei < it.price) return;
+    bei -= it.price; it.sold = true; if(mkLock === it) mkLock = null;
+    if(it.kind === 'desk'){ if(it.o.ap) it.o.ap(desk); if(it.o.id === 'hou'){ maxHp++; lives = Math.min(maxHp, lives+1); } }
+    else if(it.kind === 'arm') grantArm(it.key);
+    else if(it.kind === 'heart') lives = Math.min(maxHp, lives + 1);
+    SFX.stamp(); syncHud(); renderMarket();
+  }
+  function rerollMarket(){
+    const rc = 4 + 3*mkRerolls; if(bei < rc) return;
+    bei -= rc; mkRerolls++;
+    mkOffers = mkLock && !mkLock.sold ? [mkLock] : [];
+    while(mkOffers.length < 4){ const it = mkStock(mkOffers); if(!it) break; mkOffers.push(it); }
+    SFX.unroll(); renderMarket();
+  }
+  function loanMarket(){
+    if(loanOwed > 0){ if(bei < loanOwed) return; bei -= loanOwed; loanOwed = 0; SFX.tick(); }
+    else { bei += 30; loanOwed = 45; SFX.toll(); }
+    renderMarket();
+  }
+  function leaveMarket(){
+    if(mkLock && mkLock.sold) mkLock = null;
+    overlay('ovMarket', false);
+    nextStage();
+  }
+  function marketKey(n){
+    if(!$('ovMarket').classList.contains('show')) return false;
+    const it = mkOffers[n-1]; if(it) buyOffer(it);
+    return true;
+  }
+
   /* ---------- 文房四宝: the desk between waves ---------- */
   let deskPicked = false;
   function toDesk(){
-    // the desk no longer stops the run — its gift was already sent on the clear screen
     overlay('ovClear', false);
-    nextStage();
+    if(!stage && !endless && stageIdx + 1 < WAVES.length) openMarket();   // between waves: the market
+    else nextStage();
   }
   function buildDesk(){
     deskPicked = false;
@@ -3278,18 +3466,10 @@ const Game = (function(){
     running = false;
     const fi = stageIdx, toIdx = stageIdx+1;
     const cs = C();
-    let gift = null;                                   // the desk's gift arrives by itself now
-    if(toIdx < WAVES.length){
-      const pool = DESK_POOL.filter(o => !(o.id === 'hou' && maxHp >= startHearts()+3));
-      gift = pool[(Math.random()*pool.length)|0] || null;
-      if(gift){
-        if(gift.ap) gift.ap(desk);
-        if(gift.id === 'hou'){ maxHp++; lives = Math.min(maxHp, lives+1); }
-      }
-    }
+    const gift = null;                                 // no free gift any more: the market (市) comes next
     $('clearBtn').textContent = toIdx >= WAVES.length
       ? t('▶ See what you became','▶ 看看你成了什么')
-      : t('▶ Deeper into the past','▶ 更向古代');
+      : t(`▶ To the market · 貝 ${bei}`, `▶ 去集市 · 貝 ${bei}`);
     $('clearTitle').textContent = t('THE ERA REWINDS','时代倒退');
     let msg;
     if(toIdx < WAVES.length){
@@ -3500,6 +3680,7 @@ const Game = (function(){
   }
   function killSpirit(s, ang, w){
     s.dead = true;
+    earnBei(s);
     if(s.type!=='guo'){ runKills++; checkOmen(); }
     if(stage && s.type !== 'guo'){ stageKills++; if(stage.def.goal.kill) syncHud(); }
     if(s.boss || stopCd <= 0){ stopT = Math.max(stopT, s.boss ? 0.12 : 0.04 + 0.02*(w||1)); stopCd = stopT + 0.25; }   // the brush lifts
@@ -4718,22 +4899,8 @@ const Game = (function(){
         pd.done = true;
         gainElem('金');                                  // the war pictographs are the metal element
         SFX.chisel();
-        const W = WEAPONS[pd.key], owned = weapons.find(w=>w.key===pd.key);
-        if(owned && owned.lv < 3){
-          owned.lv++; owned.fresh = true;            // the next shot shows off the new form
-          const l = owned.lv-1;
-          popToastEx(W.chs[l], `${W.pys[l]} · ${W.eras[l]}`, t(W.tier_en[l], W.tier_zh[l]), 'qi');
-        } else if(!owned){
-          if(weapons.length >= 3) weapons.shift();          // the oldest is set down
-          weapons.push({key:pd.key, lv:1, t:0.4, fresh:true});
-          popToastEx(W.chs[0], `${W.pys[0]} · ${W.eras[0]}`, t(W.tier_en[0], W.tier_zh[0]), 'qi');
-        } else {
-          popToastEx(W.chs[2], W.pys[2], t('already mastered','已然精通'), 'qi');
-        }
+        grantArm(pd.key);
         addFx({kind:'levelup', x:pd.x, y:pd.y, t:0.6, r:50, ch:''});
-        const now = weapons.find(w=>w.key===pd.key);
-        if(now) mark('arms', pd.key, now.lv);
-        checkCompose();
       }
     }
     pedestals = pedestals.filter(pd=>!pd.done);
@@ -5943,6 +6110,12 @@ const Game = (function(){
       }
       ctx.restore();
     }
+    if(!stage){                                         // 貝: the purse, beside the arms
+      ctx.save(); ctx.font = 'bold 13px Consolas,"Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.9; ctx.fillStyle = era.accent;
+      ctx.fillText('貝 ' + bei + (loanOwed ? '  債' + loanOwed : ''), WALL + 6 + Math.max(1, weapons.length)*34, WALL + 47);
+      ctx.restore();
+    }
 
     // boss arrival banner
     if(banner){
@@ -6047,6 +6220,7 @@ const Game = (function(){
           if($('ovClear').classList.contains('show')){ toDesk(); return; }
         } else { dash(); return; }
       }
+      if(['1','2','3','4'].includes(k) && marketKey(+k)){ e.preventDefault(); return; }   // buy from the stall
       if(['1','2','3'].includes(k) && deskKey(+k)){ e.preventDefault(); return; }   // pick a slat from the keyboard
       if(k==='escape' || k==='p'){
         e.preventDefault();
@@ -6620,16 +6794,16 @@ const Game = (function(){
   // idle attract render so the start screen isn't blank
   loadStage(0); running = false; render();
 
-  return { start, restart, nextStage, toDesk, syncHud, onLang, chooseChar, pause, resume, goEndless,
+  return { start, restart, nextStage, toDesk, leaveMarket, syncHud, onLang, chooseChar, pause, resume, goEndless,
            openScroll, closeScroll, startStage, retryStage, nextStagePage,
            openBook, closeBook, openSeal, closeSeal,
            dbg: () => ({ player, spirits, fires, pickups, pedestals, projectiles, weapons, bolts, pav, endless, endlessN, exhaleT,
                          stageIdx, selChar, selArm, waveT, gate, hp: lives, maxHp, level, coins, runGlyphs, runKills, daily: todaysOmen(),
                          hat: hatOn, sheng: shengPed, buffT, paused, banner,
-                         desk, elems, synOn, pools, sealSave: seal, codexSave: seen, acts, hails, arcs, brushInk, inkMo }),
+                         desk, elems, synOn, pools, sealSave: seal, codexSave: seen, acts, hails, arcs, brushInk, inkMo, bei, loanOwed }),
            // for scripted checks: call a summon, set the sky, jump a level, fire a gift now
            test: { glyph: (ch)=>applyGlyphEffect(ch), sky: (w)=>{ weather = w; wBoltT = 0.3; }, lv: (n)=>{ level = n; },
-                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; } } };
+                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, bei: (n)=>{ bei = n; }, market: ()=>openMarket(), ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; } } };
 })();
 
 </script>
