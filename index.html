@@ -260,8 +260,28 @@
     .value p { color: var(--muted); font-size: 0.95rem; margin-top: 8px; }
     .value a { display: inline-block; margin-top: 12px; color: var(--green); text-decoration: none; font-weight: 560; }
     .value a:hover { text-decoration: underline; }
-    .value p a.friend { display: inline; margin: 0; color: var(--soft); font-weight: 500; text-decoration: underline; text-decoration-color: rgba(62,224,127,0.5); text-underline-offset: 3px; }
-    .value p a.friend:hover { color: var(--green); }
+    .value p .friend { display: inline; margin: 0; padding: 0; border: 0; background: none; font: inherit; color: var(--soft); font-weight: 500; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(62,224,127,0.5); text-underline-offset: 3px; }
+    .value p .friend:hover, .friend-wrap.is-open .friend { color: var(--green); }
+    /* Friend cards: hover a name (tap it on a phone) to see what that friend's
+       feedback shaped. Hover and keyboard focus are CSS; the script below keeps
+       the card on screen and handles taps, outside taps and Escape. */
+    .friend-wrap { position: relative; }
+    .friend-card { position: absolute; left: 50%; bottom: calc(100% + 10px); z-index: 15; width: max-content; max-width: min(320px, calc(100vw - 24px)); transform: translateX(calc(-50% + var(--fc-shift, 0px))); padding: 14px 16px 15px; border: 1px solid var(--line2); border-radius: 14px; background: #111613; box-shadow: 0 18px 44px rgba(0,0,0,0.5); color: var(--soft); font-size: 0.86rem; line-height: 1.45; font-weight: 400; text-align: left; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s, visibility 0s .15s; }
+    .friend-card::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 12px; }
+    .friend-card.below { bottom: auto; top: calc(100% + 10px); }
+    .friend-card.below::after { top: auto; bottom: 100%; }
+    @media (hover: hover) { .friend-wrap:hover .friend-card { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .15s; } }
+    .friend:focus-visible + .friend-card, .friend-wrap.is-open .friend-card { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .15s; }
+    .friend-wrap.is-dismissed .friend-card { opacity: 0; visibility: hidden; pointer-events: none; }
+    .fc-head { display: block; font: 500 0.68rem/1.35 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); }
+    .fc-app { display: block; margin-top: 10px; color: var(--text); font-weight: 600; }
+    .fc-item { display: block; position: relative; margin-top: 3px; padding-left: 14px; }
+    .fc-item::before { content: ""; position: absolute; left: 2px; top: 0.62em; width: 4px; height: 4px; border-radius: 50%; background: var(--green); opacity: 0.7; }
+    .fc-item.more { color: var(--faint); }
+    .fc-item.more::before { display: none; }
+    .fc-soon { color: var(--amber); }
+    .friend-card .fc-link { display: none; margin-top: 10px; font-size: 0.84rem; }
+    .friend-wrap.is-open .fc-link { display: inline-block; }
     @media (max-width: 820px) { .values { grid-template-columns: 1fr; } }
 
     footer { border-top: 1px solid var(--line); padding: 56px 0 64px; color: var(--faint); font-size: 0.88rem; }
@@ -594,7 +614,50 @@
       <div class="value">
         <span class="n">01</span>
         <h3 data-zh="和朋友（还有 AI）一起做">Made with friends (and AI)</h3>
-        <p><span data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计，和 AI 助手 Claude 一起编写，再由每次都帮忙试玩、出点子的朋友们打磨：">Designed by Houfu Chen, a doctoral researcher at the University of Waterloo, coded together with Claude (an AI assistant), and shaped by friends who test every build and bring some of the best ideas: </span>Sam<span data-zh="、">, </span><a class="friend" href="https://www.linkedin.com/in/jieun-han-kor/" rel="noopener">Jieun</a><span data-zh="、">, </span><a class="friend" href="https://www.linkedin.com/in/itpromma/" rel="noopener">Ittisak</a><span data-zh="、">, </span><a class="friend" href="https://www.linkedin.com/in/alex-vasile-phd/" rel="noopener">Alex</a><span data-zh="、">, </span><a class="friend" href="https://www.linkedin.com/in/sardaar-reisi/" rel="noopener">Sardaar</a><span data-zh=" 和 "> and </span><a class="friend" href="https://www.linkedin.com/in/husam-al-araj-291218165/" rel="noopener">Husam</a><span data-zh="。">.</span></p>
+        <p><span data-zh="由滑铁卢大学博士研究员 Houfu Chen 设计，和 AI 助手 Claude 一起编写，再由每次都帮忙试玩、出点子的朋友们打磨：">Designed by Houfu Chen, a doctoral researcher at the University of Waterloo, coded together with Claude (an AI assistant), and shaped by friends who test every build and bring some of the best ideas: </span><span class="friend-wrap"><button class="friend" type="button" aria-describedby="fc-sam">Sam</button><span class="friend-card" id="fc-sam">
+            <span class="fc-head" data-zh="Sam 的点子促成了">Shaped by Sam's ideas</span>
+            <span class="fc-app">Glyph Run</span>
+            <span class="fc-item" data-zh="让它与众不同的设计">What makes it its own game</span>
+            <span class="fc-app">Game Life</span>
+            <span class="fc-item" data-zh="拖放图案">Drag-and-drop patterns</span>
+            <span class="fc-item" data-zh="挑战模式">Challenge mode</span>
+          </span></span><span data-zh="、">, </span><span class="friend-wrap"><a class="friend" href="https://www.linkedin.com/in/jieun-han-kor/" rel="noopener" aria-describedby="fc-jieun">Jieun</a><span class="friend-card" id="fc-jieun">
+            <span class="fc-head" data-zh="Jieun 的反馈促成了">Shaped by Jieun's feedback</span>
+            <span class="fc-app">Phloem</span>
+            <span class="fc-item" data-zh="深色模式下的白色墨水">White ink in dark mode</span>
+            <span class="fc-item" data-zh="PDF 页面上的便利贴">Sticky notes on PDF pages</span>
+            <span class="fc-item" data-zh="导出带批注的 PDF：打开就有你的笔迹，并弹出 iOS 分享面板">Export annotated PDF: the file opens with your marks, and the iOS share sheet appears</span>
+            <span class="fc-item" data-zh="竖屏时，工作区停靠在论文下方">Workspace docked below the paper in portrait</span>
+            <span class="fc-item" data-zh="轻点不再误触 PDF 链接">Taps no longer follow PDF links</span>
+            <span class="fc-item" data-zh="放大后也能翻页">Zoomed page turns</span>
+            <span class="fc-item" data-zh="再点一次即可关闭 Zen 工具">Second tap closes a Zen tool</span>
+            <span class="fc-item" data-zh="阅读引导条粗细按百分比设置">Guide thickness in percent</span>
+            <span class="fc-item" data-zh="书写延迟修复">The ink lag fix</span>
+            <span class="fc-item more" data-zh="……还有更多">…and more</span>
+            <a class="fc-link" href="https://www.linkedin.com/in/jieun-han-kor/" rel="noopener">LinkedIn ↗</a>
+          </span></span><span data-zh="、">, </span><span class="friend-wrap"><a class="friend" href="https://www.linkedin.com/in/itpromma/" rel="noopener" aria-describedby="fc-ittisak">Ittisak</a><span class="friend-card" id="fc-ittisak">
+            <span class="fc-head" data-zh="Ittisak 的反馈促成了">Shaped by Ittisak's feedback</span>
+            <span class="fc-app">Phloem</span>
+            <span class="fc-item" data-zh="应用图标">The app icon</span>
+            <a class="fc-link" href="https://www.linkedin.com/in/itpromma/" rel="noopener">LinkedIn ↗</a>
+          </span></span><span data-zh="、">, </span><span class="friend-wrap"><a class="friend" href="https://www.linkedin.com/in/alex-vasile-phd/" rel="noopener" aria-describedby="fc-alex">Alex</a><span class="friend-card" id="fc-alex">
+            <span class="fc-head" data-zh="Alex 的反馈促成了">Shaped by Alex's feedback</span>
+            <span class="fc-app">Phloem</span>
+            <span class="fc-item" data-zh="把笔记拖放进工作区">Drag and drop notes into the Workspace</span>
+            <a class="fc-link" href="https://www.linkedin.com/in/alex-vasile-phd/" rel="noopener">LinkedIn ↗</a>
+          </span></span><span data-zh="、">, </span><span class="friend-wrap"><a class="friend" href="https://www.linkedin.com/in/sardaar-reisi/" rel="noopener" aria-describedby="fc-sardaar">Sardaar</a><span class="friend-card" id="fc-sardaar">
+            <span class="fc-head" data-zh="Sardaar 的反馈促成了">Shaped by Sardaar's feedback</span>
+            <span class="fc-app">Phloem</span>
+            <span class="fc-item" data-zh="长按文中引用即可预览">Hold a reference to preview it</span>
+            <span class="fc-item" data-zh="书库里的便利贴不止我的手写体，还有更多字体可选">More fonts for sticky notes in the Library, not just my handwriting</span>
+            <span class="fc-item"><span data-zh="笔记可选不同颜色">Different colours for notes</span><span class="fc-soon" data-zh="（即将推出）"> (coming soon)</span></span>
+            <a class="fc-link" href="https://www.linkedin.com/in/sardaar-reisi/" rel="noopener">LinkedIn ↗</a>
+          </span></span><span data-zh=" 和 "> and </span><span class="friend-wrap"><a class="friend" href="https://www.linkedin.com/in/husam-al-araj-291218165/" rel="noopener" aria-describedby="fc-husam">Husam</a><span class="friend-card" id="fc-husam">
+            <span class="fc-head" data-zh="Husam 的反馈促成了">Shaped by Husam's feedback</span>
+            <span class="fc-app">Game Life</span>
+            <span class="fc-item" data-zh="八音盒：把棋盘奏成旋律">Music Box, which turns the board into a melody</span>
+            <a class="fc-link" href="https://www.linkedin.com/in/husam-al-araj-291218165/" rel="noopener">LinkedIn ↗</a>
+          </span></span><span data-zh="。">.</span></p>
         <a href="https://houfu72.com" data-zh="关于 Houfu →">More about Houfu →</a>
       </div>
       <div class="value">
@@ -663,6 +726,72 @@
     apply();
   });
   apply();
+})();
+
+/* ── friend cards: what each friend's feedback shaped ────────
+   Hover and keyboard focus open a card through CSS. This keeps the card
+   inside the screen (and below the name when there's no room above), makes a
+   tap open it instead of leaving for LinkedIn (the card carries the link),
+   and closes it on an outside tap or Escape. */
+(function () {
+  const wraps = [...document.querySelectorAll('.friend-wrap')];
+  if (!wraps.length) return;
+  const hoverless = matchMedia('(hover: none)');
+  const nav = document.querySelector('.nav');
+  let lastPointer = 'mouse';
+  let openWrap = null;
+  addEventListener('pointerdown', e => { lastPointer = e.pointerType; }, true);
+  addEventListener('keydown', () => { lastPointer = 'keyboard'; }, true);
+
+  function place(wrap) {
+    const card = wrap.querySelector('.friend-card');
+    card.classList.remove('below');
+    card.style.setProperty('--fc-shift', '0px');
+    const r = card.getBoundingClientRect();
+    const edge = 12;
+    const vw = document.documentElement.clientWidth;
+    const top = (nav ? nav.getBoundingClientRect().bottom : 0) + edge;
+    let shift = 0;
+    if (r.left < edge) shift = edge - r.left;
+    else if (r.right > vw - edge) shift = vw - edge - r.right;
+    card.style.setProperty('--fc-shift', shift + 'px');
+    if (r.top < top) card.classList.add('below');
+  }
+  function close() {
+    if (!openWrap) return;
+    openWrap.classList.remove('is-open');
+    openWrap.querySelector('.friend').setAttribute('aria-expanded', 'false');
+    openWrap = null;
+  }
+  function open(wrap) {
+    close();
+    place(wrap);
+    wrap.classList.add('is-open');
+    wrap.querySelector('.friend').setAttribute('aria-expanded', 'true');
+    openWrap = wrap;
+  }
+
+  wraps.forEach(wrap => {
+    const name = wrap.querySelector('.friend');
+    name.setAttribute('aria-expanded', 'false');
+    wrap.addEventListener('mouseenter', () => { if (!hoverless.matches && wrap !== openWrap) place(wrap); });
+    wrap.addEventListener('focusin', () => { if (wrap !== openWrap) place(wrap); });
+    wrap.addEventListener('mouseleave', () => wrap.classList.remove('is-dismissed'));
+    wrap.addEventListener('focusout', () => wrap.classList.remove('is-dismissed'));
+    name.addEventListener('click', e => {
+      const tapped = hoverless.matches || lastPointer === 'touch' || lastPointer === 'pen';
+      if (!tapped && name.tagName === 'A') return; // a mouse click or Enter still opens LinkedIn
+      e.preventDefault();
+      if (wrap === openWrap) close(); else open(wrap);
+    });
+  });
+  document.addEventListener('click', e => { if (openWrap && !openWrap.contains(e.target)) close(); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    close();
+    wraps.forEach(w => { if (w.matches(':hover') || w.contains(document.activeElement)) w.classList.add('is-dismissed'); });
+  });
+  addEventListener('resize', () => { if (openWrap) place(openWrap); });
 })();
 
 /* ── the hero is a live Game of Life ────────────────────────
