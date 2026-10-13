@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="440" height="240" viewBox="0 0 440 240" role="img" aria-labelledby="title desc">
-  <title id="title">Plank Pilot</title>
+  <title id="title">Plank Constant</title>
   <desc id="desc">A cyan spacecraft dodges coral asteroids along three lanes in a dark navy starfield.</desc>
   <defs>
     <linearGradient id="space" x2="0" y2="1">
@@ -45,7 +45,7 @@
   <path d="m220 174 5 12h-10Z" fill="#102a45"/>
   <path d="M183 183h-11m85 0h11" stroke="#62e8f3" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/>
   <g font-family="Consolas,monospace" font-size="10" letter-spacing="2">
-    <text x="20" y="22" fill="#a6c9df">PLANK PILOT</text>
+    <text x="20" y="22" fill="#a6c9df">PLANK CONSTANT</text>
     <text x="420" y="222" text-anchor="end" fill="#62e8f3">HOLD · DODGE</text>
   </g>
 </svg>
