@@ -154,6 +154,10 @@
     .shots.cards .frame.side.guide { width: 40%; right: -3%; bottom: -6%; transform: rotate(2deg); }
     .app .shots.cards .frame video { width: 100%; border-radius: 14px; }
     .shots.cards { margin-bottom: 24px; }
+    /* a landscape and a portrait recording side by side, same height (16:9 split of 4:3 and 3:4) */
+    .shots.cards.pair { display: grid; grid-template-columns: 16fr 9fr; gap: 14px; align-items: end; padding-bottom: 0; margin-bottom: 34px; }
+    .shots.cards.pair .frame { width: auto; }
+    .shots.cards.pair video { display: block; }
     .shots figcaption { position: absolute; left: 0; bottom: -26px; white-space: nowrap; font: 0.68rem/1.4 var(--mono); color: #8a7f74; }
     .shots figcaption a { color: inherit; }
     .btn.beta { border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text); background: color-mix(in srgb, var(--accent) 10%, transparent); }
@@ -433,10 +437,10 @@
       <div class="app-copy">
         <div class="app-id">
           <img class="app-icon" src="/assets/apps/manilha-icon.webp" alt="" width="256" height="256">
-          <div><h3>Manilha</h3><p class="sub" data-zh="叫准墩数，小心王牌">Bid your tricks, mind the trump</p></div>
+          <div><h3>Manilha</h3><p class="sub" data-zh="猜准墩数，小心王牌">Guess your tricks, mind the trump</p></div>
         </div>
         <ul class="chips"><li>iPhone · iPad</li><li data-zh="免费">Free</li><li class="soon" data-zh="即将推出">Coming soon</li></ul>
-        <p class="desc" data-zh="巴西叫墩纸牌游戏，又名 Fodinha（英文称 Oh Hell）。先叫出你能赢几墩，再恰好赢下那么多。">The Brazilian trick-bidding card game also known as Fodinha, or Oh Hell. Call how many tricks you'll take, then take exactly that many.</p>
+        <p class="desc" data-zh="巴西吃墩纸牌游戏，又名 Fodinha（英文称 Oh Hell）。先猜你能赢几墩，再恰好赢下那么多。">The Brazilian trick-taking card game also known as Fodinha, or Oh Hell. Guess how many tricks you'll take, then take exactly that many.</p>
         <ul class="feats">
           <li data-zh="每局一张新的王牌（manilha）：这个点数压过所有牌。">A new manilha every round: one rank beats every other card.</li>
           <li data-zh="盲牌局：你能看到所有人的牌，唯独看不到自己的。">Blind rounds: you see everyone's card except your own.</li>
@@ -475,9 +479,9 @@
           <a class="btn ghost" href="https://houfu72.com/reading.html" data-zh="打开网页阅读器 →">Open the web reader →</a>
         </div>
       </div>
-      <figure class="shots cards">
-        <div class="frame"><video class="demo" src="/assets/apps/phloem-demo.mp4" poster="/assets/apps/phloem-guide.webp" width="960" height="720" muted loop playsinline preload="none" aria-label="Phloem demo: a passage becomes a note, Apple Pencil handwriting, Ask AI explaining a passage, the reading guide in light and dark, and real page turns in book view"></video></div>
-        <div class="frame side guide"><video class="demo" src="/assets/apps/phloem-guide-loop.mp4" poster="/assets/apps/phloem-guide-loop.webp" width="600" height="576" muted loop playsinline preload="none" aria-label="Phloem's reading guide gliding down the page as the paper turns from light to dark, then back up"></video></div>
+      <figure class="shots cards pair">
+        <div class="frame"><video class="demo" src="/assets/apps/phloem-ask.mp4" poster="/assets/apps/phloem-ask.webp" width="960" height="720" muted loop playsinline preload="none" aria-label="Phloem on iPad: asking Anthropic about a highlighted passage, handwriting on the Workspace sheet beside the paper, then exporting one PDF with every mark"></video></div>
+        <div class="frame"><video class="demo" src="/assets/apps/phloem-leaf.mp4" poster="/assets/apps/phloem-leaf.webp" width="540" height="720" muted loop playsinline preload="none" aria-label="Phloem on iPad in portrait: Apple Pencil notes about how phloem carries sugar from leaf to fruit, then sticky notes linking the ideas"></video></div>
         <figcaption>Paper: Knoblauch et al., <a href="https://doi.org/10.7554/eLife.15341">eLife 2016</a> · CC BY 4.0</figcaption>
       </figure>
     </article>
