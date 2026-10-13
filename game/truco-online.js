@@ -162,6 +162,44 @@
     return { avatar: cleanAvatar(avatar), want: isInt(want) ? want : null, at: Number(now == null ? Date.now() : now) };
   }
 
+  /* Nobody types a name, so the animal is how friends tell each other apart.
+     Each player decides only for themselves: if someone who joined earlier
+     (or is seated without a join record, like a host handing over) already
+     has my animal, I take the first free one after it. Earlier joiners never
+     change, so everyone settles on distinct animals without coordinating.
+     A player who has not joined yet counts as the latest. */
+  function earlier(joins, other, pid) {
+    const a = joins[other], b = joins[pid];
+    if (!a) return true;
+    if (!b) return true;
+    return a.at < b.at || (a.at === b.at && other < pid);
+  }
+
+  function takenAvatars(room, joins, pid, onlyEarlier) {
+    const taken = new Set();
+    joins = joins || {};
+    for (const record of seatsOf(room)) {
+      if (!record || record.kind !== 'human' || record.pid === pid) continue;
+      if (!onlyEarlier || earlier(joins, record.pid, pid)) taken.add(joins[record.pid] ? joins[record.pid].avatar : cleanAvatar(record.avatar));
+    }
+    for (const other of Object.keys(joins)) {
+      if (other === pid) continue;
+      if (!onlyEarlier || earlier(joins, other, pid)) taken.add(joins[other].avatar);
+    }
+    return taken;
+  }
+
+  function freeAvatar(room, joins, pid, avatar) {
+    const mine = cleanAvatar(avatar);
+    const taken = takenAvatars(room, joins, pid, true);
+    if (!taken.has(mine)) return mine;
+    for (let k = 1; k < AVATARS.length; k++) {
+      const next = (mine + k) % AVATARS.length;
+      if (!taken.has(next)) return next;
+    }
+    return mine;
+  }
+
   /* Host only: bring the roster in line with who has said they are here.
      Waiting: seat newcomers (their wished-for seat if it is open, else the
      claim order), move people who asked for an open seat, free the seats of
@@ -350,7 +388,7 @@
   return {
     SCHEMA, ROOM_RE, PID_RE, TEAM_BY_SEAT, CLAIM_ORDER, AVATARS, DEFAULT_TTL, HOST_GRACE, AWAY_GRACE, PACE, KEYS,
     makeRoomCode, makePid, normalizeRoomCode, roomLink, cleanAvatar,
-    validRoom, newRoom, seatOf, hostPid, humanSeats, joinsOf, joinRecord,
+    validRoom, newRoom, seatOf, hostPid, humanSeats, joinsOf, joinRecord, takenAvatars, freeAvatar,
     reconcile, startMatch, successor, takeOver, handOver,
     gameRecord, ackRecord, validGameRecord, newerGame,
     makeIntent, checkIntent, applyIntent, visibleHands,

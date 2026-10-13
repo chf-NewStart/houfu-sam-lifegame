@@ -183,3 +183,25 @@ test('a seat sees only its own cards, or everyone else\'s in a blind round', () 
   assert.ok(open[1].every(Boolean));
   assert.ok(open[0].every(c => c === null));
 });
+
+test('two players never end up with the same animal: the later joiner moves on', () => {
+  const room = lobby();                                   // host is 🐯 (3)
+  // a newcomer who also likes 🐯 takes the next free animal; their own favourite is kept otherwise
+  assert.equal(O.freeAvatar(room, joins([HOST, 3, 0, 1000]), pid(1), 3), 4);
+  assert.equal(O.freeAvatar(room, joins([HOST, 3, 0, 1000]), pid(1), 7), 7);
+  // seated with the same animal: only the one who joined later changes
+  const seated = O.reconcile(room, joins([HOST, 3, 0, 1000], [pid(1), 3, null, 2000]));
+  const j = joins([HOST, 3, 0, 1000], [pid(1), 3, null, 2000]);
+  assert.equal(O.freeAvatar(seated, j, HOST, 3), 3);
+  assert.equal(O.freeAvatar(seated, j, pid(1), 3), 4);
+  // skips every animal taken before it, and wraps around the end of the list
+  const three = joins([HOST, 11, 0, 1000], [pid(1), 0, null, 2000], [pid(2), 11, null, 3000]);
+  assert.equal(O.freeAvatar(lobby(), three, pid(2), 11), 1);
+  // same join time: the smaller pid keeps it
+  const tie = joins([pid(1), 5, null, 2000], [pid(2), 5, null, 2000]);
+  assert.equal(O.freeAvatar(lobby(), tie, pid(1), 5), 5);
+  assert.equal(O.freeAvatar(lobby(), tie, pid(2), 5), 6);
+  // what the picker greys out: everyone else's animal, earlier or not
+  assert.deepEqual([...O.takenAvatars(seated, j, HOST)].sort(), [3]);
+  assert.deepEqual([...O.takenAvatars(lobby(), three, pid(1))].sort((a, b) => a - b), [11]);
+});

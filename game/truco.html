@@ -185,6 +185,7 @@
     .avatar-btn { width:40px; height:40px; border:1px solid #2a312b; border-radius:50%; background:#0b0e0b; font-size:1.25rem; line-height:1; cursor:pointer; padding:0; }
     .avatar-btn.on { border-color:#1db954; box-shadow:0 0 0 2px rgba(29,185,84,.25); background:rgba(29,185,84,.12); }
     .avatar-btn:focus-visible { outline:2px solid #1db954; outline-offset:2px; }
+    .avatar-btn.taken { opacity:.28; cursor:default; filter:grayscale(1); }
     .roster-face { font-size:1.1rem; vertical-align:middle; }
 
     .online-bar { display:none; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; }
@@ -613,6 +614,7 @@ function roomOpened(map, who) {
     online.waitingForSeat = true;
     online.joinedAt = Date.now();
     online.stage = 'lobby';
+    online.avatar = O.freeAvatar(room, O.joinsOf(map), online.pid, online.avatar);   // not somebody else's animal
     writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, null, Date.now()));
   }
   history.replaceState(null, '', location.pathname + roomQuery(online.code));
@@ -620,6 +622,7 @@ function roomOpened(map, who) {
   online.record = null;
   roomChanged(true);
   gameChanged(false);
+  avoidSameAnimal();
   if (mine && isHost() && O.newerGame(mine, online.record)) { online.record = mine; writeKey(O.KEYS.game, mine); }
   const pending = online.pendingIntent, seat = mySeat();
   if (pending && online.record && seat >= 0 && online.record.acks[seat] < pending.n && pending.seq === online.record.seq) {
@@ -634,6 +637,7 @@ function roomUpdate(key, value) {
   else if (key === O.KEYS.game) gameChanged(true);
   else if (key.startsWith('j/')) { if (isHost()) reconcileRoom(); }
   else if (key.startsWith('i/')) { if (isHost()) takeIntents(); }
+  if (key === O.KEYS.room || key.startsWith('j/')) avoidSameAnimal();
 }
 
 function writeRoom(next) { writeKey(O.KEYS.room, next); roomChanged(); }
@@ -968,12 +972,34 @@ function guestRoundResult(state, animate) {
 }
 
 /* ── room screen ── */
+/* Animals other people in the room already have: shown greyed out, so two
+   friends can't pick the same one and lose track of who is who. */
+function takenHere() {
+  return online.active && online.room ? O.takenAvatars(online.room, O.joinsOf(online.map), online.pid) : new Set();
+}
+
 function avatarPickerHtml() {
-  return `<div class="avatar-row" role="radiogroup" aria-label="${t('your avatar', '你的头像')}">${O.AVATARS.map((face, i) =>
-    `<button type="button" class="avatar-btn ${i === online.avatar ? 'on' : ''}" role="radio" aria-checked="${i === online.avatar}" onclick="chooseAvatar(${i})">${face}</button>`).join('')}</div>`;
+  const taken = takenHere();
+  return `<div class="avatar-row" role="radiogroup" aria-label="${t('your avatar', '你的头像')}">${O.AVATARS.map((face, i) => {
+    const gone = i !== online.avatar && taken.has(i);
+    return `<button type="button" class="avatar-btn ${i === online.avatar ? 'on' : ''} ${gone ? 'taken' : ''}" role="radio" aria-checked="${i === online.avatar}" ${gone ? `disabled title="${t('another player has this one', '已有玩家选了')}"` : ''} onclick="chooseAvatar(${i})">${face}</button>`;
+  }).join('')}</div>`;
+}
+
+/* If someone who joined before me already has my animal, I move to the next
+   free one (O.freeAvatar). Keeps my place in the join order. */
+function avoidSameAnimal() {
+  if (!online.active || !online.connected || !online.room || online.room.status !== 'waiting') return;
+  const joins = O.joinsOf(online.map), me = joins[online.pid];
+  if (!me) return;
+  const next = O.freeAvatar(online.room, joins, online.pid, me.avatar);
+  if (next === me.avatar) return;
+  online.avatar = next;
+  writeKey(O.KEYS.join(online.pid), O.joinRecord(next, me.want, me.at));
 }
 
 function chooseAvatar(i) {
+  if (i !== online.avatar && takenHere().has(i)) return;
   online.avatar = O.cleanAvatar(i);
   try { localStorage.setItem('truco_avatar', String(online.avatar)); } catch (e) {}
   if (online.active && online.connected && mySeat() >= 0) writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, mySeat(), Date.now()));
