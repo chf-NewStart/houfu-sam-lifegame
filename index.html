@@ -25,7 +25,7 @@
   <style>
     :root {
       --bg: #0a0c0b; --bg2: #0f1311; --line: #1d2521; --line2: #2b3530;
-      --text: #e9eeea; --soft: #c5cec8; --muted: #9aa59e; --faint: #6c7770;
+      --text: #e9eeea; --soft: #c5cec8; --muted: #9aa59e; --faint: #7e8982;
       --green: #3ee07f; --amber: #f0b84a;
       --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
@@ -180,6 +180,9 @@
     .app.paper .desc { color: #3d352f; }
     .app.paper .feats li { color: #5d544c; }
     .app.paper .chips li { border-color: #d6c8b2; color: #6b6157; }
+    /* the paper card's accent is too light for text on paper: darker for the subtitle and credit (WCAG AA) */
+    .app.paper .sub { color: #a8402c; }
+    .app.paper .shots figcaption { color: #6b6157; }
     .app.paper .chips .live { background: #2f7d4f; border-color: #2f7d4f; color: #fff; }
     .app.paper .btn.ghost { color: #2a2420; border-color: #cdbfa9; background: transparent; }
     .app.paper .btn.ghost:hover { background: rgba(0,0,0,0.05); }
