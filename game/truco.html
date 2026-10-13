@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manilha // Life Game Project</title>
   <link rel="icon" type="image/png" href="/gameicon.png">
-  <meta name="description" content="Brazilian-style trick-taking: bid your tricks, team up locally, or invite up to three friends to an unlisted online room.">
+  <meta name="description" content="Brazilian-style trick-taking: guess your tricks, team up locally, or invite up to three friends to an online room — in a browser or the Manilha app.">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Consolas, 'Courier New', monospace; background: #080808; color: #ccc; min-height: 100vh; padding: 20px 16px 60px; }
@@ -181,6 +181,11 @@
     .roster-seat.offline { opacity:.58; }
     .seat-action { min-height:34px; padding:5px 8px; font-size:.62rem; }
     .trust-note { color:#4f5851; font-size:.58rem; line-height:1.5; max-width:520px; }
+    .avatar-row { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:9px; }
+    .avatar-btn { width:40px; height:40px; border:1px solid #2a312b; border-radius:50%; background:#0b0e0b; font-size:1.25rem; line-height:1; cursor:pointer; padding:0; }
+    .avatar-btn.on { border-color:#1db954; box-shadow:0 0 0 2px rgba(29,185,84,.25); background:rgba(29,185,84,.12); }
+    .avatar-btn:focus-visible { outline:2px solid #1db954; outline-offset:2px; }
+    .roster-face { font-size:1.1rem; vertical-align:middle; }
 
     .online-bar { display:none; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; }
     .online-bar.show { display:flex; }
@@ -233,7 +238,7 @@
     <div class="pg-header-row">
       <div>
         <div class="pg-title" data-en="manilha.exe" data-zh="manilha.exe">manilha.exe</div>
-        <div class="pg-sub" data-en="&gt;_ brazilian bid-and-tricks · manilha beats everything · sink to −5 and you're out" data-zh="&gt;_ 巴西叫牌赢墩 · 王权牌压过一切 · 跌到 −5 分即出局">&gt;_ brazilian bid-and-tricks · manilha beats everything · sink to −5 and you're out</div>
+        <div class="pg-sub" data-en="&gt;_ brazilian guess-your-tricks · manilha beats everything · sink to −5 and you're out" data-zh="&gt;_ 巴西猜墩赢墩 · 王权牌压过一切 · 跌到 −5 分即出局">&gt;_ brazilian guess-your-tricks · manilha beats everything · sink to −5 and you're out</div>
         <a class="pg-back" href="/" data-en="← back to arcade" data-zh="← 返回街机厅">← back to arcade</a>
       </div>
       <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
@@ -292,7 +297,7 @@
   </div>
 
 <script src="/game/truco-engine.js?v=3"></script>
-<script src="/game/truco-online.js?v=1"></script>
+<script src="/game/truco-online.js?v=2"></script>
 <script>
 'use strict';
 /* ── i18n ─────────────────────────────────────────────────────────────── */
@@ -356,139 +361,68 @@ function cardLabel(c) { return c.rank + SUIT[c.suit]; }
 function logLine(en, zh, cls) { uiLog.push({ en, zh, cls: cls || '' }); if (uiLog.length > 120) uiLog.shift(); }
 function escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[ch]); }
 function logHtml() { return uiLog.slice().reverse().map(l => `<div class="${escapeHtml(l.cls)}">&gt; ${escapeHtml(lang === 'zh' ? l.zh : l.en)}</div>`).join(''); }
-function cleanPlayerName(value, fallback) {
-  const clean = TrucoOnline.cleanName(value).replace(/[<>&"'`]/g, '').trim();
-  return clean || fallback || '';
-}
-function savedOnlineName() {
-  try { return cleanPlayerName(localStorage.getItem('truco_player_name') || '', ''); } catch (e) { return ''; }
+
+/* ── online rooms ─────────────────────────────────────────────────────── */
+/* Rooms live on the arcade's relay (relay/src/index.js): a Cloudflare Durable
+   Object per room code, reachable where Google is not. The room contract is
+   game/truco-online.js, shared with the Manilha iOS app, so a room made here
+   can be joined from the app and the other way round, with either side
+   hosting. One player hosts: their page runs the engine and the computer
+   seats, seats joiners, and turns everyone else's intents into moves. If the
+   host goes quiet, the next player clockwise takes over from the last state
+   in the room. Nobody types a name; players are an animal and a seat number. */
+const O = TrucoOnline;
+/* On a local copy, ?relay=ws://127.0.0.1:8787 points at `wrangler dev` (relay/README.md). */
+const RELAY_OVERRIDE = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && new URLSearchParams(location.search).get('relay') || '';
+const RELAY = RELAY_OVERRIDE || 'wss://lifegame-relay.houfuchen0702.workers.dev';
+/* Local testing only: ?autoplay=1 lets the computer play this page's seat, so a
+   whole online game can run between the page and the app unattended. */
+const DEV_AUTOPLAY = !!RELAY_OVERRIDE && new URLSearchParams(location.search).get('autoplay') === '1';
+function roomQuery(code) { return '?room=' + encodeURIComponent(code) + (RELAY_OVERRIDE ? '&relay=' + encodeURIComponent(RELAY_OVERRIDE) : '') + (DEV_AUTOPLAY ? '&autoplay=1' : ''); }
+let devAutoplayTimer = null;
+function devAutoplay() {
+  if (!DEV_AUTOPLAY || devAutoplayTimer || !online.active || !g || dealState || showingTrickResult || online.pendingIntent) return;
+  const seat = g.turn;
+  if (!isLocalSeat(seat) || (g.phase !== 'bidding' && g.phase !== 'playing')) return;
+  devAutoplayTimer = setTimeout(() => {
+    devAutoplayTimer = null;
+    if (!g || g.turn !== seat || dealState || showingTrickResult || online.pendingIntent) { devAutoplay(); return; }
+    if (g.phase === 'bidding') humanBid(seat, g.cpuBid(seat));
+    else if (g.phase === 'playing') humanPlay(seat, g.players[seat].hand.indexOf(g.cpuChooseCard(seat)));
+  }, 500);
 }
 
-/* ── unlisted online rooms ────────────────────────────────────────────── */
-const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyAedvXKKf0YZLuaNTwCm7_-Y_pJoZchqwo',
-  authDomain: 'remoteplay-b5486.firebaseapp.com',
-  databaseURL: 'https://remoteplay-b5486-default-rtdb.firebaseio.com',
-  projectId: 'remoteplay-b5486',
-  storageBucket: 'remoteplay-b5486.firebasestorage.app',
-  messagingSenderId: '142560337765',
-  appId: '1:142560337765:web:a0fad172347d04dc638b8c',
-};
-const ROOM_TTL = 12 * 60 * 60 * 1000;
-const NETWORK_TIMEOUT = 12000;
-let firebaseLoadPromise = null;
-let firebaseDatabase = null;
-
-function onlineClientToken() {
+function savedAvatar() {
+  try { const n = Number(localStorage.getItem('truco_avatar')); if (Number.isInteger(n) && n >= 0 && n < O.AVATARS.length) return n; } catch (e) {}
+  return Math.floor(Math.random() * O.AVATARS.length);
+}
+function pidFor(code) {
   try {
-    let value = sessionStorage.getItem('truco_client_token');
-    if (!value) {
-      const bytes = new Uint8Array(16);
-      crypto.getRandomValues(bytes);
-      value = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-      sessionStorage.setItem('truco_client_token', value);
-    }
-    return value;
-  } catch (e) {
-    return String(Date.now()) + Math.random().toString(16).slice(2);
-  }
+    const key = 'truco_pid_' + code;
+    let pid = sessionStorage.getItem(key);
+    if (!pid || !O.PID_RE.test(pid)) { pid = O.makePid(); sessionStorage.setItem(key, pid); }
+    return pid;
+  } catch (e) { return O.makePid(); }
 }
+function forgetPid(code) { try { sessionStorage.removeItem('truco_pid_' + code); } catch (e) {} }
 
 const online = {
-  active: false, busy: false, role: null, token: onlineClientToken(), name: '', code: '', seat: null,
-  ref: null, roomData: null, listeners: [], presenceRef: null, presence: {}, matchStarted: false,
-  viewRev: -1, stateRev: 0, actionRev: 0, session: 1, pendingIntent: null,
-  intentQueue: Promise.resolve(), syncQueue: Promise.resolve(), viewListener: null,
-  presenceConnection: null, membershipLost: false,
-  lastAckBySeat: {}, noticeBySeat: {}, dismissedBannerId: null, statusMessage: '', statusKind: '',
+  active: false, stage: 'idle', code: '', pid: '', avatar: savedAvatar(),
+  ws: null, connected: false, everOpened: false, creating: false, attempts: 0,
+  reconnectTimer: null, tickTimer: null, lastPing: 0, lastHeard: 0, lastWho: 0,
+  map: {}, room: null, record: null, live: new Set(),
+  waitingForSeat: false, joinedAt: 0, slowJoin: false, needTwo: false,
+  intentN: 0, pendingIntent: null, pendingAt: 0,
+  hostMissingSince: 0, goneSince: {}, role: null, match: 0, lastPublished: '', guestState: null,
+  lastTrickKey: '', presenting: 0, guestTimers: [], statusMessage: '', statusKind: '',
 };
+let invitedCode = '';
 
-function loadExternalScript(src) {
-  return new Promise((resolve, reject) => {
-    const old = document.querySelector(`script[src="${src}"]`);
-    if (old && old.dataset.loaded === '1') { resolve(); return; }
-    const script = old || document.createElement('script');
-    let timer = setTimeout(() => reject(new Error('network-timeout')), NETWORK_TIMEOUT);
-    script.addEventListener('load', () => { clearTimeout(timer); script.dataset.loaded = '1'; resolve(); }, { once: true });
-    script.addEventListener('error', () => { clearTimeout(timer); reject(new Error('firebase-unavailable')); }, { once: true });
-    if (!old) { script.src = src; script.async = true; document.head.appendChild(script); }
-  });
-}
-
-async function ensureFirebase() {
-  if (firebaseDatabase) return firebaseDatabase;
-  if (!firebaseLoadPromise) {
-    firebaseLoadPromise = (async () => {
-      if (!window.firebase || !firebase.initializeApp) {
-        await loadExternalScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
-      }
-      if (!firebase.database) {
-        await loadExternalScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js');
-      }
-      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      firebaseDatabase = firebase.database();
-      return firebaseDatabase;
-    })().catch(error => { firebaseLoadPromise = null; throw error; });
-  }
-  return firebaseLoadPromise;
-}
-
-function withTimeout(promise, ms, label) {
-  let timer;
-  return Promise.race([
-    promise.finally(() => clearTimeout(timer)),
-    new Promise((resolve, reject) => { timer = setTimeout(() => reject(new Error(label || 'network-timeout')), ms); }),
-  ]);
-}
-
-function fbTransaction(ref, update) {
-  return withTimeout(new Promise((resolve, reject) => {
-    ref.transaction(update, (error, committed, snapshot) => {
-      if (error) reject(error);
-      else resolve({ committed, value: snapshot && snapshot.val() });
-    }, false);
-  }), NETWORK_TIMEOUT, 'network-timeout');
-}
-
-function fbOnce(ref) { return withTimeout(ref.once('value'), NETWORK_TIMEOUT, 'network-timeout'); }
-
-/* RTDB may call a transaction with null before remote data reaches its local
-   cache. Start from the just-read baseline in that case; the server hash still
-   makes concurrent edits retry against the newest complete room. */
-async function transactExistingRoom(ref, baseline, mutate) {
-  let reason = 'room-busy';
-  const result = await fbTransaction(ref, current => {
-    try { return mutate(current == null ? baseline : current); }
-    catch (error) { reason = error && error.message || reason; return; }
-  });
-  if (!result.committed || !result.value) throw new Error(reason);
-  return result.value;
-}
-
-async function closeOnlineRoomRef(ref, room) {
-  const now = Date.now();
-  const createdAt = Number(room && room.meta && room.meta.createdAt) || now;
-  const expiresAt = Math.max(Number(room && room.meta && room.meta.expiresAt) || 0, now + ROOM_TTL);
-  const tombstone = {
-    meta: { kind: 'truco', schema: 1, createdAt, expiresAt },
-    status: 'closed', hostToken: 'closed', teams: TrucoOnline.TEAM_BY_SEAT.slice(),
-    seats: [], updatedAt: now,
-  };
-  return withTimeout(ref.set(tombstone), NETWORK_TIMEOUT, 'network-timeout');
-}
-
-function onlineRoomRef(db, code) { return db.ref(`games/${code}/truco`); }
-function roomLink() { return location.origin + location.pathname + '?room=' + encodeURIComponent(online.code || ''); }
-function seatRecord(room, seat) { return room && room.seats ? (room.seats[seat] || room.seats[String(seat)] || null) : null; }
-function roomSeats(room) { return Array.from({ length: 4 }, (_, seat) => seatRecord(room, seat)); }
-function onlineSeatNames(room) {
-  return roomSeats(room).map((record, seat) => {
-    const fallback = record && record.kind === 'ai' ? `AI-${String.fromCharCode(65 + seat)}` : `Seat ${seat + 1}`;
-    const name = cleanPlayerName(record && record.name || fallback, fallback);
-    return { en: name, zh: name };
-  });
-}
-function connectedToken(token) { return !!(token && online.presence && online.presence[token]); }
+function mySeat() { return online.room ? O.seatOf(online.room, online.pid) : -1; }
+function isHost() { return mySeat() >= 0 && online.room && online.room.host === mySeat(); }
+function roomLink() { return RELAY_OVERRIDE ? location.origin + location.pathname + roomQuery(online.code) : O.roomLink(online.code); }
+function connectedHumans() { return online.room ? online.room.seats.filter(r => r && r.kind === 'human' && online.live.has(r.pid)).length : 0; }
+function seatConnected(seat) { const r = online.room && online.room.seats[seat]; return !!(r && r.kind === 'human' && online.live.has(r.pid)); }
 
 function setOnlineStatus(message, kind) {
   online.statusMessage = message || '';
@@ -498,365 +432,615 @@ function setOnlineStatus(message, kind) {
   renderOnlineBar();
 }
 
-function onlineErrorMessage(error) {
-  const code = String(error && (error.message || error.code) || '');
-  if (/room-not-found/.test(code)) return t('Room not found. Check the code or link.', '未找到房间，请检查房间码或链接。');
-  if (/room-expired/.test(code)) return t('That room expired. Ask the host for a new link.', '该房间已过期，请让房主创建新链接。');
-  if (/room-full/.test(code)) return t('That room already has four people.', '该房间已有四人。');
-  if (/room-locked/.test(code)) return t('That match already started. Only returning players can rejoin.', '该对局已经开始，只有原玩家可重新加入。');
-  if (/room-busy/.test(code)) return t('The room changed at the same moment. Please try once more.', '房间刚刚发生变化，请再试一次。');
-  if (/need-two/.test(code)) return t('At least two connected people are needed to start.', '至少需要两位在线玩家才能开始。');
-  if (/permission/i.test(code)) return t('Online rooms are not enabled for this game path yet.', '此游戏路径尚未启用联机房间。');
-  if (/timeout/.test(code)) return t('The room service timed out. Local play still works.', '房间服务超时，本地模式仍可游玩。');
-  if (/unavailable|firebase/.test(code)) return t('The online service did not load. Local play still works.', '联机服务未能加载，本地模式仍可游玩。');
-  return t('Could not reach the room. Please try again.', '无法连接房间，请重试。');
-}
-
-function rememberOnlineName(name) {
-  try { localStorage.setItem('truco_player_name', name); } catch (e) {}
-}
-
-async function createOnlineRoom() {
-  if (online.busy) return;
-  const field = $('onlineName');
-  const name = cleanPlayerName(field && field.value || savedOnlineName(), t('Host', '房主'));
-  rememberOnlineName(name);
-  online.busy = true;
-  setOnlineStatus(t('Creating an invite room…', '正在创建邀请房间…'));
-  try {
-    const db = await ensureFirebase();
-    let created = null;
-    for (let attempt = 0; attempt < 5 && !created; attempt++) {
-      const code = TrucoOnline.makeRoomCode();
-      const ref = onlineRoomRef(db, code);
-      const now = Date.now();
-      const room = TrucoOnline.createLobby(online.token, name, now, ROOM_TTL);
-      room.session = 1; room.stateRev = 0; room.updatedAt = now;
-      const result = await fbTransaction(ref, current => {
-        if (current != null && (!current.meta || Number(current.meta.expiresAt) > Date.now())) return;
-        return room;
-      });
-      if (result.committed) created = { code, ref, room: result.value || room };
-    }
-    if (!created) throw new Error('room-collision');
-    attachOnlineRoom(created.code, created.ref, created.room, 'host', 0, name);
-  } catch (error) {
-    setOnlineStatus(onlineErrorMessage(error), 'err');
-  } finally {
-    online.busy = false;
+function problemMessage(problem) {
+  switch (problem) {
+    case 'notFound': return t('No room with that code. Check the code or ask for the link again.', '没有这个房间码对应的房间。请检查房间码，或重新索取链接。');
+    case 'expired': return t('That room has expired. Ask your friend to create a new one.', '该房间已过期。请让朋友创建一个新房间。');
+    case 'started': return t('That game has already started. Only the people who were at the table can come back.', '该对局已经开始，只有原来在牌桌上的人可以回来。');
+    case 'full': return t('That room already has four people.', '该房间已满四人。');
+    case 'closed': return t('The room was closed: everyone left.', '房间已关闭：所有人都离开了。');
+    case 'unreachable': return t('Can\'t reach the game server. Check your connection and try again — local play still works.', '无法连接游戏服务器。请检查网络后重试——本地模式仍可游玩。');
+    case 'removed': return t('You\'re no longer in that room.', '你已不在该房间中。');
+    default: return t('Something went wrong with the room. Please try again.', '房间出了点问题，请重试。');
   }
 }
 
-async function joinOnlineRoom(rawCode) {
-  if (online.busy) return;
-  const codeField = $('onlineCode');
-  const nameField = $('onlineName');
-  const code = TrucoOnline.normalizeRoomCode(rawCode == null ? (codeField && codeField.value) : rawCode);
-  const name = cleanPlayerName(nameField && nameField.value || savedOnlineName(), t('Friend', '好友'));
-  rememberOnlineName(name);
-  if (!TrucoOnline.ROOM_RE.test(code)) {
-    setOnlineStatus(t('Enter the 7-character room code or paste the invite link.', '请输入 7 位房间码或粘贴邀请链接。'), 'err');
-    return;
-  }
-  online.busy = true;
-  setOnlineStatus(t('Joining room ' + code + '…', '正在加入房间 ' + code + '…'));
-  try {
-    const db = await ensureFirebase();
-    const ref = onlineRoomRef(db, code);
-    const first = (await fbOnce(ref)).val();
-    if (!first || !TrucoOnline.validRoom(first, Date.now())) throw new Error(first && first.meta && Number(first.meta.expiresAt) < Date.now() ? 'room-expired' : 'room-not-found');
-    let seat = TrucoOnline.seatForToken(first, online.token);
-    let room;
-    if (seat >= 0) {
-      const renamed = await fbTransaction(ref.child('seats/' + seat), current => {
-        if (current && current.kind === 'human' && current.token === online.token) return Object.assign({}, current, { name });
-        return;
-      });
-      if (!renamed.committed) throw new Error('room-locked');
-      room = (await fbOnce(ref)).val();
-    } else {
-      room = await transactExistingRoom(ref, first, current => TrucoOnline.claimSeat(current, online.token, name, Date.now()));
-    }
-    if (!room || !TrucoOnline.validRoom(room, Date.now())) throw new Error('room-not-found');
-    seat = TrucoOnline.seatForToken(room, online.token);
-    if (seat == null || seat < 0) throw new Error('room-full');
-    const role = room.hostToken === online.token ? 'host' : 'guest';
-    if (role === 'host' && room.status === 'locked') {
-      await closeOnlineRoomRef(ref, room);
-      throw new Error('host-state-lost');
-    }
-    attachOnlineRoom(code, ref, room, role, seat, name);
-  } catch (error) {
-    const msg = /host-state-lost/.test(String(error && error.message))
-      ? t('The host page was reloaded after the match began, so the old room was closed. Create a new room.', '房主在开局后刷新了页面，因此旧房间已关闭，请创建新房间。')
-      : onlineErrorMessage(error);
-    setOnlineStatus(msg, 'err');
-  } finally {
-    online.busy = false;
-  }
-}
-
-function watchOnline(ref, event, callback) {
-  ref.on(event, callback, error => setOnlineStatus(onlineErrorMessage(error), 'err'));
-  online.listeners.push({ ref, event, callback });
-}
-
-function attachOnlineRoom(code, ref, room, role, seat, name) {
-  detachOnlineListeners();
-  Object.assign(online, {
-    active: true, role, code, seat, name, ref, roomData: room, matchStarted: false,
-    viewRev: -1, stateRev: Number(room.stateRev || 0), actionRev: 0, session: Number(room.session || 1),
-    pendingIntent: null, presence: {}, lastAckBySeat: {}, noticeBySeat: {}, dismissedBannerId: null,
-    statusMessage: '', statusKind: '', membershipLost: false, presenceConnection: null,
-    intentQueue: Promise.resolve(), syncQueue: Promise.resolve(),
-  });
-  history.replaceState(null, '', location.pathname + '?room=' + encodeURIComponent(code));
-  attachOnlineViewListener();
-  watchOnline(ref.child('seats'), 'value', snap => onOnlineSeats(snap.val()));
-  watchOnline(ref.child('status'), 'value', snap => onOnlineStatus(snap.val()));
-  watchOnline(ref.child('session'), 'value', snap => {
-    const next = Number(snap.val() || 1);
-    if (next !== online.session) { online.session = next; online.viewRev = -1; online.pendingIntent = null; online.dismissedBannerId = null; }
-  });
-  watchOnline(ref.child('presence'), 'value', snap => onOnlinePresence(snap.val() || {}));
-  if (role === 'host') {
-    watchOnline(ref.child('intents'), 'child_added', snap => {
-      online.intentQueue = online.intentQueue.then(() => processOnlineIntent(snap)).catch(() => {});
-    });
-  }
-  attachOnlinePresence();
-  screenState = 'online-lobby';
-  renderOnlineLobby();
-  renderOnlineBar();
-}
-
-function attachOnlineViewListener() {
-  if (!online.ref || online.role !== 'guest' || online.seat == null) return;
-  if (online.viewListener) {
-    online.viewListener.ref.off('value', online.viewListener.callback);
-    online.listeners = online.listeners.filter(item => item !== online.viewListener);
-  }
-  const ref = online.ref.child('views/' + online.seat);
-  const callback = snap => applyOnlineView(snap.val());
-  const listener = { ref, event: 'value', callback };
-  ref.on('value', callback, error => setOnlineStatus(onlineErrorMessage(error), 'err'));
-  online.listeners.push(listener);
-  online.viewListener = listener;
-}
-
-function attachOnlinePresence() {
-  if (!online.ref) return;
-  if (online.presenceConnection) {
-    try { online.presenceConnection.ref.off('value', online.presenceConnection.callback); } catch (e) {}
-    online.listeners = online.listeners.filter(item => item !== online.presenceConnection);
-  }
-  const roomRef = online.ref;
-  const token = online.token;
-  const presenceRef = roomRef.child('presence/' + token);
-  const connectedRef = firebaseDatabase.ref('.info/connected');
-  const callback = snap => {
-    if (snap.val() !== true || !online.active || online.ref !== roomRef) return;
-    const record = { seat: online.seat, name: online.name, at: firebase.database.ServerValue.TIMESTAMP };
-    presenceRef.onDisconnect().remove()
-      .then(() => {
-        if (!online.active || online.ref !== roomRef || online.token !== token) return;
-        return presenceRef.set(record);
-      })
-      .catch(error => { if (online.active && online.ref === roomRef) setOnlineStatus(onlineErrorMessage(error), 'err'); });
+/* ── connection ── */
+function connectRoom() {
+  if (online.ws) { try { online.ws.onclose = null; online.ws.close(); } catch (e) {} }
+  let ws;
+  try { ws = new WebSocket(RELAY.replace(/\/+$/, '') + '/room/' + encodeURIComponent(online.code) + '?id=' + encodeURIComponent(online.pid)); }
+  catch (e) { roomClosed(); return; }
+  online.ws = ws;
+  online.lastHeard = Date.now();
+  const opened = Date.now();
+  ws.onmessage = ev => {
+    if (ws !== online.ws) return;
+    online.lastHeard = Date.now();
+    let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (m.t === 'init') roomOpened(m.d || {}, Array.isArray(m.who) ? m.who : []);
+    else if (m.t === 'u') roomUpdate(m.p, m.v == null ? null : m.v);
+    else if (m.t === 'who') { online.live = new Set(Array.isArray(m.ids) ? m.ids : []); presenceChanged(); }
   };
-  const listener = { ref: connectedRef, event: 'value', callback };
-  connectedRef.on('value', callback, error => setOnlineStatus(onlineErrorMessage(error), 'err'));
-  online.listeners.push(listener);
-  online.presenceConnection = listener;
-  online.presenceRef = presenceRef;
+  ws.onclose = () => { if (ws === online.ws) roomClosed(); };
+  ws.onerror = () => {};
+  startTicker();
+  online.openDeadline = opened + 12000;
 }
 
-function onOnlineSeats(value) {
-  if (!online.active || !online.roomData) return;
-  online.roomData.seats = value || [];
-  const nextSeat = TrucoOnline.seatForToken(online.roomData, online.token);
-  if (nextSeat < 0 && online.role === 'guest') {
-    handleOnlineMembershipLost(value == null);
+function sendRelay(message) {
+  if (online.ws && online.connected && online.ws.readyState === 1) online.ws.send(JSON.stringify(message));
+}
+function writeKey(key, value) {
+  if (value == null) delete online.map[key]; else online.map[key] = JSON.parse(JSON.stringify(value));
+  sendRelay({ t: 'set', p: key, v: value == null ? null : value });
+}
+
+function roomClosed() {
+  online.connected = false;
+  online.ws = null;
+  online.live.delete(online.pid);
+  if (!online.active) return;
+  presenceChanged();
+  renderOnlineBar();
+  if (!online.everOpened && online.attempts >= 2) { onlineFail('unreachable'); return; }
+  clearTimeout(online.reconnectTimer);
+  const delay = Math.min(10000, 1000 * Math.pow(2, online.attempts));
+  online.attempts++;
+  online.reconnectTimer = setTimeout(() => { if (online.active && !online.connected) connectRoom(); }, delay);
+}
+
+function startTicker() {
+  if (online.tickTimer) return;
+  online.tickTimer = setInterval(onlineTick, 500);
+}
+
+function onlineTick() {
+  if (!online.active) return;
+  const now = Date.now();
+  if (online.ws && !online.connected && online.openDeadline && now > online.openDeadline) {
+    online.openDeadline = 0;
+    try { online.ws.close(); } catch (e) {}
+  }
+  if (online.connected) {
+    if (now - online.lastHeard > 25000) { try { online.ws.close(); } catch (e) {} return; }
+    if (now - online.lastPing >= 10000) { online.lastPing = now; sendRelay({ t: 'ping' }); }
+    if (now - online.lastWho > 15000) { online.lastWho = now; sendRelay({ t: 'who' }); }
+  }
+  if (online.waitingForSeat && now - online.joinedAt > 10000 && !online.slowJoin) { online.slowJoin = true; renderOnlineLobby(); }
+  if (online.pendingIntent && now - online.pendingAt > 8000) { online.pendingIntent = null; renderAll(); }
+  if (isHost()) checkAway(now); else checkHost(now);
+}
+
+/* ── entering and leaving ── */
+function enterRoom(code, pid, creating) {
+  stopOnline();
+  Object.assign(online, {
+    active: true, stage: 'connecting', code, pid, creating, everOpened: false, attempts: 0, map: {}, room: null, record: null,
+    live: new Set(), waitingForSeat: false, slowJoin: false, needTwo: false, pendingIntent: null, hostMissingSince: 0,
+    goneSince: {}, role: null, match: 0, lastPublished: '', guestState: null, lastTrickKey: '',
+  });
+  screenState = 'online-lobby';
+  setOnlineStatus(creating ? t('Creating a room…', '正在创建房间…') : t(`Opening room ${code}…`, `正在打开房间 ${code}…`));
+  renderOnlineLobby();
+  connectRoom();
+}
+
+function createOnlineRoom() {
+  const code = O.makeRoomCode();
+  enterRoom(code, pidFor(code), true);
+}
+
+function joinOnlineRoom(rawCode) {
+  const field = $('onlineCode');
+  const code = O.normalizeRoomCode(rawCode == null ? (field && field.value) : rawCode);
+  if (!O.ROOM_RE.test(code)) { setOnlineStatus(t('Enter the 7-character room code or paste the invite link.', '请输入 7 位房间码或粘贴邀请链接。'), 'err'); return; }
+  enterRoom(code, pidFor(code), false);
+}
+
+function stopOnline() {
+  clearTimeout(online.reconnectTimer);
+  clearInterval(online.tickTimer);
+  online.tickTimer = null;
+  clearGuestTimers();
+  if (online.ws) { const ws = online.ws; online.ws = null; ws.onclose = null; setTimeout(() => { try { ws.close(); } catch (e) {} }, 400); }
+  online.connected = false;
+}
+
+function resetToMenu() {
+  online.active = false;
+  online.stage = 'idle';
+  flowGeneration++; running = false;
+  g = null; gameMode = 'solo'; humanSeats = new Set([0]); localSeats = new Set([0]); seatNames = SOLO_SEAT_NAMES;
+  if (location.search) history.replaceState(null, '', location.pathname);
+}
+
+function onlineFail(problem) {
+  const code = online.code;
+  if (problem === 'removed' || problem === 'closed') forgetPid(code);
+  stopOnline();
+  resetToMenu();
+  showLobby();
+  renderAll();
+  const field = $('onlineCode');
+  if (field && problem !== 'removed' && problem !== 'closed') field.value = code;
+  setOnlineStatus(problemMessage(problem), 'err');
+}
+
+function leaveOnlineRoom(showMain) {
+  if (!online.active) { if (showMain) showLobby(); return; }
+  if (online.connected) {
+    if (isHost() && online.room && online.room.status !== 'closed') {
+      const others = [...online.live].filter(pid => pid !== online.pid);
+      writeKey(O.KEYS.room, O.handOver(online.room, others));
+    }
+    writeKey(O.KEYS.join(online.pid), null);
+  }
+  forgetPid(online.code);
+  stopOnline();
+  resetToMenu();
+  online.statusMessage = ''; online.statusKind = '';
+  renderOnlineBar();
+  if (showMain) { showLobby(); renderAll(); }
+}
+
+/* ── the room as it arrives ── */
+function roomOpened(map, who) {
+  online.connected = true;
+  online.attempts = 0;
+  online.map = map;
+  online.live = new Set(who); online.live.add(online.pid);
+  if (online.creating) {
+    if (Object.keys(map).length) { createOnlineRoom(); return; }     // that code is taken
+    online.creating = false;
+    online.everOpened = true;
+    const now = Date.now();
+    writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, 0, now));
+    writeRoom(O.newRoom(online.pid, online.avatar, now));
+    history.replaceState(null, '', location.pathname + roomQuery(online.code));
     return;
   }
-  if (nextSeat != null && nextSeat >= 0 && nextSeat !== online.seat) {
-    online.seat = nextSeat;
-    attachOnlineViewListener();
-    attachOnlinePresence();
+  const firstTime = !online.everOpened;
+  online.everOpened = true;
+  const room = map[O.KEYS.room];
+  if (!room || room.kind !== 'truco') { onlineFail(firstTime ? 'notFound' : 'closed'); return; }
+  if (room.status === 'closed') { onlineFail('closed'); return; }
+  if (!O.validRoom(room, Date.now())) { onlineFail(room.expiresAt < Date.now() ? 'expired' : 'notFound'); return; }
+  if (O.seatOf(room, online.pid) < 0) {
+    if (!firstTime && !online.waitingForSeat) { onlineFail('removed'); return; }
+    if (room.status !== 'waiting') { onlineFail('started'); return; }
+    if (room.seats.every(Boolean)) { onlineFail('full'); return; }
+    online.waitingForSeat = true;
+    online.joinedAt = Date.now();
+    online.stage = 'lobby';
+    writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, null, Date.now()));
   }
-  if (online.matchStarted) {
-    humanSeats = new Set(TrucoOnline.humanSeats(online.roomData));
-    seatNames = onlineSeatNames(online.roomData);
+  history.replaceState(null, '', location.pathname + roomQuery(online.code));
+  const mine = isHost() && online.role === 'host' ? online.record : null;
+  online.record = null;
+  roomChanged(true);
+  gameChanged(false);
+  if (mine && isHost() && O.newerGame(mine, online.record)) { online.record = mine; writeKey(O.KEYS.game, mine); }
+  const pending = online.pendingIntent, seat = mySeat();
+  if (pending && online.record && seat >= 0 && online.record.acks[seat] < pending.n && pending.seq === online.record.seq) {
+    writeKey(O.KEYS.intent(seat), pending);
+  }
+  renderOnlineBar();
+}
+
+function roomUpdate(key, value) {
+  if (value == null) delete online.map[key]; else online.map[key] = value;
+  if (key === O.KEYS.room) roomChanged();
+  else if (key === O.KEYS.game) gameChanged(true);
+  else if (key.startsWith('j/')) { if (isHost()) reconcileRoom(); }
+  else if (key.startsWith('i/')) { if (isHost()) takeIntents(); }
+}
+
+function writeRoom(next) { writeKey(O.KEYS.room, next); roomChanged(); }
+
+/* fresh: just (re)connected, so whatever the room says now is the truth. */
+function roomChanged(fresh) {
+  const next = online.map[O.KEYS.room];
+  if (!next) { if (online.room) onlineFail('closed'); return; }
+  const cur = online.room;
+  if (!fresh && cur && (next.epoch < cur.epoch || (next.epoch === cur.epoch && next.rev < cur.rev))) return;
+  if (next.status === 'closed') { onlineFail('closed'); return; }
+  if (!O.validRoom(next)) return;
+  const wasHost = isHost(), wasSeat = mySeat(), previousMatch = cur ? cur.match : null;
+  online.room = next;
+  const seat = mySeat();
+  if (seat < 0) {
+    if (wasSeat >= 0) { onlineFail('removed'); return; }
+    if (online.waitingForSeat) {
+      if (next.status !== 'waiting') onlineFail('started');
+      else if (next.seats.every(Boolean)) onlineFail('full');
+    }
+    return;
+  }
+  online.waitingForSeat = false;
+  online.slowJoin = false;
+  configureOnlineTable();
+  online.stage = next.status === 'playing' ? 'playing' : 'lobby';
+  if (isHost() && !wasHost) becomeHost();
+  else if (!isHost() && wasHost) becomeGuest();
+  else if (isHost() && previousMatch === next.match && online.role === 'host' && !running && !dealState) chain();
+  if (isHost()) reconcileRoom();
+  if (online.stage === 'lobby') renderOnlineLobby();
+  else if (online.role !== 'host' && !online.guestState) renderOnlineLobby();
+  renderOnlineBar();
+}
+
+function configureOnlineTable() {
+  const room = online.room, seat = mySeat();
+  humanSeats = new Set(O.humanSeats(room));
+  localSeats = new Set([seat]);
+  seatNames = room.seats.map((record, s) => onlineSeatName(record, s, s === seat));
+  presenceChanged();
+}
+
+function onlineSeatName(record, seat, mine) {
+  const n = seat + 1;
+  if (!record || record.kind !== 'human') return { en: `AI-${n}`, zh: `电脑${n}` };
+  const face = O.AVATARS[record.avatar] || O.AVATARS[0];
+  return mine ? { en: `${face} You`, zh: `${face} 你` } : { en: `${face} Player ${n}`, zh: `${face} 玩家${n}` };
+}
+
+function reconcileRoom() {
+  if (!isHost() || !online.room) return;
+  const next = O.reconcile(online.room, O.joinsOf(online.map));
+  if (next !== online.room) writeRoom(next);
+}
+
+/* ── the game record ── */
+function gameChanged(animate) {
+  const rec = online.map[O.KEYS.game];
+  if (!rec || !O.newerGame(rec, online.record)) return;
+  online.record = rec;
+  const seat = mySeat();
+  if (online.pendingIntent && seat >= 0 && rec.acks[seat] >= online.pendingIntent.n) online.pendingIntent = null;
+  if (isHost() || !online.room || online.room.status !== 'playing' || rec.match !== online.room.match || seat < 0) { renderAll(); return; }
+  applyGuest(rec, animate);
+}
+
+/* Host: renderAll() follows every engine change, so publishing hangs off it. */
+function maybePublish() {
+  if (!online.active || online.role !== 'host' || !isHost() || !g || !online.room || online.room.status !== 'playing') return;
+  const state = TrucoEngine.exportState(g);
+  const text = JSON.stringify(state);
+  if (text === online.lastPublished) return;
+  online.lastPublished = text;
+  const rec = O.gameRecord(online.room, g, online.record);
+  online.record = rec;
+  writeKey(O.KEYS.game, rec);
+}
+
+function startOnlineMatch() {
+  flowGeneration++;
+  clearGuestTimers();
+  online.role = 'host';
+  online.match = online.room.match;
+  online.lastPublished = '';
+  online.guestState = null;
+  gameMode = 'online';
+  g = TrucoEngine.newGame(4, undefined, { teams: O.TEAM_BY_SEAT });
+  uiLog = []; lastSeenTrick = null; dealState = null; showingTrickResult = false; running = false; bannerState = null; screenState = 'game';
+  logOnlineStart();
+  $('overlayLayer').innerHTML = '';
+  renderOnlineBar();
+  beginRound().then(ok => { if (ok) chain(); });
+}
+
+function logOnlineStart() {
+  const people = humanSeats.size;
+  logLine(`online room ${online.code} — ${people} people, ${4 - people} AI · partners sit opposite`, `联机房间 ${online.code}——${people} 人，${4 - people} 个电脑 · 对坐者为队友`, 'imp');
+}
+
+function becomeHost() {
+  const room = online.room;
+  if (!room || room.status !== 'playing') return;
+  if (online.role === 'host' && g && online.match === room.match) return;
+  const rec = online.record;
+  if (rec && rec.match === room.match) {
+    flowGeneration++;
+    clearGuestTimers();
+    online.role = 'host';
+    if (online.match !== rec.match || !g) { uiLog = []; online.match = rec.match; }
+    g = TrucoEngine.restoreGame(rec.state);
+    online.lastPublished = JSON.stringify(rec.state);
+    lastSeenTrick = g.lastTrick;
+    dealState = null; bannerState = null; showingTrickResult = false; running = false;
+    screenState = g.phase === 'over' ? 'end' : 'game';
+    logLine('the host left — this page keeps the table going', '房主已离开——由本页面继续主持牌局', 'warn');
+    $('overlayLayer').innerHTML = '';
+    if (g.phase === 'lobby') beginRound().then(ok => { if (ok) chain(); });
+    else if (g.phase === 'over') showEnd();
+    else chain();
+  } else {
+    startOnlineMatch();
+  }
+}
+
+function becomeGuest() {
+  flowGeneration++;
+  running = false;
+  online.role = 'guest';
+  if (online.record) applyGuest(online.record, false);
+}
+
+/* Host: moves waiting in the room, one at a time, once the table is idle. */
+function onlineHostIdle() { takeIntents(); checkAway(Date.now()); }
+function hostBusy() { return running || !!dealState || online.presenting > 0; }
+
+function takeIntents() {
+  if (!isHost() || online.role !== 'host' || !g || hostBusy() || !online.record || !online.room || online.room.status !== 'playing') return;
+  for (let seat = 0; seat < 4; seat++) {
+    const intent = online.map[O.KEYS.intent(seat)];
+    if (!intent) continue;
+    const result = O.checkIntent(online.room, online.record, seat, intent, g);
+    if (result === 'old' || result === 'not-yours') continue;
+    if (result !== 'ok') { acknowledge(seat, intent.n); continue; }
+    online.record = Object.assign({}, online.record, { acks: online.record.acks.slice() });
+    online.record.acks[seat] = intent.n;
+    const card = O.applyIntent(g, seat, intent);
+    if (card) logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`, 'gold');
+    else logLine(`${seatName(seat)} guesses ${intent.count}`, `${seatName(seat)} 猜 ${intent.count}`, 'gold');
     renderAll();
-    if (online.role === 'host') chain();
-  } else if (screenState === 'online-lobby') {
-    renderOnlineLobby();
-  }
-  renderOnlineBar();
-}
-
-async function handleOnlineMembershipLost(roomClosed) {
-  if (!online.active || online.membershipLost) return;
-  online.membershipLost = true;
-  const message = roomClosed
-    ? t('The host closed this room.', '房主已关闭此房间。')
-    : t('Your seat was released or replaced by AI.', '你的座位已被腾出或改由电脑接手。');
-  await leaveOnlineRoom(true);
-  setOnlineStatus(message, 'err');
-}
-
-function onOnlineStatus(status) {
-  if (!online.active || !online.roomData || !status) return;
-  online.roomData.status = status;
-  if (status === 'closed' && online.role === 'guest') {
-    handleOnlineMembershipLost(true);
+    (async () => { if (card) await trickBannerIfNeeded(); chain(); })();
     return;
   }
-  if (status === 'locked' && !online.matchStarted && online.role === 'guest') {
-    setOnlineStatus(t('Match locked. Waiting for the host to deal…', '座位已锁定，等待房主发牌…'));
-  } else if (status === 'waiting' && screenState === 'online-lobby') {
-    renderOnlineLobby();
+}
+
+function acknowledge(seat, n) {
+  if (!online.record || !online.room) return;
+  const acks = online.record.acks.slice(); acks[seat] = n;
+  online.record = O.ackRecord(online.room, online.record, acks);
+  writeKey(O.KEYS.game, online.record);
+}
+
+/* Guest: the local player's move, to the host. */
+function sendOnlineIntent(action) {
+  const seat = mySeat();
+  if (!online.record || seat < 0 || online.pendingIntent) return;
+  online.intentN = Math.max(online.intentN, online.record.acks[seat]) + 1;
+  const intent = O.makeIntent(online.pid, online.intentN, online.record, action);
+  online.pendingIntent = intent;
+  online.pendingAt = Date.now();
+  writeKey(O.KEYS.intent(seat), intent);
+  renderAll();
+}
+
+/* ── presence ── */
+function presenceChanged() {
+  const now = Date.now();
+  if (online.connected) online.live.add(online.pid);
+  for (const r of (online.room ? online.room.seats : [])) {
+    if (!r || r.kind !== 'human') continue;
+    if (online.live.has(r.pid)) delete online.goneSince[r.pid]; else if (!online.goneSince[r.pid]) online.goneSince[r.pid] = now;
   }
+  if (isHost()) checkAway(now); else checkHost(now);
+  if (online.stage === 'lobby') renderOnlineLobby();
   renderOnlineBar();
 }
 
-function onOnlinePresence(value) {
-  online.presence = value || {};
-  if (!online.matchStarted && screenState === 'online-lobby') renderOnlineLobby();
+function checkHost(now) {
+  const room = online.room, seat = mySeat();
+  const host = room && O.hostPid(room);
+  if (!online.connected || !room || seat < 0 || !host || online.live.has(host)) { online.hostMissingSince = 0; return; }
+  if (!online.hostMissingSince) online.hostMissingSince = now;
+  if (now - online.hostMissingSince < O.HOST_GRACE) return;
+  if (O.successor(room, [...online.live, online.pid]) !== seat) return;
+  online.hostMissingSince = 0;
+  writeRoom(O.takeOver(room, seat));
+}
+
+function checkAway(now) {
+  if (!isHost() || online.role !== 'host' || !g || hostBusy() || !online.room || online.room.status !== 'playing') return;
+  if (g.phase !== 'bidding' && g.phase !== 'playing') return;
+  const seat = g.turn, record = online.room.seats[seat];
+  if (seat === mySeat() || !record || record.kind !== 'human' || online.live.has(record.pid)) return;
+  const since = online.goneSince[record.pid];
+  if (!since || now - since < O.AWAY_GRACE) return;
+  if (g.phase === 'bidding') g.setBid(seat, g.cpuBid(seat));
+  else g.playCard(seat, g.cpuChooseCard(seat));
+  logLine(`${seatName(seat)} is away — the computer moved for them`, `${seatName(seat)} 不在——电脑代为出手`, 'warn');
+  renderAll();
+  (async () => { await trickBannerIfNeeded(); chain(); })();
+}
+
+/* ── guest: show what the host published ── */
+function clearGuestTimers() { online.guestTimers.forEach(clearTimeout); online.guestTimers = []; }
+function guestLater(ms, fn) { online.guestTimers.push(setTimeout(fn, ms)); }
+
+function trickKey(state) {
+  if (!state.lastTrick) return '';
+  const left = Math.max(0, ...state.players.filter(p => !p.eliminated).map(p => p.hand.length));
+  return `${state.round}:${state.handSize - left}`;
+}
+
+function applyGuest(rec, animate) {
+  const next = TrucoEngine.restoreGame(rec.state);
+  const newMatch = rec.match !== online.match || !g || !online.guestState;
+  const prev = newMatch ? null : online.guestState;
+  online.role = 'guest';
+  gameMode = 'online';
+  if (newMatch) {
+    flowGeneration++;
+    clearGuestTimers();
+    online.match = rec.match;
+    uiLog = []; dealState = null; bannerState = null; showingTrickResult = false;
+    online.lastTrickKey = trickKey(rec.state);
+    logOnlineStart();
+    $('overlayLayer').innerHTML = '';
+  }
+  screenState = 'game';
+  const newRound = rec.state.round > 0 && (!prev || rec.state.round !== prev.round);
+  g = next;
+  if (newRound) {
+    clearGuestTimers();
+    bannerState = null; showingTrickResult = false; dealState = null;
+    online.lastTrickKey = trickKey(rec.state);
+    logLine(`round ${g.round} · dealer ${seatName(g.dealer)} · dealing ${g.handSize} card${g.handSize > 1 ? 's' : ''} each`,
+            `第 ${g.round} 轮 · 庄家 ${seatName(g.dealer)} · 每人发 ${g.handSize} 张`, 'gold');
+    if (animate && g.phase === 'bidding' && g.bids.every(b => b === null)) guestDeal();
+    else logIndicator();
+  } else if (prev) {
+    logGuestChanges(prev, rec.state);
+  }
+  const key = trickKey(rec.state);
+  if (key && key !== online.lastTrickKey) {
+    online.lastTrickKey = key;
+    if (animate) guestTrickResult(rec.state);
+  }
+  if (prev && rec.state.history.length > prev.history.length) guestRoundResult(rec.state, animate);
+  online.guestState = rec.state;
+  renderAll();
   renderOnlineBar();
+  if (g.phase === 'over') {
+    if (bannerState) guestLater(3000, () => { if (g && g.phase === 'over') showEnd(); });
+    else showEnd();
+  }
+}
+
+function logIndicator() {
+  if (!g.indicator) return;
+  logLine(`indicator ${cardLabel(g.indicator)} → ${g.manilha} is manilha`, `指示牌 ${cardLabel(g.indicator)} → ${g.manilha} 为王权牌`, 'gold');
+  if (g.isBlind()) logLine('blind hand: nobody sees their own card — others\' cards are face up', '暗牌局：没人能看到自己的牌——其他人的牌明置', 'warn');
+}
+
+function guestDeal() {
+  const plan = dealPlan(g);
+  dealState = { order: plan.order, step: plan.step, total: plan.total, indicatorRevealed: false };
+  renderAll();
+  guestLater((plan.total - 1) * plan.step + (plan.reduced ? 80 : 520), () => {
+    if (!dealState) return;
+    dealState.indicatorRevealed = true;
+    logIndicator();
+    renderAll();
+    guestLater(plan.reduced ? 120 : 900, () => { dealState = null; renderAll(); });
+  });
+}
+
+function logGuestChanges(prev, next) {
+  for (let seat = 0; seat < next.players.length; seat++) {
+    if (prev.players[seat].bid === null && next.players[seat].bid !== null) {
+      logLine(`${seatName(seat)} guesses ${next.players[seat].bid}`, `${seatName(seat)} 猜 ${next.players[seat].bid}`, isLocalSeat(seat) ? 'gold' : '');
+    }
+  }
+  let plays = [];
+  if (trickKey(next) !== trickKey(prev) && next.lastTrick) plays = next.lastTrick.plays.slice(prev.trick.length).concat(next.trick);
+  else if (next.trick.length > prev.trick.length) plays = next.trick.slice(prev.trick.length);
+  for (const pl of plays) {
+    if (prev.phase === 'reveal') logLine(`${seatName(pl.player)} reveals ${cardLabel(pl.card)}`, `${seatName(pl.player)} 翻出 ${cardLabel(pl.card)}`);
+    else logLine(`${seatName(pl.player)} plays ${cardLabel(pl.card)}`, `${seatName(pl.player)} 打出 ${cardLabel(pl.card)}`, isLocalSeat(pl.player) ? 'gold' : '');
+  }
+}
+
+function guestTrickResult(state) {
+  const lt = state.lastTrick;
+  const dead = lt.tie && lt.winner === -1;
+  logLine(dead ? 'dead trick — nobody wins those cards' : `${seatName(lt.winner)} takes the trick`,
+          dead ? '死墩——这墩没人赢，牌全部作废' : `${seatName(lt.winner)} 赢下这一墩`, dead ? 'warn' : 'imp');
+  showingTrickResult = true;
+  showBanner(dead ? t('DEAD TRICK', '死墩') : t(`${seatName(lt.winner)} takes the trick`, `${seatName(lt.winner)} 赢下这一墩`),
+             dead ? t('nobody wins — those cards are gone', '无人得墩——牌全部作废') : t(`${seatName(lt.winner)} leads the next trick`, `${seatName(lt.winner)} 先出下一墩`), 'trick');
+  const id = bannerState && bannerState.id;
+  guestLater(O.PACE.trick, () => {
+    showingTrickResult = false;
+    if (bannerState && bannerState.id === id) hideBanner();
+    renderAll();
+  });
+}
+
+function guestRoundResult(state, animate) {
+  const h = state.history[state.history.length - 1];
+  const lines = [];
+  for (const key of Object.keys(h.teamPenalties || {})) {
+    const id = Number(key);
+    lines.push(`${teamName(id)}: ${t('team guess', '队伍猜墩')} ${h.teamBids[id]} · ${t('won', '赢')} ${h.teamTricks[id]} · ${h.teamPenalties[id] ? `−${h.teamPenalties[id]}` : '±0'} → <b>${h.teamScores[id]}</b>`);
+  }
+  const out = (h.eliminatedTeams || []).map(teamName);
+  if (out.length) logLine(`eliminated: ${out.join(', ')}`, `出局：${out.join('、')}`, 'warn');
+  logLine('scores after round ' + h.round, `第 ${h.round} 轮后计分`, '');
+  if (!animate) return;
+  showBanner(t('ROUND ' + h.round + ' SCORED', '第 ' + h.round + ' 轮结算'), lines.join('<br>'));
+  const id = bannerState && bannerState.id;
+  guestLater(state.phase === 'over' ? 3000 : O.PACE.round, () => { if (bannerState && bannerState.id === id) { hideBanner(); renderAll(); } });
+}
+
+/* ── room screen ── */
+function avatarPickerHtml() {
+  return `<div class="avatar-row" role="radiogroup" aria-label="${t('your avatar', '你的头像')}">${O.AVATARS.map((face, i) =>
+    `<button type="button" class="avatar-btn ${i === online.avatar ? 'on' : ''}" role="radio" aria-checked="${i === online.avatar}" onclick="chooseAvatar(${i})">${face}</button>`).join('')}</div>`;
+}
+
+function chooseAvatar(i) {
+  online.avatar = O.cleanAvatar(i);
+  try { localStorage.setItem('truco_avatar', String(online.avatar)); } catch (e) {}
+  if (online.active && online.connected && mySeat() >= 0) writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, mySeat(), Date.now()));
+  if (screenState === 'lobby') showLobby(); else renderOnlineLobby();
+}
+
+function sitAt(seat) {
+  if (!online.room || online.room.status !== 'waiting' || online.room.seats[seat]) return;
+  writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, seat, Date.now()));
+}
+
+function startOnlineRoom() {
+  if (!isHost() || !online.room || online.room.status !== 'waiting') return;
+  let next;
+  try { next = O.startMatch(online.room, [...online.live, online.pid]); }
+  catch (e) { online.needTwo = true; renderOnlineLobby(); return; }
+  online.needTwo = false;
+  writeRoom(next);
+  startOnlineMatch();
+}
+
+function playOnlineAgain() {
+  if (!isHost() || !online.room || online.room.status !== 'playing' || !g || g.phase !== 'over') return;
+  let next;
+  try { next = O.startMatch(online.room, [...online.live, online.pid]); } catch (e) { return; }
+  writeRoom(next);
+  startOnlineMatch();
 }
 
 function renderOnlineLobby() {
-  if (!online.active || !online.roomData || online.matchStarted) return;
-  screenState = 'online-lobby';
-  const seats = roomSeats(online.roomData);
-  const humanCount = seats.filter(record => record && record.kind === 'human' && connectedToken(record.token)).length;
-  const seatCard = seat => {
-    const record = seats[seat];
-    if (!record) {
-      const canMove = online.role === 'guest' && online.seat !== seat;
-      return `<div class="roster-seat"><span>${t('Seat ' + (seat + 1) + ' · OPEN', '座位 ' + (seat + 1) + ' · 空位')}</span>${canMove ? `<button class="btn seat-action" type="button" onclick="moveOnlineSeat(${seat})">${t('SIT HERE', '坐这里')}</button>` : ''}</div>`;
+  if (!online.active || screenState !== 'online-lobby') return;
+  const room = online.room;
+  const seat = mySeat();
+  const people = connectedHumans();
+  const seatHtml = s => {
+    const r = room && room.seats[s];
+    const mine = s === seat;
+    if (!r) {
+      const canSit = room && room.status === 'waiting' && seat >= 0;
+      return `<div class="roster-seat"><span>${t('Seat ' + (s + 1) + ' · open', '座位 ' + (s + 1) + ' · 空位')}<br><small>${t('the computer plays here', '将由电脑来玩')}</small></span>${canSit ? `<button class="btn seat-action" type="button" onclick="sitAt(${s})">${t('SIT HERE', '坐这里')}</button>` : ''}</div>`;
     }
-    const connected = record.kind === 'ai' || connectedToken(record.token);
-    const tags = [];
-    if (record.token === online.token) tags.push(t('YOU', '你'));
-    if (record.token === online.roomData.hostToken) tags.push(t('HOST', '房主'));
-    if (record.kind === 'ai') tags.push('AI');
-    if (record.kind === 'human' && !connected) tags.push(t('OFFLINE', '离线'));
-    const canOpen = online.role === 'host' && seat !== 0 && record.kind === 'human';
-    return `<div class="roster-seat ${connected ? '' : 'offline'}"><span>${escapeHtml(record.name)}<br><small>${escapeHtml(tags.join(' · ') || t('FRIEND', '好友'))}</small></span>${canOpen ? `<button class="btn seat-action" type="button" onclick="openOnlineSeat(${seat})">${t('OPEN SEAT', '腾出座位')}</button>` : ''}</div>`;
+    if (r.kind === 'ai') return `<div class="roster-seat"><span>🤖 ${t('Computer', '电脑')}</span></div>`;
+    const here = online.live.has(r.pid);
+    const tags = [mine ? t('YOU', '你') : t('PLAYER ' + (s + 1), '玩家' + (s + 1)), room.host === s ? t('HOST', '房主') : '', here ? '' : t('AWAY', '不在')].filter(Boolean);
+    return `<div class="roster-seat ${here ? '' : 'offline'}"><span><span class="roster-face">${O.AVATARS[r.avatar] || ''}</span> ${tags.join(' · ')}</span></div>`;
   };
-  const startDisabled = humanCount < 2 || online.busy;
-  const action = online.role === 'host'
-    ? `<button class="btn primary" type="button" onclick="startOnlineRoom()" ${startDisabled ? 'disabled' : ''}>${t(`START · ${humanCount} HUMAN + ${4 - humanCount} AI`, `开始 · ${humanCount} 人 + ${4 - humanCount} 电脑`)}</button>`
-    : `<div class="sub">${t('Waiting for the host to start. Choose any open seat to change teams.', '等待房主开始。可选择空座位切换队伍。')}</div>`;
+  let action;
+  if (online.stage === 'connecting') action = `<div class="online-status">${escapeHtml(online.statusMessage)}</div>`;
+  else if (online.waitingForSeat) action = `<div class="online-status">${online.slowJoin ? t('Still waiting for the host to let you in — their app or page needs to be open.', '仍在等待房主让你入座——房主的应用或网页需要保持打开。') : t('Joining…', '正在加入…')}</div>`;
+  else if (room && room.status === 'playing') action = `<div class="online-status">${t('Dealing…', '正在发牌…')}</div>`;
+  else if (isHost()) action = `<button class="btn primary" type="button" onclick="startOnlineRoom()" ${people < 2 ? 'disabled' : ''}>${t(`DEAL · ${people} ${people === 1 ? 'PERSON' : 'PEOPLE'} + ${4 - people} AI`, `发牌 · ${people} 人 + ${4 - people} 电脑`)}</button>
+      <div class="online-status ${online.needTwo ? 'err' : ''}">${people >= 2 ? t('Empty seats are played by the computer.', '空位由电脑来玩。') : t('Waiting for at least one friend to join.', '至少需要一位朋友加入。')}</div>`;
+  else action = `<div class="online-status">${t('Waiting for the host to deal…', '等待房主发牌…')}</div>`;
   $('overlayLayer').innerHTML = `<div class="overlay online">
-    <div class="big">${t('TRUCO INVITE ROOM', '特鲁科邀请房间')}</div>
+    <div class="big">${t('MANILHA ROOM', 'MANILHA 房间')}</div>
     <div class="room-code-big">${escapeHtml(online.code)}</div>
     <div class="invite-row"><button class="btn primary" type="button" onclick="shareOnlineInvite()">${t('SHARE INVITE', '分享邀请')}</button><button class="btn" type="button" onclick="copyOnlineInvite()">${t('COPY LINK', '复制链接')}</button></div>
-    <div class="room-roster">
-      <div class="roster-team"><div class="roster-team-head">${t('TEAM GREEN · SEATS 1 + 3', '绿队 · 座位 1 + 3')}</div>${seatCard(0)}${seatCard(2)}</div>
-      <div class="roster-team gold"><div class="roster-team-head">${t('TEAM GOLD · SEATS 2 + 4', '金队 · 座位 2 + 4')}</div>${seatCard(1)}${seatCard(3)}</div>
-    </div>
+    <div class="trust-note">${t('Friends with the Manilha app on iPhone or iPad can join with the code or the link; anyone else plays right here in a browser.', '安装了 Manilha 应用的 iPhone/iPad 朋友可用房间码或链接加入；其他人直接在浏览器中玩。')}</div>
+    ${room ? `<div class="room-roster">
+      <div class="roster-team"><div class="roster-team-head">${t('TEAM GREEN', '绿队')}</div>${seatHtml(0)}${seatHtml(2)}</div>
+      <div class="roster-team gold"><div class="roster-team-head">${t('TEAM GOLD', '金队')}</div>${seatHtml(1)}${seatHtml(3)}</div>
+    </div>` : ''}
+    ${seat >= 0 && room && room.status === 'waiting' ? `<div class="online-menu"><div class="online-title">${t('your avatar', '你的头像')}</div>${avatarPickerHtml()}</div>` : ''}
     ${action}
-    <div class="online-status ${online.statusKind === 'err' ? 'err' : ''}" id="onlineMenuStatus" aria-live="polite">${escapeHtml(online.statusMessage || t(`${humanCount} connected · first friend joins your team`, `${humanCount} 人在线 · 第一位好友默认与你同队`))}</div>
     <button class="btn" type="button" onclick="leaveOnlineRoom(true)">${t('LEAVE ROOM', '离开房间')}</button>
-    <div class="trust-note">${t('Unlisted casual room for people you trust—not an anti-cheat security boundary. The host must keep this page open; anyone with the link can try to join before the deal.', '适合可信好友的非公开休闲房；并非防作弊安全边界。房主需保持页面打开；拿到链接的人都可在发牌前尝试加入。')}</div>
+    <div class="trust-note">${t('A casual room for people you trust, not protected against cheating. Nobody types a name: everyone is an animal and a seat number. If the host leaves, the next player keeps the game going.', '适合可信朋友的休闲房间，不防作弊。没有人输入名字：每个人都是一只小动物加一个座位号。房主离开时，由下一位玩家继续主持。')}</div>
   </div>`;
-}
-
-async function moveOnlineSeat(target) {
-  if (online.busy || !online.ref || online.roomData.status !== 'waiting') return;
-  online.busy = true;
-  try {
-    const baseline = (await fbOnce(online.ref)).val();
-    if (!baseline) throw new Error('room-not-found');
-    const moved = await transactExistingRoom(online.ref, baseline, room => TrucoOnline.moveSeat(room, online.token, Number(target)));
-    online.roomData = moved;
-    online.seat = TrucoOnline.seatForToken(online.roomData, online.token);
-    attachOnlineViewListener(); attachOnlinePresence(); renderOnlineLobby();
-  } catch (error) {
-    setOnlineStatus(t('That seat is no longer open.', '该座位已不可用。'), 'err');
-  } finally { online.busy = false; }
-}
-
-async function openOnlineSeat(seat) {
-  if (online.busy || online.role !== 'host' || !online.ref || seat === 0) return;
-  online.busy = true;
-  try {
-    const baseline = (await fbOnce(online.ref)).val();
-    if (!baseline) throw new Error('room-not-found');
-    let opened = false;
-    const room = await transactExistingRoom(online.ref, baseline, current => {
-      if (!TrucoOnline.validRoom(current, Date.now()) || current.status !== 'waiting' || current.hostToken !== online.token) throw new Error('room-locked');
-      const record = seatRecord(current, seat);
-      if (!record || record.kind !== 'human') throw new Error('seat-unavailable');
-      const next = JSON.parse(JSON.stringify(current));
-      next.seats = roomSeats(next);
-      next.seats[seat] = null;
-      if (next.views) next.views[seat] = null;
-      if (next.intents) next.intents[seat] = null;
-      next.updatedAt = Date.now();
-      opened = true;
-      return next;
-    });
-    if (opened) { online.roomData = room; renderOnlineLobby(); }
-  } catch (error) {
-    setOnlineStatus(onlineErrorMessage(error), 'err');
-  } finally { online.busy = false; }
-}
-
-async function startOnlineRoom() {
-  if (online.busy || online.role !== 'host' || !online.ref) return;
-  online.busy = true; renderOnlineLobby();
-  try {
-    const baseline = (await fbOnce(online.ref)).val();
-    if (!baseline) throw new Error('room-not-found');
-    const locked = await transactExistingRoom(online.ref, baseline, fresh => {
-      if (!fresh || fresh.hostToken !== online.token) throw new Error('truco-room:not-host');
-      if (fresh.status !== 'waiting') throw new Error('truco-room:room-locked');
-      const connectedAtStart = new Set(Object.keys(fresh.presence || {}));
-      const draft = JSON.parse(JSON.stringify(fresh));
-      draft.seats = roomSeats(draft);
-      for (let seat = 1; seat < 4; seat++) {
-        const record = draft.seats[seat];
-        if (record && record.kind === 'human' && !connectedAtStart.has(record.token)) draft.seats[seat] = null;
-      }
-      const connectedHumans = draft.seats.filter(record => record && record.kind === 'human').length;
-      if (connectedHumans < 2) throw new Error('truco-room:need-two');
-      const next = TrucoOnline.lockRoster(draft, online.token, Date.now());
-      next.session = Number(fresh.session || 0) + 1;
-      next.stateRev = 0;
-      delete next.views;
-      delete next.intents;
-      delete next.lobbyLock;
-      return next;
-    });
-    online.roomData = locked;
-    online.session = locked.session;
-    await startOnlineMatch();
-  } catch (error) {
-    setOnlineStatus(onlineErrorMessage(error), 'err');
-    renderOnlineLobby();
-  } finally { online.busy = false; }
-}
-
-async function startOnlineMatch() {
-  if (online.matchStarted) return;
-  flowGeneration++;
-  gameMode = 'online';
-  humanSeats = new Set(TrucoOnline.humanSeats(online.roomData));
-  localSeats = new Set([online.seat]);
-  seatNames = onlineSeatNames(online.roomData);
-  g = TrucoEngine.newGame(4, undefined, { teams: TrucoOnline.TEAM_BY_SEAT });
-  uiLog = []; lastSeenTrick = null; dealState = null; showingTrickResult = false; running = false;
-  bannerState = null; screenState = 'game';
-  online.matchStarted = true; online.stateRev = 0; online.actionRev = 0;
-  logLine(`online room ${online.code} — ${humanSeats.size} people, ${4 - humanSeats.size} AI`, `联机房间 ${online.code}——${humanSeats.size} 人，${4 - humanSeats.size} 个电脑`, 'imp');
-  $('overlayLayer').innerHTML = '';
-  renderOnlineBar();
-  await beginRound();
-  chain();
 }
 
 async function copyOnlineInvite() {
@@ -875,7 +1059,7 @@ async function copyOnlineInvite() {
 async function shareOnlineInvite() {
   if (!online.code) return;
   if (navigator.share) {
-    try { await navigator.share({ title: 'truco.exe', text: t(`Join my Truco room ${online.code}`, `加入我的特鲁科房间 ${online.code}`), url: roomLink() }); return; }
+    try { await navigator.share({ title: 'Manilha', text: t(`Join my Manilha room ${online.code}`, `来加入我的 Manilha 房间 ${online.code}`), url: roomLink() }); return; }
     catch (error) { if (error && error.name === 'AbortError') return; }
   }
   await copyOnlineInvite();
@@ -884,102 +1068,19 @@ async function shareOnlineInvite() {
 function renderOnlineBar() {
   const bar = $('onlineBar');
   if (!bar) return;
-  if (!online.active) { bar.classList.remove('show'); return; }
+  if (!online.active || screenState === 'online-lobby') { bar.classList.remove('show'); return; }
   bar.classList.add('show');
   $('onlineBarCode').textContent = `ROOM ${online.code}`;
-  const seats = roomSeats(online.roomData);
-  const people = seats.filter(record => record && record.kind === 'human').length;
-  const host = online.roomData && online.roomData.hostToken;
-  const hostOnline = connectedToken(host);
-  let status = online.statusMessage;
-  let kind = online.statusKind;
-  if (online.matchStarted && online.role === 'guest' && !hostOnline) { status = t('Host offline · match paused', '房主离线 · 对局暂停'); kind = 'err'; }
-  else if (!status) status = online.matchStarted ? t(`${people} people · ${seatName(online.seat)}`, `${people} 人 · ${seatName(online.seat)}`) : t(`${people}/4 seats claimed`, `已占 ${people}/4 座`);
+  const room = online.room;
+  const people = room ? room.seats.filter(r => r && r.kind === 'human').length : 0;
+  let status = online.statusMessage, kind = online.statusKind;
+  const host = room && O.hostPid(room);
+  if (!online.connected) { status = t('Reconnecting…', '重新连接中…'); kind = 'err'; }
+  else if (room && host && !online.live.has(host)) { status = t('Host offline · the next player takes over soon', '房主离线 · 下一位玩家即将接手'); kind = 'err'; }
+  else if (!status) status = t(`${people} people · ${isHost() ? 'you host' : seatName(mySeat())}`, `${people} 人 · ${isHost() ? '你是房主' : seatName(mySeat())}`);
   $('onlineBarStatus').textContent = status;
   $('onlineBarStatus').className = 'online-bar-status' + (kind === 'err' ? ' err' : '');
-  const offlineRemote = online.matchStarted && online.role === 'host' && seats.some((record, seat) => seat > 0 && record && record.kind === 'human' && !connectedToken(record.token));
-  $('onlineBarActions').innerHTML = `${offlineRemote ? `<button class="btn" type="button" onclick="replaceOfflineWithAI()">${t('OFFLINE → AI', '离线者 → 电脑')}</button>` : ''}<button class="btn" type="button" onclick="copyOnlineInvite()">${t('COPY', '复制')}</button><button class="btn" type="button" onclick="leaveOnlineRoom(true)">${t('LEAVE', '离开')}</button>`;
-}
-
-async function replaceOfflineWithAI() {
-  if (online.busy || online.role !== 'host' || !online.ref || !online.matchStarted) return;
-  online.busy = true;
-  try {
-    const ref = online.ref;
-    const connected = new Set(Object.keys(online.presence || {}));
-    const before = roomSeats(online.roomData);
-    const result = await fbTransaction(ref.child('seats'), current => {
-      if (!current) return;
-      const next = roomSeats({ seats: current });
-      for (let seat = 1; seat < 4; seat++) {
-        const record = next[seat];
-        if (record && record.kind === 'human' && !connected.has(record.token)) next[seat] = { kind: 'ai', name: `AI-${seat + 1}` };
-      }
-      return next;
-    });
-    if (!result.committed || !online.active || online.ref !== ref) return;
-    online.roomData.seats = result.value;
-    const after = roomSeats(online.roomData);
-    const cleanup = {};
-    for (let seat = 1; seat < 4; seat++) {
-      if (before[seat] && before[seat].kind === 'human' && after[seat] && after[seat].kind === 'ai') {
-        cleanup['views/' + seat] = null;
-        cleanup['intents/' + seat] = null;
-        delete online.lastAckBySeat[seat];
-        delete online.noticeBySeat[seat];
-      }
-    }
-    if (Object.keys(cleanup).length) await withTimeout(ref.update(cleanup), NETWORK_TIMEOUT, 'network-timeout');
-    humanSeats = new Set(TrucoOnline.humanSeats(online.roomData));
-    seatNames = onlineSeatNames(online.roomData);
-    logLine('offline seats switched to AI', '离线座位已改由电脑接手', 'warn');
-    renderAll(); chain();
-  } catch (error) {
-    setOnlineStatus(onlineErrorMessage(error), 'err');
-  } finally { online.busy = false; }
-}
-
-function detachOnlineListeners() {
-  for (const item of online.listeners) {
-    try { item.ref.off(item.event, item.callback); } catch (e) {}
-  }
-  online.listeners = [];
-  online.viewListener = null;
-  online.presenceConnection = null;
-}
-
-async function leaveOnlineRoom(showMain) {
-  if (!online.active) { if (showMain) showLobby(); return; }
-  const wasWaiting = online.roomData && online.roomData.status === 'waiting' && !online.membershipLost;
-  const ref = online.ref, role = online.role, seat = online.seat, token = online.token, roomSnapshot = online.roomData;
-  online.active = false;
-  detachOnlineListeners();
-  if (online.presenceRef) {
-    try { await withTimeout(online.presenceRef.onDisconnect().cancel(), 2500, 'leave-timeout'); } catch (e) {}
-    try { await withTimeout(online.presenceRef.remove(), 2500, 'leave-timeout'); } catch (e) {}
-  }
-  if (ref && (role === 'host' || wasWaiting)) {
-    try {
-      if (role === 'host') await closeOnlineRoomRef(ref, roomSnapshot);
-      else await transactExistingRoom(ref, roomSnapshot, current => {
-        if (!current || current.status !== 'waiting') throw new Error('room-locked');
-        const record = seatRecord(current, seat);
-        if (!record || record.kind !== 'human' || record.token !== token) throw new Error('not-seated');
-        const next = JSON.parse(JSON.stringify(current));
-        next.seats = roomSeats(next);
-        next.seats[seat] = null;
-        if (next.views) next.views[seat] = null;
-        if (next.intents) next.intents[seat] = null;
-        next.updatedAt = Date.now();
-        return next;
-      });
-    } catch (e) {}
-  }
-  Object.assign(online, { active:false, busy:false, role:null, code:'', seat:null, ref:null, roomData:null, presenceRef:null, presenceConnection:null, presence:{}, matchStarted:false, membershipLost:false, viewRev:-1, pendingIntent:null, statusMessage:'', statusKind:'' });
-  flowGeneration++; running = false;
-  if (location.search) history.replaceState(null, '', location.pathname);
-  renderOnlineBar();
-  if (showMain) { g = null; gameMode = 'solo'; humanSeats = new Set([0]); localSeats = new Set([0]); seatNames = SOLO_SEAT_NAMES; showLobby(); renderAll(); }
+  $('onlineBarActions').innerHTML = `<button class="btn" type="button" onclick="copyOnlineInvite()">${t('COPY', '复制')}</button><button class="btn" type="button" onclick="leaveOnlineRoom(true)">${t('LEAVE', '离开')}</button>`;
 }
 
 /* ── lobby ────────────────────────────────────────────────────────────── */
@@ -988,22 +1089,22 @@ function showLobby() {
   bannerState = null;
   $('overlayLayer').innerHTML = `
     <div class="overlay online">
-      <div class="big">truco.exe</div>
+      <div class="big">manilha.exe</div>
       <div class="sub">${t(
-        'Bid how many tricks you will win — miss and the difference comes off your score. Manilha cards (the rank after the indicator) beat everything. Hit −5 and you are eliminated. Last player standing wins.',
-        '报出你要赢的墩数——报错就按差值扣分。王权牌（指示牌点数的下一张）压过一切牌。跌到 −5 分即出局，坚持到最后者胜。')}</div>
+        'Guess how many tricks you will win — miss and the difference comes off your score. Manilha cards (the rank after the indicator) beat everything. Hit −5 and you are eliminated. Last player standing wins.',
+        '猜出你要赢的墩数——猜错就按差值扣分。王权牌（指示牌点数的下一张）压过一切牌。跌到 −5 分即出局，坚持到最后者胜。')}</div>
       <div class="online-menu">
-        <div class="online-title">${t('INVITE ROOM · 2–4 HUMANS', '邀请房间 · 2–4 名玩家')}</div>
+        <div class="online-title">${t('PLAY ONLINE · 2–4 PEOPLE', '联机对战 · 2–4 人')}</div>
+        ${avatarPickerHtml()}
         <div class="online-fields">
-          <input class="online-input" id="onlineName" maxlength="18" autocomplete="nickname" value="${escapeHtml(savedOnlineName())}" placeholder="${t('your name', '你的名字')}">
           <button class="btn primary" type="button" onclick="createOnlineRoom()">${t('CREATE ROOM', '创建房间')}</button>
         </div>
         <div class="online-fields">
-          <input class="online-input" id="onlineCode" maxlength="80" autocomplete="off" autocapitalize="characters" placeholder="${t('room code or invite link', '房间码或邀请链接')}">
+          <input class="online-input" id="onlineCode" maxlength="80" autocomplete="off" autocapitalize="characters" placeholder="${t('room code or invite link', '房间码或邀请链接')}" value="${escapeHtml(invitedCode)}">
           <button class="btn" type="button" onclick="joinOnlineRoom()">${t('JOIN ROOM', '加入房间')}</button>
         </div>
-        <div class="online-status" id="onlineMenuStatus" aria-live="polite"></div>
-        <div class="online-help">${t('The host starts with 2–4 people; empty seats become AI. Your first friend is placed on your team, and everyone can switch open seats before the deal.', '房主可在 2–4 人时开始；空位由电脑补上。第一位好友默认与你同队，发牌前可切换到空座位。')}</div>
+        <div class="online-status ${online.statusKind === 'err' ? 'err' : ''}" id="onlineMenuStatus" aria-live="polite">${escapeHtml(online.statusMessage)}</div>
+        <div class="online-help">${t('Pick an animal, then create a room and send the link — or join with a code. Friends can play here in a browser or in the Manilha app on iPhone and iPad. The host deals with 2–4 people; the computer plays empty seats. Partners sit opposite.', '选一只小动物，然后创建房间并发送链接，或用房间码加入。朋友可以在浏览器里玩，也可以用 iPhone/iPad 上的 Manilha 应用。房主在 2–4 人时发牌；空位由电脑来玩。对坐者为队友。')}</div>
       </div>
       <button class="btn primary" onclick="startGame(4,'teams')">${t('2 PLAYERS vs 2 AI · TEAM UP', '双人 vs 双电脑 · 组队')}</button>
       <div class="sub" style="color:#66756a">${t('Shared-screen co-op · Player 1 + Player 2 share one score', '同屏合作 · 玩家1 与玩家2 共用队伍分数')}</div>
@@ -1017,7 +1118,7 @@ function showLobby() {
 }
 
 async function startGame(numPlayers, mode) {
-  if (online.active) await leaveOnlineRoom(false);
+  if (online.active) leaveOnlineRoom(false);
   else if (location.search) history.replaceState(null, '', location.pathname);
   gameMode = mode === 'teams' ? 'teams' : 'solo';
   flowGeneration++;
@@ -1035,22 +1136,28 @@ async function startGame(numPlayers, mode) {
   chain();
 }
 
+/* Deal order and pacing: cards fly out one by one, clockwise from the leader. */
+function dealPlan(game) {
+  const seats = [];
+  let seat = game.trickLeader;
+  for (let i = 0; i < game.activeSeats().length; i++) { seats.push(seat); seat = game.nextActive(seat); }
+  const total = seats.length * game.handSize;
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const step = reduced ? 24 : Math.max(55, Math.min(210, Math.floor(1800 / Math.max(1, total - 1))));
+  const order = {};
+  for (let card = 0; card < game.handSize; card++) {
+    seats.forEach((s, i) => { order[s + ':' + card] = card * seats.length + i; });
+  }
+  return { order, step, total, reduced };
+}
+
 async function beginRound() {
   const generation = flowGeneration;
   const roundGame = g;
   g.startRound();
-  if (online.active && online.role === 'host') online.actionRev++;
-  const seats = [];
-  let seat = g.trickLeader;
-  for (let i = 0; i < g.activeSeats().length; i++) { seats.push(seat); seat = g.nextActive(seat); }
-  const total = seats.length * g.handSize;
-  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const step = reduced ? 24 : Math.max(55, Math.min(210, Math.floor(1800 / Math.max(1, total - 1))));
-  const order = {};
-  for (let card = 0; card < g.handSize; card++) {
-    seats.forEach((s, i) => { order[s + ':' + card] = card * seats.length + i; });
-  }
-  dealState = { order, step, total, indicatorRevealed: false };
+  const plan = dealPlan(g);
+  const { step, total, reduced } = plan;
+  dealState = { order: plan.order, step, total, indicatorRevealed: false };
   logLine(`round ${g.round} · dealer ${seatName(g.dealer)} · dealing ${g.handSize} card${g.handSize > 1 ? 's' : ''} each`,
           `第 ${g.round} 轮 · 庄家 ${seatName(g.dealer)} · 每人发 ${g.handSize} 张`, 'gold');
   renderAll();
@@ -1077,24 +1184,28 @@ async function chain() {
   if (running || !g) return;
   const generation = flowGeneration;
   running = true;
-  try { await drive(generation); } finally { if (generation === flowGeneration) running = false; }
+  try { await drive(generation); } finally {
+    if (generation === flowGeneration) {
+      running = false;
+      if (online.active && online.role === 'host') setTimeout(onlineHostIdle, 0);
+    }
+  }
 }
 
 async function drive(generation) {
-  if (online.active && online.role === 'guest') return;
+  if (online.active && online.role !== 'host') return;
   for (;;) {
     if (generation !== flowGeneration || !g) return;
     if (dealState) return;
     if (g.phase === 'bidding') {
       renderAll();
-      if (isHumanSeat(g.turn)) return;                // wait for either local human
+      if (isHumanSeat(g.turn)) return;                // wait for a person (here, or their intent)
       const seat = g.turn;
       await sleep(950);
       if (generation !== flowGeneration || !g || g.turn !== seat || g.phase !== 'bidding') return;
       const b = g.cpuBid(seat);
       g.setBid(seat, b);
-      if (online.active) online.actionRev++;
-      logLine(`${seatName(seat)} bids ${b}`, `${seatName(seat)} 叫 ${b}`);
+      logLine(`${seatName(seat)} guesses ${b}`, `${seatName(seat)} 猜 ${b}`);
       continue;
     }
     if (g.phase === 'reveal') {
@@ -1105,28 +1216,25 @@ async function drive(generation) {
       if (generation !== flowGeneration || !g || g.turn !== seat || g.phase !== 'reveal') return;
       logLine(`${seatName(seat)} reveals ${cardLabel(card)}`, `${seatName(seat)} 翻出 ${cardLabel(card)}`);
       g.playCard(seat, card);
-      if (online.active) online.actionRev++;
       renderAll();
       await trickBannerIfNeeded();
       continue;
     }
     if (g.phase === 'playing') {
       renderAll();
-      if (isHumanSeat(g.turn)) return;                // wait for either local human
+      if (isHumanSeat(g.turn)) return;                // wait for a person (here, or their intent)
       const seat = g.turn;
       await sleep(900);
       if (generation !== flowGeneration || !g || g.turn !== seat || g.phase !== 'playing') return;
       const card = g.cpuChooseCard(seat);
       logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`);
       g.playCard(seat, card);
-      if (online.active) online.actionRev++;
       renderAll();
       await trickBannerIfNeeded();
       continue;
     }
     if (g.phase === 'roundEnd') {
       const res = g.finishRound();
-      if (online.active) online.actionRev++;
       renderAll();
       await roundBanner(res);
       if (g.phase === 'lobby') { if (!await beginRound()) return; continue; }
@@ -1137,175 +1245,11 @@ async function drive(generation) {
   }
 }
 
-/* ── host-authoritative online state ─────────────────────────────────── */
-function plainClone(value) { return value == null ? null : JSON.parse(JSON.stringify(value)); }
-
-function buildOnlineView(seat, revision) {
-  return {
-    schema: 1,
-    session: online.session,
-    revision,
-    actionRev: online.actionRev,
-    seat,
-    game: TrucoOnline.projectGame(g, seat, { dealState }),
-    ui: {
-      log: plainClone(uiLog.slice(-80)),
-      dealState: plainClone(dealState),
-      showingTrickResult: !!showingTrickResult,
-      banner: plainClone(bannerState),
-      screen: screenState,
-      seatNames: plainClone(seatNames),
-      humanSeats: Array.from(humanSeats),
-      ackIntentId: online.lastAckBySeat[seat] || null,
-      notice: online.noticeBySeat[seat] || '',
-    },
-  };
-}
-
-function queueOnlineSync() {
-  if (!online.active || online.role !== 'host' || !online.matchStarted || !online.ref || !g) return;
-  const ref = online.ref;
-  const session = online.session;
-  const revision = ++online.stateRev;
-  const updates = { stateRev: revision, updatedAt: Date.now() };
-  /* Store each projected view as JSON text. Realtime Database treats `null`
-     inside arrays/objects as deletion, but hidden cards and unmade bids rely on
-     real null placeholders to preserve hand length and phase math. */
-  for (const seat of humanSeats) updates['views/' + seat] = JSON.stringify(buildOnlineView(seat, revision));
-  online.syncQueue = online.syncQueue
-    .then(() => {
-      if (!online.active || online.role !== 'host' || online.ref !== ref || Number(online.session) !== Number(session)) return;
-      return withTimeout(ref.update(updates), NETWORK_TIMEOUT, 'network-timeout');
-    })
-    .catch(error => { if (online.active && online.ref === ref) setOnlineStatus(onlineErrorMessage(error), 'err'); });
-}
-
-function applyOnlineView(view) {
-  if (typeof view === 'string') {
-    try { view = JSON.parse(view); } catch (error) { return; }
-  }
-  if (!online.active || online.role !== 'guest' || !view || Number(view.schema) !== 1) return;
-  const viewSession = Number(view.session);
-  if (!Number.isInteger(viewSession) || viewSession < Number(online.session) || Number(view.seat) !== Number(online.seat)) return;
-  if (viewSession !== Number(online.session)) { online.session = viewSession; online.viewRev = -1; online.pendingIntent = null; online.dismissedBannerId = null; }
-  const revision = Number(view.revision);
-  if (!Number.isInteger(revision) || revision <= online.viewRev || !view.game || !view.ui) return;
-  online.viewRev = revision;
-  online.actionRev = Number(view.actionRev || 0);
-  if (online.pendingIntent && view.ui.ackIntentId === online.pendingIntent.id) online.pendingIntent = null;
-  g = TrucoOnline.hydrateView(view.game);
-  gameMode = 'online';
-  localSeats = new Set([online.seat]);
-  humanSeats = new Set(Array.isArray(view.ui.humanSeats) ? view.ui.humanSeats.map(Number) : []);
-  seatNames = Array.isArray(view.ui.seatNames) ? view.ui.seatNames.map((name, seat) => {
-    const clean = cleanPlayerName(name && (name.en || name.zh), `Seat ${seat + 1}`);
-    return { en: clean, zh: clean };
-  }) : onlineSeatNames(online.roomData);
-  uiLog = Array.isArray(view.ui.log) ? view.ui.log.slice(-80) : [];
-  dealState = view.ui.dealState || null;
-  showingTrickResult = !!view.ui.showingTrickResult;
-  bannerState = view.ui.banner || null;
-  if (bannerState && Number(bannerState.id) > bannerSeq) bannerSeq = Number(bannerState.id);
-  screenState = view.ui.screen || 'game';
-  online.matchStarted = true;
-  online.statusMessage = view.ui.notice ? String(view.ui.notice) : '';
-  online.statusKind = view.ui.notice && /rejected|could not|not your/i.test(String(view.ui.notice)) ? 'err' : '';
-  if (online.roomData) online.roomData.status = 'locked';
-  renderOnlineBar();
-  renderAll();
-}
-
-function renderRemoteOverlay() {
-  if (!online.active || online.role !== 'guest' || !online.matchStarted || !g) return;
-  if (screenState === 'end') {
-    const draw = g.winner === 'draw';
-    const title = draw ? t('DRAW — both teams busted', '平局——两队同时出局') : t(`${teamName(g.winnerTeam)} wins`, `${teamName(g.winnerTeam)} 胜出`);
-    const scores = g.teams.map(team => `${teamName(team.id)}: ${team.score}${team.eliminated ? ' · ' + t('eliminated', '已出局') : ''}`).join('<br>');
-    $('overlayLayer').innerHTML = `<div class="overlay"><div class="big">${title}</div><div class="sub">${scores}</div><div class="btn-row"><button class="btn primary" type="button" onclick="leaveOnlineRoom(true)">${t('› leave table', '› 离开牌桌')}</button></div></div>`;
-    return;
-  }
-  if (bannerState && online.dismissedBannerId !== bannerState.id) {
-    $('overlayLayer').innerHTML = `<div class="banner ${bannerState.kind === 'trick' ? 'trick-banner' : ''}" onclick="skipWait()"><div class="big">${bannerState.big}</div><div class="sub">${bannerState.sub}</div><div class="skip">${t('click to hide', '点击隐藏')}</div></div>`;
-    return;
-  }
-  $('overlayLayer').innerHTML = '';
-}
-
-function sendOnlineIntent(payload) {
-  if (!online.active || online.role !== 'guest' || !online.ref || online.pendingIntent || online.seat == null) return;
-  const id = online.token.slice(0, 8) + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
-  const intent = Object.assign({
-    id, token: online.token, seat: online.seat, session: online.session,
-    expectedActionRev: online.actionRev, at: Date.now(),
-  }, payload);
-  online.pendingIntent = intent;
-  renderAll();
-  withTimeout(online.ref.child('intents/' + online.seat).set(intent), NETWORK_TIMEOUT, 'network-timeout')
-    .catch(error => {
-      if (online.pendingIntent && online.pendingIntent.id === id) online.pendingIntent = null;
-      setOnlineStatus(onlineErrorMessage(error), 'err'); renderAll();
-    });
-}
-
-async function processOnlineIntent(snapshot) {
-  if (!snapshot || !online.active || online.role !== 'host' || !online.matchStarted || !g) return;
-  const seat = Number(snapshot.key), intent = snapshot.val() || {};
-  const finish = async (notice) => {
-    if (intent.id) online.lastAckBySeat[seat] = String(intent.id);
-    online.noticeBySeat[seat] = notice || '';
-    try { await snapshot.ref.remove(); } catch (e) {}
-    renderAll();
-  };
-  const record = seatRecord(online.roomData, seat);
-  if (!Number.isInteger(seat) || seat < 0 || seat >= 4 || !record || record.kind !== 'human' || record.token !== intent.token) {
-    await finish(t('Action rejected: that seat is not yours.', '操作被拒绝：该座位不属于你。')); return;
-  }
-  if (typeof intent.id !== 'string' || intent.id.length > 96 || Number(intent.session) !== Number(online.session)) {
-    await finish(t('Action rejected: the room changed.', '操作被拒绝：房间状态已改变。')); return;
-  }
-  if (online.lastAckBySeat[seat] === intent.id) { await finish(''); return; }
-  if (Number(intent.expectedActionRev) !== Number(online.actionRev)) {
-    await finish(t('Action rejected: the table moved first. Try again.', '操作被拒绝：牌桌状态已变化，请重试。')); return;
-  }
-  if (dealState || g.turn !== seat) {
-    await finish(t('Action rejected: it is not your turn.', '操作被拒绝：现在不是你的回合。')); return;
-  }
-  try {
-    if (intent.type === 'bid') {
-      if (g.phase !== 'bidding') throw new Error('wrong-phase');
-      if (!Number.isInteger(intent.count)) throw new Error('invalid-bid');
-      g.setBid(seat, intent.count);
-      online.actionRev++;
-      logLine(`${seatName(seat)} bids ${intent.count}`, `${seatName(seat)} 叫 ${intent.count}`, 'gold');
-      await finish('');
-      chain();
-      return;
-    }
-    if (intent.type === 'play') {
-      if (g.phase !== 'playing') throw new Error('wrong-phase');
-      const card = g.cardById(seat, String(intent.cardId || ''));
-      if (!card) throw new Error('invalid-card');
-      logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`, 'gold');
-      g.playCard(seat, card);
-      online.actionRev++;
-      if (intent.id) online.lastAckBySeat[seat] = String(intent.id);
-      online.noticeBySeat[seat] = '';
-      try { await snapshot.ref.remove(); } catch (e) {}
-      renderAll();
-      await trickBannerIfNeeded();
-      chain();
-      return;
-    }
-    throw new Error('unknown-action');
-  } catch (error) {
-    await finish(t('Action rejected: choose a legal bid or card.', '操作被拒绝：请选择有效的叫牌或牌。'));
-  }
-}
-
 /* Keep the completed cards visible; the result sits below instead of covering them. */
 async function trickBannerIfNeeded() {
   if (!g.lastTrick || g.lastTrick === lastSeenTrick) return;
   lastSeenTrick = g.lastTrick;
+  online.presenting++;
   showingTrickResult = true;
   renderAll();
   const lt = g.lastTrick;
@@ -1319,36 +1263,38 @@ async function trickBannerIfNeeded() {
     dead ? t('DEAD TRICK', '死墩')
          : t(`${seatName(winSeat)} takes the trick`, `${seatName(winSeat)} 赢下这一墩`),
     dead ? t('nobody wins — those cards are gone', '无人得墩——牌全部作废')
-         : t(`${isHumanSeat(winSeat) ? seatName(winSeat) : seatName(winSeat)} leads the next trick`,
-             `${seatName(winSeat)} 先出下一墩`),
+         : t(`${seatName(winSeat)} leads the next trick`, `${seatName(winSeat)} 先出下一墩`),
     'trick');
-  await sleepSkippable(4200);
+  await sleepSkippable(gameMode === 'online' ? O.PACE.trick : 4200);
   hideBanner();
   showingTrickResult = false;
+  online.presenting = Math.max(0, online.presenting - 1);
   renderAll();
 }
 
 async function roundBanner(res) {
+  online.presenting++;
   const lines = [];
   if (g.teamMode) {
     for (const key of Object.keys(res.teamBids)) {
       const id = Number(key), team = g.teams[id];
-      lines.push(`${teamName(id)}: ${t('team bid', '队伍叫牌')} ${res.teamBids[id]} · ${t('won', '赢')} ${res.teamTricks[id]} · ${res.teamPenalties[id] ? `−${res.teamPenalties[id]}` : '±0'} → <b>${team.score}</b>`);
+      lines.push(`${teamName(id)}: ${t('team guess', '队伍猜墩')} ${res.teamBids[id]} · ${t('won', '赢')} ${res.teamTricks[id]} · ${res.teamPenalties[id] ? `−${res.teamPenalties[id]}` : '±0'} → <b>${team.score}</b>`);
     }
     const eliminated = res.eliminatedTeams.map(teamName);
     if (eliminated.length) logLine(`eliminated: ${eliminated.join(', ')}`, `出局：${eliminated.join('、')}`, 'warn');
   } else {
     for (const key of Object.keys(res.penalties)) {
       const s = Number(key), p = g.players[s];
-      lines.push(`${seatName(s)}: ${t('bid', '叫')} ${p.bid ?? 0} · ${t('won', '赢')} ${p.tricks} · ${res.penalties[s] ? `−${res.penalties[s]}` : '±0'} → <b>${p.score}</b>`);
+      lines.push(`${seatName(s)}: ${t('guess', '猜')} ${p.bid ?? 0} · ${t('won', '赢')} ${p.tricks} · ${res.penalties[s] ? `−${res.penalties[s]}` : '±0'} → <b>${p.score}</b>`);
     }
     const eliminated = res.eliminated.map(seatName);
     if (eliminated.length) logLine(`eliminated: ${eliminated.join(', ')}`, `出局：${eliminated.join('、')}`, 'warn');
   }
   logLine('scores after round ' + g.round, `第 ${g.round} 轮后计分`, '');
   showBanner(t('ROUND ' + g.round + ' SCORED', '第 ' + g.round + ' 轮结算'), lines.join('<br>'));
-  await sleepSkippable(5200);
+  await sleepSkippable(gameMode === 'online' ? (res.over ? 3000 : O.PACE.round) : 5200);
   hideBanner();
+  online.presenting = Math.max(0, online.presenting - 1);
 }
 
 function showBanner(big, sub, kind) {
@@ -1357,15 +1303,14 @@ function showBanner(big, sub, kind) {
     <div class="banner ${kind === 'trick' ? 'trick-banner' : ''}" onclick="skipWait()">
       <div class="big">${big}</div>
       <div class="sub">${sub}</div>
-      <div class="skip">${t('click to skip', '点击跳过')}</div>
+      <div class="skip">${gameMode === 'online' ? t('click to hide', '点击隐藏') : t('click to skip', '点击跳过')}</div>
     </div>`;
-  queueOnlineSync();
 }
 let skipResolver = null;
+/* Online, the host keeps every player in step, so a click only hides the banner here. */
 function skipWait() {
-  if (online.active && online.role === 'guest') {
-    if (bannerState) online.dismissedBannerId = bannerState.id;
-    $('overlayLayer').innerHTML = '';
+  if (gameMode === 'online') {
+    const el = $('overlayLayer').querySelector('.banner'); if (el) el.remove();
     return;
   }
   if (skipResolver) skipResolver();
@@ -1390,7 +1335,6 @@ function sleepSkippable(ms) {
 function hideBanner() {
   const el = $('overlayLayer').querySelector('.banner'); if (el) el.remove();
   bannerState = null;
-  queueOnlineSync();
 }
 
 /* ── end screen ───────────────────────────────────────────────────────── */
@@ -1404,20 +1348,28 @@ function showEnd() {
   const scores = g.teamMode
     ? g.teams.map(team => `${teamName(team.id)}: ${team.score}${team.eliminated ? ' · ' + t('eliminated', '已出局') : ''}`).join('<br>')
     : g.players.map((p, s) => `${seatName(s)}: ${p.score}${p.eliminated ? ' · ' + t('eliminated', '已出局') : ''}`).join('<br>');
+  let buttons;
+  if (online.active && isHost()) {
+    const people = connectedHumans();
+    buttons = `<button class="btn primary" onclick="playOnlineAgain()" ${people < 2 ? 'disabled' : ''}>${t('› play again', '› 再来一局')}</button><button class="btn" onclick="leaveOnlineRoom(true)">${t('leave room', '离开房间')}</button>`;
+  } else if (online.active) {
+    buttons = `<span class="sub">${t('waiting for the host to deal again…', '等待房主再次发牌…')}</span><button class="btn" onclick="leaveOnlineRoom(true)">${t('leave room', '离开房间')}</button>`;
+  } else {
+    buttons = `<button class="btn primary" onclick="showLobby()">${t('› new game', '› 新局')}</button>`;
+  }
   $('overlayLayer').innerHTML = `
     <div class="overlay">
       <div class="big">${title}</div>
       <div class="sub">${scores}</div>
-      <div class="btn-row"><button class="btn primary" onclick="${online.active ? 'leaveOnlineRoom(true)' : 'showLobby()'}">${t('› new game', '› 新局')}</button></div>
+      <div class="btn-row">${buttons}</div>
     </div>`;
-  queueOnlineSync();
 }
 
 /* ── rendering ────────────────────────────────────────────────────────── */
 function renderAll() {
   renderPowerGuide(); renderTableStatus(); renderScoreboard(); renderSeats(); renderCentre(); renderCtl(); renderRstrip(); renderLog();
-  if (online.active && online.role === 'guest') renderRemoteOverlay();
-  else queueOnlineSync();
+  maybePublish();
+  devAutoplay();
 }
 
 function renderPowerGuide() {
@@ -1460,7 +1412,7 @@ function renderTableStatus() {
       : t(`ROUND ${g.round} · DEALING ${g.handSize} EACH`, `第 ${g.round} 轮 · 每人发 ${g.handSize} 张`);
   } else if (g.phase === 'bidding') {
     const done = g.activeSeats().filter(s => g.players[s].bid !== null).length;
-    stage.textContent = t(`ROUND ${g.round} · BIDDING ${done + 1}/${g.activeSeats().length}`, `第 ${g.round} 轮 · 叫牌 ${done + 1}/${g.activeSeats().length}`);
+    stage.textContent = t(`ROUND ${g.round} · GUESSING ${done + 1}/${g.activeSeats().length}`, `第 ${g.round} 轮 · 猜墩 ${done + 1}/${g.activeSeats().length}`);
   } else if (showingTrickResult) {
     const trick = Math.max(1, completedTricks());
     stage.textContent = t(`ROUND ${g.round} · TRICK ${trick} RESULT`, `第 ${g.round} 轮 · 第 ${trick} 墩结果`);
@@ -1485,7 +1437,7 @@ function renderScoreboard() {
       const turn = !dealState && (g.phase === 'bidding' || g.phase === 'playing' || g.phase === 'reveal') && team.seats.includes(g.turn);
       const members = team.seats.map(s => {
         const p = g.players[s];
-        return `${seatName(s)} · ${t('bid', '叫')} <span class="bidn">${p.bid ?? '–'}</span> · ${t('tricks', '墩')} ${p.tricks}`;
+        return `${seatName(s)} · ${t('guess', '猜')} <span class="bidn">${p.bid ?? '–'}</span> · ${t('tricks', '墩')} ${p.tricks}`;
       }).join('<br>');
       return `<div class="seat-chip team-chip ${team.id === 1 ? 'cpu-team' : ''} ${turn ? 'active-turn' : ''} ${team.eliminated ? 'out' : ''}">
         <div class="team-line"><span class="team-name">${teamName(team.id)}</span><span class="sc">${team.score}</span></div>
@@ -1499,7 +1451,7 @@ function renderScoreboard() {
     return `<div class="seat-chip ${turn ? 'active-turn' : ''} ${p.eliminated ? 'out' : ''}">
       <div><span class="nm">${seatName(s)}</span>${p.eliminated ? ' ✕' : ''}</div>
       <div class="sc">${p.score}</div>
-      <div class="meta">${t('bid', '叫')} <span class="bidn">${p.bid ?? '–'}</span> · ${t('tricks', '墩')} ${p.tricks}</div>
+      <div class="meta">${t('guess', '猜')} <span class="bidn">${p.bid ?? '–'}</span> · ${t('tricks', '墩')} ${p.tricks}</div>
     </div>`;
   }).join('');
 }
@@ -1605,9 +1557,9 @@ function renderCtl() {
     el.innerHTML = `<div class="ctl-msg"><b>${dealState.indicatorRevealed ? t('INDICATOR REVEAL', '翻开指示牌') : t('DEALING', '正在发牌')}</b> · ${t('round', '第')} ${g.round} · ${g.handSize} ${t('card(s) each', '张 / 人')}</div>`;
   } else if (g.phase === 'bidding' && isLocalSeat(g.turn)) {
     const blind = g.isBlind();
-    const msg = online.pendingIntent ? t('sending your bid…', '正在发送你的叫牌…') : blind
-      ? t(`<b>BLIND HAND</b> — ${seatName(g.turn)}, bid 0 or 1 without seeing your card.`, `<b>暗牌局</b>——${seatName(g.turn)} 看不到自己的牌，叫 0 或 1。`)
-      : t(`${seatName(g.turn)}'s bid — how many tricks will you win?`, `轮到 ${seatName(g.turn)} 叫牌——要赢几墩？`);
+    const msg = online.pendingIntent ? t('sending your guess…', '正在发送你猜的墩数…') : blind
+      ? t(`<b>BLIND HAND</b> — ${seatName(g.turn)}, guess 0 or 1 without seeing your card.`, `<b>暗牌局</b>——${seatName(g.turn)} 看不到自己的牌，猜 0 或 1。`)
+      : t(`${seatName(g.turn)}'s guess — how many tricks will you win?`, `轮到 ${seatName(g.turn)} 猜墩——要赢几墩？`);
     let btns = '';
     for (let b = 0; b <= g.handSize; b++) btns += `<button class="btn ${b === Math.floor(g.handSize / 2) ? 'primary' : ''}" onclick="humanBid(${g.turn},${b})" ${online.pendingIntent ? 'disabled' : ''}>${b}</button>`;
     el.innerHTML = `<div class="ctl-msg">${msg}</div><div class="btn-row">${btns}</div>`;
@@ -1616,7 +1568,7 @@ function renderCtl() {
   } else if (g.phase === 'reveal') {
     el.innerHTML = `<div class="ctl-msg">${t('blind reveal — cards play themselves, one at a time…', '暗牌揭示——牌自动逐张翻开…')}</div>`;
   } else if (g.phase === 'bidding') {
-    el.innerHTML = `<div class="ctl-msg">${t('waiting: ', '等待：')}${seatName(g.turn)} ${isHumanSeat(g.turn) ? t('is choosing a bid…', '正在叫牌…') : t('is thinking…', '思考中…')}</div>`;
+    el.innerHTML = `<div class="ctl-msg">${t('waiting: ', '等待：')}${seatName(g.turn)} ${isHumanSeat(g.turn) ? t('is choosing a guess…', '正在猜墩…') : t('is thinking…', '思考中…')}</div>`;
   } else if (g.phase === 'playing') {
     el.innerHTML = `<div class="ctl-msg">${seatName(g.turn)} ${isHumanSeat(g.turn) ? t('is choosing a card…', '正在选牌…') : t('is thinking…', '思考中…')}</div>`;
   } else {
@@ -1639,10 +1591,9 @@ function renderLog() { $('log').innerHTML = logHtml(); }
 /* ── human input ──────────────────────────────────────────────────────── */
 function humanBid(seat, b) {
   if (!g || dealState || g.phase !== 'bidding' || g.turn !== seat || !isLocalSeat(seat)) return;
-  if (online.active && online.role === 'guest') { sendOnlineIntent({ type: 'bid', count: b }); return; }
+  if (online.active && online.role === 'guest') { sendOnlineIntent({ type: 'guess', count: b }); return; }
   g.setBid(seat, b);
-  if (online.active) online.actionRev++;
-  logLine(`${seatName(seat)} bids ${b}`, `${seatName(seat)} 叫 ${b}`, 'gold');
+  logLine(`${seatName(seat)} guesses ${b}`, `${seatName(seat)} 猜 ${b}`, 'gold');
   renderAll();
   chain();
 }
@@ -1651,10 +1602,9 @@ async function humanPlay(seat, idx) {
   if (!g || dealState || g.phase !== 'playing' || g.turn !== seat || !isLocalSeat(seat)) return;
   const card = g.players[seat].hand[idx];
   if (!card) return;
-  if (online.active && online.role === 'guest') { sendOnlineIntent({ type: 'play', cardId: TrucoEngine.cardId(card) }); return; }
+  if (online.active && online.role === 'guest') { sendOnlineIntent({ type: 'play', card: TrucoEngine.cardId(card) }); return; }
   logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`, 'gold');
   g.playCard(seat, card);
-  if (online.active) online.actionRev++;
   renderAll();
   await trickBannerIfNeeded();
   chain();
@@ -1666,16 +1616,17 @@ document.addEventListener('DOMContentLoaded', () => {
   showLobby();
   const invited = TrucoOnline.normalizeRoomCode(new URLSearchParams(location.search).get('room') || '');
   if (TrucoOnline.ROOM_RE.test(invited)) {
-    const code = $('onlineCode');
-    if (code) code.value = invited;
-    setOnlineStatus(t(`Invite received for room ${invited}. Add your name and join.`, `已收到房间 ${invited} 的邀请。填写名字后加入。`));
-    const name = $('onlineName');
-    if (name) name.focus();
+    let returning = false;
+    try { returning = !!sessionStorage.getItem('truco_pid_' + invited); } catch (e) {}
+    if (returning) { joinOnlineRoom(invited); }          // a reload: back to the same seat
+    else {
+      invitedCode = invited;
+      showLobby();
+      setOnlineStatus(t(`Invite to room ${invited}: pick your animal, then JOIN ROOM.`, `收到房间 ${invited} 的邀请：选好小动物，然后点“加入房间”。`));
+    }
   }
   $('overlayLayer').addEventListener('keydown', event => {
-    if (event.key !== 'Enter') return;
-    if (event.target && event.target.id === 'onlineCode') joinOnlineRoom();
-    else if (event.target && event.target.id === 'onlineName' && $('onlineCode') && $('onlineCode').value.trim()) joinOnlineRoom();
+    if (event.key === 'Enter' && event.target && event.target.id === 'onlineCode') joinOnlineRoom();
   });
 });
 </script>
