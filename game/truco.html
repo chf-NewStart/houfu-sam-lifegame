@@ -1083,6 +1083,11 @@ function renderOnlineBar() {
   $('onlineBarActions').innerHTML = `<button class="btn" type="button" onclick="copyOnlineInvite()">${t('COPY', '复制')}</button><button class="btn" type="button" onclick="leaveOnlineRoom(true)">${t('LEAVE', '离开')}</button>`;
 }
 
+/* iPhone, or an iPad (which reports itself as a Mac with a touch screen). */
+function isAppleMobile() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+}
+
 /* ── lobby ────────────────────────────────────────────────────────────── */
 function showLobby() {
   screenState = 'lobby';
@@ -1104,6 +1109,7 @@ function showLobby() {
           <button class="btn" type="button" onclick="joinOnlineRoom()">${t('JOIN ROOM', '加入房间')}</button>
         </div>
         <div class="online-status ${online.statusKind === 'err' ? 'err' : ''}" id="onlineMenuStatus" aria-live="polite">${escapeHtml(online.statusMessage)}</div>
+        ${invitedCode && isAppleMobile() ? `<div class="online-help"><a class="btn" href="manilha://room/${encodeURIComponent(invitedCode)}">${t('OPEN IN THE MANILHA APP', '在 MANILHA 应用中打开')}</a><br>${t('if it is installed on this iPhone or iPad — or play right here', '如果这台 iPhone/iPad 装了应用；也可以直接在这里玩')}</div>` : ''}
         <div class="online-help">${t('Pick an animal, then create a room and send the link — or join with a code. Friends can play here in a browser or in the Manilha app on iPhone and iPad. The host deals with 2–4 people; the computer plays empty seats. Partners sit opposite.', '选一只小动物，然后创建房间并发送链接，或用房间码加入。朋友可以在浏览器里玩，也可以用 iPhone/iPad 上的 Manilha 应用。房主在 2–4 人时发牌；空位由电脑来玩。对坐者为队友。')}</div>
       </div>
       <button class="btn primary" onclick="startGame(4,'teams')">${t('2 PLAYERS vs 2 AI · TEAM UP', '双人 vs 双电脑 · 组队')}</button>
