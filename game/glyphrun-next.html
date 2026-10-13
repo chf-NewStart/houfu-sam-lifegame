@@ -399,7 +399,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b65 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b66 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -2425,9 +2425,9 @@ const CHARS = {
     forms:[
       {ch:'鬼', py:'guǐ', mean_en:'the ghost — a great-headed kneeling shade', mean_zh:'「鬼」——巨首跪坐之影',
        tier_en:'LV1 · drift, and phase for 1s every 6s', tier_zh:'LV1 · 飘移，每6秒化虚1秒'},
-      {ch:'魂', py:'hún', mean_en:'“the soul” — a cloud drifting beside the ghost', mean_zh:'「魂」——云傍于鬼，是为魂',
+      {ch:'魂', py:'hún', mean_en:'“the soul” — 鬼 with 云 (a cloud) giving its sound', mean_zh:'「魂」——从鬼，云声',
        tier_en:'LV2 · a longer, quicker phase', tier_zh:'LV2 · 化虚更久更频'},
-      {ch:'魅', py:'mèi', mean_en:'“enchant” — the ghost grows its tail 彡', mean_zh:'「魅」——鬼生长尾',
+      {ch:'魅', py:'mèi', mean_en:'“goblin” — 鬼 with 未 for its sound; the older 鬽 gave it bristling hair 彡', mean_zh:'「魅」——从鬼未声；古作「鬽」，彡为鬼毛',
        tier_en:'LV3 · what you drift through is bewitched slow', tier_zh:'LV3 · 虚身所过，群鬼迟缓'},
       {ch:'魔', py:'mó', mean_en:'the demon — the latecomer of the family', mean_zh:'「魔」——鬼族的后来者',
        tier_en:'LV4 · the phase deepens — and your passing wounds', tier_zh:'LV4 · 化虚更深——虚身所过即伤'}
@@ -2457,7 +2457,7 @@ const CHARS = {
     hint_en:'swift; 火 cannot touch you; your plumes throw a wind at the pack (鳳 once also wrote 風)', hint_zh:'迅捷；火不能伤；尾羽向敌群掀风（「鳳」古时亦作「風」）',
     atk:{int:0.65, range:100, kind:'arc', hits:2},
     forms:[
-      {ch:'隹', py:'zhuī', mean_en:'the short-tailed bird', mean_zh:'「隹」——短尾之鸟',
+      {ch:'隹', py:'zhuī', mean_en:'a bird — on the bones, 隹 and 鳥 are one bird drawn two ways', mean_zh:'「隹」——甲骨文中「隹」「鳥」本是一鸟两写',
        tier_en:'LV1 · over 火 unburnt; a wind hurls back the nearest pack', tier_zh:'LV1 · 掠火不伤；一阵风吹退最近之敌'},
       {ch:'鳥', py:'niǎo', mean_en:'the bird entire, plumage and all', mean_zh:'「鳥」——羽尾俱全之鸟',
        tier_en:'LV2 · the wind returns quicker', tier_zh:'LV2 · 风更频'},
@@ -2480,7 +2480,7 @@ const CHARS = {
        tier_en:'LV2 · two sheep, sooner — the trampled stumble slow', tier_zh:'LV2 · 二羊，更频——被踏者踉跄迟缓'},
       {ch:'美', py:'měi', mean_en:'“beautiful” — a dancer crowned with ram horns', mean_zh:'「美」——戴羊角的舞者',
        tier_en:'LV3 · the panic reaches further', tier_zh:'LV3 · 惊散更远'},
-      {ch:'羴', py:'shān', mean_en:'“the flock” — three sheep together', mean_zh:'「羴」——三羊成群',
+      {ch:'羴', py:'shān', mean_en:'three sheep — the rank smell of a flock, later written 膻', mean_zh:'「羴」——羊臭也，三羊；后作「膻」',
        tier_en:'LV4 · 羴: three sheep — the stampede wounds', tier_zh:'LV4 · 羴：三羊齐奔——踩踏伤敌'}
     ],
     fleeInt:[7, 5.5, 5, 4], fleeR:[95, 105, 125, 140], slowTier:1, dmgTier:3, spd:1.08
@@ -2587,25 +2587,26 @@ const STARTER_ARMS = ['gong','jian','mao','dao'];
 /* ============================== 合文 · composition ============================== */
 /* the radical you carry is a true 偏旁: if it composes with your CURRENT form
    into a real character, the pair wakes and the radical acts one casting older.
-   Every compound below is the real etymology, checkable on zdic.            */
+   Every compound below is a real character; where one part only gives the
+   sound (形声), the note says so rather than inventing a picture for it.     */
 const RESON = {
-  gong: {'大':{ch:'夷', py:'yí',  en:'the great bow slung on the man — the eastern archers', zh:'大人负弓——「夷」，东方善射之人'}},
+  gong: {'大':{ch:'夷', py:'yí',  en:'a man with a bow, as seal script draws it — Shuowen’s people of the east', zh:'篆形大人负弓——《说文》：东方之人'}},
   ge:   {'人':{ch:'伐', py:'fá',  en:'the dagger-axe at the neck — “to fell”',               zh:'戈加人颈——「伐」'}},
-  mao:  {'木':{ch:'柔', py:'róu', en:'the spear-shaft flexes — “pliant”',                    zh:'矛柄之木能弯——「柔」'}},
+  mao:  {'木':{ch:'柔', py:'róu', en:'wood that bends and springs back — 矛 lends only its sound', zh:'木曲直也——「矛」表音'}},
   jin:  {'木':{ch:'析', py:'xī',  en:'the axe splits the wood — “to cleave apart”',          zh:'以斤劈木——「析」'}},
   dao:  {'牛':{ch:'解', py:'jiě', en:'the knife parts the ox, horn and all — “to untie”',    zh:'刀分牛角——「解」'}},
-  shi:  {'人':{ch:'侯', py:'hóu', en:'the archer before the target-butt — “the marquis”',    zh:'张布立侯，矢集其中——「侯」'}},
+  shi:  {'人':{ch:'侯', py:'hóu', en:'an arrow in the hung target cloth — the 亻 came later; “the marquis”', zh:'张布为靶，矢集其中——「亻」为后加'}},
   wang: {'隹':{ch:'羅', py:'luó', en:'the net dropped over the bird — “to snare”',           zh:'张网罗雀——「羅」'}},
   mian: {'牛':{ch:'牢', py:'láo', en:'the ox safe under the roof — the pen',                 zh:'牛入屋下——「牢」'},
          '木':{ch:'宋', py:'sòng',en:'the tree under the roof — a settlement',               zh:'木在宀下——「宋」'},
          '火':{ch:'灾', py:'zāi', en:'fire under the roof — disaster, loosed on THEM',       zh:'火起屋下——「灾」，灾及群鬼'}},
-  shui: {'木':{ch:'沐', py:'mù',  en:'water poured over wood — “to wash”',                   zh:'以水沃木——「沐」'},
-         '羊':{ch:'洋', py:'yáng',en:'waters vast as the flocks — “the ocean”',              zh:'水阔如群——「洋」'},
-         '炎':{ch:'淡', py:'dàn', en:'water over twin fires — “diluted, mild”',              zh:'水浇双火——「淡」'}},
+  shui: {'木':{ch:'沐', py:'mù',  en:'to wash the hair — 水 is the meaning, 木 only the sound', zh:'濯发——「水」表义，「木」表音'},
+         '羊':{ch:'洋', py:'yáng',en:'first a river’s name, later the ocean — 羊 gives the sound', zh:'本为水名，后指大海——「羊」表音'},
+         '炎':{ch:'淡', py:'dàn', en:'a thin, mild taste — 水 for meaning, 炎 for sound',      zh:'薄味——「水」表义，「炎」表音'}},
   biao: {'羊':{ch:'羔', py:'gāo', en:'the young sheep over the fire — the lamb',             zh:'羊在火上——「羔」'},
          '隹':{ch:'焦', py:'jiāo',en:'the bird over the fire — “scorched”',                  zh:'鸟在火上——「焦」'},
          '林':{ch:'焚', py:'fén', en:'the grove set alight — “to burn”',                     zh:'火烧丛林——「焚」'}},
-  xin:  {'鬼':{ch:'愧', py:'kuì', en:'the ghost inside the heart — “shame”',                 zh:'心中有鬼——「愧」'}}
+  xin:  {'鬼':{ch:'愧', py:'kuì', en:'shame — 心 for meaning, 鬼 for sound (“a ghost in the heart” is the pun)', zh:'惭也——「心」表义，「鬼」表音（「心中有鬼」是俗说）'}}
 };
 const BOW_SIGHT = 340;                    // the bow no longer snipes across the world
 
@@ -2635,7 +2636,7 @@ const FOE_INFO = {
   xue: {ch:'血', py:'xuè',  en:'blood in the vessel — it FEEDS the horde; fell it first', zh:'血——皿中之血，滋养群鬼，先斩为上'},
   yoke:{ch:'央', py:'yāng', en:'the yoke — its ring drags your steps', zh:'央——颈枷之环，拖你脚步'},
   drum:{ch:'壴', py:'zhù',  en:'war-drum — it beats out shockwave rings', zh:'壴——擂鼓震出冲击波'},
-  forge:{ch:'铸', py:'zhù', en:'the Caster — a forge that pours molten fire; broken, it yields bronze', zh:'铸——熔炉泼火，破之得青铜'},
+  forge:{ch:'鑄', py:'zhù', en:'the Caster — two hands tip a crucible of molten bronze into the mould; broken, it yields bronze', zh:'鑄——双手倾坩埚，铜汁注入范中；破之得青铜'},
   meng:{ch:'皿', py:'mǐn',  en:'the vessel, walking',                 zh:'皿——活起来的礼器'},
   gu:  {ch:'蠱', py:'gǔ',   en:'poison vessel — worms in the 皿',     zh:'蠱——皿中生虫'},
   long:{ch:'龍', py:'lóng', en:'dragon — carve it segment by segment', zh:'龍——须逐节斩落'}
@@ -4439,10 +4440,10 @@ const Game = (function(){
         //   and drops the bronze 鼎 when broken (its own fire, in a wave that has none)
         if(stageIdx === 0 && !forgeDone && waveT <= wave.len*0.5){
           forgeDone = true;
-          spirits.push({x:CW*0.5, y:CH*0.30, phase:0, dead:false, boss:true, type:'forge', bossCh:'铸',
+          spirits.push({x:CW*0.5, y:CH*0.30, phase:0, dead:false, boss:true, type:'forge', bossCh:'鑄',
                         hp:9, maxHp:9, cr:38, spd:0, st:0, stT:1.4, face:1, dirn:1, castT:2.0});
           showBanner('forge');
-          addFx({kind:'levelup', x:CW*0.5, y:CH*0.30, t:1.0, r:90, ch:'铸'});
+          addFx({kind:'levelup', x:CW*0.5, y:CH*0.30, t:1.0, r:90, ch:'鑄'});
         }
         // 龍 coils in from the east, halfway through the last night
         if(stageIdx === 3 && !dragonDone && waveT <= wave.len*0.55){
@@ -4918,8 +4919,8 @@ const Game = (function(){
       shengPed.bob += dt*2.2;
       if(Math.hypot(shengPed.x-player.x, shengPed.y-player.y) < 32){
         hatOn = true;
-        addFx({kind:'levelup', x:shengPed.x, y:shengPed.y, t:0.8, r:70, ch:'圣'});
-        popToastEx('圣', 'shèng · 甲骨', t('the great listening ear — your ink and reach grow', '圣——倾听之大耳：及远更甚'), 'wu');
+        addFx({kind:'levelup', x:shengPed.x, y:shengPed.y, t:0.8, r:70, ch:'聖'});
+        popToastEx('聖', 'shèng · 甲骨', t('a great ear beside a mouth: the one who hears — your ink and reach grow', '聖——大耳傍口，闻声知情：及远更甚'), 'wu');
         shengPed = null;
       }
     }
@@ -6330,6 +6331,12 @@ const Game = (function(){
     syncMute();
     // the bed rests while the tab is hidden
     document.addEventListener('visibilitychange', ()=>{ if(document.hidden) bgm.hold(); else if(running) bgm.resume(); });
+    /* look away and the night holds still. A key held while the window loses
+       focus never sends its keyup, so the glyph would drift into the spirits
+       on its own: let go of every key and pause instead.                    */
+    const lookAway = ()=>{ keys.left = keys.right = keys.up = keys.down = false; pause(); };
+    window.addEventListener('blur', lookAway);
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) lookAway(); });
   }
 
   /* ---------- character + starting-arm select ---------- */
@@ -6660,9 +6667,9 @@ const Game = (function(){
     card(gd, bookCanvas(60,40,(bc)=>{ if(ORACLE['虹'] && typeof Path2D!=='undefined') drawOraclePath(bc, ORACLE['虹'], 30, 22, 54, BOLTC); }),
       `<b style="color:${INK}">虹</b> hóng ${zdicLink('虹')}<br>${t('the rainbow is a two-headed serpent: a Shang inscription says it came out of the north and drank from the river. Both heads stoop — mind both rings.','虹是双首之虫。卜辞云：「有出虹自北，飲于河。」两首齐落——两个圈都要避。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawGate(bc,22,37,30,RED,0.6)),
-      `<b style="color:${INK}">安</b> ān ${zdicLink('安')}<br>${t('“safety” — survive the wave and step beneath the safe roof; the era rewinds.','「安」——撑过一波，步入安檐——时代倒退。')}`, 210);
+      `<b style="color:${INK}">安</b> ān ${zdicLink('安')}<br>${t('“peace” — a woman at rest beneath a roof. Survive the wave and step under it; the era rewinds.','「安」——女在宀下，是为安。撑过一波，步入其下——时代倒退。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawShengHat(bc,22,31,23,RED)),
-      `<b style="color:${INK}">圣</b> shèng ${zdicLink('圣')}<br>${t('the great listening ear, worn as a crown: longer reach, far magnet.','倾听之大耳，戴之为冠：及远更甚。')}`, 210);
+      `<b style="color:${INK}">聖</b> shèng ${zdicLink('聖')}<br>${t('a great ear beside a mouth: the one who hears. Worn as a crown: longer reach, far magnet.','大耳傍口，闻声知情；戴之为冠：及远更甚。')}`, 210);
     card(gd, bookCanvas(44,40,(bc)=>drawGuang(bc,22,26,20,BOLTC)),
       `<b style="color:${INK}">光</b> guāng ${zdicLink('光')}<br>${t('the torch-bearer blinks overhead after a boss falls: swifter, sharper (8s).','斩落头目后，火炬加身：更快更利（8秒）。')}`, 210);
     card(gd, bookCanvas(72,36,(bc)=>drawOracleNum(bc,47,36,19,14,INK)),
