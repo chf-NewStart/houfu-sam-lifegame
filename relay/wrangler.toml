@@ -14,7 +14,7 @@ class_name = "Room"
 tag = "v1"
 new_sqlite_classes = ["Room"]
 
-# Uncomment once it works, so the relay only answers your own pages (and the
-# Manilha app, which sends Origin: https://lifegameproject.com).
-# [vars]
-# ALLOW_ORIGINS = "https://lifegameproject.com,https://houfu72.com"
+# Only your own pages (and the Manilha app, which sends
+# Origin: https://lifegameproject.com) may open rooms.
+[vars]
+ALLOW_ORIGINS = "https://lifegameproject.com,https://houfu72.com"
