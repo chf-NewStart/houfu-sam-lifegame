@@ -4059,7 +4059,7 @@ function fbDb() {
    relay answers exactly that and nothing above this line had to change. Empty
    means carry on with Firebase, which is what happens until the Worker is
    actually deployed. */
-const RELAY = '';   // e.g. 'wss://gomoku-relay.yourname.workers.dev'
+const RELAY = '';   // e.g. 'wss://lifegame-relay.yourname.workers.dev' (see relay/README.md)
 
 const _rl = { sock: null, code: null, data: {}, ready: null, subs: new Map() };
 const rlSnap = (v) => ({ val: () => (v === undefined ? null : v), exists: () => v !== undefined && v !== null });

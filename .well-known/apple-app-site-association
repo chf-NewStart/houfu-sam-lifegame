@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["DCC763A996.com.lifegameproject.truco"],
+        "components": [
+          {
+            "/": "/game/truco.html",
+            "?": { "room": "???????" },
+            "comment": "Manilha online-room invites open the app when it is installed, the web game otherwise"
+          }
+        ]
+      }
+    ]
+  }
+}

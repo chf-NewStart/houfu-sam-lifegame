@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Privacy policy for Life Game Project games and apps: no accounts, ads or tracking. The iPhone and iPad apps collect no data; web leaderboards keep only the nickname and score you choose to submit.">
+  <meta name="description" content="Privacy policy for Life Game Project games and apps: no accounts, ads or tracking. Online Manilha rooms send only a room code, an avatar, a seat and the moves, kept for the game and then deleted; web leaderboards keep only the nickname and score you choose to submit.">
   <title>Privacy Policy // Life Game Project</title>
   <style>
     body { background:#0a0a0a; color:#ccc; font-family:'Courier New',monospace; line-height:1.7;
@@ -19,7 +19,7 @@
 </head>
 <body>
   <h1>Privacy Policy</h1>
-  <div class="sub">Game of Life · lifegameproject.com · last updated 11 October 2026</div>
+  <div class="sub">Game of Life · lifegameproject.com · last updated 13 October 2026</div>
 
   <p>Game of Life is a small, ad-free Conway's Game of Life game. We try to collect as little as possible. This policy explains what the app stores and what (if anything) leaves your device.</p>
 
@@ -44,7 +44,17 @@
   </ul>
 
   <h2>iPhone and iPad apps</h2>
-  <p>The native apps <b>Manilha</b>, <b>Game Life</b>, <b>Qi</b> and <b>Plank Constant</b> collect no data at all. They have no accounts, leaderboards, galleries, analytics or advertising, and they send nothing to us. Your language choice, game settings and bests are stored only on your device and are deleted when you delete the app. Plank Constant uses the camera; the next section explains exactly how.</p>
+  <p>The native apps <b>Manilha</b>, <b>Game Life</b>, <b>Qi</b> and <b>Plank Constant</b> have no accounts, leaderboards, galleries, analytics or advertising. Your language choice, game settings and bests are stored only on your device and are deleted when you delete the app. <b>Game Life</b>, <b>Qi</b> and <b>Plank Constant</b> send nothing to us. <b>Manilha</b> sends nothing either unless you play online with friends; the next section explains exactly what that involves. Plank Constant uses the camera; the section after it explains how.</p>
+
+  <h2>Manilha: online rooms</h2>
+  <p>You can play Manilha with up to three friends in an online room, from the Manilha app on iPhone or iPad or in a browser at lifegameproject.com/game/truco.html. Solo and same-device games never go online.</p>
+  <ul>
+    <li><strong>What is sent:</strong> when you create or join a room, your device connects to our room server (the "relay", which runs on Cloudflare) and sends the room code; a random player number your device makes up for that room, which is not linked to you, your device or any account; the animal avatar and seat you pick; and your moves (how many tricks you guess and which cards you play). The player who hosts the table also sends the state of the game: everyone's cards and scores.</li>
+    <li><strong>What is not sent:</strong> no name, account, email, chat, contacts, location or advertising identifier. Nobody types anything that other players see: everyone appears as an animal and a seat number.</li>
+    <li><strong>Who can see it:</strong> everyone in the room receives the room's data so their device can show the game. That includes the other players' cards, which their apps and the web page keep hidden but a technically minded player could read, so rooms are meant for people you trust.</li>
+    <li><strong>How long it is kept:</strong> the relay keeps a room's data only while the room is in use, and deletes it automatically six hours after the last move. It keeps no logs, and we don't copy, analyse or share the data or use it for anything but running your game.</li>
+    <li><strong>Cloudflare:</strong> like any web host, Cloudflare handles the connection (and so sees your IP address to deliver the data) under its own privacy policy. We don't receive or store IP addresses.</li>
+  </ul>
 
   <h2>Plank Constant: camera and face data</h2>
   <p>Plank Constant uses the front TrueDepth camera, through Apple's ARKit, to follow your face so you can play hands-free while you hold a plank.</p>
