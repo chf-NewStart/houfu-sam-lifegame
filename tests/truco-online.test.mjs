@@ -93,6 +93,39 @@ test('starting needs two connected people; absent people lose their seat and the
   assert.equal(again.match, 2);
 });
 
+test('a room plays in partnerships or every player for themselves, chosen before the deal', () => {
+  const teams = lobby();
+  assert.equal(O.hasPartners(teams), true, 'partnerships unless asked otherwise');
+  const solo = O.newRoom(HOST, 3, 1000, 10_000, false);
+  assert.equal(solo.teams, null);
+  assert.equal(O.hasPartners(solo), false);
+  assert.equal(O.validRoom(solo, 1500), true);
+  for (const bad of [[0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0], undefined, 'teams']) {
+    assert.equal(O.validRoom({ ...teams, teams: bad }), false, JSON.stringify(bad));
+  }
+
+  let room = O.reconcile(teams, joins([HOST, 3], [pid(1), 5]));
+  const switched = O.setPartners(room, false);
+  assert.equal(switched.teams, null);
+  assert.equal(switched.rev, room.rev + 1);
+  assert.deepEqual(switched.seats, room.seats, 'nobody moves');
+  assert.equal(O.setPartners(switched, false), switched, 'nothing to change → same object, no write');
+  assert.deepEqual(O.setPartners(switched, true).teams, [0, 1, 0, 1]);
+
+  room = O.startMatch(switched, [HOST, pid(1)]);
+  assert.equal(room.teams, null, 'the deal keeps the choice');
+  assert.equal(O.validRoom(room), true);
+  assert.equal(O.setPartners(room, true), room, 'too late once the cards are out');
+  assert.equal(O.startMatch(room, [HOST, pid(1)]).teams, null, 'and so does a rematch');
+
+  const game = E.newGame(4, seeded(9), O.hasPartners(room) ? { teams: O.TEAM_BY_SEAT } : undefined);
+  assert.equal(game.teamMode, false);
+  game.startRound();
+  const record = O.gameRecord(room, game, null);
+  assert.equal(O.validGameRecord(record), true);
+  assert.equal(E.restoreGame(record.state).teamMode, false);
+});
+
 test('the next connected player clockwise from the host succeeds them', () => {
   let room = O.reconcile(lobby(), joins([HOST, 3], [pid(1), 5], [pid(2), 6], [pid(3), 7]));
   room = O.startMatch(room, [HOST, pid(1), pid(2), pid(3)]);

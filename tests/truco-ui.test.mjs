@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const html = readFileSync(new URL('../game/truco.html', import.meta.url), 'utf8');
 const arcade = readFileSync(new URL('../arcade.html', import.meta.url), 'utf8');
+const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
 
 test('Truco exposes a fixed two-human partnership mode', () => {
   assert.match(html, /2 PLAYERS vs 2 AI · TEAM UP/);
@@ -28,6 +29,19 @@ test('online rooms run on the relay with the shared room contract', () => {
   assert.match(html, /O\.startMatch\(online\.room/);
   assert.match(html, /O\.reconcile\(online\.room, O\.joinsOf\(online\.map\)\)/);
   assert.doesNotMatch(html, /firebase/i, 'no Google hosts: they are unreachable from mainland China');
+});
+
+test('online rooms play in teams of two or every player for themselves, as the host picks', () => {
+  assert.match(html, /function setOnlinePartners\(on\)/);
+  assert.match(html, /O\.setPartners\(online\.room, on\)/);
+  assert.match(html, /O\.newRoom\(online\.pid, online\.avatar, now, undefined, savedPartners\(\)\)/);
+  assert.match(html, /TrucoEngine\.newGame\(4, undefined, O\.hasPartners\(online\.room\) \? \{ teams: O\.TEAM_BY_SEAT \} : undefined\)/);
+  assert.match(html, /TEAMS 2V2/);
+  assert.match(html, /FREE-FOR-ALL/);
+  assert.match(html, /WAITING FOR A FRIEND TO JOIN/);
+  assert.doesNotMatch(html, /'PERSON' : 'PEOPLE'/, 'alone, the deal button waits instead of offering 1 person + 3 AI');
+  assert.match(html, /\/game\/truco-online\.js\?v=4/, 'returning browsers fetch the new contract');
+  assert.match(sw, /'\/game\/truco-online\.js\?v=4'/);
 });
 
 test('players are avatars and seat numbers, never typed names', () => {

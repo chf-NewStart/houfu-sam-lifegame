@@ -175,6 +175,9 @@
     .roster-team.gold { border-color:#5a471f; }
     .roster-team-head { color:#1db954; font-size:.68rem; font-weight:700; letter-spacing:1px; margin-bottom:6px; }
     .roster-team.gold .roster-team-head { color:#e8b04a; }
+    .roster-team.solo { grid-column:1 / -1; }
+    .mode-row { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; }
+    .mode-row .btn { min-width:150px; }
     .roster-seat { min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:8px; border-top:1px solid #181d18; padding:7px 2px; color:#a1aaa3; font-size:.68rem; }
     .roster-seat:first-of-type { border-top:0; }
     .roster-seat small { color:#526056; font-size:.57rem; text-transform:uppercase; }
@@ -298,7 +301,7 @@
   </div>
 
 <script src="/game/truco-engine.js?v=3"></script>
-<script src="/game/truco-online.js?v=3"></script>
+<script src="/game/truco-online.js?v=4"></script>
 <script>
 'use strict';
 /* ── i18n ─────────────────────────────────────────────────────────────── */
@@ -393,6 +396,10 @@ function devAutoplay() {
   }, 500);
 }
 
+/* Rooms this browser creates start the way its host last chose: teams or every player for themselves. */
+function savedPartners() {
+  try { return localStorage.getItem('truco_partners') !== '0'; } catch (e) { return true; }
+}
 function savedAvatar() {
   try { const n = Number(localStorage.getItem('truco_avatar')); if (Number.isInteger(n) && n >= 0 && n < O.AVATARS.length) return n; } catch (e) {}
   return Math.floor(Math.random() * O.AVATARS.length);
@@ -589,6 +596,7 @@ function leaveOnlineRoom(showMain) {
 function roomOpened(map, who) {
   online.connected = true;
   online.attempts = 0;
+  online.statusMessage = ''; online.statusKind = '';      // "Opening room…" is done; the bar shows who is here
   online.map = map;
   online.live = new Set(who); online.live.add(online.pid);
   if (online.creating) {
@@ -597,7 +605,7 @@ function roomOpened(map, who) {
     online.everOpened = true;
     const now = Date.now();
     writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, 0, now));
-    writeRoom(O.newRoom(online.pid, online.avatar, now));
+    writeRoom(O.newRoom(online.pid, online.avatar, now, undefined, savedPartners()));
     history.replaceState(null, '', location.pathname + roomQuery(online.code));
     return;
   }
@@ -726,7 +734,7 @@ function startOnlineMatch() {
   online.lastPublished = '';
   online.guestState = null;
   gameMode = 'online';
-  g = TrucoEngine.newGame(4, undefined, { teams: O.TEAM_BY_SEAT });
+  g = TrucoEngine.newGame(4, undefined, O.hasPartners(online.room) ? { teams: O.TEAM_BY_SEAT } : undefined);
   uiLog = []; lastSeenTrick = null; dealState = null; showingTrickResult = false; running = false; bannerState = null; screenState = 'game';
   logOnlineStart();
   $('overlayLayer').innerHTML = '';
@@ -736,7 +744,8 @@ function startOnlineMatch() {
 
 function logOnlineStart() {
   const people = humanSeats.size;
-  logLine(`online room ${online.code} — ${people} people, ${4 - people} AI · partners sit opposite`, `联机房间 ${online.code}——${people} 人，${4 - people} 个电脑 · 对坐者为队友`, 'imp');
+  if (O.hasPartners(online.room)) logLine(`online room ${online.code} — ${people} people, ${4 - people} AI · partners sit opposite`, `联机房间 ${online.code}——${people} 人，${4 - people} 个电脑 · 对坐者为队友`, 'imp');
+  else logLine(`online room ${online.code} — ${people} people, ${4 - people} AI · every player for themselves`, `联机房间 ${online.code}——${people} 人，${4 - people} 个电脑 · 各自为战`, 'imp');
 }
 
 function becomeHost() {
@@ -1011,6 +1020,14 @@ function sitAt(seat) {
   writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, seat, Date.now()));
 }
 
+/* Host, before the deal: teams of two, or every player for themselves. */
+function setOnlinePartners(on) {
+  if (!isHost() || !online.room || online.room.status !== 'waiting') return;
+  try { localStorage.setItem('truco_partners', on ? '1' : '0'); } catch (e) {}
+  const next = O.setPartners(online.room, on);
+  if (next !== online.room) writeRoom(next);
+}
+
 function startOnlineRoom() {
   if (!isHost() || !online.room || online.room.status !== 'waiting') return;
   let next;
@@ -1034,6 +1051,7 @@ function renderOnlineLobby() {
   const room = online.room;
   const seat = mySeat();
   const people = connectedHumans();
+  const partners = O.hasPartners(room);
   const seatHtml = s => {
     const r = room && room.seats[s];
     const mine = s === seat;
@@ -1050,17 +1068,27 @@ function renderOnlineLobby() {
   if (online.stage === 'connecting') action = `<div class="online-status">${escapeHtml(online.statusMessage)}</div>`;
   else if (online.waitingForSeat) action = `<div class="online-status">${online.slowJoin ? t('Still waiting for the host to let you in — their app or page needs to be open.', '仍在等待房主让你入座——房主的应用或网页需要保持打开。') : t('Joining…', '正在加入…')}</div>`;
   else if (room && room.status === 'playing') action = `<div class="online-status">${t('Dealing…', '正在发牌…')}</div>`;
-  else if (isHost()) action = `<button class="btn primary" type="button" onclick="startOnlineRoom()" ${people < 2 ? 'disabled' : ''}>${t(`DEAL · ${people} ${people === 1 ? 'PERSON' : 'PEOPLE'} + ${4 - people} AI`, `发牌 · ${people} 人 + ${4 - people} 电脑`)}</button>
-      <div class="online-status ${online.needTwo ? 'err' : ''}">${people >= 2 ? t('Empty seats are played by the computer.', '空位由电脑来玩。') : t('Waiting for at least one friend to join.', '至少需要一位朋友加入。')}</div>`;
+  else if (isHost() && people < 2) action = `<button class="btn" type="button" disabled>${t('WAITING FOR A FRIEND TO JOIN…', '等待朋友加入…')}</button>
+      <div class="online-status ${online.needTwo ? 'err' : ''}">${t('One friend is enough: the computer plays any empty seat.', '一位朋友就够了：空位由电脑来玩。')}</div>`;
+  else if (isHost()) action = `<button class="btn primary" type="button" onclick="startOnlineRoom()">${people === 4 ? t('DEAL · 4 PEOPLE', '发牌 · 4 人') : t(`DEAL · ${people} PEOPLE + ${4 - people} AI`, `发牌 · ${people} 人 + ${4 - people} 电脑`)}</button>
+      <div class="online-status ${online.needTwo ? 'err' : ''}">${people < 4 ? t('Empty seats are played by the computer.', '空位由电脑来玩。') : t('Every seat has a player.', '每个座位都有人了。')}</div>`;
   else action = `<div class="online-status">${t('Waiting for the host to deal…', '等待房主发牌…')}</div>`;
   $('overlayLayer').innerHTML = `<div class="overlay online">
     <div class="big">${t('MANILHA ROOM', 'MANILHA 房间')}</div>
     <div class="room-code-big">${escapeHtml(online.code)}</div>
     <div class="invite-row"><button class="btn primary" type="button" onclick="shareOnlineInvite()">${t('SHARE INVITE', '分享邀请')}</button><button class="btn" type="button" onclick="copyOnlineInvite()">${t('COPY LINK', '复制链接')}</button></div>
     <div class="trust-note">${t('Friends with the Manilha app on iPhone or iPad can join with the code or the link; anyone else plays right here in a browser.', '安装了 Manilha 应用的 iPhone/iPad 朋友可用房间码或链接加入；其他人直接在浏览器中玩。')}</div>
-    ${room ? `<div class="room-roster">
+    ${room && isHost() && room.status === 'waiting' ? `<div class="mode-row" role="group" aria-label="${t('game', '玩法')}">
+      <button class="btn ${partners ? 'primary' : ''}" type="button" aria-pressed="${partners}" onclick="setOnlinePartners(true)">${t('TEAMS 2V2', '2V2 组队')}</button>
+      <button class="btn ${partners ? '' : 'primary'}" type="button" aria-pressed="${!partners}" onclick="setOnlinePartners(false)">${t('FREE-FOR-ALL', '各自为战')}</button>
+    </div>` : ''}
+    ${room && partners ? `<div class="room-roster">
       <div class="roster-team"><div class="roster-team-head">${t('TEAM GREEN', '绿队')}</div>${seatHtml(0)}${seatHtml(2)}</div>
       <div class="roster-team gold"><div class="roster-team-head">${t('TEAM GOLD', '金队')}</div>${seatHtml(1)}${seatHtml(3)}</div>
+    </div>
+    <div class="trust-note">${t('Partners sit opposite and share one score.', '对坐的两人是队友，共用一个分数。')}</div>` : ''}
+    ${room && !partners ? `<div class="room-roster">
+      <div class="roster-team solo"><div class="roster-team-head">${t('EVERY PLAYER FOR THEMSELVES', '各自为战')}</div>${seatHtml(0)}${seatHtml(1)}${seatHtml(2)}${seatHtml(3)}</div>
     </div>` : ''}
     ${seat >= 0 && room && room.status === 'waiting' ? `<div class="online-menu"><div class="online-title">${t('your avatar', '你的头像')}</div>${avatarPickerHtml()}</div>` : ''}
     ${action}
@@ -1136,7 +1164,7 @@ function showLobby() {
         </div>
         <div class="online-status ${online.statusKind === 'err' ? 'err' : ''}" id="onlineMenuStatus" aria-live="polite">${escapeHtml(online.statusMessage)}</div>
         ${invitedCode && isAppleMobile() ? `<div class="online-help"><a class="btn" href="manilha://room/${encodeURIComponent(invitedCode)}">${t('OPEN IN THE MANILHA APP', '在 MANILHA 应用中打开')}</a><br>${t('if it is installed on this iPhone or iPad — or play right here', '如果这台 iPhone/iPad 装了应用；也可以直接在这里玩')}</div>` : ''}
-        <div class="online-help">${t('Pick an animal, then create a room and send the link — or join with a code. Friends can play here in a browser or in the Manilha app on iPhone and iPad. The host deals with 2–4 people; the computer plays empty seats. Partners sit opposite.', '选一只小动物，然后创建房间并发送链接，或用房间码加入。朋友可以在浏览器里玩，也可以用 iPhone/iPad 上的 Manilha 应用。房主在 2–4 人时发牌；空位由电脑来玩。对坐者为队友。')}</div>
+        <div class="online-help">${t('Pick an animal, then create a room and send the link — or join with a code. Friends can play here in a browser or in the Manilha app on iPhone and iPad. The host deals with 2–4 people, in teams of two or every player for themselves; the computer plays empty seats.', '选一只小动物，然后创建房间并发送链接，或用房间码加入。朋友可以在浏览器里玩，也可以用 iPhone/iPad 上的 Manilha 应用。房主在 2–4 人时发牌，可选 2v2 组队或各自为战；空位由电脑来玩。')}</div>
       </div>
       <button class="btn primary" onclick="startGame(4,'teams')">${t('2 PLAYERS vs 2 AI · TEAM UP', '双人 vs 双电脑 · 组队')}</button>
       <div class="sub" style="color:#66756a">${t('Shared-screen co-op · Player 1 + Player 2 share one score', '同屏合作 · 玩家1 与玩家2 共用队伍分数')}</div>
@@ -1376,7 +1404,8 @@ function showEnd() {
   const draw = g.winner === 'draw';
   const title = g.teamMode
     ? (draw ? t('DRAW — both teams busted', '平局——两队同时出局') : t(`${teamName(g.winnerTeam)} wins`, `${teamName(g.winnerTeam)} 胜出`))
-    : (draw ? t('DRAW — everyone busted together', '平局——所有人一起爆掉') : t(`${seatName(g.winner)} wins the table`, `${seatName(g.winner)} 拿下整桌`));
+    : (draw ? t('DRAW — everyone busted together', '平局——所有人一起爆掉')
+      : isLocalSeat(g.winner) ? t('You win the table!', '你拿下整桌！') : t(`${seatName(g.winner)} wins the table`, `${seatName(g.winner)} 拿下整桌`));
   const scores = g.teamMode
     ? g.teams.map(team => `${teamName(team.id)}: ${team.score}${team.eliminated ? ' · ' + t('eliminated', '已出局') : ''}`).join('<br>')
     : g.players.map((p, s) => `${seatName(s)}: ${p.score}${p.eliminated ? ' · ' + t('eliminated', '已出局') : ''}`).join('<br>');

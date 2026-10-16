@@ -19,7 +19,11 @@
    who trust each other, not an anti-cheat boundary.
 
    Players have no names, only one of the AVATARS (an index), so nothing anyone
-   types is ever shown to anyone else. */
+   types is ever shown to anyone else.
+
+   A room plays in partnerships (`teams` = TEAM_BY_SEAT: seats 0+2 against
+   1+3, one shared score per side) or every player for themselves (`teams` =
+   null). The host chooses before the deal (setPartners). */
 (function (root, factory) {
   'use strict';
   const engine = typeof module === 'object' && module.exports ? require('./truco-engine.js') : root.TrucoEngine;
@@ -34,7 +38,7 @@
   const ROOM_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const PID_RE = /^[A-Za-z0-9_-]{8,64}$/;
   const TEAM_BY_SEAT = [0, 1, 0, 1];
-  /* The creator sits at 0; the first friend joins their team opposite. */
+  /* The creator sits at 0; the first friend sits opposite (their partner in a team room). */
   const CLAIM_ORDER = [0, 2, 1, 3];
   const AVATARS = ['🦊', '🐼', '🐸', '🐯', '🐙', '🦉', '🐢', '🐝', '🦁', '🐨', '🐧', '🦜'];
   const DEFAULT_TTL = 12 * 60 * 60 * 1000;
@@ -103,7 +107,7 @@
     if (!isInt(room.createdAt) || !isInt(room.expiresAt) || !isInt(room.epoch) || room.epoch < 1) return false;
     if (!isInt(room.rev) || !isInt(room.match) || room.match < 0) return false;
     if (now != null && room.expiresAt < now) return false;
-    if (!Array.isArray(room.teams) || room.teams.length !== 4 || room.teams.some((t, s) => t !== TEAM_BY_SEAT[s])) return false;
+    if (room.teams !== null && (!Array.isArray(room.teams) || room.teams.length !== 4 || room.teams.some((t, s) => t !== TEAM_BY_SEAT[s]))) return false;
     if (!Array.isArray(room.seats) || room.seats.length !== 4 || !room.seats.every(validSeat)) return false;
     const pids = room.seats.filter(r => r && r.kind === 'human').map(r => r.pid);
     if (new Set(pids).size !== pids.length) return false;
@@ -115,16 +119,32 @@
     return true;
   }
 
-  function newRoom(hostPid, avatar, now, ttl) {
+  /* `partners` false: every player for themselves (teams null). */
+  function newRoom(hostPid, avatar, now, ttl, partners) {
     if (!PID_RE.test(String(hostPid || ''))) fail('invalid-pid');
     const createdAt = Number(now == null ? Date.now() : now);
     const life = Number(ttl == null ? DEFAULT_TTL : ttl);
     return {
       kind: 'truco', schema: SCHEMA, createdAt, expiresAt: createdAt + life,
       status: 'waiting', host: 0, epoch: 1, match: 0, rev: 1,
-      teams: TEAM_BY_SEAT.slice(),
+      teams: partners === false ? null : TEAM_BY_SEAT.slice(),
       seats: [{ kind: 'human', pid: hostPid, avatar: cleanAvatar(avatar) }, null, null, null],
     };
+  }
+
+  /* Partners opposite each other, sharing a score (else everyone for themselves). */
+  function hasPartners(room) {
+    return !!room && Array.isArray(room.teams);
+  }
+
+  /* Host only, before the deal: switch between partnerships and every player
+     for themselves. Returns the same object when nothing changes. */
+  function setPartners(room, partners) {
+    if (!validRoom(room) || room.status !== 'waiting' || hasPartners(room) === !!partners) return room;
+    const next = clone(room);
+    next.teams = partners ? TEAM_BY_SEAT.slice() : null;
+    next.rev = room.rev + 1;
+    return next;
   }
 
   function seatOf(room, pid) {
@@ -388,7 +408,7 @@
   return {
     SCHEMA, ROOM_RE, PID_RE, TEAM_BY_SEAT, CLAIM_ORDER, AVATARS, DEFAULT_TTL, HOST_GRACE, AWAY_GRACE, PACE, KEYS,
     makeRoomCode, makePid, normalizeRoomCode, roomLink, cleanAvatar,
-    validRoom, newRoom, seatOf, hostPid, humanSeats, joinsOf, joinRecord, takenAvatars, freeAvatar,
+    validRoom, newRoom, hasPartners, setPartners, seatOf, hostPid, humanSeats, joinsOf, joinRecord, takenAvatars, freeAvatar,
     reconcile, startMatch, successor, takeOver, handOver,
     gameRecord, ackRecord, validGameRecord, newerGame,
     makeIntent, checkIntent, applyIntent, visibleHands,
