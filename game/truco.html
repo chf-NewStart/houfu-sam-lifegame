@@ -190,7 +190,9 @@
     .banner .big { color: #1db954; font-size: 1.15rem; font-weight: 700; }
     .banner .sub { color: #888; font-size: 0.72rem; line-height: 1.7; }
     .banner .sub b { color: #e8b04a; }
-    .banner .skip { color: #444; font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; }
+    .banner .skip { color: #6a756c; font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; }
+    .banner .banner-next { margin-top: 8px; padding: 10px 22px; font-size: .82rem; }
+    .banner.trick-banner .banner-next { margin-top: 4px; padding: 5px 14px; font-size: .64rem; }
     .banner.trick-banner { inset:auto auto 112px 50%; width:min(90%,440px); transform:translateX(-50%); padding:9px 14px; gap:3px; border:1px solid #314134; border-radius:6px; background:linear-gradient(90deg,rgba(7,12,8,.93),rgba(13,20,14,.96),rgba(7,12,8,.93)); box-shadow:0 10px 28px rgba(0,0,0,.55),0 0 14px rgba(29,185,84,.1); }
     .banner.trick-banner .big { font-size:.79rem; letter-spacing:.08em; }
     .banner.trick-banner .sub { font-size:.61rem; line-height:1.45; }
@@ -397,8 +399,9 @@ let screenState = 'lobby';
 let selectedCardId = null;  // your card lifted out of the hand, waiting for PLAY (or a second tap)
 let guessChoice = null;     // { key, count, locked }: your guess for this round, picked on or before your turn
 let guessSending = false;
-let handSort = 'strength';  // or 'suit'
-try { if (localStorage.getItem('truco_sort') === 'suit') handSort = 'suit'; } catch (e) {}
+const HAND_SORTS = ['strong', 'weak', 'suit', 'dealt'];   // strongest first, weakest first, by suit, as dealt
+let handSort = 'strong';
+try { const saved = localStorage.getItem('truco_sort'); if (HAND_SORTS.includes(saved)) handSort = saved; } catch (e) {}
 
 function seatName(s) { const n = seatNames[s] || { en: 'Seat ' + (s + 1), zh: '座位' + (s + 1) }; return lang === 'zh' ? n.zh : n.en; }
 function teamName(id) {
@@ -1069,7 +1072,7 @@ function guestRoundResult(state, animate) {
   if (out.length) logLine(`eliminated: ${out.join(', ')}`, `出局：${out.join('、')}`, 'warn');
   logLine('scores after round ' + h.round, `第 ${h.round} 轮后计分`, '');
   if (!animate) return;
-  showBanner(t('ROUND ' + h.round + ' SCORED', '第 ' + h.round + ' 轮结算'), lines.join('<br>'));
+  showBanner(t('ROUND ' + h.round + ' SCORED', '第 ' + h.round + ' 轮结算'), lines.join('<br>'), state.phase === 'over' ? 'last' : 'round');
   const id = bannerState && bannerState.id;
   guestLater(state.phase === 'over' ? 3000 : O.PACE.round, () => { if (bannerState && bannerState.id === id) { hideBanner(); renderAll(); } });
 }
@@ -1480,19 +1483,25 @@ async function roundBanner(res) {
     if (eliminated.length) logLine(`eliminated: ${eliminated.join(', ')}`, `出局：${eliminated.join('、')}`, 'warn');
   }
   logLine('scores after round ' + g.round, `第 ${g.round} 轮后计分`, '');
-  showBanner(t('ROUND ' + g.round + ' SCORED', '第 ' + g.round + ' 轮结算'), lines.join('<br>'));
+  showBanner(t('ROUND ' + g.round + ' SCORED', '第 ' + g.round + ' 轮结算'), lines.join('<br>'), res.over ? 'last' : 'round');
   await sleepSkippable(gameMode === 'online' ? (res.over ? 3000 : O.PACE.round) : 5200);
   hideBanner();
   online.presenting = Math.max(0, online.presenting - 1);
 }
 
+/* kind: 'trick', 'round' or 'last' (the final round). Playing here, a clear NEXT button moves
+   on; online the host keeps everyone in step, so it moves on by itself. */
 function showBanner(big, sub, kind) {
   bannerState = { id: ++bannerSeq, big, sub, kind: kind || '' };
+  const next = kind === 'trick' ? t('NEXT ›', '继续 ›') : kind === 'last' ? t('RESULTS ›', '查看结果 ›') : t('NEXT ROUND ›', '下一轮 ›');
+  const action = gameMode === 'online'
+    ? `<div class="skip">${kind === 'trick' ? t('the next trick starts by itself', '下一墩会自动开始') : t('the next round starts by itself · tap to hide', '下一轮会自动开始 · 点击隐藏')}</div>`
+    : `<button class="btn go banner-next" type="button" onclick="event.stopPropagation(); skipWait()">${next}</button>`;
   $('overlayLayer').innerHTML = `
     <div class="banner ${kind === 'trick' ? 'trick-banner' : ''}" onclick="skipWait()">
       <div class="big">${big}</div>
       <div class="sub">${sub}</div>
-      <div class="skip">${gameMode === 'online' ? t('click to hide', '点击隐藏') : t('click to skip', '点击跳过')}</div>
+      ${action}
     </div>`;
 }
 let skipResolver = null;
@@ -1710,19 +1719,26 @@ function hiddenStack(count) {
   return `<div class="card-stack">${cardHtml(null, { back: true })}<span class="card-count">×${count}</span></div>`;
 }
 
-/* Your hand in order: strongest first (manilha on the left), or grouped by suit. */
+/* Your hand in order: strongest first (manilha on the left), weakest first, by suit, or as dealt. */
 function handOrder(hand) {
   const shown = hand.map((c, i) => i).filter(i => hand[i]);
   const hidden = hand.map((c, i) => i).filter(i => !hand[i]);
   const stronger = (a, b) => TrucoEngine.compareCards(hand[b], hand[a], g.manilha)
     || (TrucoEngine.SUIT_POWER[hand[b].suit] - TrucoEngine.SUIT_POWER[hand[a].suit]);
   const suitPlace = { C: 0, H: 1, S: 2, D: 3 };
-  shown.sort(handSort === 'suit' ? (a, b) => (suitPlace[hand[a].suit] - suitPlace[hand[b].suit]) || stronger(a, b) : stronger);
+  if (handSort === 'suit') shown.sort((a, b) => (suitPlace[hand[a].suit] - suitPlace[hand[b].suit]) || stronger(a, b));
+  else if (handSort === 'weak') shown.sort((a, b) => stronger(b, a));
+  else if (handSort !== 'dealt') shown.sort(stronger);
   return shown.concat(hidden);
 }
 
+function sortLabel() {
+  return { strong: t('STRONG → WEAK', '强 → 弱'), weak: t('WEAK → STRONG', '弱 → 强'), suit: t('BY SUIT', '按花色'), dealt: t('UNSORTED', '不排序') }[handSort];
+}
+
+/* One tap moves to the next order; the button always says which one is on. */
 function toggleSort() {
-  handSort = handSort === 'suit' ? 'strength' : 'suit';
+  handSort = HAND_SORTS[(HAND_SORTS.indexOf(handSort) + 1) % HAND_SORTS.length];
   try { localStorage.setItem('truco_sort', handSort); } catch (e) {}
   renderSeats();
 }
@@ -1797,8 +1813,8 @@ function renderSeats() {
     const teamTag = g.teamMode ? ` <span class="team-tag">${teamName(g.teamBySeat[s])}</span>` : '';
     const tag = p.eliminated ? ' ✕' : '';
     const sortable = isLocal && !dealState && !blind && p.hand.length > 1 && (g.phase === 'bidding' || g.phase === 'playing');
-    const sortNow = handSort === 'suit' ? t('sorted by suit — tap to sort by strength', '按花色排列——点按改为按牌力') : t('sorted by strength — tap to sort by suit', '按牌力排列——点按改为按花色');
-    const sortBtn = sortable ? `<button class="sort-btn" type="button" onclick="toggleSort()" title="${sortNow}" aria-label="${sortNow}">⇅ ${t('SORT', '排序')}</button>` : '';
+    const sortNow = t(`hand order: ${sortLabel().toLowerCase()} — tap for the next order`, `手牌顺序：${sortLabel()}——点按切换`);
+    const sortBtn = sortable ? `<button class="sort-btn" type="button" onclick="toggleSort()" title="${sortNow}" aria-label="${sortNow}">⇅ ${sortLabel()}</button>` : '';
     const rowsHtml = cards && cards.rows
       ? `<div class="hand-rows">${cards.rows.map(r => `<div class="card-row human-hand">${r}</div>`).join('')}</div>`
       : `<div class="card-row ${isLocal ? 'human-hand' : ''} ${dealState && !isLocal ? 'deal-row' : ''}">${cards || '&nbsp;'}</div>`;
