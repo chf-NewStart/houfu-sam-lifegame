@@ -23,7 +23,14 @@
 
    A room plays in partnerships (`teams` = TEAM_BY_SEAT: seats 0+2 against
    1+3, one shared score per side) or every player for themselves (`teams` =
-   null). The host chooses before the deal (setPartners). */
+   null). The host chooses before the deal (setPartners).
+
+   Every player for themselves can also be dealt without computer players
+   (`ai` false, setComputer): the people who are there move to seats 0..n-1
+   and the room becomes an n-seat table (2 or 3; still 4 with four people).
+   Older clients only know four-seat rooms, so this happens only when every
+   seated player's join record says it understands it (`v` >= LEVEL);
+   otherwise the computer fills the empty seats as before. */
 (function (root, factory) {
   'use strict';
   const engine = typeof module === 'object' && module.exports ? require('./truco-engine.js') : root.TrucoEngine;
@@ -34,6 +41,9 @@
   'use strict';
 
   const SCHEMA = 2;
+  /* What this contract understands, written as `v` in join records (absent = 2):
+     3 = rooms may be dealt as 2- or 3-seat tables. */
+  const LEVEL = 3;
   const ROOM_RE = /^[A-HJ-NP-Z2-9]{7}$/;
   const ROOM_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const PID_RE = /^[A-Za-z0-9_-]{8,64}$/;
@@ -90,8 +100,14 @@
     return isInt(n) && n >= 0 && n < AVATARS.length ? n : 0;
   }
 
+  /* Four seats while waiting; a dealt table can have 2-4. */
+  function seatCount(room) {
+    const n = room && Array.isArray(room.seats) ? room.seats.length : 4;
+    return n >= 2 && n <= 4 ? n : 4;
+  }
+
   function seatsOf(room) {
-    return Array.from({ length: 4 }, (_, seat) => room && Array.isArray(room.seats) ? (room.seats[seat] || null) : null);
+    return Array.from({ length: seatCount(room) }, (_, seat) => room && Array.isArray(room.seats) ? (room.seats[seat] || null) : null);
   }
 
   function validSeat(record) {
@@ -108,11 +124,14 @@
     if (!isInt(room.rev) || !isInt(room.match) || room.match < 0) return false;
     if (now != null && room.expiresAt < now) return false;
     if (room.teams !== null && (!Array.isArray(room.teams) || room.teams.length !== 4 || room.teams.some((t, s) => t !== TEAM_BY_SEAT[s]))) return false;
-    if (!Array.isArray(room.seats) || room.seats.length !== 4 || !room.seats.every(validSeat)) return false;
+    if (room.ai !== undefined && typeof room.ai !== 'boolean') return false;
+    if (!Array.isArray(room.seats) || !room.seats.every(validSeat)) return false;
+    const n = room.seats.length;
+    if (n !== 4 && (room.status === 'waiting' || n < 2 || n > 4 || room.teams !== null)) return false;
     const pids = room.seats.filter(r => r && r.kind === 'human').map(r => r.pid);
     if (new Set(pids).size !== pids.length) return false;
     if (room.status === 'closed') return true;
-    if (!isInt(room.host) || room.host < 0 || room.host > 3) return false;
+    if (!isInt(room.host) || room.host < 0 || room.host >= n) return false;
     const host = room.seats[room.host];
     if (!host || host.kind !== 'human') return false;
     if (room.status === 'playing' && room.seats.some(r => !r)) return false;
@@ -147,9 +166,29 @@
     return next;
   }
 
+  /* The computer takes the empty seats (always so with partners, who need four). */
+  function fillsWithComputer(room) {
+    return !room || room.ai !== false || hasPartners(room);
+  }
+
+  /* Host only, before the deal: every player for themselves with or without
+     computer players in the empty seats. Same object when nothing changes. */
+  function setComputer(room, on) {
+    if (!validRoom(room) || room.status !== 'waiting' || (room.ai !== false) === !!on) return room;
+    const next = clone(room);
+    if (on) delete next.ai; else next.ai = false;
+    next.rev = room.rev + 1;
+    return next;
+  }
+
+  /* Does every seated person's client understand a table without computer players? */
+  function allCurrent(room, joins) {
+    return seatsOf(room).every(r => !r || r.kind !== 'human' || (joins && joins[r.pid] && joins[r.pid].v >= LEVEL));
+  }
+
   function seatOf(room, pid) {
     const seats = seatsOf(room);
-    for (let seat = 0; seat < 4; seat++) if (seats[seat] && seats[seat].kind === 'human' && seats[seat].pid === pid) return seat;
+    for (let seat = 0; seat < seats.length; seat++) if (seats[seat] && seats[seat].kind === 'human' && seats[seat].pid === pid) return seat;
     return -1;
   }
 
@@ -173,13 +212,14 @@
         avatar: cleanAvatar(value.avatar),
         want: isInt(value.want) && value.want >= 0 && value.want < 4 ? value.want : null,
         at: isInt(value.at) ? value.at : 0,
+        v: isInt(value.v) && value.v > 2 ? value.v : 2,
       };
     }
     return joins;
   }
 
   function joinRecord(avatar, want, now) {
-    return { avatar: cleanAvatar(avatar), want: isInt(want) ? want : null, at: Number(now == null ? Date.now() : now) };
+    return { avatar: cleanAvatar(avatar), want: isInt(want) ? want : null, at: Number(now == null ? Date.now() : now), v: LEVEL };
   }
 
   /* Nobody types a name, so the animal is how friends tell each other apart.
@@ -232,7 +272,7 @@
     next.seats = seatsOf(next);
     let changed = false;
     const hostKey = hostPid(room);
-    for (let seat = 0; seat < 4; seat++) {
+    for (let seat = 0; seat < next.seats.length; seat++) {
       const record = next.seats[seat];
       if (!record || record.kind !== 'human') continue;
       const join = joins[record.pid];
@@ -272,19 +312,27 @@
     return next;
   }
 
-  /* Host only. Seats of people who are not connected are emptied, the computer
-     takes every empty seat, and a new match begins. Also used for a rematch. */
-  function startMatch(room, live) {
+  /* Host only. Seats of people who are not connected are emptied, and a new
+     match begins (also used for a rematch). The computer takes every empty
+     seat, unless the room is dealt without computer players and everyone
+     there understands that: then the people move to seats 0..n-1, in order. */
+  function startMatch(room, live, joins) {
     if (!validRoom(room) || room.status === 'closed') fail('room-not-found');
     const next = clone(room);
     next.seats = seatsOf(next);
     const here = new Set(live || []);
-    for (let seat = 0; seat < 4; seat++) {
+    for (let seat = 0; seat < next.seats.length; seat++) {
       const record = next.seats[seat];
       if (record && record.kind === 'human' && seat !== room.host && !here.has(record.pid)) next.seats[seat] = null;
     }
-    if (next.seats.filter(r => r && r.kind === 'human').length < 2) fail('need-two');
-    for (let seat = 0; seat < 4; seat++) if (!next.seats[seat]) next.seats[seat] = { kind: 'ai' };
+    const people = next.seats.filter(r => r && r.kind === 'human');
+    if (people.length < 2) fail('need-two');
+    if (!fillsWithComputer(room) && allCurrent(next, joins)) {
+      const hostKey = hostPid(room);
+      next.seats = people;
+      next.host = people.findIndex(r => r.pid === hostKey);
+    }
+    for (let seat = 0; seat < next.seats.length; seat++) if (!next.seats[seat]) next.seats[seat] = { kind: 'ai' };
     next.status = 'playing';
     next.match = room.match + 1;
     next.rev = room.rev + 1;
@@ -295,8 +343,8 @@
   function successor(room, live) {
     const here = new Set(live || []);
     const seats = seatsOf(room);
-    for (let step = 1; step < 4; step++) {
-      const seat = (room.host + step) % 4;
+    for (let step = 1; step < seats.length; step++) {
+      const seat = (room.host + step) % seats.length;
       if (seats[seat] && seats[seat].kind === 'human' && here.has(seats[seat].pid)) return seat;
     }
     return -1;
@@ -336,7 +384,7 @@
       match: room.match,
       rev: prev ? prev.rev + 1 : 1,
       seq: sameMatch ? prev.seq + 1 : 1,
-      acks: sameMatch ? prev.acks.slice() : [0, 0, 0, 0],
+      acks: sameMatch ? prev.acks.slice() : seatsOf(room).map(() => 0),
       state: TrucoEngine.exportState(game),
     };
   }
@@ -348,8 +396,9 @@
 
   function validGameRecord(g) {
     return !!g && g.schema === SCHEMA && isInt(g.epoch) && isInt(g.match) && isInt(g.rev) && isInt(g.seq)
-      && Array.isArray(g.acks) && g.acks.length === 4 && g.acks.every(isInt)
-      && !!g.state && g.state.version === TrucoEngine.STATE_VERSION;
+      && Array.isArray(g.acks) && g.acks.length >= 2 && g.acks.length <= 4 && g.acks.every(isInt)
+      && !!g.state && g.state.version === TrucoEngine.STATE_VERSION
+      && Array.isArray(g.state.players) && g.state.players.length === g.acks.length;
   }
 
   /* Is `g` newer than what we already have? Higher host epochs win, so a
@@ -406,9 +455,10 @@
   }
 
   return {
-    SCHEMA, ROOM_RE, PID_RE, TEAM_BY_SEAT, CLAIM_ORDER, AVATARS, DEFAULT_TTL, HOST_GRACE, AWAY_GRACE, PACE, KEYS,
+    SCHEMA, LEVEL, ROOM_RE, PID_RE, TEAM_BY_SEAT, CLAIM_ORDER, AVATARS, DEFAULT_TTL, HOST_GRACE, AWAY_GRACE, PACE, KEYS,
     makeRoomCode, makePid, normalizeRoomCode, roomLink, cleanAvatar,
-    validRoom, newRoom, hasPartners, setPartners, seatOf, hostPid, humanSeats, joinsOf, joinRecord, takenAvatars, freeAvatar,
+    validRoom, newRoom, hasPartners, setPartners, fillsWithComputer, setComputer, allCurrent, seatCount,
+    seatOf, hostPid, humanSeats, joinsOf, joinRecord, takenAvatars, freeAvatar,
     reconcile, startMatch, successor, takeOver, handOver,
     gameRecord, ackRecord, validGameRecord, newerGame,
     makeIntent, checkIntent, applyIntent, visibleHands,

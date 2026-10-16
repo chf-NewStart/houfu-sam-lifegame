@@ -126,6 +126,56 @@ test('a room plays in partnerships or every player for themselves, chosen before
   assert.equal(E.restoreGame(record.state).teamMode, false);
 });
 
+test('every player for themselves can be dealt without computer players, if everyone understands it', () => {
+  const current = (...list) => Object.fromEntries(list.map(([p, avatar, want, at]) => [p, { avatar, want: want ?? null, at: at ?? 0, v: O.LEVEL }]));
+  assert.equal(O.joinRecord(3, 0, 5).v, O.LEVEL, 'join records say what this client understands');
+  assert.equal(O.joinsOf({ ['j/' + HOST]: { avatar: 1, want: 0, at: 1 } })[HOST].v, 2, 'older clients count as 2');
+
+  let room = O.newRoom(HOST, 3, 1000, 10_000, false);
+  assert.equal(O.fillsWithComputer(room), true, 'computer players unless the host says otherwise');
+  room = O.setComputer(room, false);
+  assert.equal(room.ai, false);
+  assert.equal(O.setComputer(room, false), room, 'nothing to change → same object');
+  assert.equal(O.validRoom(room, 1500), true);
+
+  const joins = current([HOST, 3, 0, 1], [pid(1), 5, null, 2]);
+  room = O.reconcile(room, joins);
+  assert.equal(O.seatOf(room, pid(1)), 2, 'still sits opposite while waiting');
+  const dealt = O.startMatch(room, [HOST, pid(1)], joins);
+  assert.equal(dealt.seats.length, 2, 'two people, a two-seat table');
+  assert.deepEqual(dealt.seats.map(r => r.pid), [HOST, pid(1)]);
+  assert.equal(dealt.host, 0);
+  assert.equal(O.validRoom(dealt), true);
+  assert.equal(O.successor(dealt, [pid(1)]), 1);
+
+  const game = E.newGame(dealt.seats.length, seeded(5));
+  game.startRound();
+  const g1 = O.gameRecord(dealt, game, null);
+  assert.equal(g1.acks.length, 2);
+  assert.equal(O.validGameRecord(g1), true);
+  const seat = game.turn, intent = O.makeIntent(dealt.seats[seat].pid, 1, g1, { type: 'guess', count: 0 });
+  assert.equal(O.checkIntent(dealt, g1, seat, intent, game), 'ok');
+
+  const left = O.reconcile(dealt, current([HOST, 3, 0, 1]));
+  assert.deepEqual(left.seats[1], { kind: 'ai' }, 'someone who leaves mid-match is still covered by the computer');
+  assert.equal(O.validRoom(left), true);
+  const again = O.startMatch(dealt, [HOST, pid(1)], joins);
+  assert.equal(again.seats.length, 2, 'a rematch keeps the small table');
+
+  // Someone on an older app or page: the computer fills the empty seats as before.
+  const mixed = { ...joins, [pid(1)]: { avatar: 5, want: null, at: 2, v: 2 } };
+  const filled = O.startMatch(room, [HOST, pid(1)], mixed);
+  assert.equal(filled.seats.length, 4);
+  assert.equal(filled.seats.filter(r => r.kind === 'ai').length, 2);
+  // Partners always need four seats.
+  const partners = O.startMatch(O.setPartners(room, true), [HOST, pid(1)], joins);
+  assert.equal(partners.seats.length, 4);
+
+  for (const bad of [{ ...dealt, teams: [0, 1, 0, 1] }, { ...room, seats: room.seats.slice(0, 2) }, { ...dealt, host: 2 }, { ...room, ai: 'no' }]) {
+    assert.equal(O.validRoom(bad), false, JSON.stringify(bad.seats.length));
+  }
+});
+
 test('the next connected player clockwise from the host succeeds them', () => {
   let room = O.reconcile(lobby(), joins([HOST, 3], [pid(1), 5], [pid(2), 6], [pid(3), 7]));
   room = O.startMatch(room, [HOST, pid(1), pid(2), pid(3)]);

@@ -35,13 +35,17 @@ test('online rooms play in teams of two or every player for themselves, as the h
   assert.match(html, /function setOnlinePartners\(on\)/);
   assert.match(html, /O\.setPartners\(online\.room, on\)/);
   assert.match(html, /O\.newRoom\(online\.pid, online\.avatar, now, undefined, savedPartners\(\)\)/);
-  assert.match(html, /TrucoEngine\.newGame\(4, undefined, O\.hasPartners\(online\.room\) \? \{ teams: O\.TEAM_BY_SEAT \} : undefined\)/);
+  assert.match(html, /TrucoEngine\.newGame\(online\.room\.seats\.length, undefined, O\.hasPartners\(online\.room\) \? \{ teams: O\.TEAM_BY_SEAT \} : undefined\)/);
+  assert.match(html, /function setOnlineComputer\(on\)/, 'free-for-all can be people only');
+  assert.match(html, /O\.startMatch\(online\.room, \[\.\.\.online\.live, online\.pid\], O\.joinsOf\(online\.map\)\)/);
+  assert.match(html, /PEOPLE ONLY/);
+  assert.match(html, /seat < online\.room\.seats\.length/, 'intents are read for however many seats the table has');
   assert.match(html, /TEAMS 2V2/);
   assert.match(html, /FREE-FOR-ALL/);
   assert.match(html, /WAITING FOR A FRIEND TO JOIN/);
   assert.doesNotMatch(html, /'PERSON' : 'PEOPLE'/, 'alone, the deal button waits instead of offering 1 person + 3 AI');
-  assert.match(html, /\/game\/truco-online\.js\?v=4/, 'returning browsers fetch the new contract');
-  assert.match(sw, /'\/game\/truco-online\.js\?v=4'/);
+  assert.match(html, /\/game\/truco-online\.js\?v=5/, 'returning browsers fetch the new contract');
+  assert.match(sw, /'\/game\/truco-online\.js\?v=5'/);
 });
 
 test('cards and guesses are picked, then confirmed; guesses can be locked in early; the hand fits and sorts', () => {
@@ -93,7 +97,7 @@ test('the game says guess, never bid', () => {
   const visible = html.replace(/<script[\s\S]*?<\/script>/g, s => s.replace(/\.bids?\b|\b(setBid|cpuBid|teamBids|humanBid|bidn)\b/g, ''));
   assert.doesNotMatch(visible, /\bbids?\b/i);
   assert.doesNotMatch(visible, /叫牌|叫 /);
-  assert.match(html, /guesses \$\{b\}/);
+  assert.match(html, /says\(seat, 'guesses', 'guess'\)\} \$\{b\}/);
 });
 
 test('card power and chronological play order remain visible at the table', () => {
@@ -122,7 +126,7 @@ test('cards use semantic controls, rich faces, and accessible labels', () => {
 });
 
 test('CPU guess logging keeps the guesser before the engine advances turn', () => {
-  assert.match(html, /const seat = g\.turn;\s*await sleep\(950\);[\s\S]{0,220}const b = g\.cpuBid\(seat\);\s*g\.setBid\(seat, b\);[\s\S]{0,140}logLine\(`\$\{seatName\(seat\)\} guesses/);
+  assert.match(html, /const seat = g\.turn;\s*await sleep\(950\);[\s\S]{0,220}const b = g\.cpuBid\(seat\);\s*g\.setBid\(seat, b\);[\s\S]{0,140}logLine\(`\$\{says\(seat, 'guesses', 'guess'\)\}/);
 });
 
 test('arcade promotes Truco as a one-to-four-player online hero cabinet', () => {

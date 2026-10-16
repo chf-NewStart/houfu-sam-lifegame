@@ -99,21 +99,26 @@
     .card.fan { transform-origin: 50% 130%; transform: translateY(var(--fan-y, 0px)) rotate(var(--fan-rot, 0deg)); }
     .card.fan.clickable:hover, .card.fan.clickable:focus-visible { transform: translateY(calc(var(--fan-y, 0px) - 7px)) rotate(var(--fan-rot, 0deg)); }
     .card.fan.clickable:active { transform: translateY(calc(var(--fan-y, 0px) - 2px)) rotate(var(--fan-rot, 0deg)) scale(.98); }
-    /* The picked card stays in its place: a gold edge and glow (and a small lift in a single row). */
-    .card.fan.selected, .card.fan.selected:hover { transform: translateY(calc(var(--fan-y, 0px) - 8px)) rotate(var(--fan-rot, 0deg)); border-color: #ffd36f; box-shadow: 0 0 0 2px rgba(255,211,111,.6), 0 0 16px rgba(255,211,111,.45); }
-    .hand-rows .card.fan.selected, .hand-rows .card.fan.selected:hover { transform: none; }
+    /* The picked card is pulled up out of the hand, like from a real fan of cards: it rises
+       but keeps its place in the stack, so the cards beside it still cover its lower part. */
+    .card.fan { transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease, border-color .2s ease; }
+    .card.fan.selected, .card.fan.selected:hover { transform: translateY(calc(var(--fan-y, 0px) - 26px)) rotate(var(--fan-rot, 0deg)); border-color: #ffd36f; box-shadow: 0 -2px 14px rgba(255,211,111,.28), 0 12px 18px rgba(0,0,0,.6); }
     /* Very big hands (2-player tables reach 19 cards) take two overlapping rows. */
     .hand-rows .card-row.human-hand + .card-row.human-hand { margin-top: -50px; padding-top: 0; }
     .table-wrap.tall-hand { height: 560px; }
     @media (max-width: 640px) { .table-wrap.tall-hand { height: 600px; } }
     /* Whose turn: their name glows, their cards light up, and yours says so. */
-    .seat-zone.turn .seat-name { display:inline-block; padding:3px 9px; border:1px solid #1db954; border-radius:999px; background:rgba(29,185,84,.14); color:#8ff0b1; animation:turnPulse 1.6s ease-in-out infinite; }
+    /* A label, not a button: a pulsing dot and a glowing name. */
+    .seat-zone.turn .seat-name { color:#8ff0b1; text-shadow:0 0 10px rgba(29,185,84,.55); }
     .seat-zone.turn .seat-name .you { color:#8ff0b1; }
+    .seat-zone.turn .seat-name::before { content:''; display:inline-block; width:7px; height:7px; margin-right:7px; border-radius:50%; background:#1db954; box-shadow:0 0 8px #1db954; vertical-align:1px; animation:turnDot 1.2s ease-in-out infinite; }
     .seat-zone.turn .card-stack > .card, .seat-zone.turn .card-row:not(.human-hand) > .card { border-color:#1db954; box-shadow:0 0 14px rgba(29,185,84,.4); }
-    .turn-badge { display:inline-block; margin-left:7px; padding:1px 7px; border-radius:999px; background:#1db954; color:#04120a; font-size:.55rem; font-weight:700; letter-spacing:1px; vertical-align:middle; }
-    @keyframes turnPulse { 0%,100% { box-shadow:0 0 5px rgba(29,185,84,.25); } 50% { box-shadow:0 0 16px rgba(29,185,84,.65); } }
-    @media (prefers-reduced-motion: reduce) { .seat-zone.turn .seat-name { animation:none; box-shadow:0 0 10px rgba(29,185,84,.45); } }
-    .sort-btn { margin-left: 8px; padding: 2px 6px; border: 1px solid #263128; background: rgba(8,13,9,.9); color: #6f8f77; font: inherit; font-size: .55rem; letter-spacing: 1px; cursor: pointer; vertical-align: middle; }
+    .turn-badge { margin-left:8px; color:#1db954; font-size:.58rem; font-weight:700; letter-spacing:1.5px; }
+    @keyframes turnDot { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.4; transform:scale(.7); } }
+    @media (prefers-reduced-motion: reduce) { .seat-zone.turn .seat-name::before { animation:none; } }
+    .seat-line { display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:4px; }
+    .seat-line .seat-name { margin-bottom:0; }
+    .sort-btn { margin-left: 0; padding: 2px 6px; border: 1px solid #263128; background: rgba(8,13,9,.9); color: #6f8f77; font: inherit; font-size: .55rem; letter-spacing: 1px; cursor: pointer; vertical-align: middle; }
     .sort-btn:hover { color: #1db954; border-color: #1db954; }
     .card { --ink:#deded8; width: 58px; height: 82px; padding: 0; appearance: none; color: var(--ink); font-family: inherit; background: radial-gradient(circle at 32% 18%,rgba(255,255,255,.075),transparent 35%),repeating-linear-gradient(0deg,rgba(255,255,255,.017) 0,rgba(255,255,255,.017) 1px,transparent 1px,transparent 4px),linear-gradient(145deg,#1b1b19,#090a09 74%); border: 1px solid #3a3a35; border-radius: 9px; display: block; position: relative; overflow: hidden; user-select: none; box-shadow: 0 7px 15px rgba(0,0,0,.48),inset 0 0 0 1px rgba(255,255,255,.025),inset 0 -10px 20px rgba(0,0,0,.2); }
     .card::before { content:''; position:absolute; inset:3px; border:1px solid rgba(255,255,255,.055); border-radius:6px; pointer-events:none; }
@@ -198,7 +203,7 @@
     .overlay.online { justify-content:flex-start; overflow-y:auto; padding-block:24px; }
     .online-menu { width:min(100%,540px); padding:12px; border:1px solid #263128; background:rgba(8,13,9,.86); }
     .online-title { color:#e8b04a; font-size:.73rem; letter-spacing:1.4px; text-transform:uppercase; margin-bottom:9px; }
-    .online-fields { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px; }
+    .online-fields { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:7px; }
     .online-fields + .online-fields { margin-top:7px; }
     .online-input { width:100%; min-height:40px; border:1px solid #303630; border-radius:0; background:#080a08; color:#ddd; font:inherit; font-size:.76rem; padding:8px 10px; outline:none; }
     .online-input:focus { border-color:#1db954; box-shadow:0 0 0 2px rgba(29,185,84,.1); }
@@ -337,7 +342,7 @@
   </div>
 
 <script src="/game/truco-engine.js?v=3"></script>
-<script src="/game/truco-online.js?v=4"></script>
+<script src="/game/truco-online.js?v=5"></script>
 <script>
 'use strict';
 /* ── i18n ─────────────────────────────────────────────────────────────── */
@@ -485,8 +490,8 @@ function problemMessage(problem) {
   switch (problem) {
     case 'notFound': return t('No room with that code. Check the code or ask for the link again.', '没有这个房间码对应的房间。请检查房间码，或重新索取链接。');
     case 'expired': return t('That room has expired. Ask your friend to create a new one.', '该房间已过期。请让朋友创建一个新房间。');
-    case 'started': return t('That game has already started. Only the people who were at the table can come back.', '该对局已经开始，只有原来在牌桌上的人可以回来。');
-    case 'full': return t('That room already has four people.', '该房间已满四人。');
+    case 'started': return t('That game has already started. Only the people who were at the table can come back — but you can WATCH it.', '该对局已经开始，只有原来在牌桌上的人可以回来——但你可以观战。');
+    case 'full': return t('That room already has four people — but you can WATCH the game.', '该房间已满四人——但你可以观战。');
     case 'closed': return t('The room was closed: everyone left.', '房间已关闭：所有人都离开了。');
     case 'unreachable': return t('Can\'t reach the game server. Check your connection and try again — local play still works.', '无法连接游戏服务器。请检查网络后重试——本地模式仍可游玩。');
     case 'removed': return t('You\'re no longer in that room.', '你已不在该房间中。');
@@ -562,10 +567,10 @@ function onlineTick() {
 }
 
 /* ── entering and leaving ── */
-function enterRoom(code, pid, creating) {
+function enterRoom(code, pid, creating, watching) {
   stopOnline();
   Object.assign(online, {
-    active: true, stage: 'connecting', code, pid, creating, everOpened: false, attempts: 0, map: {}, room: null, record: null,
+    active: true, stage: 'connecting', code, pid, creating, watching: !!watching, everOpened: false, attempts: 0, map: {}, room: null, record: null,
     live: new Set(), waitingForSeat: false, slowJoin: false, needTwo: false, pendingIntent: null, hostMissingSince: 0,
     goneSince: {}, role: null, match: 0, lastPublished: '', guestState: null, lastTrickKey: '',
   });
@@ -579,6 +584,18 @@ function createOnlineRoom() {
   const code = O.makeRoomCode();
   enterRoom(code, pidFor(code), true);
 }
+
+/* Watch a room without playing: no seat, nothing written, every hand face down
+   (blind rounds too, so nobody can peek at their own card from a second screen).
+   Watchers connect with a "w-" id, so the players can see how many are watching. */
+function watchOnlineRoom(rawCode) {
+  const field = $('onlineCode');
+  const code = O.normalizeRoomCode(rawCode == null ? (field && field.value) : rawCode);
+  if (!O.ROOM_RE.test(code)) { setOnlineStatus(t('Enter the 7-character room code or paste the invite link.', '请输入 7 位房间码或粘贴邀请链接。'), 'err'); return; }
+  enterRoom(code, 'w-' + O.makePid().slice(0, 14), false, true);
+}
+
+function watcherCount() { return [...online.live].filter(id => id.startsWith('w-') && id !== online.pid).length; }
 
 function joinOnlineRoom(rawCode) {
   const field = $('onlineCode');
@@ -618,14 +635,14 @@ function onlineFail(problem) {
 
 function leaveOnlineRoom(showMain) {
   if (!online.active) { if (showMain) showLobby(); return; }
-  if (online.connected) {
+  if (online.connected && !online.watching) {
     if (isHost() && online.room && online.room.status !== 'closed') {
       const others = [...online.live].filter(pid => pid !== online.pid);
       writeKey(O.KEYS.room, O.handOver(online.room, others));
     }
     writeKey(O.KEYS.join(online.pid), null);
   }
-  forgetPid(online.code);
+  if (!online.watching) forgetPid(online.code);
   stopOnline();
   resetToMenu();
   online.statusMessage = ''; online.statusKind = '';
@@ -646,7 +663,9 @@ function roomOpened(map, who) {
     online.everOpened = true;
     const now = Date.now();
     writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, 0, now));
-    writeRoom(O.newRoom(online.pid, online.avatar, now, undefined, savedPartners()));
+    let created = O.newRoom(online.pid, online.avatar, now, undefined, savedPartners());
+    try { if (localStorage.getItem('truco_computer') === '0') created = O.setComputer(created, false); } catch (e) {}
+    writeRoom(created);
     history.replaceState(null, '', location.pathname + roomQuery(online.code));
     return;
   }
@@ -656,6 +675,13 @@ function roomOpened(map, who) {
   if (!room || room.kind !== 'truco') { onlineFail(firstTime ? 'notFound' : 'closed'); return; }
   if (room.status === 'closed') { onlineFail('closed'); return; }
   if (!O.validRoom(room, Date.now())) { onlineFail(room.expiresAt < Date.now() ? 'expired' : 'notFound'); return; }
+  if (online.watching) {
+    online.record = null;
+    roomChanged(true);
+    gameChanged(false);
+    renderOnlineBar();
+    return;
+  }
   if (O.seatOf(room, online.pid) < 0) {
     if (!firstTime && !online.waitingForSeat) { onlineFail('removed'); return; }
     if (room.status !== 'waiting') { onlineFail('started'); return; }
@@ -702,6 +728,16 @@ function roomChanged(fresh) {
   const wasHost = isHost(), wasSeat = mySeat(), previousMatch = cur ? cur.match : null;
   online.room = next;
   const seat = mySeat();
+  if (online.watching) {
+    humanSeats = new Set(O.humanSeats(next));
+    localSeats = new Set();
+    seatNames = next.seats.map((record, s) => onlineSeatName(record, s, false));
+    online.stage = next.status === 'playing' ? 'playing' : 'lobby';
+    if (online.stage === 'lobby') { screenState = 'online-lobby'; renderOnlineLobby(); }
+    else if (!online.guestState) renderOnlineLobby();
+    renderOnlineBar();
+    return;
+  }
   if (seat < 0) {
     if (wasSeat >= 0) { onlineFail('removed'); return; }
     if (online.waitingForSeat) {
@@ -751,7 +787,7 @@ function gameChanged(animate) {
   online.record = rec;
   const seat = mySeat();
   if (online.pendingIntent && seat >= 0 && rec.acks[seat] >= online.pendingIntent.n) online.pendingIntent = null;
-  if (isHost() || !online.room || online.room.status !== 'playing' || rec.match !== online.room.match || seat < 0) { renderAll(); return; }
+  if (isHost() || !online.room || online.room.status !== 'playing' || rec.match !== online.room.match || (seat < 0 && !online.watching)) { renderAll(); return; }
   applyGuest(rec, animate);
 }
 
@@ -775,7 +811,7 @@ function startOnlineMatch() {
   online.lastPublished = '';
   online.guestState = null;
   gameMode = 'online';
-  g = TrucoEngine.newGame(4, undefined, O.hasPartners(online.room) ? { teams: O.TEAM_BY_SEAT } : undefined);
+  g = TrucoEngine.newGame(online.room.seats.length, undefined, O.hasPartners(online.room) ? { teams: O.TEAM_BY_SEAT } : undefined);
   uiLog = []; lastSeenTrick = null; dealState = null; showingTrickResult = false; running = false; bannerState = null; screenState = 'game';
   logOnlineStart();
   $('overlayLayer').innerHTML = '';
@@ -784,9 +820,10 @@ function startOnlineMatch() {
 }
 
 function logOnlineStart() {
-  const people = humanSeats.size;
-  if (O.hasPartners(online.room)) logLine(`online room ${online.code} — ${people} people, ${4 - people} AI · partners sit opposite`, `联机房间 ${online.code}——${people} 人，${4 - people} 个电脑 · 对坐者为队友`, 'imp');
-  else logLine(`online room ${online.code} — ${people} people, ${4 - people} AI · every player for themselves`, `联机房间 ${online.code}——${people} 人，${4 - people} 个电脑 · 各自为战`, 'imp');
+  const people = humanSeats.size, ai = (online.room ? online.room.seats.length : 4) - people;
+  const who = ai ? t(`${people} people, ${ai} AI`, `${people} 人，${ai} 个电脑`) : t(`${people} people, no computer players`, `${people} 人，没有电脑玩家`);
+  if (O.hasPartners(online.room)) logLine(`online room ${online.code} — ${who} · partners sit opposite`, `联机房间 ${online.code}——${who} · 对坐者为队友`, 'imp');
+  else logLine(`online room ${online.code} — ${who} · every player for themselves`, `联机房间 ${online.code}——${who} · 各自为战`, 'imp');
 }
 
 function becomeHost() {
@@ -827,7 +864,7 @@ function hostBusy() { return running || !!dealState || online.presenting > 0; }
 
 function takeIntents() {
   if (!isHost() || online.role !== 'host' || !g || hostBusy() || !online.record || !online.room || online.room.status !== 'playing') return;
-  for (let seat = 0; seat < 4; seat++) {
+  for (let seat = 0; seat < online.room.seats.length; seat++) {
     const intent = online.map[O.KEYS.intent(seat)];
     if (!intent) continue;
     const result = O.checkIntent(online.room, online.record, seat, intent, g);
@@ -836,8 +873,8 @@ function takeIntents() {
     online.record = Object.assign({}, online.record, { acks: online.record.acks.slice() });
     online.record.acks[seat] = intent.n;
     const card = O.applyIntent(g, seat, intent);
-    if (card) logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`, 'gold');
-    else logLine(`${seatName(seat)} guesses ${intent.count}`, `${seatName(seat)} 猜 ${intent.count}`, 'gold');
+    if (card) logLine(`${says(seat, 'plays', 'play')} ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`, 'gold');
+    else logLine(`${says(seat, 'guesses', 'guess')} ${intent.count}`, `${seatName(seat)} 猜 ${intent.count}`, 'gold');
     renderAll();
     (async () => { if (card) await trickBannerIfNeeded(); chain(); })();
     return;
@@ -993,26 +1030,26 @@ function guestDeal() {
 function logGuestChanges(prev, next) {
   for (let seat = 0; seat < next.players.length; seat++) {
     if (prev.players[seat].bid === null && next.players[seat].bid !== null) {
-      logLine(`${seatName(seat)} guesses ${next.players[seat].bid}`, `${seatName(seat)} 猜 ${next.players[seat].bid}`, isLocalSeat(seat) ? 'gold' : '');
+      logLine(`${says(seat, 'guesses', 'guess')} ${next.players[seat].bid}`, `${seatName(seat)} 猜 ${next.players[seat].bid}`, isLocalSeat(seat) ? 'gold' : '');
     }
   }
   let plays = [];
   if (trickKey(next) !== trickKey(prev) && next.lastTrick) plays = next.lastTrick.plays.slice(prev.trick.length).concat(next.trick);
   else if (next.trick.length > prev.trick.length) plays = next.trick.slice(prev.trick.length);
   for (const pl of plays) {
-    if (prev.phase === 'reveal') logLine(`${seatName(pl.player)} reveals ${cardLabel(pl.card)}`, `${seatName(pl.player)} 翻出 ${cardLabel(pl.card)}`);
-    else logLine(`${seatName(pl.player)} plays ${cardLabel(pl.card)}`, `${seatName(pl.player)} 打出 ${cardLabel(pl.card)}`, isLocalSeat(pl.player) ? 'gold' : '');
+    if (prev.phase === 'reveal') logLine(`${says(pl.player, 'reveals', 'reveal')} ${cardLabel(pl.card)}`, `${seatName(pl.player)} 翻出 ${cardLabel(pl.card)}`);
+    else logLine(`${says(pl.player, 'plays', 'play')} ${cardLabel(pl.card)}`, `${seatName(pl.player)} 打出 ${cardLabel(pl.card)}`, isLocalSeat(pl.player) ? 'gold' : '');
   }
 }
 
 function guestTrickResult(state) {
   const lt = state.lastTrick;
   const dead = lt.tie && lt.winner === -1;
-  logLine(dead ? 'dead trick — nobody wins those cards' : `${seatName(lt.winner)} takes the trick`,
+  logLine(dead ? 'dead trick — nobody wins those cards' : `${says(lt.winner, 'takes', 'take')} the trick`,
           dead ? '死墩——这墩没人赢，牌全部作废' : `${seatName(lt.winner)} 赢下这一墩`, dead ? 'warn' : 'imp');
   showingTrickResult = true;
-  showBanner(dead ? t('DEAD TRICK', '死墩') : t(`${seatName(lt.winner)} takes the trick`, `${seatName(lt.winner)} 赢下这一墩`),
-             dead ? t('nobody wins — those cards are gone', '无人得墩——牌全部作废') : t(`${seatName(lt.winner)} leads the next trick`, `${seatName(lt.winner)} 先出下一墩`), 'trick');
+  showBanner(dead ? t('DEAD TRICK', '死墩') : t(`${says(lt.winner, 'takes', 'take')} the trick`, `${seatName(lt.winner)} 赢下这一墩`),
+             dead ? t('nobody wins — those cards are gone', '无人得墩——牌全部作废') : t(`${says(lt.winner, 'leads', 'lead')} the next trick`, `${seatName(lt.winner)} 先出下一墩`), 'trick');
   const id = bannerState && bannerState.id;
   guestLater(O.PACE.trick, () => {
     showingTrickResult = false;
@@ -1077,6 +1114,14 @@ function sitAt(seat) {
   writeKey(O.KEYS.join(online.pid), O.joinRecord(online.avatar, seat, Date.now()));
 }
 
+/* Host, before the deal: every player for themselves, with or without computer players. */
+function setOnlineComputer(on) {
+  if (!isHost() || !online.room || online.room.status !== 'waiting') return;
+  try { localStorage.setItem('truco_computer', on ? '1' : '0'); } catch (e) {}
+  const next = O.setComputer(online.room, on);
+  if (next !== online.room) writeRoom(next);
+}
+
 /* Host, before the deal: teams of two, or every player for themselves. */
 function setOnlinePartners(on) {
   if (!isHost() || !online.room || online.room.status !== 'waiting') return;
@@ -1088,7 +1133,7 @@ function setOnlinePartners(on) {
 function startOnlineRoom() {
   if (!isHost() || !online.room || online.room.status !== 'waiting') return;
   let next;
-  try { next = O.startMatch(online.room, [...online.live, online.pid]); }
+  try { next = O.startMatch(online.room, [...online.live, online.pid], O.joinsOf(online.map)); }
   catch (e) { online.needTwo = true; renderOnlineLobby(); return; }
   online.needTwo = false;
   writeRoom(next);
@@ -1098,7 +1143,7 @@ function startOnlineRoom() {
 function playOnlineAgain() {
   if (!isHost() || !online.room || online.room.status !== 'playing' || !g || g.phase !== 'over') return;
   let next;
-  try { next = O.startMatch(online.room, [...online.live, online.pid]); } catch (e) { return; }
+  try { next = O.startMatch(online.room, [...online.live, online.pid], O.joinsOf(online.map)); } catch (e) { return; }
   writeRoom(next);
   startOnlineMatch();
 }
@@ -1109,12 +1154,18 @@ function renderOnlineLobby() {
   const seat = mySeat();
   const people = connectedHumans();
   const partners = O.hasPartners(room);
+  // People only (no computer players) when the host chose it and everyone here can play that way.
+  const joins = O.joinsOf(online.map);
+  const wantsPeopleOnly = !!room && !O.fillsWithComputer(room);
+  const peopleOnly = wantsPeopleOnly && O.allCurrent(room, joins);
+  const behind = wantsPeopleOnly ? (room.seats || []).map((r, s) => r && r.kind === 'human' && !(joins[r.pid] && joins[r.pid].v >= O.LEVEL) ? seatName(s) : null).filter(Boolean) : [];
   const seatHtml = s => {
     const r = room && room.seats[s];
     const mine = s === seat;
     if (!r) {
       const canSit = room && room.status === 'waiting' && seat >= 0;
-      return `<div class="roster-seat"><span>${t('Seat ' + (s + 1) + ' · open', '座位 ' + (s + 1) + ' · 空位')}<br><small>${t('the computer plays here', '将由电脑来玩')}</small></span>${canSit ? `<button class="btn seat-action" type="button" onclick="sitAt(${s})">${t('SIT HERE', '坐这里')}</button>` : ''}</div>`;
+      const fate = peopleOnly ? t('stays empty — no computer', '空着——没有电脑') : t('the computer plays here', '将由电脑来玩');
+      return `<div class="roster-seat"><span>${t('Seat ' + (s + 1) + ' · open', '座位 ' + (s + 1) + ' · 空位')}<br><small>${fate}</small></span>${canSit ? `<button class="btn seat-action" type="button" onclick="sitAt(${s})">${t('SIT HERE', '坐这里')}</button>` : ''}</div>`;
     }
     if (r.kind === 'ai') return `<div class="roster-seat"><span>🤖 ${t('Computer', '电脑')}</span></div>`;
     const here = online.live.has(r.pid);
@@ -1126,9 +1177,19 @@ function renderOnlineLobby() {
   else if (online.waitingForSeat) action = `<div class="online-status">${online.slowJoin ? t('Still waiting for the host to let you in — their app or page needs to be open.', '仍在等待房主让你入座——房主的应用或网页需要保持打开。') : t('Joining…', '正在加入…')}</div>`;
   else if (room && room.status === 'playing') action = `<div class="online-status">${t('Dealing…', '正在发牌…')}</div>`;
   else if (isHost() && people < 2) action = `<button class="btn" type="button" disabled>${t('WAITING FOR A FRIEND TO JOIN…', '等待朋友加入…')}</button>
-      <div class="online-status ${online.needTwo ? 'err' : ''}">${t('One friend is enough: the computer plays any empty seat.', '一位朋友就够了：空位由电脑来玩。')}</div>`;
-  else if (isHost()) action = `<button class="btn primary" type="button" onclick="startOnlineRoom()">${people === 4 ? t('DEAL · 4 PEOPLE', '发牌 · 4 人') : t(`DEAL · ${people} PEOPLE + ${4 - people} AI`, `发牌 · ${people} 人 + ${4 - people} 电脑`)}</button>
-      <div class="online-status ${online.needTwo ? 'err' : ''}">${people < 4 ? t('Empty seats are played by the computer.', '空位由电脑来玩。') : t('Every seat has a player.', '每个座位都有人了。')}</div>`;
+      <div class="online-status ${online.needTwo ? 'err' : ''}">${peopleOnly ? t('One friend is enough for a table of two.', '一位朋友就能开两人桌。') : t('One friend is enough: the computer plays any empty seat.', '一位朋友就够了：空位由电脑来玩。')}</div>`;
+  else if (isHost()) {
+    const label = people === 4 ? t('DEAL · 4 PEOPLE', '发牌 · 4 人')
+      : peopleOnly ? t(`DEAL · ${people} PEOPLE, NO AI`, `发牌 · ${people} 人，无电脑`)
+      : t(`DEAL · ${people} PEOPLE + ${4 - people} AI`, `发牌 · ${people} 人 + ${4 - people} 电脑`);
+    const note = people === 4 ? t('Every seat has a player.', '每个座位都有人了。')
+      : peopleOnly ? t(`A table for ${people}: no computer players.`, `${people} 人桌：没有电脑玩家。`)
+      : behind.length ? t(`${behind.join(', ')} ${behind.length > 1 ? 'have' : 'has'} an older Manilha app, so the computer plays the empty seats.`, `${behind.join('、')} 的 Manilha 应用版本较旧，空位仍由电脑来玩。`)
+      : t('Empty seats are played by the computer.', '空位由电脑来玩。');
+    action = `<button class="btn primary" type="button" onclick="startOnlineRoom()">${label}</button>
+      <div class="online-status ${online.needTwo ? 'err' : ''}">${note}</div>`;
+  }
+  else if (online.watching) action = `<div class="online-status">${t('👀 You are watching. Waiting for the host to deal…', '👀 你正在观战，等待房主发牌…')}</div>`;
   else action = `<div class="online-status">${t('Waiting for the host to deal…', '等待房主发牌…')}</div>`;
   $('overlayLayer').innerHTML = `<div class="overlay online">
     <div class="big">${t('MANILHA ROOM', 'MANILHA 房间')}</div>
@@ -1138,18 +1199,22 @@ function renderOnlineLobby() {
     ${room && isHost() && room.status === 'waiting' ? `<div class="mode-row" role="group" aria-label="${t('game', '玩法')}">
       <button class="btn ${partners ? 'primary' : ''}" type="button" aria-pressed="${partners}" onclick="setOnlinePartners(true)">${t('TEAMS 2V2', '2V2 组队')}</button>
       <button class="btn ${partners ? '' : 'primary'}" type="button" aria-pressed="${!partners}" onclick="setOnlinePartners(false)">${t('FREE-FOR-ALL', '各自为战')}</button>
-    </div>` : ''}
+    </div>
+    ${partners ? '' : `<div class="mode-row" role="group" aria-label="${t('empty seats', '空位')}">
+      <button class="btn ${wantsPeopleOnly ? '' : 'primary'}" type="button" aria-pressed="${!wantsPeopleOnly}" onclick="setOnlineComputer(true)">${t('AI IN EMPTY SEATS', '空位由电脑补')}</button>
+      <button class="btn ${wantsPeopleOnly ? 'primary' : ''}" type="button" aria-pressed="${wantsPeopleOnly}" onclick="setOnlineComputer(false)">${t('PEOPLE ONLY', '只有真人')}</button>
+    </div>`}` : ''}
     ${room && partners ? `<div class="room-roster">
       <div class="roster-team"><div class="roster-team-head">${t('TEAM GREEN', '绿队')}</div>${seatHtml(0)}${seatHtml(2)}</div>
       <div class="roster-team gold"><div class="roster-team-head">${t('TEAM GOLD', '金队')}</div>${seatHtml(1)}${seatHtml(3)}</div>
     </div>
     <div class="trust-note">${t('Partners sit opposite and share one score.', '对坐的两人是队友，共用一个分数。')}</div>` : ''}
     ${room && !partners ? `<div class="room-roster">
-      <div class="roster-team solo"><div class="roster-team-head">${t('EVERY PLAYER FOR THEMSELVES', '各自为战')}</div>${seatHtml(0)}${seatHtml(1)}${seatHtml(2)}${seatHtml(3)}</div>
+      <div class="roster-team solo"><div class="roster-team-head">${t('EVERY PLAYER FOR THEMSELVES', '各自为战')}${wantsPeopleOnly ? t(' · PEOPLE ONLY', ' · 只有真人') : ''}</div>${seatHtml(0)}${seatHtml(1)}${seatHtml(2)}${seatHtml(3)}</div>
     </div>` : ''}
     ${seat >= 0 && room && room.status === 'waiting' ? `<div class="online-menu"><div class="online-title">${t('your avatar', '你的头像')}</div>${avatarPickerHtml()}</div>` : ''}
     ${action}
-    <button class="btn" type="button" onclick="leaveOnlineRoom(true)">${t('LEAVE ROOM', '离开房间')}</button>
+    <button class="btn" type="button" onclick="leaveOnlineRoom(true)">${online.watching ? t('STOP WATCHING', '停止观战') : t('LEAVE ROOM', '离开房间')}</button>
     <div class="trust-note">${t('A casual room for people you trust, not protected against cheating. Nobody types a name: everyone is an animal and a seat number. If the host leaves, the next player keeps the game going.', '适合可信朋友的休闲房间，不防作弊。没有人输入名字：每个人都是一只小动物加一个座位号。房主离开时，由下一位玩家继续主持。')}</div>
   </div>`;
 }
@@ -1188,10 +1253,16 @@ function renderOnlineBar() {
   const host = room && O.hostPid(room);
   if (!online.connected) { status = t('Reconnecting…', '重新连接中…'); kind = 'err'; }
   else if (room && host && !online.live.has(host)) { status = t('Host offline · the next player takes over soon', '房主离线 · 下一位玩家即将接手'); kind = 'err'; }
-  else if (!status) status = t(`${people} people · ${isHost() ? 'you host' : seatName(mySeat())}`, `${people} 人 · ${isHost() ? '你是房主' : seatName(mySeat())}`);
+  else if (!status) {
+    const watchers = watcherCount();
+    const watching = watchers ? t(` · 👀 ${watchers} watching`, ` · 👀 ${watchers} 人观战`) : '';
+    status = online.watching
+      ? t(`👀 watching · ${people} people${watching}`, `👀 观战中 · ${people} 人${watching}`)
+      : t(`${people} people · ${isHost() ? 'you host' : seatName(mySeat())}${watching}`, `${people} 人 · ${isHost() ? '你是房主' : seatName(mySeat())}${watching}`);
+  }
   $('onlineBarStatus').textContent = status;
   $('onlineBarStatus').className = 'online-bar-status' + (kind === 'err' ? ' err' : '');
-  $('onlineBarActions').innerHTML = `<button class="btn" type="button" onclick="copyOnlineInvite()">${t('COPY', '复制')}</button><button class="btn" type="button" onclick="leaveOnlineRoom(true)">${t('LEAVE', '离开')}</button>`;
+  $('onlineBarActions').innerHTML = `<button class="btn" type="button" onclick="copyOnlineInvite()">${t('COPY', '复制')}</button><button class="btn" type="button" onclick="leaveOnlineRoom(true)">${online.watching ? t('STOP WATCHING', '停止观战') : t('LEAVE', '离开')}</button>`;
 }
 
 /* iPhone, or an iPad (which reports itself as a Mac with a touch screen). */
@@ -1218,6 +1289,7 @@ function showLobby() {
         <div class="online-fields">
           <input class="online-input" id="onlineCode" maxlength="80" autocomplete="off" autocapitalize="characters" placeholder="${t('room code or invite link', '房间码或邀请链接')}" value="${escapeHtml(invitedCode)}">
           <button class="btn" type="button" onclick="joinOnlineRoom()">${t('JOIN ROOM', '加入房间')}</button>
+          <button class="btn" type="button" onclick="watchOnlineRoom()" title="${t('watch the game without playing', '只观看，不参与')}">${t('WATCH', '观战')}</button>
         </div>
         <div class="online-status ${online.statusKind === 'err' ? 'err' : ''}" id="onlineMenuStatus" aria-live="polite">${escapeHtml(online.statusMessage)}</div>
         ${invitedCode && isAppleMobile() ? `<div class="online-help"><a class="btn" href="manilha://room/${encodeURIComponent(invitedCode)}">${t('OPEN IN THE MANILHA APP', '在 MANILHA 应用中打开')}</a><br>${t('if it is installed on this iPhone or iPad — or play right here', '如果这台 iPhone/iPad 装了应用；也可以直接在这里玩')}</div>` : ''}
@@ -1322,7 +1394,7 @@ async function drive(generation) {
       if (generation !== flowGeneration || !g || g.turn !== seat || g.phase !== 'bidding') return;
       const b = g.cpuBid(seat);
       g.setBid(seat, b);
-      logLine(`${seatName(seat)} guesses ${b}`, `${seatName(seat)} 猜 ${b}`);
+      logLine(`${says(seat, 'guesses', 'guess')} ${b}`, `${seatName(seat)} 猜 ${b}`);
       continue;
     }
     if (g.phase === 'reveal') {
@@ -1331,7 +1403,7 @@ async function drive(generation) {
       const card = g.players[seat].hand[0];
       await sleep(900);                               // reveal pause
       if (generation !== flowGeneration || !g || g.turn !== seat || g.phase !== 'reveal') return;
-      logLine(`${seatName(seat)} reveals ${cardLabel(card)}`, `${seatName(seat)} 翻出 ${cardLabel(card)}`);
+      logLine(`${says(seat, 'reveals', 'reveal')} ${cardLabel(card)}`, `${seatName(seat)} 翻出 ${cardLabel(card)}`);
       g.playCard(seat, card);
       renderAll();
       await trickBannerIfNeeded();
@@ -1344,7 +1416,7 @@ async function drive(generation) {
       await sleep(900);
       if (generation !== flowGeneration || !g || g.turn !== seat || g.phase !== 'playing') return;
       const card = g.cpuChooseCard(seat);
-      logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`);
+      logLine(`${says(seat, 'plays', 'play')} ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`);
       g.playCard(seat, card);
       renderAll();
       await trickBannerIfNeeded();
@@ -1373,14 +1445,14 @@ async function trickBannerIfNeeded() {
   const winSeat = lt.winner;
   const dead = lt.tie && lt.winner === -1;
   logLine(
-    dead ? 'dead trick — nobody wins those cards' : `${seatName(winSeat)} takes the trick`,
+    dead ? 'dead trick — nobody wins those cards' : `${says(winSeat, 'takes', 'take')} the trick`,
     dead ? '死墩——这墩没人赢，牌全部作废' : `${seatName(winSeat)} 赢下这一墩`,
     dead ? 'warn' : 'imp');
   showBanner(
     dead ? t('DEAD TRICK', '死墩')
-         : t(`${seatName(winSeat)} takes the trick`, `${seatName(winSeat)} 赢下这一墩`),
+         : t(`${says(winSeat, 'takes', 'take')} the trick`, `${seatName(winSeat)} 赢下这一墩`),
     dead ? t('nobody wins — those cards are gone', '无人得墩——牌全部作废')
-         : t(`${seatName(winSeat)} leads the next trick`, `${seatName(winSeat)} 先出下一墩`),
+         : t(`${says(winSeat, 'leads', 'lead')} the next trick`, `${seatName(winSeat)} 先出下一墩`),
     'trick');
   await sleepSkippable(gameMode === 'online' ? O.PACE.trick : 4200);
   hideBanner();
@@ -1680,7 +1752,7 @@ function fitHand() {
       if (!card.classList.contains('fan')) return;
       const off = i - (n - 1) / 2;
       card.style.setProperty('--fan-rot', `${(off * spread).toFixed(2)}deg`);
-      card.style.setProperty('--fan-y', `${(Math.abs(off) * Math.abs(off) * spread * 0.35).toFixed(1)}px`);
+      card.style.setProperty('--fan-y', `${(Math.abs(off) * Math.abs(off) * spread * 0.18).toFixed(1)}px`);
     });
   });
 }
@@ -1712,7 +1784,7 @@ function renderSeats() {
         }
       } else if (isLocal && blind) {
         cards = p.hand.map(() => cardHtml(null, { back: true })).join('');
-      } else if (blind && g.phase !== 'playing') {
+      } else if (blind && g.phase !== 'playing' && !online.watching) {
         cards = p.hand.map(c => c ? cardHtml(c) : cardHtml(null, { back: true })).join('');
       } else {
         cards = hiddenStack(p.hand.length);
@@ -1732,7 +1804,7 @@ function renderSeats() {
       : `<div class="card-row ${isLocal ? 'human-hand' : ''} ${dealState && !isLocal ? 'deal-row' : ''}">${cards || '&nbsp;'}</div>`;
     const badge = turn && isLocal ? `<span class="turn-badge">${localSeats.size === 1 ? t('YOUR TURN', '轮到你') : t('TURN', '轮到')}</span>` : '';
     return `<div class="seat-zone ${posClass(s, n)} ${turn ? 'turn' : ''}">
-      <div class="seat-name">${nm}${teamTag}${tag}${badge}${sortBtn}</div>
+      <div class="seat-line"><div class="seat-name">${nm}${teamTag}${tag}${badge}</div>${sortBtn}</div>
       ${rowsHtml}
     </div>`;
   }).join('');
@@ -1764,6 +1836,11 @@ function renderCentre() {
 }
 
 /* "Your guess" for the one person at this screen; a name when two share a device. */
+/* "🦊 You guess 2", not "You guesses 2": the verb agrees with the one person at this screen. */
+function says(seat, them, you) {
+  return `${seatName(seat)} ${isLocalSeat(seat) && localSeats.size === 1 ? you : them}`;
+}
+
 function promptOwner(seat) {
   return localSeats.size === 1 ? t('Your', '你的') : t(`${seatName(seat)}'s`, `${seatName(seat)} 的`);
 }
@@ -1927,7 +2004,7 @@ function humanBid(seat, b) {
   if (!g || dealState || g.phase !== 'bidding' || g.turn !== seat || !isLocalSeat(seat)) return;
   if (online.active && online.role === 'guest') { sendOnlineIntent({ type: 'guess', count: b }); return; }
   g.setBid(seat, b);
-  logLine(`${seatName(seat)} guesses ${b}`, `${seatName(seat)} 猜 ${b}`, 'gold');
+  logLine(`${says(seat, 'guesses', 'guess')} ${b}`, `${seatName(seat)} 猜 ${b}`, 'gold');
   renderAll();
   chain();
 }
@@ -1937,7 +2014,7 @@ async function humanPlay(seat, idx) {
   const card = g.players[seat].hand[idx];
   if (!card) return;
   if (online.active && online.role === 'guest') { sendOnlineIntent({ type: 'play', card: TrucoEngine.cardId(card) }); return; }
-  logLine(`${seatName(seat)} plays ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`, 'gold');
+  logLine(`${says(seat, 'plays', 'play')} ${cardLabel(card)}`, `${seatName(seat)} 打出 ${cardLabel(card)}`, 'gold');
   g.playCard(seat, card);
   renderAll();
   await trickBannerIfNeeded();
