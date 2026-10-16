@@ -59,6 +59,19 @@
     .stage-pill { padding: 4px 7px; border: 1px solid #263128; background: rgba(8,13,9,.9); color: #1db954; font-size: .59rem; letter-spacing: 1px; text-transform: uppercase; }
     .dealer-pill { color: #686868; border-color: #222; }
     .stage-pill.dealing { color: #ffd36f; border-color: #71551d; box-shadow: 0 0 9px rgba(232,176,74,.14); }
+    .table-status { align-items: flex-start; }
+    .status-left { display:flex; flex-direction:column; align-items:flex-start; gap:5px; }
+    /* The indicator lives up here, not in the middle where it looked like a card left over from the last trick. */
+    .ind-chip { display:inline-flex; align-items:center; gap:6px; padding:3px 7px 3px 4px; border:1px solid #4a3a17; background:rgba(12,10,5,.92); color:#c9a04e; font-size:.56rem; letter-spacing:1px; text-transform:uppercase; }
+    .ind-chip:empty { display:none; }
+    @media (max-width: 640px) { .ind-words { display:none; } }
+    .ind-mini { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:21px; height:28px; border:1px solid #3a3a35; border-radius:4px; background:linear-gradient(145deg,#1b1b19,#090a09); color:#e3e3dc; font-size:.66rem; font-weight:700; line-height:1; letter-spacing:0; text-transform:none; }
+    .ind-mini.red { color:#ef6767; }
+    .ind-mini i { font-style:normal; font-size:.56rem; margin-top:1px; }
+    .ind-mini.back { background:repeating-linear-gradient(135deg,#111 0,#111 3px,#171717 3px,#171717 5px); border-color:#303630; }
+    .ind-chip b { color:#ffd36f; font-size:.7rem; letter-spacing:0; }
+    .ind-chip.flash { animation:indFlash 1s ease-out; }
+    @keyframes indFlash { from { box-shadow:0 0 0 0 rgba(232,176,74,.55); } to { box-shadow:0 0 0 12px rgba(232,176,74,0); } }
     @media (max-width: 640px) { .table-wrap { height: 520px; } }
 
     .seat-zone { position: absolute; text-align: center; z-index: 3; }
@@ -77,10 +90,31 @@
 
     /* cards */
     .card-row { display: flex; gap: 6px; justify-content: center; min-height: 84px; align-items: flex-end; }
-    .card-row.human-hand { justify-content: safe center; overflow-x: auto; overflow-y: hidden; padding: 8px 6px 3px; scroll-snap-type: x proximity; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+    .card-row.human-hand { justify-content: center; overflow: visible; padding: 20px 6px 3px; }
     .card-row.deal-row { gap: 0; }
     .card-row.deal-row .card:not(:first-child) { margin-left: -46px; }
-    .card-row.human-hand .card { flex: 0 0 auto; scroll-snap-align: center; }
+    .card-row.human-hand .card { flex: 0 0 auto; }
+    /* A big hand overlaps like a fan instead of scrolling: fitHand() sets how far each card slides under the last. */
+    .card-row.human-hand .card + .card { margin-left: var(--hand-shift, 0px); }
+    .card.fan { transform-origin: 50% 130%; transform: translateY(var(--fan-y, 0px)) rotate(var(--fan-rot, 0deg)); }
+    .card.fan.clickable:hover, .card.fan.clickable:focus-visible { transform: translateY(calc(var(--fan-y, 0px) - 7px)) rotate(var(--fan-rot, 0deg)); }
+    .card.fan.clickable:active { transform: translateY(calc(var(--fan-y, 0px) - 2px)) rotate(var(--fan-rot, 0deg)) scale(.98); }
+    /* The picked card stays in its place: a gold edge and glow (and a small lift in a single row). */
+    .card.fan.selected, .card.fan.selected:hover { transform: translateY(calc(var(--fan-y, 0px) - 8px)) rotate(var(--fan-rot, 0deg)); border-color: #ffd36f; box-shadow: 0 0 0 2px rgba(255,211,111,.6), 0 0 16px rgba(255,211,111,.45); }
+    .hand-rows .card.fan.selected, .hand-rows .card.fan.selected:hover { transform: none; }
+    /* Very big hands (2-player tables reach 19 cards) take two overlapping rows. */
+    .hand-rows .card-row.human-hand + .card-row.human-hand { margin-top: -50px; padding-top: 0; }
+    .table-wrap.tall-hand { height: 560px; }
+    @media (max-width: 640px) { .table-wrap.tall-hand { height: 600px; } }
+    /* Whose turn: their name glows, their cards light up, and yours says so. */
+    .seat-zone.turn .seat-name { display:inline-block; padding:3px 9px; border:1px solid #1db954; border-radius:999px; background:rgba(29,185,84,.14); color:#8ff0b1; animation:turnPulse 1.6s ease-in-out infinite; }
+    .seat-zone.turn .seat-name .you { color:#8ff0b1; }
+    .seat-zone.turn .card-stack > .card, .seat-zone.turn .card-row:not(.human-hand) > .card { border-color:#1db954; box-shadow:0 0 14px rgba(29,185,84,.4); }
+    .turn-badge { display:inline-block; margin-left:7px; padding:1px 7px; border-radius:999px; background:#1db954; color:#04120a; font-size:.55rem; font-weight:700; letter-spacing:1px; vertical-align:middle; }
+    @keyframes turnPulse { 0%,100% { box-shadow:0 0 5px rgba(29,185,84,.25); } 50% { box-shadow:0 0 16px rgba(29,185,84,.65); } }
+    @media (prefers-reduced-motion: reduce) { .seat-zone.turn .seat-name { animation:none; box-shadow:0 0 10px rgba(29,185,84,.45); } }
+    .sort-btn { margin-left: 8px; padding: 2px 6px; border: 1px solid #263128; background: rgba(8,13,9,.9); color: #6f8f77; font: inherit; font-size: .55rem; letter-spacing: 1px; cursor: pointer; vertical-align: middle; }
+    .sort-btn:hover { color: #1db954; border-color: #1db954; }
     .card { --ink:#deded8; width: 58px; height: 82px; padding: 0; appearance: none; color: var(--ink); font-family: inherit; background: radial-gradient(circle at 32% 18%,rgba(255,255,255,.075),transparent 35%),repeating-linear-gradient(0deg,rgba(255,255,255,.017) 0,rgba(255,255,255,.017) 1px,transparent 1px,transparent 4px),linear-gradient(145deg,#1b1b19,#090a09 74%); border: 1px solid #3a3a35; border-radius: 9px; display: block; position: relative; overflow: hidden; user-select: none; box-shadow: 0 7px 15px rgba(0,0,0,.48),inset 0 0 0 1px rgba(255,255,255,.025),inset 0 -10px 20px rgba(0,0,0,.2); }
     .card::before { content:''; position:absolute; inset:3px; border:1px solid rgba(255,255,255,.055); border-radius:6px; pointer-events:none; }
     .card.red { --ink:#ef6767; }
@@ -142,6 +176,10 @@
     .btn.primary { border-color: #1db954; color: #1db954; }
     .btn.primary:hover { background: rgba(29,185,84,.12); }
     .btn:disabled { opacity: .35; cursor: default; }
+    .btn.picked { border-color: #ffd36f; color: #ffd36f; background: rgba(255,211,111,.1); }
+    .btn.go { border-color: #1db954; color: #8ff0b1; background: rgba(29,185,84,.16); font-weight: 700; letter-spacing: 1px; }
+    .btn.go:hover { background: rgba(29,185,84,.26); }
+    .btn-row.confirm { margin-top: 7px; }
 
     .banner { position:absolute; inset:0; background:rgba(4,8,4,.9); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; z-index:20; text-align:center; padding:18px; cursor:pointer; }
     .banner .big { color: #1db954; font-size: 1.15rem; font-weight: 700; }
@@ -272,16 +310,14 @@
 
     <div class="table-wrap" id="tableWrap">
       <div class="table-status">
-        <span class="stage-pill" id="stagePill"></span>
+        <div class="status-left">
+          <span class="stage-pill" id="stagePill"></span>
+          <span class="ind-chip" id="indChip"></span>
+        </div>
         <span class="stage-pill dealer-pill" id="dealerPill"></span>
       </div>
       <div id="seatsLayer"></div>
       <div class="centre">
-        <div class="indicator">
-          <span class="mnh-label" data-en="indicator" data-zh="指示牌">indicator</span>
-          <span id="indicatorCard"></span>
-          <span class="mnh-label">→ <span id="manilhaName"></span></span>
-        </div>
         <div class="trick-caption" id="trickCaption"></div>
         <div class="trick-pile" id="trickPile"></div>
       </div>
@@ -353,6 +389,11 @@ let showingTrickResult = false;
 let bannerState = null;
 let bannerSeq = 0;
 let screenState = 'lobby';
+let selectedCardId = null;  // your card lifted out of the hand, waiting for PLAY (or a second tap)
+let guessChoice = null;     // { key, count, locked }: your guess for this round, picked on or before your turn
+let guessSending = false;
+let handSort = 'strength';  // or 'suit'
+try { if (localStorage.getItem('truco_sort') === 'suit') handSort = 'suit'; } catch (e) {}
 
 function seatName(s) { const n = seatNames[s] || { en: 'Seat ' + (s + 1), zh: '座位' + (s + 1) }; return lang === 'zh' ? n.zh : n.en; }
 function teamName(id) {
@@ -846,16 +887,32 @@ function checkHost(now) {
   writeRoom(O.takeOver(room, seat));
 }
 
-function checkAway(now) {
-  if (!isHost() || online.role !== 'host' || !g || hostBusy() || !online.room || online.room.status !== 'playing') return;
-  if (g.phase !== 'bidding' && g.phase !== 'playing') return;
+/* Nobody's move is ever made for them automatically. If the player whose turn it is has
+   been disconnected for a while, the host is offered a button to let the computer play
+   that one turn; the seat stays theirs. */
+function awaySeat(now) {
+  if (!isHost() || online.role !== 'host' || !g || hostBusy() || !online.room || online.room.status !== 'playing') return null;
+  if (g.phase !== 'bidding' && g.phase !== 'playing') return null;
   const seat = g.turn, record = online.room.seats[seat];
-  if (seat === mySeat() || !record || record.kind !== 'human' || online.live.has(record.pid)) return;
+  if (seat === mySeat() || !record || record.kind !== 'human' || online.live.has(record.pid)) return null;
   const since = online.goneSince[record.pid];
-  if (!since || now - since < O.AWAY_GRACE) return;
+  return since && now - since >= O.AWAY_GRACE ? seat : null;
+}
+
+function checkAway(now) {
+  const seat = awaySeat(now);
+  if ((online.awayPrompt ?? null) === seat) return;
+  online.awayPrompt = seat;
+  renderCtl();
+}
+
+function playForAway() {
+  const seat = awaySeat(Date.now());
+  if (seat === null) { checkAway(Date.now()); return; }
+  online.awayPrompt = null;
   if (g.phase === 'bidding') g.setBid(seat, g.cpuBid(seat));
   else g.playCard(seat, g.cpuChooseCard(seat));
-  logLine(`${seatName(seat)} is away — the computer moved for them`, `${seatName(seat)} 不在——电脑代为出手`, 'warn');
+  logLine(`${seatName(seat)} is away — the computer played this turn for them`, `${seatName(seat)} 不在——电脑代打了这一手`, 'warn');
   renderAll();
   (async () => { await trickBannerIfNeeded(); chain(); })();
 }
@@ -1427,9 +1484,19 @@ function showEnd() {
 }
 
 /* ── rendering ────────────────────────────────────────────────────────── */
+const BASE_TITLE = document.title;
+/* The tab's title says when it's your move, so a backgrounded tab still tells you. */
+function renderTitle() {
+  const mine = !!g && !dealState && (g.phase === 'bidding' || g.phase === 'playing') && isLocalSeat(g.turn) && gameMode === 'online';
+  const title = mine ? `● ${t('Your turn', '轮到你')} · ${BASE_TITLE}` : BASE_TITLE;
+  if (document.title !== title) document.title = title;
+}
+
 function renderAll() {
+  renderTitle();
   renderPowerGuide(); renderTableStatus(); renderScoreboard(); renderSeats(); renderCentre(); renderCtl(); renderRstrip(); renderLog();
   maybePublish();
+  sendLockedGuess();
   devAutoplay();
 }
 
@@ -1489,6 +1556,24 @@ function renderTableStatus() {
     stage.textContent = t(`ROUND ${g.round}`, `第 ${g.round} 轮`);
   }
   dealer.textContent = t(`DEALER · ${seatName(g.dealer)}`, `庄家 · ${seatName(g.dealer)}`);
+  renderIndicatorChip();
+}
+
+let indicatorShownFor = '';
+function renderIndicatorChip() {
+  const el = $('indChip');
+  if (!el) return;
+  if (!g || !g.indicator || g.phase === 'over' || g.round < 1) { el.innerHTML = ''; return; }
+  const visible = !dealState || dealState.indicatorRevealed;
+  const c = g.indicator, red = c.suit === 'H' || c.suit === 'D';
+  const mini = visible ? `<span class="ind-mini ${red ? 'red' : ''}">${c.rank}<i>${SUIT[c.suit]}</i></span>` : '<span class="ind-mini back"></span>';
+  el.innerHTML = `${mini}<span class="ind-words">${t('indicator', '指示牌')}</span> → <span class="ind-words">${t('manilha', '王权牌')}</span> <b>★ ${visible ? g.manilha : '?'}</b>`;
+  el.setAttribute('aria-label', visible ? t(`indicator ${cardLabel(c)}, manilha ${g.manilha}`, `指示牌 ${cardLabel(c)}，王权牌 ${g.manilha}`) : t('indicator not revealed yet', '指示牌尚未翻开'));
+  const key = visible ? `${g.round}:${cardLabel(c)}` : '';
+  if (key && key !== indicatorShownFor) {
+    indicatorShownFor = key;
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  }
 }
 
 function renderScoreboard() {
@@ -1533,7 +1618,7 @@ function cardHtml(c, opts) {
   const red = c && (c.suit === 'H' || c.suit === 'D');
   const cls = ['card', opts.tiny ? 'tiny' : '', opts.back ? 'back' : (red ? 'red' : 'blk'),
                c && g && !opts.back && c.rank === g.manilha ? 'mnh' : '',
-               opts.clickable ? 'clickable' : '', opts.played ? 'played' : '',
+               opts.clickable ? 'clickable' : '', opts.played ? 'played' : '', opts.selected ? 'selected' : '', opts.fan ? 'fan' : '',
                opts.dealOrder !== undefined ? 'deal-in' : '', opts.flip ? 'indicator-flip' : ''].filter(Boolean).join(' ');
   const style = [opts.dealOrder !== undefined && dealState ? `--deal-delay:${opts.dealOrder * dealState.step}ms` : '', opts.tilt !== undefined ? `--play-tilt:${opts.tilt}deg` : ''].filter(Boolean).join(';');
   const attrs = `${opts.idx !== undefined ? ` data-idx="${opts.idx}"` : ''}${opts.seat !== undefined ? ` data-seat="${opts.seat}"` : ''}${style ? ` style="${style}"` : ''}`;
@@ -1553,10 +1638,59 @@ function hiddenStack(count) {
   return `<div class="card-stack">${cardHtml(null, { back: true })}<span class="card-count">×${count}</span></div>`;
 }
 
+/* Your hand in order: strongest first (manilha on the left), or grouped by suit. */
+function handOrder(hand) {
+  const shown = hand.map((c, i) => i).filter(i => hand[i]);
+  const hidden = hand.map((c, i) => i).filter(i => !hand[i]);
+  const stronger = (a, b) => TrucoEngine.compareCards(hand[b], hand[a], g.manilha)
+    || (TrucoEngine.SUIT_POWER[hand[b].suit] - TrucoEngine.SUIT_POWER[hand[a].suit]);
+  const suitPlace = { C: 0, H: 1, S: 2, D: 3 };
+  shown.sort(handSort === 'suit' ? (a, b) => (suitPlace[hand[a].suit] - suitPlace[hand[b].suit]) || stronger(a, b) : stronger);
+  return shown.concat(hidden);
+}
+
+function toggleSort() {
+  handSort = handSort === 'suit' ? 'strength' : 'suit';
+  try { localStorage.setItem('truco_sort', handSort); } catch (e) {}
+  renderSeats();
+}
+
+/* How many rows a hand needs so every card's corner stays readable without scrolling. */
+function handRows(count) {
+  const wrap = $('tableWrap');
+  const width = Math.min((wrap ? wrap.clientWidth : window.innerWidth) * 0.94, 760) - 12;
+  const cw = window.matchMedia && window.matchMedia('(max-width: 640px)').matches ? 54 : 58;
+  if (count < 8 || count * cw + (count - 1) * 6 <= width) return 1;
+  return (width - cw) / (count - 1) >= 22 ? 1 : 2;
+}
+
+/* Big hands overlap instead of scrolling, with a gentle fan, so every card stays in view. */
+function fitHand() {
+  document.querySelectorAll('.card-row.human-hand').forEach(row => {
+    const cards = row.querySelectorAll('.card');
+    const n = cards.length;
+    if (!n) return;
+    const width = row.clientWidth - 12;
+    const cw = cards[0].offsetWidth || 58;
+    const natural = n * cw + (n - 1) * 6;
+    const shift = n > 1 && natural > width ? Math.min(cw - 14, 6 + (n * cw - width) / (n - 1)) : 0;
+    row.style.setProperty('--hand-shift', shift ? `-${shift.toFixed(1)}px` : '0px');
+    const spread = shift && !row.closest('.hand-rows') ? Math.min(2.2, 26 / n) : 0;   // degrees between neighbours
+    cards.forEach((card, i) => {
+      if (!card.classList.contains('fan')) return;
+      const off = i - (n - 1) / 2;
+      card.style.setProperty('--fan-rot', `${(off * spread).toFixed(2)}deg`);
+      card.style.setProperty('--fan-y', `${(Math.abs(off) * Math.abs(off) * spread * 0.35).toFixed(1)}px`);
+    });
+  });
+}
+
 function renderSeats() {
   if (!g) { $('seatsLayer').innerHTML = ''; return; }
   const n = g.numPlayers;
   const blind = g.isBlind() && (g.phase === 'bidding' || g.phase === 'reveal');
+  if (selectedCardId && !(g.phase === 'playing' && isLocalSeat(g.turn) && g.players[g.turn].hand.some(c => c && TrucoEngine.cardId(c) === selectedCardId))) selectedCardId = null;
+  let tallHand = false;
   $('seatsLayer').innerHTML = g.players.map((p, s) => {
     const isHuman = isHumanSeat(s), isLocal = isLocalSeat(s);
     let cards;
@@ -1565,7 +1699,17 @@ function renderSeats() {
         cards = p.hand.map((c, i) => cardHtml(null, { back: true, dealOrder: dealState.order[s + ':' + i] })).join('');
       } else if (isLocal && !blind && g.phase !== 'reveal') {
         const canPlay = g.phase === 'playing' && g.turn === s && !online.pendingIntent;
-        cards = p.hand.map((c, i) => c ? cardHtml(c, { idx: i, seat: s, clickable: canPlay }) : cardHtml(null, { back: true })).join('');
+        const html = handOrder(p.hand).map(i => {
+          const c = p.hand[i];
+          return c ? cardHtml(c, { idx: i, seat: s, clickable: canPlay, fan: true, selected: canPlay && TrucoEngine.cardId(c) === selectedCardId }) : cardHtml(null, { back: true });
+        });
+        if (handRows(html.length) === 2) {
+          tallHand = true;
+          const half = Math.ceil(html.length / 2);
+          cards = { rows: [html.slice(0, half).join(''), html.slice(half).join('')] };
+        } else {
+          cards = html.join('');
+        }
       } else if (isLocal && blind) {
         cards = p.hand.map(() => cardHtml(null, { back: true })).join('');
       } else if (blind && g.phase !== 'playing') {
@@ -1580,26 +1724,34 @@ function renderSeats() {
     const nm = isLocal ? `<span class="you">${escapeHtml(seatName(s))}</span>` : escapeHtml(seatName(s));
     const teamTag = g.teamMode ? ` <span class="team-tag">${teamName(g.teamBySeat[s])}</span>` : '';
     const tag = p.eliminated ? ' ✕' : '';
-    return `<div class="seat-zone ${posClass(s, n)}">
-      <div class="seat-name">${nm}${teamTag}${tag}${turn ? ' ◂' : ''}</div>
-      <div class="card-row ${isLocal ? 'human-hand' : ''} ${dealState && !isLocal ? 'deal-row' : ''}">${cards || '&nbsp;'}</div>
+    const sortable = isLocal && !dealState && !blind && p.hand.length > 1 && (g.phase === 'bidding' || g.phase === 'playing');
+    const sortNow = handSort === 'suit' ? t('sorted by suit — tap to sort by strength', '按花色排列——点按改为按牌力') : t('sorted by strength — tap to sort by suit', '按牌力排列——点按改为按花色');
+    const sortBtn = sortable ? `<button class="sort-btn" type="button" onclick="toggleSort()" title="${sortNow}" aria-label="${sortNow}">⇅ ${t('SORT', '排序')}</button>` : '';
+    const rowsHtml = cards && cards.rows
+      ? `<div class="hand-rows">${cards.rows.map(r => `<div class="card-row human-hand">${r}</div>`).join('')}</div>`
+      : `<div class="card-row ${isLocal ? 'human-hand' : ''} ${dealState && !isLocal ? 'deal-row' : ''}">${cards || '&nbsp;'}</div>`;
+    const badge = turn && isLocal ? `<span class="turn-badge">${localSeats.size === 1 ? t('YOUR TURN', '轮到你') : t('TURN', '轮到')}</span>` : '';
+    return `<div class="seat-zone ${posClass(s, n)} ${turn ? 'turn' : ''}">
+      <div class="seat-name">${nm}${teamTag}${tag}${badge}${sortBtn}</div>
+      ${rowsHtml}
     </div>`;
   }).join('');
+  $('tableWrap').classList.toggle('tall-hand', tallHand);
 
   if (!dealState && g.phase === 'playing' && isLocalSeat(g.turn)) {
     $('seatsLayer').querySelectorAll('.card.clickable').forEach(el => {
-      el.addEventListener('click', () => humanPlay(Number(el.dataset.seat), Number(el.dataset.idx)));
+      el.addEventListener('click', () => tapCard(Number(el.dataset.seat), Number(el.dataset.idx)));
     });
   }
+  fitHand();
 }
 
 function renderCentre() {
-  if (!g) { $('indicatorCard').innerHTML = ''; $('manilhaName').textContent = ''; $('trickCaption').textContent = ''; $('trickPile').innerHTML = ''; return; }
-  const indicatorVisible = !dealState || dealState.indicatorRevealed;
-  $('indicatorCard').innerHTML = indicatorVisible ? cardHtml(g.indicator, { tiny: true, flip: !!dealState }) : cardHtml(null, { tiny: true, back: true });
-  $('manilhaName').textContent = indicatorVisible ? g.manilha : '?';
-  const trickShown = (g.trick && g.trick.length) ? g.trick : (g.lastTrick ? g.lastTrick.plays : []);
-  const winSeat = (!g.trick || !g.trick.length) && g.lastTrick ? g.lastTrick.winner : null;
+  if (!g) { $('trickCaption').textContent = ''; $('trickPile').innerHTML = ''; return; }
+  // A finished trick stays only while its result is announced; then the middle is clear for the next one.
+  const lastShown = showingTrickResult && (!g.trick || !g.trick.length) && g.lastTrick;
+  const trickShown = (g.trick && g.trick.length) ? g.trick : (lastShown ? g.lastTrick.plays : []);
+  const winSeat = lastShown ? g.lastTrick.winner : null;
   const trickNo = g.trick.length ? completedTricks() + 1 : completedTricks();
   $('trickCaption').textContent = trickShown.length
     ? t(`TRICK ${Math.max(1, trickNo)} · PLAY ORDER 1 → ${trickShown.length}`, `第 ${Math.max(1, trickNo)} 墩 · 出牌顺序 1 → ${trickShown.length}`)
@@ -1608,30 +1760,98 @@ function renderCentre() {
     const own = winSeat === null ? '' : (winSeat === -1 ? 'dead' : (pl.player === winSeat ? 'win' : ''));
     const tilts = [-4, 3, -2, 5, -5, 2, -3, 4];
     return `<div class="tp-slot"><span class="play-order">${i + 1}</span>${cardHtml(pl.card, { tiny: true, played: true, tilt: tilts[i % tilts.length] })}<div class="tp-owner ${own}">${seatName(pl.player)}</div></div>`;
-  }).join('') || `<div style="color:#333;font-size:0.66rem;letter-spacing:2px">${t('— table empty —', '— 桌面无牌 —')}</div>`;
+  }).join('') || (g.phase === 'playing' && !dealState ? `<div style="color:#333;font-size:0.66rem;letter-spacing:2px">${t('— table empty —', '— 桌面无牌 —')}</div>` : '');
+}
+
+/* "Your guess" for the one person at this screen; a name when two share a device. */
+function promptOwner(seat) {
+  return localSeats.size === 1 ? t('Your', '你的') : t(`${seatName(seat)}'s`, `${seatName(seat)} 的`);
+}
+
+function guessKeyFor(seat) { return `${online.active ? 'room' + online.match : gameMode}:${g.round}:${seat}`; }
+
+/* Guessing: pick a number, then confirm it, so a slip of the finger can be fixed.
+   Online you can pick before your turn; a locked-in guess goes in the moment your turn comes. */
+function guessHtml(seat, myTurn) {
+  if (online.pendingIntent) return `<div class="ctl-msg">${t('sending your guess…', '正在发送你猜的墩数…')}</div>`;
+  const choice = guessChoice && guessChoice.key === guessKeyFor(seat) ? guessChoice : null;
+  const blind = g.isBlind();
+  if (choice && choice.locked && !myTurn) {
+    return `<div class="ctl-msg">${t(`Your guess: <b>${choice.count}</b> — locked in. It goes in when your turn comes.`, `你猜 <b>${choice.count}</b>——已锁定，轮到你时自动提交。`)}</div>
+      <div class="btn-row"><button class="btn" type="button" onclick="unlockGuess()">${t('CHANGE IT', '修改')}</button></div>`;
+  }
+  let msg;
+  if (myTurn) {
+    msg = blind
+      ? t(`<b>BLIND HAND</b> — ${promptOwner(seat)} guess: 0 or 1, without seeing your card.`, `<b>暗牌局</b>——${promptOwner(seat)}猜墩：看不到自己的牌，猜 0 或 1。`)
+      : t(`${promptOwner(seat)} guess — how many tricks will you win?`, `${promptOwner(seat)}猜墩——要赢几墩？`);
+  } else {
+    const waitingOn = `${seatName(g.turn)} ${isHumanSeat(g.turn) ? t('is choosing a guess…', '正在猜墩…') : t('is thinking…', '思考中…')}`;
+    msg = `${waitingOn}<br>${blind ? t('<b>Blind hand.</b> Pick yours now (0 or 1); it goes in when your turn comes.', '<b>暗牌局。</b>现在就可以先选（0 或 1），轮到你时自动提交。')
+                                   : t('Pick yours now — it goes in when your turn comes.', '现在就可以先选，轮到你时自动提交。')}`;
+  }
+  let btns = '';
+  for (let b = 0; b <= g.handSize; b++) {
+    btns += `<button class="btn ${choice && choice.count === b ? 'picked' : ''}" type="button" onclick="pickGuess(${seat},${b})" aria-pressed="${!!choice && choice.count === b}">${b}</button>`;
+  }
+  const confirm = choice
+    ? `<div class="btn-row confirm"><button class="btn go" type="button" onclick="confirmGuess(${seat})">${myTurn ? t(`GUESS ${choice.count}`, `确认猜 ${choice.count}`) : t(`LOCK IN ${choice.count}`, `锁定 ${choice.count}`)}</button></div>`
+    : '';
+  return `<div class="ctl-msg">${msg}</div><div class="btn-row">${btns}</div>${confirm}`;
+}
+
+/* Who the table is waiting for, and — if they've dropped off — a way for the host to move on. */
+function waitingHtml(what) {
+  const seat = g.turn;
+  let msg = `${seatName(seat)} ${isHumanSeat(seat) ? what : t('is thinking…', '思考中…')}`;
+  let extra = '';
+  if (online.active && isHumanSeat(seat) && !isLocalSeat(seat) && !seatConnected(seat)) {
+    msg = t(`${seatName(seat)} seems to be away — waiting for them.`, `${seatName(seat)} 似乎不在——正在等待。`);
+    if (isHost() && online.awayPrompt === seat) {
+      extra = `<div class="btn-row"><button class="btn" type="button" onclick="playForAway()">${t('LET THE COMPUTER PLAY THIS TURN', '让电脑代打这一手')}</button></div>`;
+    }
+  }
+  return `<div class="ctl-msg">${msg}</div>${extra}`;
+}
+
+/* The controls sit just above your hand, however many rows of buttons or cards there are,
+   so they never cover the YOU label or the cards. */
+function placeCtl() {
+  const wrap = $('tableWrap'), ctl = $('ctl');
+  if (!wrap || !ctl) return;
+  const zone = wrap.querySelector('.seat-zone.pos-s');
+  if (!zone) { ctl.style.bottom = ''; return; }
+  const gap = wrap.getBoundingClientRect().bottom - zone.getBoundingClientRect().top;
+  ctl.style.bottom = `${Math.max(0, Math.round(gap + 6))}px`;
 }
 
 function renderCtl() {
+  renderCtlContent();
+  placeCtl();
+}
+
+function renderCtlContent() {
   const el = $('ctl');
   if (!g) { el.innerHTML = ''; return; }
+  const me = online.active ? mySeat() : -1;
   if (dealState) {
     el.innerHTML = `<div class="ctl-msg"><b>${dealState.indicatorRevealed ? t('INDICATOR REVEAL', '翻开指示牌') : t('DEALING', '正在发牌')}</b> · ${t('round', '第')} ${g.round} · ${g.handSize} ${t('card(s) each', '张 / 人')}</div>`;
   } else if (g.phase === 'bidding' && isLocalSeat(g.turn)) {
-    const blind = g.isBlind();
-    const msg = online.pendingIntent ? t('sending your guess…', '正在发送你猜的墩数…') : blind
-      ? t(`<b>BLIND HAND</b> — ${seatName(g.turn)}, guess 0 or 1 without seeing your card.`, `<b>暗牌局</b>——${seatName(g.turn)} 看不到自己的牌，猜 0 或 1。`)
-      : t(`${seatName(g.turn)}'s guess — how many tricks will you win?`, `轮到 ${seatName(g.turn)} 猜墩——要赢几墩？`);
-    let btns = '';
-    for (let b = 0; b <= g.handSize; b++) btns += `<button class="btn ${b === Math.floor(g.handSize / 2) ? 'primary' : ''}" onclick="humanBid(${g.turn},${b})" ${online.pendingIntent ? 'disabled' : ''}>${b}</button>`;
-    el.innerHTML = `<div class="ctl-msg">${msg}</div><div class="btn-row">${btns}</div>`;
+    el.innerHTML = guessHtml(g.turn, true);
+  } else if (g.phase === 'bidding' && me >= 0 && !g.players[me].eliminated && g.players[me].bid === null) {
+    el.innerHTML = guessHtml(me, false);
   } else if (g.phase === 'playing' && isLocalSeat(g.turn)) {
-    el.innerHTML = `<div class="ctl-msg">${online.pendingIntent ? t('sending your play…', '正在发送你的出牌…') : t(`${seatName(g.turn)}'s play — choose a card`, `轮到 ${seatName(g.turn)} 出牌——选一张牌`)}</div>`;
+    const card = selectedCardId && g.players[g.turn].hand.find(c => c && TrucoEngine.cardId(c) === selectedCardId);
+    if (online.pendingIntent) el.innerHTML = `<div class="ctl-msg">${t('sending your play…', '正在发送你的出牌…')}</div>`;
+    else if (card) el.innerHTML = `<div class="ctl-msg">${t('Tap PLAY, or tap the card again.', '点“出牌”，或再点一次这张牌。')}</div>
+      <div class="btn-row"><button class="btn go" type="button" onclick="playSelected()">${t(`PLAY ${cardLabel(card)}`, `出牌 ${cardLabel(card)}`)}</button></div>`;
+    else el.innerHTML = `<div class="ctl-msg">${t(`${promptOwner(g.turn)} play — pick a card, then PLAY.`, `${promptOwner(g.turn)}出牌——选一张牌，再点“出牌”。`)}</div>`;
   } else if (g.phase === 'reveal') {
     el.innerHTML = `<div class="ctl-msg">${t('blind reveal — cards play themselves, one at a time…', '暗牌揭示——牌自动逐张翻开…')}</div>`;
   } else if (g.phase === 'bidding') {
-    el.innerHTML = `<div class="ctl-msg">${t('waiting: ', '等待：')}${seatName(g.turn)} ${isHumanSeat(g.turn) ? t('is choosing a guess…', '正在猜墩…') : t('is thinking…', '思考中…')}</div>`;
+    el.innerHTML = waitingHtml(t('is choosing a guess…', '正在猜墩…'));
   } else if (g.phase === 'playing') {
-    el.innerHTML = `<div class="ctl-msg">${seatName(g.turn)} ${isHumanSeat(g.turn) ? t('is choosing a card…', '正在选牌…') : t('is thinking…', '思考中…')}</div>`;
+    el.innerHTML = waitingHtml(t('is choosing a card…', '正在选牌…'));
   } else {
     el.innerHTML = '';
   }
@@ -1650,6 +1870,59 @@ function renderRstrip() {
 function renderLog() { $('log').innerHTML = logHtml(); }
 
 /* ── human input ──────────────────────────────────────────────────────── */
+function pickGuess(seat, count) {
+  if (!g || dealState || g.phase !== 'bidding' || g.players[seat].bid !== null) return;
+  guessChoice = { key: guessKeyFor(seat), count, locked: false };
+  renderCtl();
+}
+
+function confirmGuess(seat) {
+  if (!g || !guessChoice || guessChoice.key !== guessKeyFor(seat)) return;
+  if (g.turn === seat) { const count = guessChoice.count; guessChoice = null; humanBid(seat, count); return; }
+  guessChoice.locked = true;
+  renderCtl();
+}
+
+function unlockGuess() {
+  if (guessChoice) guessChoice.locked = false;
+  renderCtl();
+}
+
+/* A guess locked in before your turn goes in as soon as the turn is yours. */
+function sendLockedGuess() {
+  if (guessSending || !g || dealState || g.phase !== 'bidding' || !guessChoice || !guessChoice.locked || online.pendingIntent) return;
+  const seat = g.turn;
+  if (!isLocalSeat(seat) || guessChoice.key !== guessKeyFor(seat) || g.players[seat].bid !== null) return;
+  guessSending = true;
+  setTimeout(() => {
+    guessSending = false;
+    if (!g || g.phase !== 'bidding' || g.turn !== seat || !guessChoice || !guessChoice.locked || guessChoice.key !== guessKeyFor(seat)) return;
+    const count = guessChoice.count;
+    guessChoice = null;
+    humanBid(seat, count);
+  }, 0);
+}
+
+/* First tap lifts a card out of the hand; PLAY (or a second tap on it) sends it. */
+function tapCard(seat, idx) {
+  if (!g || dealState || g.phase !== 'playing' || g.turn !== seat || !isLocalSeat(seat) || online.pendingIntent) return;
+  const card = g.players[seat].hand[idx];
+  if (!card) return;
+  const id = TrucoEngine.cardId(card);
+  if (selectedCardId === id) { playSelected(); return; }
+  selectedCardId = id;
+  renderSeats();
+  renderCtl();
+}
+
+function playSelected() {
+  if (!g || g.phase !== 'playing' || !isLocalSeat(g.turn) || !selectedCardId) return;
+  const seat = g.turn;
+  const idx = g.players[seat].hand.findIndex(c => c && TrucoEngine.cardId(c) === selectedCardId);
+  selectedCardId = null;
+  if (idx >= 0) humanPlay(seat, idx);
+}
+
 function humanBid(seat, b) {
   if (!g || dealState || g.phase !== 'bidding' || g.turn !== seat || !isLocalSeat(seat)) return;
   if (online.active && online.role === 'guest') { sendOnlineIntent({ type: 'guess', count: b }); return; }
@@ -1686,6 +1959,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setOnlineStatus(t(`Invite to room ${invited}: pick your animal, then JOIN ROOM.`, `收到房间 ${invited} 的邀请：选好小动物，然后点“加入房间”。`));
     }
   }
+  window.addEventListener('resize', () => { fitHand(); placeCtl(); });
   $('overlayLayer').addEventListener('keydown', event => {
     if (event.key === 'Enter' && event.target && event.target.id === 'onlineCode') joinOnlineRoom();
   });

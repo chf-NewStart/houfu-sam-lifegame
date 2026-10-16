@@ -44,6 +44,23 @@ test('online rooms play in teams of two or every player for themselves, as the h
   assert.match(sw, /'\/game\/truco-online\.js\?v=4'/);
 });
 
+test('cards and guesses are picked, then confirmed; guesses can be locked in early; the hand fits and sorts', () => {
+  assert.match(html, /function tapCard\(seat, idx\)/);
+  assert.match(html, /function playSelected\(\)/);
+  assert.match(html, /function pickGuess\(seat, count\)/);
+  assert.match(html, /function confirmGuess\(seat\)/);
+  assert.match(html, /function sendLockedGuess\(\)/);
+  assert.match(html, /LOCK IN \$\{choice\.count\}/);
+  assert.doesNotMatch(html, /b === Math\.floor\(g\.handSize \/ 2\) \? 'primary'/, 'no number is pre-highlighted');
+  assert.doesNotMatch(html, /'s guess — how many/, 'no "You\'s guess"');
+  assert.match(html, /function fitHand\(\)/);
+  assert.match(html, /function handOrder\(hand\)/);
+  assert.doesNotMatch(html, /\.card-row\.human-hand \{[^}]*overflow-x: auto/, 'the hand no longer scrolls sideways');
+  assert.match(html, /id="indChip"/);
+  assert.doesNotMatch(html, /id="indicatorCard"/, 'the indicator is no longer in the middle of the table');
+  assert.match(html, /const lastShown = showingTrickResult/);
+});
+
 test('players are avatars and seat numbers, never typed names', () => {
   assert.match(html, /function avatarPickerHtml\(\)/);
   assert.match(html, /O\.AVATARS/);
@@ -60,10 +77,13 @@ test('the host publishes the engine state and checks intents; guests send intent
   assert.match(html, /TrucoEngine\.restoreGame\(rec\.state\)/);
 });
 
-test('a dropped host is replaced, away players are covered, and leaving hands the room on', () => {
+test('a dropped host is replaced, away players are never moved for automatically, and leaving hands the room on', () => {
   assert.match(html, /O\.successor\(room, \[\.\.\.online\.live, online\.pid\]\) !== seat/);
   assert.match(html, /writeRoom\(O\.takeOver\(room, seat\)\)/);
-  assert.match(html, /now - since < O\.AWAY_GRACE/);
+  assert.match(html, /now - since >= O\.AWAY_GRACE/);
+  const checkAway = html.slice(html.indexOf('function checkAway('), html.indexOf('function playForAway('));
+  assert.doesNotMatch(checkAway, /setBid|playCard/, 'checkAway only offers the host a button');
+  assert.match(html, /LET THE COMPUTER PLAY THIS TURN/);
   assert.match(html, /O\.handOver\(online\.room, others\)/);
   assert.match(html, /writeKey\(O\.KEYS\.join\(online\.pid\), null\)/);
   assert.match(html, /function roomClosed\(\)[\s\S]{0,600}Math\.pow\(2, online\.attempts\)/);
