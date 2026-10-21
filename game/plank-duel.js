@@ -7,7 +7,7 @@
 import { DuelMatch, kitForRound, KIT_NAMES, RIVALS } from './plank-duel-engine.js?v=1';
 import {
   PlankRoom, ROOM_RE, PID_RE, makeRoomCode, makePid, normalizeRoomCode, roomLink, acceptableRelay, DEFAULT_RELAY,
-} from './plank-online.js?v=1';
+} from './plank-online.js?v=2';
 import { DuelRenderer } from './plank-duel-renderer.js?v=1';
 import { PlankCamera } from './plank-camera.js?v=11';
 
