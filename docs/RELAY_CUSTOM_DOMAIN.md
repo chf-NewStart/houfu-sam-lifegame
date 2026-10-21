@@ -37,7 +37,9 @@ wait an hour before step 3.
 2. Pick the **Free** plan.
 3. Compare the scanned records with step 1. Add anything missing. Set every
    imported record to **DNS only** (grey cloud), so the site keeps being served
-   by GitHub Pages exactly as now (GitHub's own HTTPS certificate keeps working).
+   by GitHub Pages exactly as now (GitHub's own HTTPS certificate keeps working,
+   and Phloem's iCloud web sign-in, whose CloudKit tokens are bound to the
+   origin https://houfu72.com, sees the same origin as before).
 4. Cloudflare shows two nameservers, like `ada.ns.cloudflare.com` and
    `bob.ns.cloudflare.com`. Keep that page open.
 

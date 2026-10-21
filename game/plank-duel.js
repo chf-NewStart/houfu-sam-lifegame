@@ -114,7 +114,7 @@ const RELAY_OVERRIDE = LOCAL && acceptableRelay(params.get('relay')) ? params.ge
 const AUTOPLAY = LOCAL && params.get('autoplay') === '1';
 
 const TH = 0.04;            // a head shift this big (of the frame width) is a move, like the flight's default
-const COUNTDOWN = 3200;     // ms, as in the app
+const COUNTDOWN = 3000;     // ms, as in the app (3, 2, 1)
 const FACE_FRESH = 700;     // ms: a face sample older than this means the face is gone
 
 const arena = document.querySelector('.arena');

@@ -234,6 +234,16 @@ test('a reconnecting guest catches a start it missed', () => {
   assert.deepEqual(guest.seen.starts, host.seen.starts);
 });
 
+test('a guest that reconnects after a duel does not see it finish again', () => {
+  const { relay, host, guest } = pair();
+  host.room.setReady(30); guest.room.setReady(30); relay.flush();
+  host.room.finish(new DuelMatch({ duration: 30, seed: 3 })); relay.flush();
+  assert.equal(guest.seen.finished, 1);
+  relay.drop(guest.conn); relay.flush();
+  guest.reconnect(); relay.flush();
+  assert.equal(guest.seen.finished, 1);
+});
+
 test('a new guest ignores what is left in the room from an earlier duel', () => {
   const { relay, code, host, guest } = pair();
   host.room.setReady(30); guest.room.setReady(30); relay.flush();

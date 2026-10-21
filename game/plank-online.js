@@ -157,6 +157,7 @@ export class PlankRoom {
     // The duel.
     this.nextDuel = 1;
     this.playing = 0;
+    this.finishedDuel = 0;
     this.localReady = false;
     this.peerReady = false;
     this.duration = 30;
@@ -354,7 +355,7 @@ export class PlankRoom {
       if (go && go.n > this.playing && go.n >= this.nextDuel && this.localReady) this.hostRecord(KEYS.go, go);
       for (const key of [KEYS.state, KEYS.finished]) {
         const v = this.map[key];
-        if (v && v.n === this.playing && this.playing > 0) this.hostRecord(key, v);
+        if (v && v.n === this.playing && this.playing > this.finishedDuel) this.hostRecord(key, v);
       }
     } else {
       this.inputRecord(this.map[KEYS.input]);
@@ -392,10 +393,10 @@ export class PlankRoom {
       this.emit('start', v.seed >>> 0, v.len);
       return;
     }
-    if (v.n !== this.playing) return;
+    if (v.n !== this.playing || v.n === this.finishedDuel) return;
     if (key === KEYS.state && validSnapshot(v.d)) this.snapshot = v.d;
     else if (key === KEYS.event) { const event = guestEvent(v); if (event) this.emit('event', event, v.round); }
-    else if (key === KEYS.finished && validSnapshot(v.d)) { this.snapshot = v.d; this.emit('finished'); }
+    else if (key === KEYS.finished && validSnapshot(v.d)) { this.snapshot = v.d; this.finishedDuel = v.n; this.emit('finished'); }
   }
 
   // MARK: Both devices
