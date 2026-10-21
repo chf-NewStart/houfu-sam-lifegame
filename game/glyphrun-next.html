@@ -399,7 +399,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b67 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b68 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -3199,7 +3199,7 @@ const Game = (function(){
     }catch(e){}
     if(!elemHintShown){
       elemHintShown = true;
-      popToastEx('五行', 'wǔ xíng', t('every glyph carries a phase — fill a bond below to wake its power', '字含五行——集齐下方相生之数，唤醒其力'), 'qi');
+      popToastEx('五行', 'wǔ xíng', t(APPFS ? 'every glyph carries a phase — fill a bond (the tally, bottom left) to wake its power' : 'every glyph carries a phase — fill a bond below to wake its power', APPFS ? '字含五行——集齐左下角相生之数，唤醒其力' : '字含五行——集齐下方相生之数，唤醒其力'), 'qi', true);
     }
     checkSynergies();
   }
@@ -3209,7 +3209,7 @@ const Game = (function(){
     maxHp = startHearts();
     stageIdx = 0; lives = maxHp; coins = 0; nextHeart = 16; level = 0; buffT = 0; hatOn = false; paused = false; foesSeen = {};
     bei = 0; beiAcc = 0; loanOwed = 0; mkLock = null;
-    endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = false; glyphToasted = {};
+    endless = false; endlessN = 0; exhaleT = null; calmT = 0; elemHintShown = false; glyphToasted = {}; toastNext = null;
     stage = null; stageWinT = null;
     desk = freshDesk();
     elems = {'金':0,'木':0,'水':0,'火':0,'土':0};
@@ -3791,7 +3791,7 @@ const Game = (function(){
       marks.push({sp, t: SURGE.warn});
     }
     addFx({kind:'ripple', x:player.x, y:player.y, t:1.2, r:SURGE.radius});
-    popToastEx('群', 'qún', t('a swarm closes in — break out through the gap', '群鬼合围——从缺口冲出去'), 'guai');
+    popToastEx('群', 'qún', t('a swarm closes in — break out through the gap', '群鬼合围——从缺口冲出去'), 'guai', true);
   }
   /* 疾: a burst of ink in the way you're steering; nothing touches you mid-dash */
   function dash(){
@@ -4395,7 +4395,7 @@ const Game = (function(){
                   else sp.hp = oppHp;
                   if(!oppSeen){
                     oppSeen = true;
-                    popToastEx('剋', 'kè', t('the opposing element rises against you', '相剋之灵，逆流而来'), 'guai');
+                    popToastEx('剋', 'kè', t('the opposing element rises against you', '相剋之灵，逆流而来'), 'guai', true);
                   }
                 }
               }
@@ -4412,7 +4412,7 @@ const Game = (function(){
         if(!dashHintShown && tGlobal > 0 && waveT < wave.len - 5){
           dashHintShown = true;
           popToastEx('疾', 'jí', t(APPFS ? 'dash — tap 疾 (bottom right); nothing can touch you mid-dash' : 'dash — press Space; nothing can touch you mid-dash',
-                                  APPFS ? '疾行——点右下角的「疾」，疾行时刀枪不入' : '疾行——按空格键，疾行时刀枪不入'), 'wu');
+                                  APPFS ? '疾行——点右下角的「疾」，疾行时刀枪不入' : '疾行——按空格键，疾行时刀枪不入'), 'wu', true);
         }
         // 生 — the marks sprout, then the spirits are born
         for(const m of marks){
@@ -6201,12 +6201,20 @@ const Game = (function(){
   }
 
   /* ---------- toast ---------- */
-  let toastTimer = 0;
+  let toastTimer = 0, toastHoldUntil = 0, toastNext = null;
+  // long lines stay up long enough to read (CJK counts double), and a lesson
+  // (hold) is not wiped by the next pickup: that one waits its turn
+  function toastMs(s){
+    let n = 0; for(const c of String(s||'')) n += c.charCodeAt(0) > 0x2e80 ? 2.2 : 1;
+    return Math.max(1200, Math.min(4000, 1000 + n*42));
+  }
   function popToast(ch){
     const info = GLYPHS[ch] || {py:'', en:'', zh:''};
     popToastEx(ch, info.py, t(info.en, info.zh));
   }
-  function popToastEx(ch, py, mean, bt){
+  function popToastEx(ch, py, mean, bt, hold){
+    const now = performance.now();
+    if(!hold && now < toastHoldUntil){ toastNext = [ch, py, mean, bt]; return; }
     const badge = $('toastQi');
     if(badge && badge.getContext){
       if(bt){
@@ -6221,7 +6229,13 @@ const Game = (function(){
     $('toastM').textContent = mean;
     const el = $('toast'); el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>el.classList.remove('show'), 1200);
+    const ms = toastMs(mean);
+    toastHoldUntil = hold ? now + ms : 0;
+    toastTimer = setTimeout(()=>{
+      toastHoldUntil = 0;
+      if(toastNext){ const a = toastNext; toastNext = null; popToastEx(...a); }
+      else el.classList.remove('show');
+    }, ms);
   }
 
   /* ---------- loop ---------- */
