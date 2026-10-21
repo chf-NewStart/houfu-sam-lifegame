@@ -1,8 +1,10 @@
 // Frames stay in this browser. Only landmark coordinates and an expression score
 // leave this controller; no video or images are uploaded; the renderer keeps ephemeral pixel avatars in memory.
+// MediaPipe and its face model are served from this site (game/vendor/mediapipe), not from
+// jsdelivr or Google's storage, which are slow or unreachable in mainland China.
 const VISION_VERSION = '0.10.32';
-const VISION_ROOT = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VISION_VERSION}`;
-const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+const VISION_ROOT = new URL(`./vendor/mediapipe/tasks-vision-${VISION_VERSION}`, import.meta.url).href;
+const MODEL_URL = new URL('./vendor/mediapipe/face_landmarker-float16-v1.task', import.meta.url).href;
 const FRAME_INTERVAL = 1000 / 15;
 const FRAME_STALE_MS = 500;
 const STARTUP_TIMEOUT_MS = 30000;

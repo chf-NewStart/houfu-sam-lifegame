@@ -32,8 +32,19 @@ Large pixel arrows indicate left, right, and raised eyebrows; a square hold mark
 
 - Camera mode requires camera permission and a secure browser context: HTTPS, or `localhost` when testing on the same machine. Opening an ordinary `http://192.168…` development address on a phone does not provide that secure context.
 - Face processing runs on the device. The renderer periodically crops a **20 × 20 pixel selfie** from the live frame and uses it as the player avatar. These tiny canvases exist only in memory for the round and are cleared on return to setup. No photos or video are persisted or uploaded. Camera-free practice uses original pixel face sprites.
-- Camera mode downloads the MediaPipe runtime and face model from external hosts. Those asset requests require network access; do not assume camera mode works fully offline.
+- Camera mode loads the MediaPipe runtime (tasks-vision 0.10.32, Apache-2.0) and the float16 face model from this site, `game/vendor/mediapipe/`, not from jsdelivr or Google's storage, which are slow or blocked in mainland China (Oct 2026). It still needs the network the first time; do not assume camera mode works fully offline.
 - Touch/keyboard practice works without camera permission and is useful when camera access or model loading fails.
+
+## Plank Plank Plank! online (`game/plank-duel.html`)
+
+The iOS app's plank duel, in the browser, against a friend anywhere: in another browser (Android, iPhone, laptop) or in the Plank Constant app 1.1+. No FaceTime, no account; a 7-character room code or the link `lifegameproject.com/game/plank-duel.html?room=CODE`. Also a practice duel against the computer.
+
+- Files: `plank-duel-engine.js` (the app's `DuelMatch`, line for line; the app's parity tests replay it), `plank-online.js` (the room contract, shared with the app's `RelayDuel.swift`), `plank-duel-renderer.js` (the app's `DuelView` pixels), `plank-duel.js` / `.html` / `.css`.
+- Rooms run on the arcade relay (`relay/`, Cloudflare Worker, free plan). The address is **one setting**, `game/relay.json`, read by the page on every visit and by the app at launch; `DEFAULT_RELAY` in `plank-online.js` is only the fallback. `*.workers.dev` is reported blocked in China: see `docs/RELAY_CUSTOM_DOMAIN.md`.
+- The creator hosts and runs the duel; the guest sends its move only when it changes (at most ~8/s) and draws the host's snapshots, written 4 times a second, eased in between and with its own pose taken straight from its own input. A 60 s duel is about 270 room writes (measured), so the relay's free 100k rows written a day covers roughly 180–370 one-minute duels a day (1–2 rows per write), shared with Manilha.
+- Controls: head shift (right = strike, left = block) or eyebrows (up = strike), calibrated in about 5 s; or touch / keys (right half or →/D strike, left half or ←/A block). No nod/shake on the web (the browser tracker has no head pitch/yaw).
+- Nothing filmed or typed leaves the device: no selfies, no names. A page in the background pauses the duel for both.
+- Tests: `node --test tests/plank-online.test.mjs` (contract, in-memory relay); `RELAY_URL=ws://127.0.0.1:8787 node --test tests/plank-online-live.test.mjs` against `npx wrangler@4 dev --port 8787 --var "ALLOW_ORIGINS:http://127.0.0.1:8000"`. On localhost the page takes `?relay=ws://127.0.0.1:8787&autoplay=1&len=30` (autoplay plays, gets ready and plays again by itself).
 
 ## Real-phone testing checklist
 

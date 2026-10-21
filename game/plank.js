@@ -1,5 +1,5 @@
 import { Flight, BrowSwitch, CoopFlight, FACE_FILTERS, TrackingPace } from './plank-engine.js?v=10';
-import { PlankCamera } from './plank-camera.js?v=10';
+import { PlankCamera } from './plank-camera.js?v=11';
 import { PlankRenderer } from './plank-renderer.js?v=9';
 
 const $ = id => document.getElementById(id);
@@ -17,7 +17,7 @@ const copy = {
   calibrate:['Start now · otherwise automatic','立即开始 · 也会自动开始'], back:['Back','返回'], resume:['Resume flight','继续飞行'], recalibrate:['Reposition & recalibrate','重新摆放并校准'],
   finish:['Finish here','到这里结束'], flightSeconds:['FLIGHT SECONDS','飞行秒数'], gates:['Gates cleared','通过障碍'], best:['Most makeovers · this mode & duration','本模式与时长的最多变装次数'],
   again:['Back to the launchpad ↗','返回发射台 ↗'], rest:['Take a breather. Your next flight can wait.','先休息一下，下一次飞行可以等等。'], pause:['Ⅱ Pause','Ⅱ 暂停'], end:['End','结束'],
-  practiceBadge:['PRACTICE · NO CAMERA','试玩 · 无摄像头'], ready:['READY WHEN YOU ARE','准备好就出发'], lab:['← WIP Lab','← 实验室'],
+  practiceBadge:['PRACTICE · NO CAMERA','试玩 · 无摄像头'], ready:['READY WHEN YOU ARE','准备好就出发'], lab:['← WIP Lab','← 实验室'], duelLink:['⚔ Plank Plank Plank! Duel a friend online','⚔ Plank Plank Plank! 在线和朋友对决'],
   loading:['Waking up the camera…','正在开启摄像头…'], loadingCopy:['Allow camera access. The first model download may take a moment.','请允许访问摄像头，首次下载模型可能需要一点时间。'],
   framing:['Get your face in view.','让脸进入镜头。'], framingCopy:['Position the phone so you can see your whole face. Setup starts automatically when your face is in view. You have five seconds to settle.','摆好手机，让整张脸出现在预览中。入镜后自动开始，你有五秒时间调整姿势。'],
   faceSeen:['FACE IN VIEW','已看到面部'], noFace:['FACE NOT VISIBLE','未看到面部'], cameraWaiting:['WAITING FOR CAMERA','等待摄像头'],

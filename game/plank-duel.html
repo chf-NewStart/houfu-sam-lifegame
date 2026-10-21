@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1026">
+  <meta name="description" content="Plank Plank Plank! online: a hands-free plank duel with a friend anywhere, by room code. Any browser with a camera, or touch and keys.">
+  <title>Plank Plank Plank! · Plank Constant</title>
+  <link rel="icon" type="image/svg+xml" href="thumbs/plank.svg">
+  <link rel="stylesheet" href="plank-duel.css?v=1">
+</head>
+<body>
+  <div class="arena">
+    <canvas id="scene" aria-label="Two fighters plank head to head on a plank over the water."></canvas>
+    <video id="camera" muted playsinline autoplay></video>
+
+    <header class="topbar">
+      <a class="brand" href="plank.html"><span class="brand-mark">↗</span><span>PLANK PLANK PLANK!<small data-key="brandSub">PLANK CONSTANT · ONLINE DUEL</small></span></a>
+      <div class="header-actions"><button id="sound" aria-pressed="true" data-key="soundOn">Sound on</button><button id="lang">中文</button></div>
+    </header>
+
+    <!-- In the duel -->
+    <div class="hud" id="hud" hidden>
+      <div class="card" id="card-0"><div class="card-name"><b id="name-0"></b><strong id="wins-0">0</strong></div>
+        <small data-key="groundLabel">HP</small><div class="meter"><i id="hp-0"></i></div>
+        <small id="str-label-0" data-key="strengthLabel">STRENGTH</small><div class="meter thin"><i id="str-0"></i></div></div>
+      <div class="clock"><strong id="clock">0:30</strong><small id="round-label"></small><button id="stop" data-key="stop">End</button></div>
+      <div class="card right" id="card-1"><div class="card-name"><strong id="wins-1">0</strong><b id="name-1"></b></div>
+        <small data-key="groundLabel">HP</small><div class="meter"><i id="hp-1"></i></div>
+        <small id="str-label-1" data-key="strengthLabel">STRENGTH</small><div class="meter thin" id="str-wrap-1"><i id="str-1"></i></div></div>
+    </div>
+    <div class="banner" id="banner" aria-live="polite"></div>
+    <div class="big-count" id="big-count"></div>
+    <div class="notice" id="notice" hidden></div>
+    <div class="moves" id="moves" hidden><span id="pill-block">← BLOCK</span><span id="pill-strike">STRIKE →</span></div>
+    <div class="zones" id="zones" hidden><div data-zone="block"><span data-key="zoneBlock">HOLD · BLOCK</span></div><div data-zone="strike"><span data-key="zoneStrike">HOLD · STRIKE</span></div></div>
+
+    <!-- Choose: online room or the computer -->
+    <section class="panel" id="lobby">
+      <p class="eyebrow" data-key="lobbyKicker">PLANK PLANK PLANK! · ONLINE</p>
+      <h1 data-key="lobbyTitle">Duel a friend, anywhere.</h1>
+      <p class="intro" data-key="lobbyIntro">Both of you hold a plank and fight on a plank over the water. Shift right to strike, left to block. Share a room code: any phone or laptop with a browser can join, no app or account needed.</p>
+      <button class="primary wide" id="create" data-key="create">Create a room</button>
+      <form class="join" id="join-form">
+        <input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="ROOM CODE" aria-label="Room code">
+        <button class="secondary" id="join" type="submit" data-key="join">Join</button>
+      </form>
+      <p class="status" id="lobby-status" role="status"></p>
+      <button class="secondary wide" id="cpu" data-key="cpu">Practice against the computer</button>
+      <p class="fine" data-key="lobbyFine">Friends with the Plank Constant iPhone app can join with the same code. The camera picture never leaves your device: the room only hears your move.</p>
+    </section>
+
+    <!-- In a room (or practising): how to play, then get ready -->
+    <section class="panel" id="room" hidden>
+      <p class="eyebrow" id="room-kicker"></p>
+      <div class="room-code" id="room-code-wrap"><span data-key="roomCode">ROOM</span><strong id="room-code"></strong></div>
+      <div class="invite" id="invite"><input id="invite-link" readonly aria-label="Invite link"><button class="secondary" id="share" data-key="share">Share</button></div>
+      <p class="status" id="room-status" role="status"></p>
+      <fieldset id="length-field"><legend data-key="lengthLegend">PLANK LENGTH</legend>
+        <div class="segments" id="lengths"><button data-len="30">30s</button><button data-len="45">45s</button><button data-len="60" aria-pressed="true">60s</button><button data-len="90">90s</button></div>
+        <p class="fine" id="length-note"></p>
+      </fieldset>
+      <fieldset><legend data-key="controlLegend">HOW YOU PLAY</legend>
+        <div class="segments" id="controls"><button data-control="face" aria-pressed="true" data-key="faceControl">Head shift</button><button data-control="brow" data-key="browControl">Eyebrows</button><button data-control="touch" data-key="touchControl">Touch / keys</button></div>
+        <p class="fine" id="control-copy"></p>
+      </fieldset>
+      <button class="primary wide" id="ready" data-key="setUp">Set up the camera</button>
+      <button class="secondary wide" id="leave" data-key="leave">Leave the room</button>
+    </section>
+
+    <!-- Camera setup -->
+    <section class="panel" id="setup" hidden>
+      <p class="eyebrow" id="setup-kicker"></p>
+      <h2 id="setup-title"></h2>
+      <p class="intro" id="setup-copy"></p>
+      <div class="viewfinder" id="viewfinder"></div>
+      <div class="signal" id="signal"><span data-key="blockShort">BLOCK</span><div class="track"><i id="signal-mark-l"></i><i id="signal-dot"></i><i id="signal-mark-r"></i></div><span data-key="strikeShort">STRIKE</span></div>
+      <progress id="setup-progress" max="1" value="0"></progress>
+      <button class="secondary wide" id="setup-back" data-key="back">Back</button>
+    </section>
+
+    <!-- Ready, waiting for the friend; or a countdown; or a message -->
+    <section class="panel center" id="message" hidden>
+      <p class="eyebrow" id="message-kicker"></p>
+      <h2 id="message-title"></h2>
+      <p class="intro" id="message-copy"></p>
+      <div class="room-code small" id="message-code" hidden><span data-key="roomCode">ROOM</span><strong></strong></div>
+      <button class="primary wide" id="message-primary" hidden></button>
+      <button class="secondary wide" id="message-back" data-key="back">Back</button>
+    </section>
+
+    <!-- After the duel -->
+    <section class="panel center" id="results" hidden>
+      <p class="eyebrow" id="result-kicker"></p>
+      <h2 id="result-title"></h2>
+      <p class="intro" id="result-copy"></p>
+      <div class="stats"><div><strong id="stat-won">0</strong><small data-key="roundsWon">Rounds won</small></div><div><strong id="stat-lost">0</strong><small data-key="roundsLost">Rounds lost</small></div><div><strong id="stat-time">0</strong><small data-key="seconds">Seconds</small></div></div>
+      <button class="primary wide" id="again" data-key="again">Duel again</button>
+      <button class="secondary wide" id="results-leave" data-key="leave">Leave the room</button>
+      <p class="fine" data-key="rest">Take a breather. Your next duel can wait.</p>
+    </section>
+
+    <footer class="footbar"><span><i class="dot" id="dot"></i> <span id="net"></span></span><a href="plank.html" data-key="toFlight">Plank Constant: the space flight →</a></footer>
+  </div>
+  <script type="module" src="plank-duel.js?v=1"></script>
+</body>
+</html>
