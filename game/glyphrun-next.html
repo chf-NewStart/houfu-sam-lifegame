@@ -51,6 +51,7 @@
     background:rgba(6,10,8,0.86);border:1px solid #1db954;border-radius:8px;padding:8px 16px 10px;text-align:center;
     opacity:0;transition:opacity .18s, transform .18s;box-shadow:0 0 18px rgba(29,185,84,0.35);}
   #toast.show{opacity:1;transform:translate(-50%,0);}
+  #toast.show.under{opacity:0.22;}
   #pauseBtn{position:absolute;top:10px;right:10px;z-index:8;background:rgba(6,10,8,0.7);border:1px solid #3a3a3a;color:#bbb;
     font-family:inherit;font-size:1rem;width:42px;height:42px;border-radius:8px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
@@ -399,7 +400,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b68 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b69 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -6245,6 +6246,27 @@ const Game = (function(){
     if(dt > 0.05) dt = 0.05;
     if(running){ update(dt); }
     render();
+    toastUnder();
+  }
+  /* a toast over the fight goes see-through while you (or a knot of foes)
+     are under it, so a lesson that stays up never hides what can hurt you */
+  let underN = 0;
+  function toastUnder(){
+    if(++underN % 4) return;
+    const el = $('toast');
+    if(!el.classList.contains('show') || !player){ el.classList.remove('under'); return; }
+    const tr = el.getBoundingClientRect(), r = cvs.getBoundingClientRect();
+    const kx = r.width / CW, ky = r.height / CH, pad = 26;
+    const inside = (x, y)=>{
+      const sx = r.left + x*kx, sy = r.top + y*ky;
+      return sx > tr.left - pad && sx < tr.right + pad && sy > tr.top - pad && sy < tr.bottom + pad*1.6;
+    };
+    let hit = inside(player.x, player.y);
+    if(!hit){
+      let n = 0;
+      for(const sp of spirits){ if(!sp.dead && inside(sp.x, sp.y) && (sp.boss || ++n >= 3)){ hit = true; break; } }
+    }
+    el.classList.toggle('under', hit);
   }
 
   /* ---------- input: steer only — everything else is automatic ---------- */
