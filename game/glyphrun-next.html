@@ -400,7 +400,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b69 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b70 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -3968,6 +3968,16 @@ const Game = (function(){
       player.y += dy*spd*Math.min(1,mag)*dt;
       player.runPhase += spd*dt*0.055;
     }
+    // the open gate draws a glyph that has let go of the reins: after a few
+    // breaths it drifts in on its own, so no one stands lost beside 安
+    if(gate && mag <= 0.01 && player.dashT <= 0 && gate.born > 3.5){
+      const gx = gate.x - player.x, gy = gate.y - player.y, gd = Math.hypot(gx, gy);
+      if(gd > 1){
+        const pull = Math.min(1, (gate.born - 3.5)/1.5) * 120;
+        player.x += gx/gd*pull*dt; player.y += gy/gd*pull*dt;
+        player.runPhase += pull*dt*0.04;
+      }
+    }
     player.x = clamp(player.x, WALL+16, CW-WALL-16);
     player.y = clamp(player.y, WALL+34, CH-WALL-10);
     player.sq += (0-player.sq)*0.2;
@@ -6876,7 +6886,7 @@ const Game = (function(){
                          desk, elems, synOn, pools, sealSave: seal, codexSave: seen, acts, hails, arcs, brushInk, inkMo, bei, loanOwed }),
            // for scripted checks: call a summon, set the sky, jump a level, fire a gift now
            test: { glyph: (ch)=>applyGlyphEffect(ch), sky: (w)=>{ weather = w; wBoltT = 0.3; }, lv: (n)=>{ level = n; },
-                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, bei: (n)=>{ bei = n; }, market: ()=>openMarket(), ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; } } };
+                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, bei: (n)=>{ bei = n; }, market: ()=>openMarket(), ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; }, endWave: ()=>{ waveT = 0; }, at: (x, y)=>{ player.x = x; player.y = y; } } };
 })();
 
 </script>
