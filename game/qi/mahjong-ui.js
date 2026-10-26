@@ -3,12 +3,12 @@
    the empty seats. Hand after hand with running scores and a turning deal, the coach, a replay
    of the hand just played, and between hands the automatic table's reset (the old hand swept
    into the middle, the shuffle, four walls rising, the dice under the dome). */
-import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=8';
-import { icon, C as COL, drawPond } from './art.js?v=8';
-import * as M from './mahjong.js?v=8';
-import * as Sound from './sound.js?v=8';
-import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=8';
-import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=8';
+import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=9';
+import { icon, C as COL, drawPond } from './art.js?v=9';
+import * as M from './mahjong.js?v=9';
+import * as Sound from './sound.js?v=9';
+import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=9';
+import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=9';
 
 const RESET = 3400;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -26,6 +26,7 @@ export class MahjongModel {
     this.me = 0;
     this.reveal = false;
     this.called = null;
+    this.ending = null;      // how the hand just ended, for the ink in the middle (胡, 自摸 or 和)
     this.lifted = null;
     this.thinking = false;
     this.reset = null;
@@ -78,6 +79,9 @@ export class MahjongModel {
   startReset(previous) {
     const id = (this.reset ? this.reset.id : 0) + 1;
     this.reset = { id, start: performance.now(), previous, dice: dice(this.game) };
+    // The last hand's calls are swept away with its tiles.
+    this.called = null;
+    this.ending = null;
     this.lifted = null;
     Sound.machine('sweep');
     for (const [at, kind] of [[550, 'whir'], [1750, 'rise'], [2350, 'dice']]) {
@@ -180,14 +184,22 @@ export class MahjongModel {
 
   perform(step) {
     if (this.online) { this.lifted = null; this.online.send('move', { move: M.stepCode(step) }); this.changed(); return; }
-    const before = this.game;
+    const before = this.game, wasOver = before.phase === 'over';      // (apply changes the game in place)
     if (!this.game.apply(step)) return;
+    this.noteEnding(wasOver);
     this.replayAt = null;
     this.answers = {};
     this.answered = new Set();
     this.sound(step, before);
     this.persist();
     this.advance();
+  }
+
+  /** Notes how the hand ended, when this move ended it. */
+  noteEnding(wasOver) {
+    const r = this.game.result;
+    if (wasOver || this.game.phase !== 'over' || !r) return;
+    this.ending = { kind: r.winner == null ? 'drawn' : r.from == null ? 'selfDrawn' : 'discard', at: performance.now() };
   }
 
   sound(step, before) {
@@ -293,6 +305,7 @@ export class MahjongModel {
       }
       if (v.steps.length !== this.game.steps.length || v.phase !== this.game.phase || v.dealer !== this.game.dealer) this.replayAt = null;
       this.game = v;
+      if (!newHand) this.noteEnding(before.phase === 'over');
     }
     const base = (r.mj && r.mj.scores) || [0, 0, 0, 0];
     this.scores = this.game.result ? base.map((s, i) => s + this.game.result.change[i]) : base;
@@ -637,15 +650,47 @@ function die(ctx, x, y, w, faceN) {
 
 export const model = new MahjongModel();
 
+// ── The calls in ink ──────────────────────────────────────────────────────────
+
+/** How the claims (吃 碰 杠) look, while Houfu chooses: 'a' all on the red 斗方, 'b' black ink
+    lifted off the table by a pale glow, 'c' cinnabar ink. The hand's ending (胡 自摸 和) is
+    always on the 斗方. */
+const INK_STYLE = 'b';
+
+const inkURL = (name) => new URL(`./ink/${name}.png`, import.meta.url).href;
+/** The characters in 名家's hands (the app's tools/ink): their aspect ratios. */
+const INKS = { chi: 752 / 590, peng: 751 / 708, gang: 764 / 700, hu: 745 / 645, zimo: 444 / 791, he: 766 / 513 };
+/** How long each stays before it fades (ms). */
+const INK_STAY = { call: 900, ending: 2200 };
+
+/** One call in ink (the app's MahjongInk): big, no box, a soft shadow, as the 屠龍 banner; an
+    ending (or every call in style 'a') on a red 斗方 like a New Year 福. `elapsed` ms have
+    already passed (the screen was rebuilt). It removes itself once faded. */
+function inkMark(key, name, ending, x, y, h, elapsed) {
+  const onPaper = ending || INK_STYLE === 'a';
+  const look = onPaper ? 'paper' : INK_STYLE === 'b' ? 'glow' : 'red';
+  const gh = onPaper ? h * 0.62 : h;
+  const el = document.createElement('div');
+  el.className = `mj-ink-one ${look}`;
+  el.dataset.key = key;
+  el.style.cssText = `left:${x}px;top:${y}px;--h:${h}px;animation-delay:${-elapsed}ms,${(ending ? INK_STAY.ending : INK_STAY.call) - elapsed}ms`;
+  el.innerHTML = (onPaper ? `<img class="paper" src="${inkURL('doufang')}" alt="">` : '')
+    + `<div class="shade"><div class="glyph" style="height:${gh}px;width:${gh * INKS[name]}px;--img:url('${inkURL(name)}')"></div></div>`;
+  el.addEventListener('animationend', (e) => { if (e.animationName === 'mj-ink-out') el.remove(); });
+  return el;
+}
+
 class MahjongScreen extends GameScreen {
   constructor() { super('mahjong', model); this.root.classList.add('mj'); }
 
   makeBoard() {
-    this.wrap.innerHTML = '<div class="mj-table"><canvas class="mj-canvas"></canvas><div class="mj-actions"></div><div class="mj-lobby"></div></div><div class="mj-hand"></div>';
+    this.wrap.innerHTML = '<div class="mj-table"><canvas class="mj-canvas"></canvas><div class="mj-ink"></div><div class="mj-actions"></div><div class="mj-lobby"></div></div><div class="mj-hand"></div>';
     this.canvas = this.wrap.querySelector('.mj-canvas');
     this.tableEl = this.wrap.querySelector('.mj-table');
     this.actionsEl = this.wrap.querySelector('.mj-actions');
     this.lobbyEl = this.wrap.querySelector('.mj-lobby');
+    this.inkEl = this.wrap.querySelector('.mj-ink');
+    for (const name of [...Object.keys(INKS), 'doufang']) new Image().src = inkURL(name);      // ready before the first call
     this.handEl = this.wrap.querySelector('.mj-hand');
     this.ro = new ResizeObserver(() => { if (this.three && app.view3D('mahjong') !== 'off') this.update3D(); else this.draw(); });
     this.ro.observe(this.tableEl);
@@ -674,6 +719,33 @@ class MahjongScreen extends GameScreen {
     this.renderHand();
     this.renderActions();
     this.renderLobby();
+    this.renderInk();
+  }
+
+  /** The calls in ink, once the table has dealt: 吃 碰 杠 by the seat that made them, and how
+      the hand ended (胡, 自摸, 和) big in the middle, on the 2D table or over the 3D one. */
+  renderInk() {
+    const box = this.tableEl.getBoundingClientRect();
+    if (box.width <= 0 || box.height <= 0) return;
+    const m = geometry(Math.floor(box.width), Math.floor(box.height));
+    const call = model.resetting ? null : model.called;
+    const end = model.resetting || model.review != null ? null : model.ending;
+    const want = [];
+    if (call) {
+      const pos = (call.seat - model.me + 4) % 4;
+      const dx = m.cw / 2 + 2.5 * m.h, dy = m.ch / 2 + 1.5 * m.h;
+      const [x, y] = [[m.cx, m.cy + dy], [m.cx + dx, m.cy], [m.cx, m.cy - dy], [m.cx - dx, m.cy]][pos];
+      const name = call.claim === 'pung' ? 'peng' : call.claim === 'kong' ? 'gang' : call.claim === 'win' ? 'hu' : 'chi';     // a chow is { chow: n }
+      want.push({ key: `call ${call.at}`, at: call.at, name, ending: false, x, y, h: m.r * 3.4 });
+    }
+    if (end) want.push({ key: `end ${end.at}`, at: end.at, name: { discard: 'hu', selfDrawn: 'zimo', drawn: 'he' }[end.kind], ending: true, x: m.cx, y: m.cy, h: Math.min(m.H * 0.46, m.r * 9) });
+    for (const el of [...this.inkEl.children]) if (!want.some((w) => w.key === el.dataset.key)) el.remove();
+    for (const w of want) {
+      if ([...this.inkEl.children].some((el) => el.dataset.key === w.key)) continue;
+      const elapsed = performance.now() - w.at;
+      if (elapsed > (w.ending ? INK_STAY.ending : INK_STAY.call) + 400) continue;      // already gone
+      this.inkEl.appendChild(inkMark(w.key, w.name, w.ending, w.x, w.y, w.h, elapsed));
+    }
   }
 
   draw() {
@@ -713,21 +785,6 @@ class MahjongScreen extends GameScreen {
     }
     if (rs && tt < RESET) { drawMachine(ctx, tt, rs.dice, m); animating = true; }
     else drawCenter(ctx, g, m, model);
-    // The call, big for a moment by the seat that made it.
-    const call = model.called;
-    if (call && now - call.at < 1300) {
-      const pos = (call.seat - model.me + 4) % 4;
-      const dx = m.cw / 2 + 2.5 * m.h, dy = m.ch / 2 + 1.5 * m.h;
-      const [x, y] = [[m.cx, m.cy + dy], [m.cx + dx, m.cy], [m.cx, m.cy - dy], [m.cx - dx, m.cy]][pos];
-      const k = now - call.at < 900 ? 0 : (now - call.at - 900) / 400;
-      const size = m.r * 2.6 * (1 + 0.3 * k);
-      ctx.save();
-      ctx.globalAlpha = 1 - k;
-      ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = size * 0.1; ctx.shadowOffsetY = size * 0.03;
-      glyph(ctx, call.claim === 'win' ? '胡' : call.claim === 'kong' ? '杠' : call.claim === 'pung' ? '碰' : '吃', x - size / 2, y - size / 2, size, COL.gold);
-      ctx.restore();
-      animating = true;
-    }
     if (animating && !this.frame) this.frame = requestAnimationFrame(() => { this.frame = 0; this.draw(); if (!model.resetting) this.renderHand(); });
   }
 
@@ -843,7 +900,7 @@ class MahjongScreen extends GameScreen {
     if (!on) { if (this.host3d) this.host3d.style.display = 'none'; return; }
     if (!this.three) {
       if (!this.loading3d) {
-        this.loading3d = Promise.all([import('./three/world.js?v=8'), import('./three/mahjong3d.js?v=8')]).then(([world, mj]) => {
+        this.loading3d = Promise.all([import('./three/world.js?v=9'), import('./three/mahjong3d.js?v=9')]).then(([world, mj]) => {
           try {
             const view = new world.BoardView();
             const content = new mj.Mahjong3DScene(view);

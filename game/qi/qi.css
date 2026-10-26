@@ -297,6 +297,22 @@ a { color: var(--green); }
 .mj-act small { font: 700 10px var(--mono); }
 .mj-act canvas { display: block; }
 .mj-lobby { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; pointer-events: none; }
+/* The calls in ink (the app's MahjongInk), over the 2D table or the 3D one, under the buttons.
+   Shadows sit on a wrapper: a mask also cuts away its own element's drop shadow. */
+.mj-ink { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; }
+.mj-ink-one {
+  position: absolute; display: grid; place-items: center; transform: translate(-50%, -50%);
+  animation: mj-ink-in .3s cubic-bezier(.2, .8, .3, 1) both, mj-ink-out .45s ease-out forwards;
+}
+.mj-ink-one > * { grid-area: 1 / 1; }
+.mj-ink-one .paper { width: calc(var(--h) * 1.12); height: calc(var(--h) * 1.12); filter: drop-shadow(0 calc(var(--h) * .025) calc(var(--h) * .04) rgba(0, 0, 0, .55)); }
+.mj-ink-one .glyph { background: #120e0c; -webkit-mask: var(--img) center / contain no-repeat; mask: var(--img) center / contain no-repeat; }
+.mj-ink-one.red .glyph { background: #ce3a26; }
+/* Black ink lifted off the busy table by a pale glow, like ink soaking into paper. */
+.mj-ink-one.glow .shade { filter: drop-shadow(0 0 calc(var(--h) * .05) rgba(245, 236, 214, .95)) drop-shadow(0 0 calc(var(--h) * .02) rgba(245, 236, 214, .8)); }
+.mj-ink-one.red .shade { filter: drop-shadow(0 calc(var(--h) * .03) calc(var(--h) * .03) rgba(0, 0, 0, .7)); }
+@keyframes mj-ink-in { from { opacity: 0; transform: translate(-50%, -50%) scale(1.18); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes mj-ink-out { to { opacity: 0; } }
 .mj-lobby-card { pointer-events: auto; }
 .mj-lobby[hidden] { display: none; }
 .mj-lobby-card { width: min(360px, 92%); padding: 14px; text-align: center; background: rgba(5, 17, 19, .94); border: 2px solid var(--hair-hi); }

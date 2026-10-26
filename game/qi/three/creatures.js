@@ -6,8 +6,8 @@
    spines and mane, short clawed legs. A group likely to be captured lies flat and grey; one
    with a single liberty left breathes a puff (气) over it. On the Gomoku board Black grows
    tomatoes and White cucumbers, ripening as their lines grow, joined by vines. */
-import * as THREE from './three.js?v=8';
-import { VoxelModel, Noise, VOXEL_MATERIALS } from './voxels.js?v=8';
+import * as THREE from './three.js?v=9';
+import { VoxelModel, Noise, VOXEL_MATERIALS } from './voxels.js?v=9';
 
 // ── Where the bodies go ───────────────────────────────────────────────────────
 
@@ -468,9 +468,10 @@ function cached(key, build) {
 }
 /** Swift's rounded(): halves away from zero. */
 const round = (x) => Math.sign(x) * Math.round(Math.abs(x));
+/** In 32-bit floats as the app does it, so a channel that lands on .5 rounds the same way. */
 function mix(a, b, t) {
-  const ch = (v, s) => (v >> s) & 0xff;
-  const m = (s) => Math.round(ch(a, s) * (1 - t) + ch(b, s) * t) << s;
+  const f = Math.fround, ch = (v, s) => (v >> s) & 0xff, t32 = f(t), u = f(1 - t32);
+  const m = (s) => Math.round(f(f(ch(a, s) * u) + f(ch(b, s) * t32))) << s;
   return m(16) | m(8) | m(0);
 }
 
@@ -509,7 +510,8 @@ export function tomato(t) {
   });
 }
 
-/** A cucumber lying along its line (local z), gently curved: rich green with pale stripes
+/** A cucumber lying along its line (local z), gently curved, ripening from pale yellow-green
+    alone to dark emerald in a long line (as a tomato goes orange to red), with pale stripes
     running its length, dark warts with white spine tips, a stem stub at one end and at the
     other its yellow flower, a bud on a young one, open on a grown one. Short alone, long and
     dark in a long line. */
@@ -518,7 +520,9 @@ export function cucumber(t, seed) {
   return cached(`cucumber ${s} ${k}`, () => {
     const v = new VoxelModel();
     const f = s / 4, r = (0.16 + 0.07 * f) * 16, half = (0.3 + 0.17 * f) * 16;
-    const base = mix(0x5fae45, 0x2c6e27, f), light = mix(base, 0xffffff, 0.2), dark = mix(base, 0x000000, 0.3);
+    // Pale yellow-green alone, ripening through fresh green to a dark emerald in a long line.
+    const ramp = [0xdde27a, 0xa6cf54, 0x62a83f, 0x347f31, 0x1b5626];
+    const base = ramp[s], light = mix(base, 0xffffff, 0.2), dark = mix(base, 0x000000, 0.3);
     const stripe = mix(base, 0xd4ec98, 0.55), wart = mix(base, 0x0d2a0c, 0.55);
     const bend = (k % 2 === 0 ? 1 : -1) * r * 0.5;
     for (let z = Math.floor(-half); z <= Math.ceil(half); z++) {

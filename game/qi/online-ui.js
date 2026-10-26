@@ -1,11 +1,11 @@
 /* Playing a friend online (the app's Qi/Views/OnlineViews.swift): the Play online sheet
    (start a room or join one), the room panel in a game's rail, invites, and the way back
    to a room after closing the tab. Rooms are shared with the iPhone and iPad app. */
-import { app, hooks, sheet, updateSheet, sheetHead, closeSheet, esc, t, go, scheduleRender, toast, rerender } from './main.js?v=8';
-import { icon } from './art.js?v=8';
-import { OnlineSession } from './online.js?v=8';
-import { RoomCode, ALPHABET } from './room.js?v=8';
-import { loadCrypto } from './mahjong-keys.js?v=8';
+import { app, hooks, sheet, updateSheet, sheetHead, closeSheet, esc, t, go, scheduleRender, toast, rerender } from './main.js?v=9';
+import { icon } from './art.js?v=9';
+import { OnlineSession } from './online.js?v=9';
+import { RoomCode, ALPHABET } from './room.js?v=9';
+import { loadCrypto } from './mahjong-keys.js?v=9';
 
 /** Mahjong rooms seal each hand: the cryptography loads before a room is opened or joined
     (a join or a return may turn out to be Mahjong). Other games go on without it. */

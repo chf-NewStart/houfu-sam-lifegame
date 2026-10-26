@@ -4,12 +4,12 @@
    and its melds laid down, and the square plate in the middle with its dome for the dice.
    Between hands it resets the way the machine does: the tiles sink into the middle, the walls
    rise out of the table, the dice tumble under the dome. Units: a tile is 0.5 wide. */
-import * as THREE from './three.js?v=8';
-import { color, bitmap, fill, texture } from './voxels.js?v=8';
-import { THEMES, buildBoard } from './world.js?v=8';
-import { tween, setOpacity } from './grid3d.js?v=8';
-import { faceOnly } from '../tiles.js?v=8';
-import * as M from '../mahjong.js?v=8';
+import * as THREE from './three.js?v=9';
+import { color, bitmap, fill, texture } from './voxels.js?v=9';
+import { THEMES, buildBoard } from './world.js?v=9';
+import { tween, setOpacity } from './grid3d.js?v=9';
+import { faceOnly } from '../tiles.js?v=9';
+import * as M from '../mahjong.js?v=9';
 
 const W = 0.5, L = 0.69, T = 0.36;
 export const SPAN = 13.2;
@@ -131,11 +131,11 @@ export class Mahjong3DScene {
     plate.position.set(0, this.top + 0.025, 0);
     plate.receiveShadow = true;
     this.world.add(plate);
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.8, 36, 18), new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 + 0.1, specular: new THREE.Color(1, 1, 1), shininess: 90, depthWrite: false }));
-    dome.position.set(0, this.top + 0.05, 0);
-    dome.scale.set(1, 0.62, 1);
-    dome.renderOrder = 20;
-    this.world.add(dome);
+    // The dice's dome, as its glassy rim on the plate (a clear sphere over the dice hid them).
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.66, 0.03, 12, 64), new THREE.MeshPhongMaterial({ color: color(0xebebeb), transparent: true, opacity: 0.55, specular: new THREE.Color(1, 1, 1), shininess: 90 }));
+    rim.rotation.x = Math.PI / 2;
+    rim.position.set(0, this.top + 0.07, 0);
+    this.world.add(rim);
   }
 
   lay(table, root) {

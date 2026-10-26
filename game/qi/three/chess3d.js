@@ -5,11 +5,11 @@
    set's height order, pawn lowest, king highest. Black is the river pebble, White the shell.
    Moves hop from square to square, captured pieces sink away, and the board shows the same
    marks as the 2D board. */
-import * as THREE from './three.js?v=8';
-import { color } from './voxels.js?v=8';
-import { THEMES, buildBoard, chessFace, ring, glow } from './world.js?v=8';
-import { tween, setOpacity, spreadingRing } from './grid3d.js?v=8';
-import { MASKS } from '../art.js?v=8';
+import * as THREE from './three.js?v=9';
+import { color } from './voxels.js?v=9';
+import { THEMES, buildBoard, chessFace, ring, glow } from './world.js?v=9';
+import { tween, setOpacity, spreadingRing } from './grid3d.js?v=9';
+import { MASKS } from '../art.js?v=9';
 
 export const SPAN = 8 + 2 * 0.45;
 const HEIGHT = [0, 0.56, 0.78, 0.86, 0.72, 0.98, 1.1];

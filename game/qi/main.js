@@ -1,12 +1,12 @@
 /* Qi on the web: the app's start screen and its games (Qi/Views/*.swift), in English and
    中文. Each game screen is the board (2D canvas, or 3D when it is swapped in) and the
    rail: the header, the status, the room, the replay, the coach and the buttons. */
-import { C, icon, glyph } from './art.js?v=8';
-import { GridBoard, ChessBoard } from './boards.js?v=8';
-import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=8';
-import * as Gomoku from './gomoku.js?v=8';
-import * as Chess from './chess.js?v=8';
-import * as Sound from './sound.js?v=8';
+import { C, icon, glyph } from './art.js?v=9';
+import { GridBoard, ChessBoard } from './boards.js?v=9';
+import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=9';
+import * as Gomoku from './gomoku.js?v=9';
+import * as Chess from './chess.js?v=9';
+import * as Sound from './sound.js?v=9';
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -606,7 +606,7 @@ class GomokuScreen extends GameScreen {
     if (!online) html += btn('plus', t('New game', '新对局'), 'newMenu', { wide: true });
     html += viewRow('gomoku');
     if (hooks.board3D && app.view3D('gomoku') !== 'off') {
-      html += `<div class="panel legend">${icon('leaf')}<div>${esc(t('Black grows tomatoes, White cucumbers. Each one ripens as its line grows: alone it\'s small and green; vines join every line of two or more; five in a row is a prize harvest.', '黑方种番茄，白方种黄瓜。连线越长，果实越大越熟：单子又小又青；两子以上的线由藤蔓相连；五连就是大丰收。'))}</div></div>`;
+      html += `<div class="panel legend">${icon('leaf')}<div>${esc(t('Black grows tomatoes, White cucumbers. Each one ripens as its line grows: alone it\'s small and pale, a tomato orange and a cucumber light green; a long line turns tomatoes red and cucumbers dark green; vines join every line of two or more; five in a row is a prize harvest.', '黑方种番茄，白方种黄瓜。连线越长，果实越大越熟：单子又小又嫩，番茄橙黄、黄瓜浅绿；连线越长，番茄越红、黄瓜越深绿；两子以上的线由藤蔓相连；五连就是大丰收。'))}</div></div>`;
     }
     return html;
   }

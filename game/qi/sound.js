@@ -12,7 +12,7 @@ let ctx = null;
 let node = null;
 let enabled = true;
 let theme = 'stone';
-const WORKLET = new URL('./synth-worklet.js?v=8', import.meta.url);
+const WORKLET = new URL('./synth-worklet.js?v=9', import.meta.url);
 
 export function setEnabled(on) { enabled = on; if (on) unlock(); }
 export function setTheme(t) { theme = t; }
