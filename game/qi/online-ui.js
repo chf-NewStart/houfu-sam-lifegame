@@ -1,10 +1,15 @@
 /* Playing a friend online (the app's Qi/Views/OnlineViews.swift): the Play online sheet
    (start a room or join one), the room panel in a game's rail, invites, and the way back
    to a room after closing the tab. Rooms are shared with the iPhone and iPad app. */
-import { app, hooks, sheet, updateSheet, sheetHead, closeSheet, esc, t, go, scheduleRender, toast, rerender } from './main.js?v=3';
-import { icon } from './art.js?v=3';
-import { OnlineSession } from './online.js?v=3';
-import { RoomCode, ALPHABET } from './room.js?v=3';
+import { app, hooks, sheet, updateSheet, sheetHead, closeSheet, esc, t, go, scheduleRender, toast, rerender } from './main.js?v=4';
+import { icon } from './art.js?v=4';
+import { OnlineSession } from './online.js?v=4';
+import { RoomCode, ALPHABET } from './room.js?v=4';
+import { loadCrypto } from './mahjong-keys.js?v=4';
+
+/** Mahjong rooms seal each hand: the cryptography loads before a room is opened or joined
+    (a join or a return may turn out to be Mahjong). Other games go on without it. */
+async function withKeys(f) { try { await loadCrypto(); } catch (e) { /* not Mahjong, or offline */ } f(); }
 
 const online = new OnlineSession();
 app.online = online;
@@ -162,14 +167,13 @@ function renderSheet(first) {
     create: () => {
       s.pressed = 'create';
       const side = s.side === 0 ? (Math.random() < 0.5 ? 1 : 2) : s.side;
-      online.create(s.game, s.size, s.game === 'mahjong' ? 0 : side);
-      renderSheet();
+      const go = () => { online.create(s.game, s.size, s.game === 'mahjong' ? 0 : side); renderSheet(); };
+      if (s.game === 'mahjong') withKeys(go); else go();
     },
     join: () => {
       if (!RoomCode.isValid(s.code)) return;
       s.pressed = 'join';
-      online.join(s.code);
-      renderSheet();
+      withKeys(() => { online.join(s.code); renderSheet(); });
     },
   };
   const focused = document.activeElement && document.activeElement.id === 'qiCode';
@@ -200,7 +204,7 @@ hooks.hubExtras = () => {
 
 hooks.hubAct = (a) => {
   if (a === 'oOpen') hooks.openOnline('chess');
-  else if (a === 'oResume') online.resumeSaved();
+  else if (a === 'oResume') withKeys(() => online.resumeSaved());
   else if (a === 'oForget') { online.forgetSaved(); rerender(true); }
 };
 

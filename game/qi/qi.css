@@ -267,3 +267,56 @@ a { color: var(--green); }
 .promo3d { position: absolute; inset: 0; background: rgba(0, 0, 0, .35); display: flex; align-items: center; justify-content: center; gap: 10px; z-index: 3; }
 .promo3d button { padding: 8px; background: #82978f; border: 2px solid var(--green); cursor: pointer; }
 .promo3d .glyph { display: block; image-rendering: pixelated; }
+
+/* Mahjong */
+.game.mj .stage { aspect-ratio: 1.12; }
+@media (min-aspect-ratio: 1/1) and (min-width: 700px) { .game.mj .stage { aspect-ratio: auto; } }
+.mj .board-wrap { display: flex; flex-direction: column; align-items: stretch; justify-items: stretch; gap: 6px; }
+.mj-table { position: relative; flex: 1 1 auto; min-height: 0; }
+.mj-canvas { position: absolute; inset: 0; display: block; }
+.mj-hand { flex: 0 0 auto; height: clamp(50px, 15%, 80px); display: flex; align-items: flex-end; justify-content: center; gap: var(--gap, 8px); }
+.mj-row { display: flex; align-items: flex-end; }
+.mj-row img { display: block; image-rendering: pixelated; }
+.mj-tile { padding: 0; border: 0; background: none; cursor: pointer; position: relative; transition: transform .1s; }
+.mj-tile img { width: 100%; height: auto; }
+.mj-tile:disabled { cursor: default; }
+.mj-tile.lifted { transform: translateY(-32%); }
+.mj-tile.mark::before {
+  content: ""; position: absolute; left: 50%; top: -11px; width: 10px; height: 6px; transform: translateX(-50%);
+  background: linear-gradient(var(--gold), var(--gold)) 0 0 / 10px 2px no-repeat, linear-gradient(var(--gold), var(--gold)) 2px 2px / 6px 2px no-repeat, linear-gradient(var(--gold), var(--gold)) 4px 4px / 2px 2px no-repeat;
+}
+.mj-actions { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; pointer-events: none; }
+.mj-act { pointer-events: auto; display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 11px; cursor: pointer;
+  background: rgba(5, 17, 19, .92); border: 2px solid rgba(232, 176, 74, .7); color: var(--gold); font: 700 13px var(--mono); box-shadow: 0 3px 0 rgba(0, 0, 0, .5); }
+.mj-act.prominent { background: var(--gold); color: #000; }
+.mj-act.quiet { color: rgba(255, 255, 255, .8); border-color: var(--hair); }
+.mj-act .sub { display: flex; flex-direction: column; gap: 2px; }
+.mj-act .ts { display: flex; gap: 1px; }
+.mj-act .ts img { image-rendering: pixelated; }
+.mj-act small { font: 700 10px var(--mono); }
+.mj-act canvas { display: block; }
+.mj-lobby { position: absolute; inset: 0; display: grid; place-items: center; }
+.mj-lobby[hidden] { display: none; }
+.mj-lobby-card { width: min(360px, 92%); padding: 14px; text-align: center; background: rgba(5, 17, 19, .94); border: 2px solid var(--hair-hi); }
+.mj-lobby-card .panel { text-align: left; margin: 10px 0; }
+.mj-lobby-card p { font-size: 12.5px; color: var(--soft); margin: 0; }
+.mj-title { display: flex; justify-content: center; }
+.mj-kicker { font: 700 10px var(--mono); color: var(--green); margin-bottom: 4px; }
+.status-line.over { color: var(--gold); }
+.mj-seats { margin-top: 8px; }
+.mj-seat { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 3px 0; }
+.mj-seat .wind { width: 16px; font-weight: 700; color: rgba(255, 255, 255, .7); }
+.mj-seat .wind.east { color: var(--gold); }
+.mj-seat .muted { color: var(--muted); }
+.mj-seat .ready { margin-left: auto; font: 700 10px var(--mono); color: var(--green); }
+.mj-seat .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-left: auto; }
+.mj-seat .ready + .dot { margin-left: 6px; }
+.mj-seat .dot.away { background: var(--gold); }
+.mj-change { display: flex; gap: 4px; margin-top: 8px; }
+.mj-change div { flex: 1; text-align: center; }
+.mj-change small { display: block; font: 9px var(--mono); color: var(--muted); }
+.mj-change b { font: 700 12px var(--mono); color: rgba(255, 255, 255, .6); }
+.mj-change b.up { color: var(--green); }
+.mj-change b.down { color: var(--danger); }
+.mj-rule-tiles { width: 56px; flex: none; display: flex; }
+.mj-rule-tiles img { image-rendering: pixelated; }

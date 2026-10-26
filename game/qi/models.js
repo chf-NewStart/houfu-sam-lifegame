@@ -3,9 +3,9 @@
    with the coach, undo, replay of a finished game, and the 屠龍/斬蛇 moment in Go. Each
    model calls `changed()` after anything the screen shows; the screens read its fields. */
 import '../go-engine.js?v=46';
-import * as Gomoku from './gomoku.js?v=3';
-import * as Chess from './chess.js?v=3';
-import * as Sound from './sound.js?v=3';
+import * as Gomoku from './gomoku.js?v=4';
+import * as Chess from './chess.js?v=4';
+import * as Sound from './sound.js?v=4';
 
 export const Go = globalThis.GoEngine;
 
@@ -21,7 +21,7 @@ let worker = null, nextId = 1;
 const waiting = new Map();
 export function ask(query) {
   if (!worker) {
-    worker = new Worker(new URL('./worker.js?v=3', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./worker.js?v=4', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => { const done = waiting.get(e.data.id); waiting.delete(e.data.id); if (done) done(e.data.move); };
   }
   const id = nextId++;

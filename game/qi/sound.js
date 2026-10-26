@@ -12,7 +12,7 @@ let ctx = null;
 let node = null;
 let enabled = true;
 let theme = 'stone';
-const WORKLET = new URL('./synth-worklet.js?v=3', import.meta.url);
+const WORKLET = new URL('./synth-worklet.js?v=4', import.meta.url);
 
 export function setEnabled(on) { enabled = on; if (on) unlock(); }
 export function setTheme(t) { theme = t; }
@@ -196,6 +196,32 @@ export function slay(color) {
 }
 const bells = {};
 export function tile(kind) { play(tileVoices(kind, theme)); }
-/** The automatic mahjong table: its sweep, whir, rising walls and dice (MahjongScreen). */
-export function voices(list) { play(list); }
+/** The automatic mahjong table (麻将机) between hands: the tiles swept into the middle, the
+    motor's whir with the shuffle clattering inside, the walls rising with a soft clunk, the
+    dice rattling under the dome. The same little randomness every time: one machine. */
+export function machine(kind) {
+  let seed = 0x9e3779b9;
+  const next = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return (seed >>> 8) / 16777216; };
+  let list = [];
+  if (kind === 'sweep') {
+    list = [V('noise', 2400, 700, 0.5, 0.05, 0, 0.18)];
+    for (let i = 0; i < 6; i++) list.push(V('noise', 3000, 1500, 0.02, 0.03, 0.15 + i * 0.05 + next() * 0.03));
+  } else if (kind === 'whir') {
+    list = [V('sine', 92, 118, 1.25, 0.05, 0, 0.25), V('sine', 184, 236, 1.1, 0.025, 0, 0.25), V('noise', 380, 260, 1.2, 0.05, 0, 0.3)];
+    for (let i = 0; i < 16; i++) {
+      const at = 0.1 + next() * 1.0, p = 0.85 + next() * 0.3;
+      list.push(V('noise', 1500 * p, 700, 0.018, 0.035, at), V('sine', 900 * p, 820 * p, 0.03, 0.025, at));
+    }
+  } else if (kind === 'rise') {
+    list = [V('sine', 70, 140, 0.4, 0.03, 0, 0.3), V('sine', 150, 95, 0.14, 0.08, 0.42), V('noise', 700, 300, 0.06, 0.06, 0.42), V('sine', 1300, 1200, 0.03, 0.025, 0.43)];
+  } else if (kind === 'dice') {
+    let t = 0;
+    for (let i = 0; i < 9; i++) {
+      t += 0.035 + next() * 0.06 + i * 0.006;
+      const p = 0.9 + next() * 0.25;
+      list.push(V('noise', 7000, 4000, 0.008, 0.05, t), V('sine', 2600 * p, 2500 * p, 0.025, 0.03, t), V('sine', 4100 * p, 4000 * p, 0.015, 0.015, t));
+    }
+  }
+  play(list);
+}
 export function stopAll() { if (node) node.port.postMessage('stop'); }
