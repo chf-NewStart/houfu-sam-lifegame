@@ -2,17 +2,17 @@
    the 3D button puts the 3D board in a window at the top of the rail; a tap on the window
    swaps the two boards, so the 3D one is played on and the 2D one watches from the window.
    three.js and the 3D code load only when 3D is first turned on. */
-import { app, hooks, esc, t } from './main.js?v=7';
-import { GridBoard, ChessBoard } from './boards.js?v=7';
-import { Go, ask } from './models.js?v=7';
-import * as Gomoku from './gomoku.js?v=7';
-import * as Chess from './chess.js?v=7';
-import { glyph } from './art.js?v=7';
+import { app, hooks, esc, t } from './main.js?v=8';
+import { GridBoard, ChessBoard } from './boards.js?v=8';
+import { Go, ask } from './models.js?v=8';
+import * as Gomoku from './gomoku.js?v=8';
+import * as Chess from './chess.js?v=8';
+import { glyph } from './art.js?v=8';
 
 let lib = null, loading = null, failed = false;
 function load() {
   if (lib || loading) return loading;
-  loading = Promise.all([import('./three/world.js?v=7'), import('./three/grid3d.js?v=7'), import('./three/chess3d.js?v=7'), import('./three/creatures.js?v=7')])
+  loading = Promise.all([import('./three/world.js?v=8'), import('./three/grid3d.js?v=8'), import('./three/chess3d.js?v=8'), import('./three/creatures.js?v=8')])
     .then(([world, grid, chess, creatures]) => { lib = { world, grid, chess, creatures }; })
     .catch(() => { failed = true; })
     .finally(() => { loading = null; for (const s of waiting) s.render(); waiting.clear(); });

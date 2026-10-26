@@ -12,9 +12,9 @@
    Seat 1 moves first: Black in Go and Gomoku, White in chess. Both sides replay g.moves
    through the same rules, so they always agree on the position. A web player and an iPhone
    player share one room: the JSON here is exactly what the app reads and writes. */
-import * as Gomoku from './gomoku.js?v=7';
-import * as Chess from './chess.js?v=7';
-import { goFromMoves, point } from './models.js?v=7';
+import * as Gomoku from './gomoku.js?v=8';
+import * as Chess from './chess.js?v=8';
+import { goFromMoves, point } from './models.js?v=8';
 
 /** The 7-letter codes people read to each other: no I, O, 0 or 1. */
 export const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

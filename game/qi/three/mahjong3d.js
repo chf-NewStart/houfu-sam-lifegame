@@ -4,12 +4,12 @@
    and its melds laid down, and the square plate in the middle with its dome for the dice.
    Between hands it resets the way the machine does: the tiles sink into the middle, the walls
    rise out of the table, the dice tumble under the dome. Units: a tile is 0.5 wide. */
-import * as THREE from './three.js?v=7';
-import { color, bitmap, fill, texture } from './voxels.js?v=7';
-import { THEMES, buildBoard } from './world.js?v=7';
-import { tween, setOpacity } from './grid3d.js?v=7';
-import { faceOnly } from '../tiles.js?v=7';
-import * as M from '../mahjong.js?v=7';
+import * as THREE from './three.js?v=8';
+import { color, bitmap, fill, texture } from './voxels.js?v=8';
+import { THEMES, buildBoard } from './world.js?v=8';
+import { tween, setOpacity } from './grid3d.js?v=8';
+import { faceOnly } from '../tiles.js?v=8';
+import * as M from '../mahjong.js?v=8';
 
 const W = 0.5, L = 0.69, T = 0.36;
 export const SPAN = 13.2;

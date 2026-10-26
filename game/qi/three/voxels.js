@@ -3,7 +3,7 @@
    each corner darkened by the cells around it (ambient occlusion), so small models read as
    solid things. Also the deterministic noise every texture and model uses, and the little
    canvas helpers that paint the board faces. */
-import * as THREE from './three.js?v=7';
+import * as THREE from './three.js?v=8';
 
 const BIAS = 1024;
 const key = (x, y, z) => (x + BIAS) + (y + BIAS) * 2048 + (z + BIAS) * 4194304;
@@ -123,13 +123,20 @@ export function color(hex) { return new THREE.Color().setHex(hex, THREE.SRGBColo
 // ── Noise ─────────────────────────────────────────────────────────────────────
 
 /** Deterministic noise for textures and models, so every random-looking detail is
-    correlated in space and the same board always looks the same. */
+    correlated in space and the same board always looks the same, as in the app. */
+const P32 = 4294967296;
 export const Noise = {
+  /** The app's hash exactly, though Swift wraps it in 64 bits: the 24 bits returned only need
+      the sum's low 53 bits (the low word from imul, the rest from the sum, exact as a double),
+      and the product's bits 32–39 come from the rounded double product. */
   hash(x, y, z = 0, seed = 0) {
-    let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(z | 0, 1442695041) + Math.imul(seed | 0, 144665) | 0;
-    h = Math.imul(h ^ (h >>> 13), 1274126177);
-    h ^= h >>> 16;
-    return (h & 0xffffff) / 0x1000000;
+    x |= 0; y |= 0; z |= 0; seed |= 0;
+    const hi = Math.floor((x * 374761393 + y * 668265263 + z * 1442695041 + seed * 144665) / P32) & 0x1fffff;
+    const lo = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(z, 1442695041) + Math.imul(seed, 144665)) >>> 0;
+    const glo = (lo ^ ((lo >>> 13) | (hi << 19))) >>> 0, ghi = (hi ^ (hi >>> 13)) & 0xff;      // h ^ (h >> 13)
+    const pl = Math.imul(glo, 1274126177) >>> 0;                                               // times K
+    const b = (Math.round((glo * 1274126177 - pl) / P32) + ghi * (1274126177 & 0xff)) & 0xff;
+    return ((pl ^ ((pl >>> 16) | (b << 16))) & 0xffffff) / 0x1000000;                           // (p ^ p >> 16)
   },
   /** Value noise in [0, 1): smooth between integer lattice points. `period` makes it tile. */
   value(x, y, z = 0, seed = 0, period = 0) {

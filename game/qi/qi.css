@@ -201,10 +201,11 @@ a { color: var(--green); }
 .slain { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 5; }
 .slain .ink-col { position: relative; height: var(--h); aspect-ratio: var(--ar); animation: slain-in .35s cubic-bezier(.2, 1.4, .4, 1); }
 .slain.out .ink-col { animation: slain-out .4s ease-out forwards; }
+/* The shadow on a wrapper: a mask also cuts away its own element's drop shadow. */
+.slain .ink-shade { position: absolute; inset: 0; filter: drop-shadow(0 calc(var(--h) * .011) calc(var(--h) * .016) rgba(0, 0, 0, .75)); }
 .slain .ink {
   position: absolute; inset: 0; background: var(--tint);
   -webkit-mask: var(--img) center / contain no-repeat; mask: var(--img) center / contain no-repeat;
-  filter: drop-shadow(0 calc(var(--h) * .011) calc(var(--h) * .016) rgba(0, 0, 0, .75));
 }
 .slain .seal { position: absolute; width: calc(var(--h) * .15); height: calc(var(--h) * .15); right: calc(var(--h) * -.18); bottom: 0; }
 .slain .words { position: absolute; left: 50%; top: calc(var(--h) * 1.05); transform: translateX(-50%); white-space: nowrap; text-align: center; }

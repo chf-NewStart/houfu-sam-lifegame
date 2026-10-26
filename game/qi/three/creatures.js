@@ -6,8 +6,8 @@
    spines and mane, short clawed legs. A group likely to be captured lies flat and grey; one
    with a single liberty left breathes a puff (气) over it. On the Gomoku board Black grows
    tomatoes and White cucumbers, ripening as their lines grow, joined by vines. */
-import * as THREE from './three.js?v=7';
-import { VoxelModel, Noise, color } from './voxels.js?v=7';
+import * as THREE from './three.js?v=8';
+import { VoxelModel, Noise, VOXEL_MATERIALS } from './voxels.js?v=8';
 
 // ── Where the bodies go ───────────────────────────────────────────────────────
 
@@ -451,105 +451,147 @@ export function gardenLines(board, n) {
 }
 export const stage = (length) => (Math.min(5, length) - 1) / 4;
 
-const sphere = new THREE.SphereGeometry(1, 24, 16);
-function glossy(hex, shine, emissive) {
-  return new THREE.MeshPhongMaterial({ color: color(hex), specular: new THREE.Color(shine, shine, shine), shininess: 42, emissive: emissive ? color(emissive) : 0 });
+// The produce is built of voxels like the snakes and dragons (16 to a cell), each shape once per growth stage
+// and kept, since the patch is laid out again on every move. Each placed fruit gets its own
+// materials, since a newly planted one fades in.
+
+const VOX = 1 / PER_CELL;
+const produce = new Map();
+function cached(key, build) {
+  let g = produce.get(key);
+  if (!g) {
+    g = build().geometry(VOX);
+    g.translate(-VOX / 2, 0, -VOX / 2);      // voxel 0 centred on the point
+    produce.set(key, g);
+  }
+  return new THREE.Mesh(g, VOXEL_MATERIALS.map((m) => m.clone()));
 }
-function matteM(hex) { return new THREE.MeshLambertMaterial({ color: color(hex) }); }
+/** Swift's rounded(): halves away from zero. */
+const round = (x) => Math.sign(x) * Math.round(Math.abs(x));
 function mix(a, b, t) {
   const ch = (v, s) => (v >> s) & 0xff;
   const m = (s) => Math.round(ch(a, s) * (1 - t) + ch(b, s) * t) << s;
   return m(16) | m(8) | m(0);
 }
 
-/** A tomato: green and small alone, red and fat in a long line, glowing in a five. */
-export function tomato(t) {
-  const node = new THREE.Group();
-  const r = 0.24 + 0.15 * t;
-  const body = new THREE.Mesh(sphere, glossy(t >= 1 ? 0xe8402e : mix(0xa9d65e, 0xd0342c, Math.min(1, t * 1.6)), 0.6, t >= 1 ? 0x4a1006 : 0));
-  body.scale.set(r, r * 0.86, r);
-  body.position.y = r * 0.86;
-  node.add(body);
-  const c = calyx(r * 1.4);
-  c.position.y = r * 1.72 - 0.01;
-  node.add(c);
-  return node;
-}
-
-/** A cucumber lying along its line (local z): bumpy, pale and short alone, long and dark in a
-    long line, a yellow flower still on a prize one. */
-export function cucumber(t, seed) {
-  const node = new THREE.Group();
-  const r = 0.15 + 0.08 * t, half = 0.3 + 0.17 * t;
-  const body = new THREE.Mesh(sphere, glossy(mix(0xc4e88a, 0x3f8a36, t), 0.3, t >= 1 ? 0x0c2a08 : 0));
-  body.scale.set(r, r * 0.9, half);
-  body.position.y = r * 0.9;
-  node.add(body);
-  const bump = matteM(0xd2eba8);
-  const count = Math.floor(6 + 10 * t);
-  for (let k = 0; k < count; k++) {
-    const u = (k + 0.5) / count * 2 - 1;
-    const a = Noise.hash(k, seed, 0, 4) * Math.PI * 0.9 + 0.05;
-    const ring = Math.sqrt(1 - u * u);
-    const dot = new THREE.Mesh(sphere, bump);
-    dot.scale.setScalar(r * 0.12);
-    dot.position.set(Math.cos(a) * r * ring, r * 0.9 + Math.sin(a) * r * 0.9 * ring, u * half * 0.92);
-    node.add(dot);
-  }
-  if (t >= 0.75) {
-    const flower = new THREE.Mesh(sphere, glossy(0xf2c84a, 0.3));
-    flower.scale.setScalar(r * 0.42);
-    flower.position.set(0, r * 0.95, half + r * 0.18);
-    node.add(flower);
-  }
-  return node;
-}
-
-function calyx(size) {
-  const node = new THREE.Group();
-  const leaf = matteM(0x3f7a2e);
-  for (let k = 0; k < 5; k++) {
-    const holder = new THREE.Group();
-    holder.rotation.set(0, k * 2 * Math.PI / 5, -0.18);
-    const l = new THREE.Mesh(new THREE.BoxGeometry(size * 0.55, size * 0.05, size * 0.16), leaf);
-    l.position.x = size * 0.27;
-    holder.add(l);
-    node.add(holder);
-  }
-  const s = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.05, size * 0.05, size * 0.22, 8), matteM(0x5d8a3a));
-  s.position.y = size * 0.1;
-  node.add(s);
-  return node;
-}
-
-/** A vine from one fruit to the next along a line, with a leaf halfway. */
-export function vine(a, b, black, seed) {
-  const node = new THREE.Group();
-  const stem = matteM(black ? 0x4a7a2c : 0x3d6e2a);
-  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b);
-  const mid = A.clone().add(B).multiplyScalar(0.5).add(new THREE.Vector3(0, 0.05, 0));
-  for (const [u, w] of [[A, mid], [mid, B]]) {
-    const len = u.distanceTo(w);
-    const piece = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, len, 8), stem);
-    piece.position.copy(u).add(w).multiplyScalar(0.5);
-    piece.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), w.clone().sub(u).normalize());
-    node.add(piece);
-  }
-  const d = B.clone().sub(A).normalize();
-  const side = new THREE.Vector3(d.z, 0, -d.x);
-  const leaf = new THREE.Mesh(sphere, matteM(0x4f8f3a));
-  leaf.scale.set(0.13, 0.025, 0.065);
-  leaf.position.copy(mid).add(side.clone().multiplyScalar(0.1 * (seed % 2 === 0 ? 1 : -1))).add(new THREE.Vector3(0, 0.01, 0));
-  leaf.rotation.y = Math.atan2(d.x, d.z) + 0.6;
-  node.add(leaf);
-  if (!black) {
-    for (let k = 0; k < 6; k++) {
-      const a2 = k * 1.1;
-      const curl = new THREE.Mesh(sphere, stem);
-      curl.scale.setScalar(0.012);
-      curl.position.copy(mid).sub(side.clone().multiplyScalar(0.08)).add(new THREE.Vector3(Math.cos(a2) * 0.035, 0.03 + k * 0.012, Math.sin(a2) * 0.035));
-      node.add(curl);
+/** Fills an ellipsoid of radii `r` around `c` (voxels), coloured by `color(x, y, z, lit)`,
+    `lit` running from −1 (away from the light, upper left) to 1 (towards it). */
+function ellipsoid(v, c, r, color) {
+  for (let x = Math.floor(c[0] - r[0]); x <= Math.ceil(c[0] + r[0]); x++) {
+    for (let y = Math.floor(c[1] - r[1]); y <= Math.ceil(c[1] + r[1]); y++) {
+      for (let z = Math.floor(c[2] - r[2]); z <= Math.ceil(c[2] + r[2]); z++) {
+        const dx = (x + 0.5 - c[0]) / r[0], dy = (y + 0.5 - c[1]) / r[1], dz = (z + 0.5 - c[2]) / r[2];
+        if (dx * dx + dy * dy + dz * dz > 1) continue;
+        v.set(x, y, z, color(x, y, z, (-dx + dy - dz) / 1.7));
+      }
     }
   }
+}
+
+/** A tomato: small and orange alone, reddening and fattening in a long line, ripest in a five.
+    Never green, so even a lone one can't be taken for a cucumber. */
+export function tomato(t) {
+  const s = Math.round(t * 4), ripe = s === 4;
+  const base = ripe ? 0xe8402e : mix(0xf29a3a, 0xd0342c, Math.min(1, s / 3));
+  const light = mix(base, 0xffffff, 0.25), dark = mix(base, 0x000000, 0.25);
+  return cached(`tomato ${s}`, () => {
+    const v = new VoxelModel();
+    const r = (0.24 + 0.15 * s / 4) * 16;
+    ellipsoid(v, [0, r * 0.86, 0], [r, r * 0.86, r], (x, y, z, lit) => (lit > 0.45 ? light : (lit < -0.45 ? dark : base)));
+    // The calyx: a ragged five-pointed star of leaves on top, and the stalk.
+    const top = Math.floor(r * 1.72);
+    for (let k = 0; k < 5; k++) {
+      const a = k * 2 * Math.PI / 5 + 0.3;
+      for (let j = 1; j <= Math.max(2, Math.trunc(r * 0.6)); j++) v.set(round(Math.cos(a) * j), top, round(Math.sin(a) * j), 0x3f7a2e);
+    }
+    v.set(0, top, 0, 0x3f7a2e); v.set(0, top + 1, 0, 0x5d8a3a); v.set(0, top + 2, 0, 0x5d8a3a);
+    return v;
+  });
+}
+
+/** A cucumber lying along its line (local z), gently curved: rich green with pale stripes
+    running its length, dark warts with white spine tips, a stem stub at one end and at the
+    other its yellow flower, a bud on a young one, open on a grown one. Short alone, long and
+    dark in a long line. */
+export function cucumber(t, seed) {
+  const s = Math.round(t * 4), k = seed % 4;
+  return cached(`cucumber ${s} ${k}`, () => {
+    const v = new VoxelModel();
+    const f = s / 4, r = (0.16 + 0.07 * f) * 16, half = (0.3 + 0.17 * f) * 16;
+    const base = mix(0x5fae45, 0x2c6e27, f), light = mix(base, 0xffffff, 0.2), dark = mix(base, 0x000000, 0.3);
+    const stripe = mix(base, 0xd4ec98, 0.55), wart = mix(base, 0x0d2a0c, 0.55);
+    const bend = (k % 2 === 0 ? 1 : -1) * r * 0.5;
+    for (let z = Math.floor(-half); z <= Math.ceil(half); z++) {
+      const u = (z + 0.5) / half;
+      if (Math.abs(u) > 1) continue;
+      const taper = Math.sqrt(1 - Math.pow(Math.abs(u), 3));      // round-ended, not pointed
+      const cx = bend * (1 - u * u);                                // the curve
+      const rad = r * taper;
+      for (let x = Math.floor(cx - rad); x <= Math.ceil(cx + rad); x++) {
+        for (let y = 0; y <= Math.ceil(rad * 1.8); y++) {
+          const dx = (x + 0.5 - cx) / rad, dy = (y + 0.5 - rad * 0.9) / (rad * 0.9);
+          if (dx * dx + dy * dy > 1) continue;
+          const around = Math.atan2(dy, dx);                        // where on the circumference
+          const lit = (-dx + dy) / 1.4;
+          let c = lit > 0.55 ? light : (lit < -0.4 ? dark : base);
+          if (Math.abs(Math.sin(around * 2.5)) < 0.22 && dy > -0.6) c = stripe;      // five pale stripes
+          if (dx * dx + dy * dy > 0.55 && Noise.hash(x * 7 + z * 3, y * 5 + k, 0, 4) > 0.9) {
+            c = Noise.hash(x, z + y, 0, 5) > 0.7 ? 0xf2f6e4 : wart;   // a wart, or its white spine
+          }
+          v.set(x, y, z, c);
+        }
+      }
+    }
+    // The stem stub at the back end.
+    const back = -round(half) - 1, mid = round(r * 0.9);
+    v.set(0, mid, back, 0x6b7a2e); v.set(0, mid, back - 1, 0x5d6a28);
+    // The flower at the front: a bud (stage 0–1) or five open petals.
+    const front = round(half) + 1;
+    if (s <= 1) {
+      for (const [dx, dy] of [[0, 0], [0, 1]]) v.set(dx, mid + dy, front, 0xe8c341);
+    } else {
+      for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+        v.set(dx, mid + dy, front, dx === 0 && dy === 0 ? 0xd28b1e : 0xf6cf3e);
+      }
+      for (const [dx, dy] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) v.set(dx, mid + dy, front, 0xf8dc6a);
+    }
+    return v;
+  });
+}
+
+/** A vine from one fruit to the next along a line, rising a little between them, with a leaf
+    halfway; a cucumber's has a curly tendril too. `a` and `b` are neighbouring points. */
+export function vine(a, b, black, seed) {
+  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const dx = round(d[0]), dz = round(d[2]), side = seed % 2 === 0 ? 1 : -1;
+  const node = cached(`vine ${dx} ${dz} ${black} ${side}`, () => {
+    const v = new VoxelModel();
+    const stem = black ? 0x4a7a2c : 0x3d6e2a, leaf = 0x4f8f3a, vein = 0x3b7230;
+    const n = Math.trunc(16 * Math.max(Math.abs(d[0]), Math.abs(d[2])));
+    for (let i = 0; i <= n; i++) {
+      const u = i / n;
+      v.set(round(dx * 16 * u), round(Math.sin(u * Math.PI) * 1.6), round(dz * 16 * u), stem);
+    }
+    // The leaf: a pointed diamond off to one side of the middle, its vein darker.
+    const mid = [dx * 8, dz * 8];
+    const len = Math.hypot(dx, dz), along = [dx / len, dz / len], across = [along[1] * side, -along[0] * side];
+    for (let i = 0; i <= 4; i++) {
+      const w = i < 2 ? i : 4 - i;
+      for (let j = -w; j <= w; j++) {
+        const px = mid[0] + across[0] * (2 + i) + along[0] * j, pz = mid[1] + across[1] * (2 + i) + along[1] * j;
+        v.set(round(px), 2, round(pz), j === 0 ? vein : leaf);
+      }
+    }
+    if (!black) {
+      // A cucumber's tendril, curling up on the other side.
+      for (let i = 0; i < 6; i++) {
+        const a2 = i * 1.1;
+        const px = mid[0] - across[0] * 2 + Math.cos(a2) * 1.2, pz = mid[1] - across[1] * 2 + Math.sin(a2) * 1.2;
+        v.set(round(px), 2 + Math.floor(i / 2), round(pz), stem);
+      }
+    }
+    return v;
+  });
+  node.position.set(a[0], a[1], a[2]);
   return node;
 }

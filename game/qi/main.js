@@ -1,12 +1,12 @@
 /* Qi on the web: the app's start screen and its games (Qi/Views/*.swift), in English and
    中文. Each game screen is the board (2D canvas, or 3D when it is swapped in) and the
    rail: the header, the status, the room, the replay, the coach and the buttons. */
-import { C, icon, glyph } from './art.js?v=7';
-import { GridBoard, ChessBoard } from './boards.js?v=7';
-import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=7';
-import * as Gomoku from './gomoku.js?v=7';
-import * as Chess from './chess.js?v=7';
-import * as Sound from './sound.js?v=7';
+import { C, icon, glyph } from './art.js?v=8';
+import { GridBoard, ChessBoard } from './boards.js?v=8';
+import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=8';
+import * as Gomoku from './gomoku.js?v=8';
+import * as Chess from './chess.js?v=8';
+import * as Sound from './sound.js?v=8';
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -790,7 +790,7 @@ export function showSlain(stage, slain) {
     ? `<div class="kai">一手提${chineseNumber(slain.count)}子</div>`
     : `<div class="px-title">${title}</div><div class="px-count">${count}</div>`;
   el.innerHTML = `<div class="ink-col" style="--h:${h}px;--ar:${ink.ar};--tint:${tint};--img:url('${ink.img}');--big:${big}px;--small:${small}px">
-    <div class="ink"></div><img class="seal" src="${SEAL}" alt=""><div class="words">${words}</div></div>`;
+    <div class="ink-shade"><div class="ink"></div></div><img class="seal" src="${SEAL}" alt=""><div class="words">${words}</div></div>`;
   stage.appendChild(el);
   setTimeout(() => el.classList.add('out'), 2600);
   setTimeout(() => el.remove(), 3050);

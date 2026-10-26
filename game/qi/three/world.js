@@ -3,8 +3,8 @@
    water, a brushed steel plate on tread plate, a raised garden bed on the pond, and a glass
    board among the stars; each board's face (a Go grid or chess squares) painted on its own
    surface; the lights; and the view that orbits it all. */
-import * as THREE from './three.js?v=7';
-import { VoxelModel, Noise, bitmap, fill, texture, color } from './voxels.js?v=7';
+import * as THREE from './three.js?v=8';
+import { VoxelModel, Noise, bitmap, fill, texture, color } from './voxels.js?v=8';
 
 export const THEMES = {
   stone: { top: 0.3, background: 0x051113 },
@@ -92,7 +92,7 @@ export function specks(ctx, n, seed, light = 0x70837d, dark = 0x455d59) {
     const count = 2 + Math.floor(Noise.hash(k, 14, 0, seed) * 9);
     for (let j = 0; j < count; j++) {
       const a = Noise.hash(k, j, 15, seed) * 2 * Math.PI, r = spread * Math.sqrt(Noise.hash(k, j, 16, seed));
-      const x = Math.floor(cx + Math.cos(a) * r), y = Math.floor(cy + Math.sin(a) * r);
+      const x = Math.trunc(cx + Math.cos(a) * r), y = Math.trunc(cy + Math.sin(a) * r);
       const big = Noise.hash(k, j, 17, seed) < 0.25;
       fill(ctx, x, y, big ? 4 : 2 + Math.floor(Noise.hash(k, j, 18, seed) * 2), big ? 2 : 1, Noise.hash(k, j, 19, seed) < 0.55 ? light : dark);
     }
@@ -165,6 +165,7 @@ function surface(theme, ctx, n, tint = false) {
 export function goFace(theme, size, margin, stars, cellPixels = 40) {
   const span = size - 1 + 2 * margin;
   const n = Math.round(span * cellPixels);
+  if (theme === 'soil') return field(size, margin, stars, cellPixels);
   const ctx = bitmap(n, n);
   if (theme === 'stone') { fill(ctx, 0, 0, n, n, 0x5b716c); specks(ctx, n, size); } else surface(theme, ctx, n);
   const [line, star] = INKS[theme];
@@ -177,6 +178,47 @@ export function goFace(theme, size, margin, stars, cellPixels = 40) {
   }
   const r = Math.max(3, Math.floor(cellPixels / 7));
   for (const [row, col] of stars) fill(ctx, at(col) - r, at(row) - r, r * 2, r * 2, star);
+  return ctx;
+}
+
+/** The garden's face as a tilled field: the rows of earth between the lines gently ridged, lit
+    on the side towards the light, the lines dug in as furrows (a dark trench with a lit lip),
+    the cross lines shallower, and the star points small mounds. Calm enough that the
+    tomatoes and cucumbers stand out. */
+function field(size, margin, stars, cellPixels) {
+  const span = size - 1 + 2 * margin;
+  const n = Math.round(span * cellPixels);
+  const ctx = bitmap(n, n);
+  const at = (i) => Math.round((margin + i) * cellPixels);
+  const shade = (c, k) => {
+    const ch = (s) => Math.min(255, Math.max(0, Math.trunc(((c >> s) & 0xff) * k))) << s;
+    return ch(16) | ch(8) | ch(0);
+  };
+  for (let y = 0; y < n; y += 2) {
+    // Across a row of earth: rising from one furrow, falling to the next.
+    const u = y / cellPixels - margin;
+    const f = u - Math.floor(u);
+    const ridge = 0.94 + 0.12 * Math.cos((f - 0.35) * 2 * Math.PI);
+    for (let x = 0; x < n; x += 2) {
+      const v = Noise.fbm(x / 26, y / 14, 0, 3, 3);
+      const base = v < 0.42 ? 0x352619 : (v > 0.6 ? 0x41301f : 0x3b2b1c);
+      fill(ctx, x, y, 2, 2, shade(base, ridge));
+    }
+  }
+  specks(ctx, n, 9, 0x4d3a28, 0x2a1e14);
+  const w = Math.max(3, Math.trunc(cellPixels / 10));
+  for (let i = 0; i < size; i++) {
+    const y = at(i), x = at(i);
+    // Along the rows: the deeper furrows. Across them: shallow grooves.
+    fill(ctx, at(0) - Math.trunc(w / 2), y - Math.trunc(w / 2), at(size - 1) - at(0) + w, w, 0x1a120b);
+    fill(ctx, at(0) - Math.trunc(w / 2), y + Math.trunc(w / 2), at(size - 1) - at(0) + w, 2, 0x5e4630);
+    fill(ctx, x - Math.trunc(w / 3), at(0) - Math.trunc(w / 2), Math.max(2, Math.trunc(w * 2 / 3)), at(size - 1) - at(0) + w, 0x170f09);
+  }
+  const r = Math.max(3, Math.trunc(cellPixels / 8));
+  for (const [row, col] of stars) {
+    fill(ctx, at(col) - r, at(row) - r, r * 2, r * 2, 0x5e4630);
+    fill(ctx, at(col) - Math.trunc(r / 2), at(row) - Math.trunc(r / 2), r, r, 0x77593c);
+  }
   return ctx;
 }
 
@@ -238,7 +280,7 @@ function stars(ctx, w, h, count, seed) {
     const many = 3 + Math.floor(Noise.hash(k, 4, 0, seed) * 22);
     for (let j = 0; j < many; j++) {
       const a = Noise.hash(k, j, 5, seed) * 2 * Math.PI, r = spread * Math.sqrt(Noise.hash(k, j, 6, seed));
-      const x = Math.floor(cx + Math.cos(a) * r), y = Math.floor(cy + Math.sin(a) * r);
+      const x = Math.trunc(cx + Math.cos(a) * r), y = Math.trunc(cy + Math.sin(a) * r);
       const b = Noise.hash(k, j, 7, seed);
       const c = b < 0.12 ? 0xffe9b8 : (b < 0.24 ? 0xb8d8ff : 0xf2f6ff);
       const big = b > 0.95;
