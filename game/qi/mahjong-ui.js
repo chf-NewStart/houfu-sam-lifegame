@@ -3,12 +3,12 @@
    the empty seats. Hand after hand with running scores and a turning deal, the coach, a replay
    of the hand just played, and between hands the automatic table's reset (the old hand swept
    into the middle, the shuffle, four walls rising, the dice under the dome). */
-import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=9';
-import { icon, C as COL, drawPond } from './art.js?v=9';
-import * as M from './mahjong.js?v=9';
-import * as Sound from './sound.js?v=9';
-import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=9';
-import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=9';
+import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=10';
+import { icon, C as COL, drawPond } from './art.js?v=10';
+import * as M from './mahjong.js?v=10';
+import * as Sound from './sound.js?v=10';
+import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=10';
+import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=10';
 
 const RESET = 3400;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -652,9 +652,9 @@ export const model = new MahjongModel();
 
 // ── The calls in ink ──────────────────────────────────────────────────────────
 
-/** How the claims (吃 碰 杠) look, while Houfu chooses: 'a' all on the red 斗方, 'b' black ink
-    lifted off the table by a pale glow, 'c' cinnabar ink. The hand's ending (胡 自摸 和) is
-    always on the 斗方. */
+/** How the claims (吃 碰 杠) look: 'a' all on the red 斗方, 'b' black ink lifted off the table
+    by a pale glow (Houfu's pick), 'c' cinnabar ink. The hand's ending (胡 自摸 和) is always on
+    the 斗方. */
 const INK_STYLE = 'b';
 
 const inkURL = (name) => new URL(`./ink/${name}.png`, import.meta.url).href;
@@ -669,7 +669,9 @@ const INK_STAY = { call: 900, ending: 2200 };
 function inkMark(key, name, ending, x, y, h, elapsed) {
   const onPaper = ending || INK_STYLE === 'a';
   const look = onPaper ? 'paper' : INK_STYLE === 'b' ? 'glow' : 'red';
-  const gh = onPaper ? h * 0.62 : h;
+  // On the 斗方, a diamond, a character w × h fits when w + h is under the diamond's width: so a
+  // wide 胡 is drawn smaller than the tall column 自摸.
+  const gh = onPaper ? h * 1.12 * 0.84 / (1 + INKS[name]) : h;
   const el = document.createElement('div');
   el.className = `mj-ink-one ${look}`;
   el.dataset.key = key;
@@ -900,7 +902,7 @@ class MahjongScreen extends GameScreen {
     if (!on) { if (this.host3d) this.host3d.style.display = 'none'; return; }
     if (!this.three) {
       if (!this.loading3d) {
-        this.loading3d = Promise.all([import('./three/world.js?v=9'), import('./three/mahjong3d.js?v=9')]).then(([world, mj]) => {
+        this.loading3d = Promise.all([import('./three/world.js?v=10'), import('./three/mahjong3d.js?v=10')]).then(([world, mj]) => {
           try {
             const view = new world.BoardView();
             const content = new mj.Mahjong3DScene(view);

@@ -2,10 +2,10 @@
    ripple and lift out when captured, animals fade from one shape into the next as their
    groups grow, and a captured animal flashes and bursts into its own voxels (a big one with a
    golden shockwave). On the Gomoku garden, fruits swell as their lines grow, joined by vines. */
-import * as THREE from './three.js?v=9';
-import { voxelMesh, Noise, color } from './voxels.js?v=9';
-import { THEMES, buildBoard, goFace, pebble, shell, ring, glow, matte } from './world.js?v=9';
-import { animal, gardenLines, stage, tomato, cucumber, vine, PER_CELL } from './creatures.js?v=9';
+import * as THREE from './three.js?v=10';
+import { voxelMesh, Noise, color } from './voxels.js?v=10';
+import { THEMES, buildBoard, goFace, pebble, shell, ring, glow, matte } from './world.js?v=10';
+import { animal, gardenLines, stage, tomato, cucumber, vine, PER_CELL } from './creatures.js?v=10';
 
 const VOX = 1 / PER_CELL;
 let pebbleGeo = null, shellGeo = null;
