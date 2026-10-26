@@ -1,12 +1,12 @@
 /* Qi on the web: the app's start screen and its games (Qi/Views/*.swift), in English and
    中文. Each game screen is the board (2D canvas, or 3D when it is swapped in) and the
    rail: the header, the status, the room, the replay, the coach and the buttons. */
-import { C, icon, glyph } from './art.js?v=10';
-import { GridBoard, ChessBoard } from './boards.js?v=10';
-import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=10';
-import * as Gomoku from './gomoku.js?v=10';
-import * as Chess from './chess.js?v=10';
-import * as Sound from './sound.js?v=10';
+import { C, icon, glyph } from './art.js?v=11';
+import { GridBoard, ChessBoard } from './boards.js?v=11';
+import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=11';
+import * as Gomoku from './gomoku.js?v=11';
+import * as Chess from './chess.js?v=11';
+import * as Sound from './sound.js?v=11';
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -29,7 +29,8 @@ function initialLang() {
 export const app = {
   lang: initialLang(),
   soundOn: !store.get('qi_sound_muted', false),
-  theme: THEMES.includes(store.get('qi_board_theme')) ? store.get('qi_board_theme') : 'stone',
+  // Wood unless chosen: the pieces and the garden's fruit read best on it (Houfu, 2026-10-26).
+  theme: THEMES.includes(store.get('qi_board_theme')) ? store.get('qi_board_theme') : 'wood',
   views3D: store.get('qi_view3d', {}) || {},
   screen: 'hub',
   go: new GoModel(),
@@ -606,7 +607,7 @@ class GomokuScreen extends GameScreen {
     if (!online) html += btn('plus', t('New game', '新对局'), 'newMenu', { wide: true });
     html += viewRow('gomoku');
     if (hooks.board3D && app.view3D('gomoku') !== 'off') {
-      html += `<div class="panel legend">${icon('leaf')}<div>${esc(t('Black grows tomatoes, White cucumbers. Each one ripens as its line grows: alone it\'s small and pale, a tomato orange and a cucumber light green; a long line turns tomatoes red and cucumbers dark green; vines join every line of two or more; five in a row is a prize harvest.', '黑方种番茄，白方种黄瓜。连线越长，果实越大越熟：单子又小又嫩，番茄橙黄、黄瓜浅绿；连线越长，番茄越红、黄瓜越深绿；两子以上的线由藤蔓相连；五连就是大丰收。'))}</div></div>`;
+      html += `<div class="panel legend">${icon('leaf')}<div>${esc(t('Black grows tomatoes, White daikon radishes. Each grows with its line: alone it\'s small, a tomato still orange; a long line makes tomatoes red and round and radishes long and fat; vines join every line of two or more; five in a row is a prize harvest.', '黑方种番茄，白方种白萝卜。连线越长，长得越大：单子还小，番茄还是橙黄；连线越长，番茄越红越圆，萝卜越长越壮；两子以上的线由藤蔓相连；五连就是大丰收。'))}</div></div>`;
     }
     return html;
   }

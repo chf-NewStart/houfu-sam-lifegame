@@ -2,9 +2,9 @@
    and the chess search (which thinks for up to two seconds). One request at a time; the
    page drops any answer that arrives for a position it has left. */
 import '../go-engine.js?v=46';
-import * as Gomoku from './gomoku.js?v=10';
-import { ChessGame, chooseMove, uci } from './chess.js?v=10';
-import { estimate } from './ownership.js?v=10';
+import * as Gomoku from './gomoku.js?v=11';
+import { ChessGame, chooseMove, uci } from './chess.js?v=11';
+import { estimate } from './ownership.js?v=11';
 
 const Go = globalThis.GoEngine;
 

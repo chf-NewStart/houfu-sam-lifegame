@@ -2,10 +2,10 @@
    ripple and lift out when captured, animals fade from one shape into the next as their
    groups grow, and a captured animal flashes and bursts into its own voxels (a big one with a
    golden shockwave). On the Gomoku garden, fruits swell as their lines grow, joined by vines. */
-import * as THREE from './three.js?v=10';
-import { voxelMesh, Noise, color } from './voxels.js?v=10';
-import { THEMES, buildBoard, goFace, pebble, shell, ring, glow, matte } from './world.js?v=10';
-import { animal, gardenLines, stage, tomato, cucumber, vine, PER_CELL } from './creatures.js?v=10';
+import * as THREE from './three.js?v=11';
+import { voxelMesh, Noise, color } from './voxels.js?v=11';
+import { THEMES, buildBoard, goFace, pebble, shell, ring, glow, matte } from './world.js?v=11';
+import { animal, gardenLines, stage, tomato, daikon, vine, PER_CELL } from './creatures.js?v=11';
 
 const VOX = 1 / PER_CELL;
 let pebbleGeo = null, shellGeo = null;
@@ -162,19 +162,19 @@ export class Grid3DScene {
       for (const run of lines.runs) {
         for (let k = 0; k < run.length - 1; k++) {
           const a = this.point(run[k]), b = this.point(run[k + 1]);
-          this.vines.add(vine([a[0], a[1] + 0.06, a[2]], [b[0], b[1] + 0.06, b[2]], s.board[run[k]] === 1, run[k]));
+          this.vines.add(vine([a[0], a[1] + 0.06, a[2]], [b[0], b[1] + 0.06, b[2]], s.board[run[k]] === 1));
         }
       }
     }
   }
 
-  /** A stone, or on the vegetable patch a tomato or a cucumber as grown as its longest line. */
+  /** A stone, or on the vegetable patch a tomato or a daikon as grown as its longest line. */
   stone(v, i, lines) {
     const l = lines && lines.longest.get(i);
     let node;
     if (l) {
       const t = stage(l.length);
-      node = v === 1 ? tomato(t) : cucumber(t, i);
+      node = v === 1 ? tomato(t) : daikon(t);
       if (v === 2) node.rotation.y = Math.atan2(l.dc, l.dr);
     } else {
       const [p, s] = stoneGeometries();

@@ -3,8 +3,8 @@
    water, a brushed steel plate on tread plate, a raised garden bed on the pond, and a glass
    board among the stars; each board's face (a Go grid or chess squares) painted on its own
    surface; the lights; and the view that orbits it all. */
-import * as THREE from './three.js?v=10';
-import { VoxelModel, Noise, bitmap, fill, texture, color } from './voxels.js?v=10';
+import * as THREE from './three.js?v=11';
+import { VoxelModel, Noise, bitmap, fill, texture, color } from './voxels.js?v=11';
 
 export const THEMES = {
   stone: { top: 0.3, background: 0x051113 },
@@ -184,7 +184,7 @@ export function goFace(theme, size, margin, stars, cellPixels = 40) {
 /** The garden's face as a tilled field: the rows of earth between the lines gently ridged, lit
     on the side towards the light, the lines dug in as furrows (a dark trench with a lit lip),
     the cross lines shallower, and the star points small mounds. Calm enough that the
-    tomatoes and cucumbers stand out. */
+    tomatoes and daikon stand out. */
 function field(size, margin, stars, cellPixels) {
   const span = size - 1 + 2 * margin;
   const n = Math.round(span * cellPixels);
