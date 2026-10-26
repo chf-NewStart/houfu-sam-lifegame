@@ -3,12 +3,12 @@
    the empty seats. Hand after hand with running scores and a turning deal, the coach, a replay
    of the hand just played, and between hands the automatic table's reset (the old hand swept
    into the middle, the shuffle, four walls rising, the dice under the dome). */
-import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=6';
-import { icon, C as COL, drawPond } from './art.js?v=6';
-import * as M from './mahjong.js?v=6';
-import * as Sound from './sound.js?v=6';
-import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=6';
-import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=6';
+import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=7';
+import { icon, C as COL, drawPond } from './art.js?v=7';
+import * as M from './mahjong.js?v=7';
+import * as Sound from './sound.js?v=7';
+import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=7';
+import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=7';
 
 const RESET = 3400;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -843,7 +843,7 @@ class MahjongScreen extends GameScreen {
     if (!on) { if (this.host3d) this.host3d.style.display = 'none'; return; }
     if (!this.three) {
       if (!this.loading3d) {
-        this.loading3d = Promise.all([import('./three/world.js?v=6'), import('./three/mahjong3d.js?v=6')]).then(([world, mj]) => {
+        this.loading3d = Promise.all([import('./three/world.js?v=7'), import('./three/mahjong3d.js?v=7')]).then(([world, mj]) => {
           try {
             const view = new world.BoardView();
             const content = new mj.Mahjong3DScene(view);
@@ -919,7 +919,7 @@ RULES.mahjong = () => [
 
 hooks.screens.mahjong = {
   make: () => new MahjongScreen(),
-  card: () => [t('Mahjong · 麻将', '麻将 · Mahjong'), t('Four at a table: computer players or friends online, simple 推倒胡 rules, and a coach for every tile.', '四人一桌：电脑或在线好友，简单的推倒胡规则，教练帮你打好每一张牌。')],
+  card: () => [t('Mahjong', '麻将'), t('Four at a table: computer players or friends online, simple Chinese rules, and a coach for every tile.', '四人一桌：电脑或在线好友，简单的推倒胡规则，教练帮你打好每一张牌。')],
   mini(wrap) {
     // A few tiles on the pond: a hand standing, and a pung of red dragons laid down.
     const c = document.createElement('canvas');

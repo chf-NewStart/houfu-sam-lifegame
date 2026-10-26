@@ -1,12 +1,12 @@
 /* Qi on the web: the app's start screen and its games (Qi/Views/*.swift), in English and
    中文. Each game screen is the board (2D canvas, or 3D when it is swapped in) and the
    rail: the header, the status, the room, the replay, the coach and the buttons. */
-import { C, icon, glyph } from './art.js?v=6';
-import { GridBoard, ChessBoard } from './boards.js?v=6';
-import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=6';
-import * as Gomoku from './gomoku.js?v=6';
-import * as Chess from './chess.js?v=6';
-import * as Sound from './sound.js?v=6';
+import { C, icon, glyph } from './art.js?v=7';
+import { GridBoard, ChessBoard } from './boards.js?v=7';
+import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=7';
+import * as Gomoku from './gomoku.js?v=7';
+import * as Chess from './chess.js?v=7';
+import * as Sound from './sound.js?v=7';
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -800,9 +800,9 @@ export function showSlain(stage, slain) {
 
 const GAMES = ['go', 'gomoku', 'chess'];
 const CARD = {
-  go: () => [t('Go · 围棋', '围棋 · Go'), t('Surround territory on 9×9 to 19×19, with a patient beginner opponent and a coach that explains every fight.', '9×9 到 19×19 围地取胜，耐心的入门对手，教练讲解每一场战斗。')],
-  gomoku: () => [t('Gomoku · 五子棋', '五子棋 · Gomoku'), t('Five in a row. Three computer levels and a coach that spots wins and must-blocks.', '连成五子。三档电脑难度，教练提示必胜与必堵。')],
-  chess: () => [t('Chess · 国际象棋', '国际象棋 · Chess'), t('Pebble and shell pieces on the pond. Three computer levels, a coach, and face to face on one tablet.', '卵石与贝壳棋子。三档电脑难度、教练提示，还能在一台平板上面对面下。')],
+  go: () => [t('Go', '围棋'), t('Surround territory on 9×9 to 19×19, with a patient beginner opponent and a coach that explains every fight.', '9×9 到 19×19 围地取胜，耐心的入门对手，教练讲解每一场战斗。')],
+  gomoku: () => [t('Gomoku', '五子棋'), t('Five in a row. Three computer levels and a coach that spots wins and must-blocks.', '连成五子。三档电脑难度，教练提示必胜与必堵。')],
+  chess: () => [t('Chess', '国际象棋'), t('Pebble and shell pieces on the pond. Three computer levels, a coach, and face to face on one tablet.', '卵石与贝壳棋子。三档电脑难度、教练提示，还能在一台平板上面对面下。')],
 };
 
 class Hub {

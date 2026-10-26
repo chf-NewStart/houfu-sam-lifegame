@@ -3,8 +3,8 @@
    water, a brushed steel plate on tread plate, a raised garden bed on the pond, and a glass
    board among the stars; each board's face (a Go grid or chess squares) painted on its own
    surface; the lights; and the view that orbits it all. */
-import * as THREE from './three.js?v=6';
-import { VoxelModel, Noise, bitmap, fill, texture, color } from './voxels.js?v=6';
+import * as THREE from './three.js?v=7';
+import { VoxelModel, Noise, bitmap, fill, texture, color } from './voxels.js?v=7';
 
 export const THEMES = {
   stone: { top: 0.3, background: 0x051113 },
