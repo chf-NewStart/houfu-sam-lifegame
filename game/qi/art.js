@@ -137,7 +137,7 @@ export function octagon(x, y, r, stretchX = 1, scaleY = 1) {
    lit window, the pawn a little cairn of pebbles, the knight a seahorse (海马). 20×20 masks:
    '#' body, '+' a light accent, '-' a dark accent, 'x' an engraving, 'o' the lantern's glow.
    The outline and the rim light (top left) / shade (bottom right) come from the mask. */
-const MASKS = [null,
+export const MASKS = [null,
   ['....................', '....................', '....................', '....................', '....................',
    '........####........', '.......##+###.......', '.......######.......', '........####........', '....................',
    '......########......', '.....##+#######.....', '......########......', '....................', '....................',

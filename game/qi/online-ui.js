@@ -1,10 +1,10 @@
 /* Playing a friend online (the app's Qi/Views/OnlineViews.swift): the Play online sheet
    (start a room or join one), the room panel in a game's rail, invites, and the way back
    to a room after closing the tab. Rooms are shared with the iPhone and iPad app. */
-import { app, hooks, sheet, updateSheet, sheetHead, closeSheet, esc, t, go, scheduleRender, toast, rerender } from './main.js?v=2';
-import { icon } from './art.js?v=2';
-import { OnlineSession } from './online.js?v=2';
-import { RoomCode, ALPHABET } from './room.js?v=2';
+import { app, hooks, sheet, updateSheet, sheetHead, closeSheet, esc, t, go, scheduleRender, toast, rerender } from './main.js?v=3';
+import { icon } from './art.js?v=3';
+import { OnlineSession } from './online.js?v=3';
+import { RoomCode, ALPHABET } from './room.js?v=3';
 
 const online = new OnlineSession();
 app.online = online;

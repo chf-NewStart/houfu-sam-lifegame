@@ -1,12 +1,12 @@
 /* Qi on the web: the app's start screen and its games (Qi/Views/*.swift), in English and
    中文. Each game screen is the board (2D canvas, or 3D when it is swapped in) and the
    rail: the header, the status, the room, the replay, the coach and the buttons. */
-import { C, icon, glyph } from './art.js?v=2';
-import { GridBoard, ChessBoard } from './boards.js?v=2';
-import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=2';
-import * as Gomoku from './gomoku.js?v=2';
-import * as Chess from './chess.js?v=2';
-import * as Sound from './sound.js?v=2';
+import { C, icon, glyph } from './art.js?v=3';
+import { GridBoard, ChessBoard } from './boards.js?v=3';
+import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=3';
+import * as Gomoku from './gomoku.js?v=3';
+import * as Chess from './chess.js?v=3';
+import * as Sound from './sound.js?v=3';
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -338,11 +338,10 @@ class GameScreen {
     } });
   }
 
-  /** The window at the top of the rail when 3D is on. */
+  /** The window at the top of the rail when 3D is on (filled by the 3D module). */
   windowHTML() {
     if (!hooks.board3D || app.view3D(this.kind) === 'off') return '';
-    const showing3D = app.view3D(this.kind) === 'side';
-    return `<button class="board-window" data-act="swap3d" aria-label="${esc(showing3D ? t('3D board. Tap to make it the big board.', '3D 棋盘。点按放大。') : t('2D board. Tap to make it the big board.', '2D 棋盘。点按放大。'))}"><div class="win-wrap"></div><span class="tag">${esc(showing3D ? t('3D · tap to enlarge', '3D · 点按放大') : t('2D · tap to enlarge', '2D · 点按放大'))}</span></button>`;
+    return '<div class="window-slot"></div>';
   }
 
   render() {
@@ -392,8 +391,7 @@ class GoScreen extends GameScreen {
   }
 
   updateBoard() {
-    const main3D = hooks.board3D && app.view3D('go') === 'main';
-    if (!main3D) this.board.set(this.boardState(true));
+    this.board.set(this.boardState(true));
     if (hooks.board3D) hooks.board3D.update(this);
     this.showBanner();
   }
@@ -543,7 +541,7 @@ class GomokuScreen extends GameScreen {
   }
 
   updateBoard() {
-    if (!(hooks.board3D && app.view3D('gomoku') === 'main')) this.board.set(this.boardState(true));
+    this.board.set(this.boardState(true));
     if (hooks.board3D) hooks.board3D.update(this);
   }
 
@@ -629,7 +627,7 @@ class ChessScreen extends GameScreen {
       farSide: () => {
         const m = this.model;
         if (!(m.faceToFace && m.seating === 'twoPlayers' && !m.isOnline) || m.game.isOver || m.game.current !== Chess.BLACK || m.review != null) return null;
-        return m.game.inCheck ? t('Black: check!', '黑方：被将军！') : t('Black to move', '轮到黑方');
+        return m.game.inCheck ? t('BLACK · CHECK!', '黑方 · 被将军！') : t('BLACK · YOUR MOVE', '黑方 · 该你走');
       },
     });
   }
@@ -637,7 +635,7 @@ class ChessScreen extends GameScreen {
   reviewLength() { return this.model.game.moves.length; }
 
   updateBoard() {
-    if (!(hooks.board3D && app.view3D('chess') === 'main')) this.board.update(this.model.review == null);
+    this.board.update(this.model.review == null);
     if (hooks.board3D) hooks.board3D.update(this);
   }
 
@@ -926,7 +924,7 @@ export { rerender, show };
 
 export function start() {
   // ?debug: the app on window, for tests and screenshots.
-  if (/[?&]debug\b/.test(location.search)) window.qiApp = { app, show, go, showSlain, hooks };
+  if (/[?&]debug\b/.test(location.search)) window.qiApp = { app, show, go, showSlain, hooks, get screen() { return current; } };
   // A deep link (#go, #room/CODE, …) opens straight on its screen, with the hub behind it.
   const target = screenFromHash();
   if (target !== 'hub') {

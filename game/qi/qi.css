@@ -164,6 +164,7 @@ a { color: var(--green); }
 .btn.active { color: var(--green); background: rgba(81, 230, 142, .12); border-color: rgba(81, 230, 142, .6); }
 .btn.prominent { background: var(--green); color: #031a0e; border-color: var(--green); box-shadow: 0 3px 0 #1a7f45; font-weight: 700; }
 .btn:disabled { color: var(--faint); cursor: default; }
+.game-body > .btn { flex: none; }
 .btn.wide { flex-direction: row; min-height: 44px; gap: 9px; font-size: 12px; font-weight: 600; }
 .btn.wide .ic { width: 14px; height: 14px; }
 
@@ -258,3 +259,11 @@ a { color: var(--green); }
 .far-side.check { background: var(--danger); }
 @keyframes fade { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* 3D */
+.wrap3d { position: absolute; inset: 0; }
+.board3d-canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+.board-window .win-wrap > canvas.board3d-canvas { position: absolute; inset: 0; }
+.promo3d { position: absolute; inset: 0; background: rgba(0, 0, 0, .35); display: flex; align-items: center; justify-content: center; gap: 10px; z-index: 3; }
+.promo3d button { padding: 8px; background: #82978f; border: 2px solid var(--green); cursor: pointer; }
+.promo3d .glyph { display: block; image-rendering: pixelated; }
