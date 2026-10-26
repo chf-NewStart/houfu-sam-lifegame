@@ -6,8 +6,8 @@
    spines and mane, short clawed legs. A group likely to be captured lies flat and grey; one
    with a single liberty left breathes a puff (气) over it. On the Gomoku board Black grows
    tomatoes and White cucumbers, ripening as their lines grow, joined by vines. */
-import * as THREE from './three.js?v=4';
-import { VoxelModel, Noise, color } from './voxels.js?v=4';
+import * as THREE from './three.js?v=5';
+import { VoxelModel, Noise, color } from './voxels.js?v=5';
 
 // ── Where the bodies go ───────────────────────────────────────────────────────
 

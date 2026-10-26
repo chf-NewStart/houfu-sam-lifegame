@@ -3,12 +3,12 @@
    the empty seats. Hand after hand with running scores and a turning deal, the coach, a replay
    of the hand just played, and between hands the automatic table's reset (the old hand swept
    into the middle, the shuffle, four walls rising, the dice under the dome). */
-import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=4';
-import { icon, C as COL, drawPond } from './art.js?v=4';
-import * as M from './mahjong.js?v=4';
-import * as Sound from './sound.js?v=4';
-import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=4';
-import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=4';
+import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=5';
+import { icon, C as COL, drawPond } from './art.js?v=5';
+import * as M from './mahjong.js?v=5';
+import * as Sound from './sound.js?v=5';
+import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=5';
+import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=5';
 
 const RESET = 3400;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

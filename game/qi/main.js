@@ -1,12 +1,12 @@
 /* Qi on the web: the app's start screen and its games (Qi/Views/*.swift), in English and
    中文. Each game screen is the board (2D canvas, or 3D when it is swapped in) and the
    rail: the header, the status, the room, the replay, the coach and the buttons. */
-import { C, icon, glyph } from './art.js?v=4';
-import { GridBoard, ChessBoard } from './boards.js?v=4';
-import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=4';
-import * as Gomoku from './gomoku.js?v=4';
-import * as Chess from './chess.js?v=4';
-import * as Sound from './sound.js?v=4';
+import { C, icon, glyph } from './art.js?v=5';
+import { GridBoard, ChessBoard } from './boards.js?v=5';
+import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=5';
+import * as Gomoku from './gomoku.js?v=5';
+import * as Chess from './chess.js?v=5';
+import * as Sound from './sound.js?v=5';
 
 // ── App state ─────────────────────────────────────────────────────────────────
 

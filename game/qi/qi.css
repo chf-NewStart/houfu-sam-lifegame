@@ -285,7 +285,7 @@ a { color: var(--green); }
   content: ""; position: absolute; left: 50%; top: -11px; width: 10px; height: 6px; transform: translateX(-50%);
   background: linear-gradient(var(--gold), var(--gold)) 0 0 / 10px 2px no-repeat, linear-gradient(var(--gold), var(--gold)) 2px 2px / 6px 2px no-repeat, linear-gradient(var(--gold), var(--gold)) 4px 4px / 2px 2px no-repeat;
 }
-.mj-actions { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; pointer-events: none; }
+.mj-actions { position: absolute; z-index: 2; left: 8px; right: 8px; bottom: 8px; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; pointer-events: none; }
 .mj-act { pointer-events: auto; display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 11px; cursor: pointer;
   background: rgba(5, 17, 19, .92); border: 2px solid rgba(232, 176, 74, .7); color: var(--gold); font: 700 13px var(--mono); box-shadow: 0 3px 0 rgba(0, 0, 0, .5); }
 .mj-act.prominent { background: var(--gold); color: #000; }
@@ -295,7 +295,8 @@ a { color: var(--green); }
 .mj-act .ts img { image-rendering: pixelated; }
 .mj-act small { font: 700 10px var(--mono); }
 .mj-act canvas { display: block; }
-.mj-lobby { position: absolute; inset: 0; display: grid; place-items: center; }
+.mj-lobby { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.mj-lobby-card { pointer-events: auto; }
 .mj-lobby[hidden] { display: none; }
 .mj-lobby-card { width: min(360px, 92%); padding: 14px; text-align: center; background: rgba(5, 17, 19, .94); border: 2px solid var(--hair-hi); }
 .mj-lobby-card .panel { text-align: left; margin: 10px 0; }
