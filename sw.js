@@ -1,6 +1,6 @@
 /* Life Game service worker — offline app shell.
    Bump CACHE on each release so clients pick up new files. */
-const CACHE = 'lifegame-v97';
+const CACHE = 'lifegame-v98';
 const CORE = [
   '/',
   '/index.html',
@@ -9,17 +9,20 @@ const CORE = [
   '/game/rope.html',
   '/game/qi.html',
   // Qi: every module the page loads (tools/qi-version.sh keeps the ?v= in step).
-  '/game/qi/qi.css?v=1',
-  '/game/qi/app.js?v=1',
-  '/game/qi/main.js?v=1',
-  '/game/qi/art.js?v=1',
-  '/game/qi/boards.js?v=1',
-  '/game/qi/models.js?v=1',
-  '/game/qi/gomoku.js?v=1',
-  '/game/qi/chess.js?v=1',
-  '/game/qi/sound.js?v=1',
-  '/game/qi/synth-worklet.js?v=1',
-  '/game/qi/worker.js?v=1',
+  '/game/qi/qi.css?v=2',
+  '/game/qi/app.js?v=2',
+  '/game/qi/main.js?v=2',
+  '/game/qi/art.js?v=2',
+  '/game/qi/boards.js?v=2',
+  '/game/qi/models.js?v=2',
+  '/game/qi/gomoku.js?v=2',
+  '/game/qi/chess.js?v=2',
+  '/game/qi/sound.js?v=2',
+  '/game/qi/synth-worklet.js?v=2',
+  '/game/qi/worker.js?v=2',
+  '/game/qi/room.js?v=2',
+  '/game/qi/online.js?v=2',
+  '/game/qi/online-ui.js?v=2',
   '/game/go-engine.js?v=46',
   '/game/plank-pixel.woff',
   '/game/qi/ink/tulong.png',

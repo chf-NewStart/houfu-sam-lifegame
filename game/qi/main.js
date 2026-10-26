@@ -1,12 +1,12 @@
 /* Qi on the web: the app's start screen and its games (Qi/Views/*.swift), in English and
    中文. Each game screen is the board (2D canvas, or 3D when it is swapped in) and the
    rail: the header, the status, the room, the replay, the coach and the buttons. */
-import { C, icon, glyph } from './art.js?v=1';
-import { GridBoard, ChessBoard } from './boards.js?v=1';
-import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=1';
-import * as Gomoku from './gomoku.js?v=1';
-import * as Chess from './chess.js?v=1';
-import * as Sound from './sound.js?v=1';
+import { C, icon, glyph } from './art.js?v=2';
+import { GridBoard, ChessBoard } from './boards.js?v=2';
+import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=2';
+import * as Gomoku from './gomoku.js?v=2';
+import * as Chess from './chess.js?v=2';
+import * as Sound from './sound.js?v=2';
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -80,14 +80,21 @@ export function sheet(html, { small = false, onClose = null, actions = {} } = {}
     const el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
     if (el.dataset.act === 'close') { closeSheet(); return; }
-    const f = actions[el.dataset.act];
+    const f = openSheet && openSheet.back === back ? openSheet.actions[el.dataset.act] : null;
     if (f) f(el.dataset.arg, el);
   });
   document.body.appendChild(back);
-  openSheet = { back, onClose };
+  openSheet = { back, onClose, actions };
   const first = back.querySelector('[autofocus]') || back.querySelector('button');
   if (first) first.focus({ preventScroll: true });
   return back;
+}
+/** Redraws the open sheet in place (its buttons then call `actions`). */
+export function updateSheet(html, actions) {
+  if (!openSheet) return null;
+  openSheet.back.querySelector('.sheet').innerHTML = html;
+  if (actions) openSheet.actions = actions;
+  return openSheet.back;
 }
 export function closeSheet() {
   if (!openSheet) return;
