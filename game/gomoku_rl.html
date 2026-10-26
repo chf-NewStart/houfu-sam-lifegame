@@ -77,7 +77,7 @@
   <div>
     <div class="title" id="pgTitle">&gt;_ Train Gomoku RL</div>
     <div class="sub" id="pgSub">A self-play agent learns Gomoku from your reward rules. Tune the punishments, watch it improve, then load it into the game as the RL opponent.</div>
-    <a class="back" id="pgBack" href="/game/gomoku.html" data-en="← back to Gomoku" data-zh="← 返回五子棋">← back to Gomoku</a>
+    <a class="back" id="pgBack" href="/game/gomoku-classic.html" data-en="← back to Gomoku" data-zh="← 返回五子棋">← back to Gomoku</a>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -479,7 +479,7 @@ function saveForGame(){
   if(!episode){alert(t('Train the agent first.','请先训练智能体。'));return;}
   localStorage.setItem('gomoku_rl_agent',JSON.stringify(agentObj()));
   // hand off to Gomoku — it auto-loads this agent into the RL ▷ slot on open
-  window.location.href='/game/gomoku.html';
+  window.location.href='/game/gomoku-classic.html';
 }
 function downloadJSON(){
   if(!episode){alert(t('Train the agent first.','请先训练智能体。'));return;}

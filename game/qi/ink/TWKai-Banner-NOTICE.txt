@@ -1,0 +1,6 @@
+TWKai-Banner.ttf is a subset (一二三四五六七八九十百零手提子, for the slain banner's caption) of
+全字庫正楷體 TW-Kai 98_1 from https://www.cns11643.gov.tw (全字庫).
+
+(c)2026數位發展部。使用者可依需求擇一使用以下條款：1.「政府資料開放授權條款-第一版」(https://data.gov.tw/license) ；2. 「開源字型授權1.1版(OFL 1.1) 」(https://scripts.sil.org/OFL)
+
+Qi uses it under the Open Government Data License, version 1.0 (政府資料開放授權條款-第一版).
