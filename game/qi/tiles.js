@@ -3,8 +3,8 @@
    glyphs inside a margin of bone) and, for players who don't read the characters, a small
    pixel number in the corner. A tile is a 16 × 22 grid of pixels: the face 19 rows, the jade
    back showing under it 3. Each tile is drawn once into a small canvas and reused. */
-import { GLYPHS } from './glyphs.js?v=5';
-import { rank, suit } from './mahjong.js?v=5';
+import { GLYPHS } from './glyphs.js?v=6';
+import { rank, suit } from './mahjong.js?v=6';
 
 export const COLORS = {
   ivory: '#efe7d2', ivoryShade: '#d6cbb0', ivoryLight: '#fffaee', outline: '#14201c',
@@ -195,6 +195,28 @@ export function sprite(t, { index = false, dim = false } = {}) {
 export function drawTile(ctx, t, x, y, w, opts) {
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(sprite(t, opts), x, y, w, w / ASPECT);
+}
+
+const faces = new Map();
+/** The face alone (14 × 18 tile-pixels of bone and its picture), a texture for the 3D tiles. */
+export function faceOnly(t, index) {
+  const key = `${t}:${index ? 1 : 0}`;
+  if (faces.has(key)) return faces.get(key);
+  const u = 12;
+  const c = document.createElement('canvas');
+  c.width = 14 * u;
+  c.height = 18 * u;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = C.ivory;
+  ctx.fillRect(0, 0, c.width, c.height);
+  face(ctx, t, -u, -u, u);
+  if (index && t < 31) {
+    const mark = t < 27 ? String(rank(t)) : 'ESWN'[t - 27];
+    const cell = u * 0.5, w = (mark.length * 4 - 1) * cell;
+    tiny(ctx, mark, c.width - w - u * 0.5, u * 0.3, cell, indexColor(t));
+  }
+  faces.set(key, c);
+  return c;
 }
 
 const urls = new Map();

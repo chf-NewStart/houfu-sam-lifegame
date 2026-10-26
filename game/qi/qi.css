@@ -321,3 +321,4 @@ a { color: var(--green); }
 .mj-change b.down { color: var(--danger); }
 .mj-rule-tiles { width: 56px; flex: none; display: flex; }
 .mj-rule-tiles img { image-rendering: pixelated; }
+.mj-3d { position: absolute; inset: 0; overflow: hidden; }

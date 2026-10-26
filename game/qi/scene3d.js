@@ -2,17 +2,17 @@
    the 3D button puts the 3D board in a window at the top of the rail; a tap on the window
    swaps the two boards, so the 3D one is played on and the 2D one watches from the window.
    three.js and the 3D code load only when 3D is first turned on. */
-import { app, hooks, esc, t } from './main.js?v=5';
-import { GridBoard, ChessBoard } from './boards.js?v=5';
-import { Go, ask } from './models.js?v=5';
-import * as Gomoku from './gomoku.js?v=5';
-import * as Chess from './chess.js?v=5';
-import { glyph } from './art.js?v=5';
+import { app, hooks, esc, t } from './main.js?v=6';
+import { GridBoard, ChessBoard } from './boards.js?v=6';
+import { Go, ask } from './models.js?v=6';
+import * as Gomoku from './gomoku.js?v=6';
+import * as Chess from './chess.js?v=6';
+import { glyph } from './art.js?v=6';
 
 let lib = null, loading = null, failed = false;
 function load() {
   if (lib || loading) return loading;
-  loading = Promise.all([import('./three/world.js?v=5'), import('./three/grid3d.js?v=5'), import('./three/chess3d.js?v=5'), import('./three/creatures.js?v=5')])
+  loading = Promise.all([import('./three/world.js?v=6'), import('./three/grid3d.js?v=6'), import('./three/chess3d.js?v=6'), import('./three/creatures.js?v=6')])
     .then(([world, grid, chess, creatures]) => { lib = { world, grid, chess, creatures }; })
     .catch(() => { failed = true; })
     .finally(() => { loading = null; for (const s of waiting) s.render(); waiting.clear(); });
@@ -67,6 +67,7 @@ function three(screen) {
 hooks.board3D = {
   /** After each render of the rail: the window back in its slot, the canvases in place. */
   attach(screen) {
+    if (screen.kind === 'mahjong') return;
     const mode = app.view3D(screen.kind);
     const slot = screen.body.querySelector('.window-slot');
     const main = mode === 'main';
@@ -107,6 +108,7 @@ hooks.board3D = {
 
   /** After every change to the game: the 3D scene follows the position shown. */
   update(screen) {
+    if (screen.kind === 'mahjong') return;
     const T = screen.three;
     const mode = app.view3D(screen.kind);
     if (!T || mode === 'off') return;

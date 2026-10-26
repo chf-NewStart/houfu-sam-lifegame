@@ -1,7 +1,7 @@
 /* The 2D boards, drawn as the app draws them (Qi/Views/BoardView.swift,
    ChessBoardView.swift): a square board on the pixel pond, crisp at any size. */
-import { C, drawPond, drawStone, octagon, drawPiece, makeCanvas } from './art.js?v=5';
-import * as Chess from './chess.js?v=5';
+import { C, drawPond, drawStone, octagon, drawPiece, makeCanvas } from './art.js?v=6';
+import * as Chess from './chess.js?v=6';
 
 const RIPPLE = 1300;
 const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

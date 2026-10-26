@@ -3,12 +3,12 @@
    the empty seats. Hand after hand with running scores and a turning deal, the coach, a replay
    of the hand just played, and between hands the automatic table's reset (the old hand swept
    into the middle, the shuffle, four walls rising, the dice under the dome). */
-import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=5';
-import { icon, C as COL, drawPond } from './art.js?v=5';
-import * as M from './mahjong.js?v=5';
-import * as Sound from './sound.js?v=5';
-import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=5';
-import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=5';
+import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=6';
+import { icon, C as COL, drawPond } from './art.js?v=6';
+import * as M from './mahjong.js?v=6';
+import * as Sound from './sound.js?v=6';
+import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=6';
+import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=6';
 
 const RESET = 3400;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -647,7 +647,7 @@ class MahjongScreen extends GameScreen {
     this.actionsEl = this.wrap.querySelector('.mj-actions');
     this.lobbyEl = this.wrap.querySelector('.mj-lobby');
     this.handEl = this.wrap.querySelector('.mj-hand');
-    this.ro = new ResizeObserver(() => this.draw());
+    this.ro = new ResizeObserver(() => { if (this.three && app.view3D('mahjong') !== 'off') this.update3D(); else this.draw(); });
     this.ro.observe(this.tableEl);
     this.canvas.addEventListener('click', () => { if (model.resetting) model.skipReset(); });
     this.wrap.addEventListener('click', (e) => {
@@ -669,7 +669,8 @@ class MahjongScreen extends GameScreen {
   subtitle() { return t(`Chinese rules · hand ${model.handNumber}`, `推倒胡 · 第 ${model.handNumber} 局`) + (model.isOnline ? t(' · online', ' · 在线') : ''); }
 
   updateBoard() {
-    this.draw();
+    this.update3D();
+    if (!(this.three && app.view3D('mahjong') !== 'off')) this.draw();
     this.renderHand();
     this.renderActions();
     this.renderLobby();
@@ -823,12 +824,58 @@ class MahjongScreen extends GameScreen {
     row += btn('bulb', t('Coach', '教练'), 'coach', { active: model.coach });
     if (!online) row += btn('plus', t('New game', '新对局'), 'newMenu');
     html += `<div class="btn-row">${row}</div>`;
-    html += `<div class="btn-row">${btn('board', t('Board: ' + ({ stone: 'Stone', wood: 'Wood', water: 'Water', steel: 'Steel', sky: 'Sky', soil: 'Garden' })[app.theme], '棋盘：' + ({ stone: '石', wood: '木', water: '水', steel: '钢', sky: '星空', soil: '菜园' })[app.theme]), 'boardMenu')}</div>`;
+    html += `<div class="btn-row">${btn('cube', '3D', 'mj3d', { active: app.view3D('mahjong') !== 'off' })}${btn('board', t('Board: ' + ({ stone: 'Stone', wood: 'Wood', water: 'Water', steel: 'Steel', sky: 'Sky', soil: 'Garden' })[app.theme], '棋盘：' + ({ stone: '石', wood: '木', water: '水', steel: '钢', sky: '星空', soil: '菜园' })[app.theme]), 'boardMenu')}</div>`;
     return html;
   }
 
   extraAct(a) {
     if (a === 'mjNext') model.nextHand();
+    else if (a === 'mj3d') app.set3D('mahjong', app.view3D('mahjong') === 'off' ? 'side' : 'off');
+  }
+
+  /** No window at the top of the rail: in 3D the table itself is 3D, your hand stays below. */
+  windowHTML() { return ''; }
+
+  /** The 3D table (three.js loads the first time 3D is on). */
+  update3D() {
+    const on = app.view3D('mahjong') !== 'off';
+    this.canvas.style.visibility = on && this.three ? 'hidden' : '';
+    if (!on) { if (this.host3d) this.host3d.style.display = 'none'; return; }
+    if (!this.three) {
+      if (!this.loading3d) {
+        this.loading3d = Promise.all([import('./three/world.js?v=6'), import('./three/mahjong3d.js?v=6')]).then(([world, mj]) => {
+          try {
+            const view = new world.BoardView();
+            const content = new mj.Mahjong3DScene(view);
+            view.scene = content.scene;
+            view.onTap = () => { if (model.resetting) model.skipReset(); };
+            this.host3d = document.createElement('div');
+            this.host3d.className = 'mj-3d';
+            this.tableEl.insertBefore(this.host3d, this.actionsEl);
+            view.attach(this.host3d);
+            this.three = { view, content, SPAN: mj.SPAN };
+            const destroy = this.board.destroy;
+            this.board.destroy = () => { view.dispose(); destroy(); };
+            this.updateBoard();
+          } catch (e) { this.failed3d = true; }
+        }).catch(() => { this.failed3d = true; });
+      }
+      return;
+    }
+    this.host3d.style.display = '';
+    const g = model.shown;
+    const T3 = this.three;
+    // The app frames the table for a wide window; in a squarer one, step back until the near
+    // hand fits as it would there.
+    const box = this.tableEl.getBoundingClientRect();
+    const fit = Math.max(1, 1.75 / Math.max(0.5, box.width / Math.max(1, box.height)));
+    const built = T3.content.show({ game: g, me: model.me, open: model.reveal || g.phase === 'over', index: app.lang === 'en', reset: model.reset }, app.theme);
+    if (built || T3.fit !== fit) {
+      T3.fit = fit;
+      T3.view.surfaceY = T3.content.top;
+      T3.view.target.set(0, T3.content.top, 0.9);
+      T3.view.setHome({ azimuth: 0, elevation: 52, distance: T3.SPAN * 1.32 * fit }, false);
+    }
   }
 
   act(a, arg) {
