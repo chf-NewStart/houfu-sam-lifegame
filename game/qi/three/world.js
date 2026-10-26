@@ -3,8 +3,8 @@
    water, a brushed steel plate on tread plate, a raised garden bed on the pond, and a glass
    board among the stars; each board's face (a Go grid or chess squares) painted on its own
    surface; the lights; and the view that orbits it all. */
-import * as THREE from './three.js?v=11';
-import { VoxelModel, Noise, bitmap, fill, texture, color } from './voxels.js?v=11';
+import * as THREE from './three.js?v=12';
+import { VoxelModel, Noise, bitmap, fill, texture, color } from './voxels.js?v=12';
 
 export const THEMES = {
   stone: { top: 0.3, background: 0x051113 },
@@ -509,6 +509,16 @@ export function ring(radius, width, hex, opacity = 1) {
 
 // ── The view: a renderer, a camera at the player's seat, orbit, pinch, tap ────
 
+const sameOrbit = (a, b) => a.azimuth === b.azimuth && a.elevation === b.elevation && a.distance === b.distance;
+
+/** A board's four corners on its surface and, `rise` above them, the top of a piece standing
+    there: what the camera keeps in view. */
+export function boardCorners(half, top, rise) {
+  const out = [];
+  for (const x of [-half, half]) for (const z of [-half, half]) out.push([x, top, z], [x, top + rise, z]);
+  return out;
+}
+
 /** One finger (or the mouse) turns the table and tips it, a pinch or the wheel goes closer or
     further, a double tap goes back to the player's seat. A tap reports the point on the board's
     surface under it, and the object touched. Renders only while something moves. */
@@ -570,14 +580,45 @@ export class BoardView {
     const a = w / h;
     this.camera.fov = a < 1.1 ? 2 * Math.atan(Math.tan(15 * Math.PI / 180) * 1.1 / a) * 180 / Math.PI : 30;
     this.camera.updateProjectionMatrix();
+    if (this.fit) {
+      // The window changed shape: fit the board again, and follow if the camera was at home.
+      const atHome = sameOrbit(this.orbit, this.home);
+      this.home = { ...this.wanted, distance: this.fitted(this.wanted) };
+      if (atHome) { this.orbit = { ...this.home }; this.place(); return; }
+    }
     this.render();
   }
 
-  setHome(orbit, animated) {
-    const same = this.home.azimuth === orbit.azimuth && this.home.elevation === orbit.elevation && this.home.distance === orbit.distance;
-    this.home = { ...orbit };
+  /** The player's seat. With `fit` (points on the board, its corners), the camera stands at
+      `orbit.distance` if they all show from there, or just far enough back that they do. */
+  setHome(orbit, animated, fit = null) {
+    this.fit = fit;
+    this.wanted = { ...orbit };
+    const home = { ...orbit, distance: this.fitted(orbit) };
+    const same = sameOrbit(this.home, home);
+    this.home = home;
     if (same) return;
-    if (animated) this.glideTo(orbit, 900); else { this.orbit = { ...orbit }; this.place(); }
+    if (animated) this.glideTo(home, 900); else { this.orbit = { ...home }; this.place(); }
+  }
+
+  /** The nearest distance from `orbit.distance` out at which every `fit` point is on screen, with
+      a little room around the edge. */
+  fitted(orbit) {
+    if (!this.fit) return orbit.distance;
+    const cam = this.camera.clone(), v = new THREE.Vector3();
+    cam.updateProjectionMatrix();
+    const e = orbit.elevation * Math.PI / 180, a = orbit.azimuth * Math.PI / 180;
+    const fits = (d) => {
+      cam.position.set(this.target.x + Math.sin(a) * Math.cos(e) * d, this.target.y + Math.sin(e) * d, this.target.z + Math.cos(a) * Math.cos(e) * d);
+      cam.lookAt(this.target);
+      cam.updateMatrixWorld();
+      return this.fit.every(([x, y, z]) => { v.set(x, y, z).project(cam); return Math.abs(v.x) <= 0.95 && Math.abs(v.y) <= 0.95; });
+    };
+    let lo = orbit.distance, hi = orbit.distance;
+    if (fits(hi)) return hi;
+    while (!fits(hi) && hi < orbit.distance * 6) { lo = hi; hi *= 1.25; }
+    for (let i = 0; i < 20; i++) { const mid = (lo + hi) / 2; if (fits(mid)) hi = mid; else lo = mid; }
+    return hi;
   }
 
   place() {

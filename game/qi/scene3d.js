@@ -2,17 +2,17 @@
    the 3D button puts the 3D board in a window at the top of the rail; a tap on the window
    swaps the two boards, so the 3D one is played on and the 2D one watches from the window.
    three.js and the 3D code load only when 3D is first turned on. */
-import { app, hooks, esc, t } from './main.js?v=11';
-import { GridBoard, ChessBoard } from './boards.js?v=11';
-import { Go, ask } from './models.js?v=11';
-import * as Gomoku from './gomoku.js?v=11';
-import * as Chess from './chess.js?v=11';
-import { glyph } from './art.js?v=11';
+import { app, hooks, esc, t } from './main.js?v=12';
+import { GridBoard, ChessBoard } from './boards.js?v=12';
+import { Go, ask } from './models.js?v=12';
+import * as Gomoku from './gomoku.js?v=12';
+import * as Chess from './chess.js?v=12';
+import { glyph } from './art.js?v=12';
 
 let lib = null, loading = null, failed = false;
 function load() {
   if (lib || loading) return loading;
-  loading = Promise.all([import('./three/world.js?v=11'), import('./three/grid3d.js?v=11'), import('./three/chess3d.js?v=11'), import('./three/creatures.js?v=11')])
+  loading = Promise.all([import('./three/world.js?v=12'), import('./three/grid3d.js?v=12'), import('./three/chess3d.js?v=12'), import('./three/creatures.js?v=12')])
     .then(([world, grid, chess, creatures]) => { lib = { world, grid, chess, creatures }; })
     .catch(() => { failed = true; })
     .finally(() => { loading = null; for (const s of waiting) s.render(); waiting.clear(); });
@@ -179,8 +179,9 @@ function place(screen, T, s) {
     const c = T.content;
     T.view.surfaceY = c.top;
     T.view.target.set(0, c.top, 0.04 * c.span);
-    // Nearer on the garden, whose 15 × 15 fruit would otherwise be too small to read.
-    T.view.setHome({ azimuth: 0, elevation: 56, distance: c.span * (s.garden ? 1.62 : 2.02) }, false);
+    // Nearer on the garden, whose 15 × 15 fruit would otherwise be too small to read; but never
+    // so near that a corner of the board (and a piece on it) is out of view (Houfu).
+    T.view.setHome({ azimuth: 0, elevation: 56, distance: c.span * (s.garden ? 1.62 : 2.02) }, false, lib.world.boardCorners(c.span / 2, c.top, 0.8));
   }
 }
 
@@ -199,7 +200,8 @@ function showChess(screen, T) {
     T.view.surfaceY = c.top;
     T.view.target.set(0, c.top + 0.25, 0);
   }
-  T.view.setHome({ azimuth: s.bottom === Chess.WHITE ? 0 : 180, elevation: 55, distance: lib.chess.SPAN * 2.12 }, T.bottom != null && T.bottom !== s.bottom);
+  T.view.setHome({ azimuth: s.bottom === Chess.WHITE ? 0 : 180, elevation: 55, distance: lib.chess.SPAN * 2.12 }, T.bottom != null && T.bottom !== s.bottom,
+    lib.world.boardCorners(lib.chess.SPAN / 2, c.top, 1.2));
   T.bottom = s.bottom;
   promotionPicker(screen, m);
 }
