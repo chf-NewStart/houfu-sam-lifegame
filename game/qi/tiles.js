@@ -3,8 +3,8 @@
    glyphs inside a margin of bone) and, for players who don't read the characters, a small
    pixel number in the corner. A tile is a 16 × 22 grid of pixels: the face 19 rows, the jade
    back showing under it 3. Each tile is drawn once into a small canvas and reused. */
-import { GLYPHS } from './glyphs.js?v=12';
-import { rank, suit } from './mahjong.js?v=12';
+import { GLYPHS } from './glyphs.js?v=13';
+import { rank, suit } from './mahjong.js?v=13';
 
 export const COLORS = {
   ivory: '#efe7d2', ivoryShade: '#d6cbb0', ivoryLight: '#fffaee', outline: '#14201c',

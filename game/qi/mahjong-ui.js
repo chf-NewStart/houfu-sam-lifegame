@@ -3,12 +3,12 @@
    the empty seats. Hand after hand with running scores and a turning deal, the coach, a replay
    of the hand just played, and between hands the automatic table's reset (the old hand swept
    into the middle, the shuffle, four walls rising, the dice under the dome). */
-import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=12';
-import { icon, C as COL, drawPond } from './art.js?v=12';
-import * as M from './mahjong.js?v=12';
-import * as Sound from './sound.js?v=12';
-import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=12';
-import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=12';
+import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=13';
+import { icon, C as COL, drawPond } from './art.js?v=13';
+import * as M from './mahjong.js?v=13';
+import * as Sound from './sound.js?v=13';
+import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=13';
+import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=13';
 
 const RESET = 3400;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -447,7 +447,7 @@ function seatsPanel(model, withNote = true) {
     <span class="code">${esc(o.code || '')}</span><button class="invite" data-act="oInvite">${icon('share')}${esc(t('Invite', '邀请'))}</button></div>
     ${o.connected ? '' : `<div class="room-status warn">${esc(t('Reconnecting…', '正在重新连接…'))}</div>`}
     <div class="mj-seats">${rows}</div>
-    ${withNote ? `<div class="note muted">${esc(t('Up to four people, on the web or in the Qi app. Computers play the empty seats, and anyone who is away until they\'re back. Each player\'s tiles are sealed to them alone.', '最多四人，网页和 Qi 应用都能加入。空位由电脑来打，有人离开时电脑也会替他打，回来即可接手。每个人的牌都只加密发给本人。'))}</div>` : ''}</div>`;
+    ${withNote ? `<div class="note muted">${esc(t('Up to four people, on the web or in the Qi app. Computers play the empty seats, and anyone who is away until they\'re back. Each player\'s tiles are sealed to them alone.', '最多一桌坐满，网页和 Qi 应用都能加入。空位由电脑来打，有人离开时电脑也会替他打，回来即可接手。每个人的牌都只加密发给本人。'))}</div>` : ''}</div>`;
 }
 
 // ── The table, drawn ──────────────────────────────────────────────────────────
@@ -920,7 +920,7 @@ class MahjongScreen extends GameScreen {
     if (!on) { if (this.host3d) this.host3d.style.display = 'none'; return; }
     if (!this.three) {
       if (!this.loading3d) {
-        this.loading3d = Promise.all([import('./three/world.js?v=12'), import('./three/mahjong3d.js?v=12')]).then(([world, mj]) => {
+        this.loading3d = Promise.all([import('./three/world.js?v=13'), import('./three/mahjong3d.js?v=13')]).then(([world, mj]) => {
           try {
             const view = new world.BoardView();
             const content = new mj.Mahjong3DScene(view);
@@ -980,7 +980,7 @@ function rule(iconName, title, text) { return `<div class="rule">${icon(iconName
 
 RULES.mahjong = () => [
   tileRule([0, 13, 26], t('The tiles', '牌'), t('136 tiles, four of each. Three suits numbered 1 to 9: characters (萬), dots (筒) and bamboo (条; the 1 is a bird). Then the honours: the four winds 東南西北 and the three dragons, red 中, green 發 and white 白. No flowers. In English each suited tile carries its number in the corner.', '共 136 张，每种四张。三门数牌各一到九：万、筒、条（一条是一只鸟）。再加字牌：东南西北四风，和中、发、白三元。不用花牌。')),
-  rule('again', t('Draw, then let one go', '摸一张，打一张'), t('Four players, 13 tiles each; the dealer (East, 庄) starts with 14 and lets one go first. Then, in turn to the right, each player draws a tile from the wall and lets one go. Tap a tile to lift it, tap it again to let it go.', '四人各 13 张，庄家（东）先拿 14 张并先打出一张。之后按逆时针轮流：从牌墙摸一张，再打出一张。点一下把牌抬起，再点一下打出。')),
+  rule('again', t('Draw, then let one go', '摸一张，打一张'), t('Four players, 13 tiles each; the dealer (East, 庄) starts with 14 and lets one go first. Then, in turn to the right, each player draws a tile from the wall and lets one go. Tap a tile to lift it, tap it again to let it go.', '每人 13 张，庄家（东）先拿 14 张并先打出一张。之后按逆时针轮流：从牌墙摸一张，再打出一张。点一下把牌抬起，再点一下打出。')),
   tileRule([0, 1, 2], t('Sets', '顺子、刻子、杠'), t('A chow (吃) is three in a row in one suit, a pung (碰) three the same, a kong (杠) four the same. Honours make pungs and kongs, never chows.', '顺子是同一门连着的三张（吃），刻子是三张相同（碰），杠是四张相同。字牌只能成刻子或杠，不能成顺子。')),
   rule('pass', t('Taking a discard', '吃、碰、杠'), t('You may take a tile someone lets go to finish a set: a chow only from the player on your left (上家), a pung or kong from anyone. A claimed set lies face up and it is your turn to let a tile go. If several players want the same tile, a win comes first, then a pung or kong, then a chow.', '别人打出的牌可以拿来凑成一组：只能吃上家的牌，碰和杠谁的都行。吃碰杠的牌亮在桌上，然后由你打一张。几家同时要同一张牌时，胡优先，其次碰或杠，最后吃。')),
   rule('cube', t('Kongs', '杠'), t('Four the same from your hand is a concealed kong; three in your hand and a discard, an exposed kong; the fourth tile added to your pung, an added kong. Every kong draws a replacement tile from the back of the wall.', '手里四张相同是暗杠；手里三张加别人打的一张是明杠；碰过的牌再摸到第四张可以补杠。每次开杠都从牌墙尾部补摸一张。')),
@@ -996,7 +996,7 @@ RULES.mahjong = () => [
 
 hooks.screens.mahjong = {
   make: () => new MahjongScreen(),
-  card: () => [t('Mahjong', '麻将'), t('Four at a table: computer players or friends online, simple Chinese rules, and a coach for every tile.', '四人一桌：电脑或在线好友，简单的推倒胡规则，教练帮你打好每一张牌。')],
+  card: () => [t('Mahjong', '麻将'), t('Four at a table: computer players or friends online, simple Chinese rules, and a coach for every tile.', '约上三两好友，或对战电脑：简单的推倒胡规则，教练帮你打好每一张牌。')],
   mini(wrap) {
     // A few tiles on the pond: a hand standing, and a pung of red dragons laid down.
     const c = document.createElement('canvas');

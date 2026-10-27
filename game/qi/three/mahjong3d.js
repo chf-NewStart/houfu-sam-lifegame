@@ -4,14 +4,26 @@
    and its melds laid down, and the square plate in the middle with its dome for the dice.
    Between hands it resets the way the machine does: the tiles sink into the middle, the walls
    rise out of the table, the dice tumble under the dome. Units: a tile is 0.5 wide. */
-import * as THREE from './three.js?v=12';
-import { color, bitmap, fill, texture } from './voxels.js?v=12';
-import { THEMES, buildBoard } from './world.js?v=12';
-import { tween, setOpacity } from './grid3d.js?v=12';
-import { faceOnly } from '../tiles.js?v=12';
-import * as M from '../mahjong.js?v=12';
+import * as THREE from './three.js?v=13';
+import { color, bitmap, fill, texture } from './voxels.js?v=13';
+import { THEMES, buildBoard } from './world.js?v=13';
+import { tween, setOpacity } from './grid3d.js?v=13';
+import { faceOnly } from '../tiles.js?v=13';
+import * as M from '../mahjong.js?v=13';
 
 const W = 0.5, L = 0.69, T = 0.36;
+
+/** Where a seat's `i`th discard lies in its frame (x across, z out from the middle). The rivers
+    pinwheel as on a real table: each starts at the plate's edge shifted to its seat's left, so
+    its row ends just short of the next seat's river instead of running into it at the corner.
+    Six to a row for four rows (a fifth would reach the wall); then the fourth row runs on to the
+    right past the next river's end, then the third (36 in all; the longest river the app saw in
+    thousands of hands was 26). */
+export function riverSpot(i) {
+  const [row, col] = i < 24 ? [Math.floor(i / 6), i % 6] : i < 30 ? [3, i - 18] : [2, i - 24];
+  const start = 1.12, gap = 0.04;
+  return [start - gap - 6 * W + (col + 0.5) * W, start + (row + 0.5) * L];
+}
 export const SPAN = 13.2;
 const RESET = 3400;
 
@@ -144,11 +156,12 @@ export class Mahjong3DScene {
     for (let seat = 0; seat < 4; seat++) {
       const frame = seatFrame(seat, table.me);
       root.add(frame);
-      // The river: six to a row, starting at the plate's edge.
+      // The river (a claimed tile leaves its place empty).
       g.rivers[seat].forEach((rv, i) => {
         if (rv.claimed) return;
         const n = tileNode(rv.tile, table.index);
-        n.position.set(((i % 6) - 2.5) * W, y, 1.12 + L / 2 + Math.floor(i / 6) * L);
+        const [x, z] = riverSpot(i);
+        n.position.set(x, y, z);
         frame.add(n);
       });
       // The hand stands at the seat (its face toward it); it lies down face up at the end.
