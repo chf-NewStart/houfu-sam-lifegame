@@ -9,9 +9,9 @@
        until every seat that may claim has answered, then writes only the outcome.
      - When the hand ends the host writes the seed: every hand turns face up for everyone.
    This module adds Mahjong to OnlineSession (online.js) through its `ext` hooks. */
-import * as M from './mahjong.js?v=13';
-import * as K from './mahjong-keys.js?v=13';
-import { newRecord } from './room.js?v=13';
+import * as M from './mahjong.js?v=14';
+import * as K from './mahjong-keys.js?v=14';
+import { newRecord } from './room.js?v=14';
 
 const parseSteps = (moves) => { const list = moves.map(M.parseStep); return list.every(Boolean) ? list : null; };
 

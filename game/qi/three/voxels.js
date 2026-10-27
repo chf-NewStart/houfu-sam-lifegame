@@ -3,7 +3,7 @@
    each corner darkened by the cells around it (ambient occlusion), so small models read as
    solid things. Also the deterministic noise every texture and model uses, and the little
    canvas helpers that paint the board faces. */
-import * as THREE from './three.js?v=13';
+import * as THREE from './three.js?v=14';
 
 const BIAS = 1024;
 const key = (x, y, z) => (x + BIAS) + (y + BIAS) * 2048 + (z + BIAS) * 4194304;

@@ -4,7 +4,7 @@
    its actions and follows what the host publishes. Drops are reconnected with a growing pause;
    the room and this device's player id are remembered, so a closed tab comes back to the same
    seat. Runs in the page and, for tests, in Node (pass `WebSocket` and `storage`). */
-import { RoomCode, newRecord, normalRecord, seatKeys, seatOf, isFull, apply, wantsRematch, nextRound } from './room.js?v=13';
+import { RoomCode, newRecord, normalRecord, seatKeys, seatOf, isFull, apply, wantsRematch, nextRound } from './room.js?v=14';
 
 export const DEFAULT_RELAY = 'wss://lifegame-relay.houfuchen0702.workers.dev';
 const SAVED_KEY = 'qi_online_room';

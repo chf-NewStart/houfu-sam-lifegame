@@ -426,7 +426,7 @@
     <div>
       <div class="pg-title" id="pgTitle">Gomoku</div>
       <div class="pg-sub" id="pgSub"></div>
-      <a class="pg-back" id="pgBack" href="/game/qi.html">← Qi · board games</a>
+      <a class="pg-back" id="pgBack" href="/game/qi.html">← Qi Zi · board games</a>
     </div>
     <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
   </div>
@@ -614,7 +614,7 @@ function applyLang() {
   if (typeof renderReplayUI === 'function') renderReplayUI();
   document.getElementById('pgTitle').textContent = t('Gomoku', '五子棋');
   document.getElementById('pgSub').textContent   = t('5 in a row wins · 15×15 · click to place your stone', '五子连珠获胜 · 15×15棋盘 · 点击落子');
-  document.getElementById('pgBack').textContent  = t('← Qi · board games', '← Qi · 棋类游戏');
+  document.getElementById('pgBack').textContent  = t('← Qi Zi · board games', '← 棋子 · 棋类游戏');
   // an input has no textContent to swap, so the placeholder is done by hand
   document.getElementById('joinCode').placeholder = t('paste the invite link or code', '粘贴邀请链接或房间码');
   document.querySelectorAll('[data-en]').forEach(el => { el.textContent = t(el.dataset.en, el.dataset.zh); });

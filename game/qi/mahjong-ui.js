@@ -3,12 +3,12 @@
    the empty seats. Hand after hand with running scores and a turning deal, the coach, a replay
    of the hand just played, and between hands the automatic table's reset (the old hand swept
    into the middle, the shuffle, four walls rising, the dice under the dome). */
-import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=13';
-import { icon, C as COL, drawPond } from './art.js?v=13';
-import * as M from './mahjong.js?v=13';
-import * as Sound from './sound.js?v=13';
-import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=13';
-import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=13';
+import { app, hooks, GameScreen, btn, esc, t, sheet, sheetHead, closeSheet, scheduleRender, replayPanel, chineseNumber, RULES } from './main.js?v=14';
+import { icon, C as COL, drawPond } from './art.js?v=14';
+import * as M from './mahjong.js?v=14';
+import * as Sound from './sound.js?v=14';
+import { sprite, drawTile, tileURL, glyph, NAMES, ASPECT, COLORS } from './tiles.js?v=14';
+import { mahjongExt, answerCode, view, table } from './mahjong-room.js?v=14';
 
 const RESET = 3400;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -447,7 +447,7 @@ function seatsPanel(model, withNote = true) {
     <span class="code">${esc(o.code || '')}</span><button class="invite" data-act="oInvite">${icon('share')}${esc(t('Invite', '邀请'))}</button></div>
     ${o.connected ? '' : `<div class="room-status warn">${esc(t('Reconnecting…', '正在重新连接…'))}</div>`}
     <div class="mj-seats">${rows}</div>
-    ${withNote ? `<div class="note muted">${esc(t('Up to four people, on the web or in the Qi app. Computers play the empty seats, and anyone who is away until they\'re back. Each player\'s tiles are sealed to them alone.', '最多一桌坐满，网页和 Qi 应用都能加入。空位由电脑来打，有人离开时电脑也会替他打，回来即可接手。每个人的牌都只加密发给本人。'))}</div>` : ''}</div>`;
+    ${withNote ? `<div class="note muted">${esc(t('Up to four people, on the web or in the Qi Zi app. Computers play the empty seats, and anyone who is away until they\'re back. Each player\'s tiles are sealed to them alone.', '最多一桌坐满，网页和「棋子」应用都能加入。空位由电脑来打，有人离开时电脑也会替他打，回来即可接手。每个人的牌都只加密发给本人。'))}</div>` : ''}</div>`;
 }
 
 // ── The table, drawn ──────────────────────────────────────────────────────────
@@ -920,7 +920,7 @@ class MahjongScreen extends GameScreen {
     if (!on) { if (this.host3d) this.host3d.style.display = 'none'; return; }
     if (!this.three) {
       if (!this.loading3d) {
-        this.loading3d = Promise.all([import('./three/world.js?v=13'), import('./three/mahjong3d.js?v=13')]).then(([world, mj]) => {
+        this.loading3d = Promise.all([import('./three/world.js?v=14'), import('./three/mahjong3d.js?v=14')]).then(([world, mj]) => {
           try {
             const view = new world.BoardView();
             const content = new mj.Mahjong3DScene(view);
@@ -989,7 +989,7 @@ RULES.mahjong = () => [
   rule('replay', t('A drawn hand, the next dealer', '流局与坐庄'), t('When the wall runs out, the last tile let go can only be won; otherwise the hand is drawn (流局) and nobody pays. The dealer deals again after winning or a drawn hand; otherwise the deal passes to the right.', '牌墙摸完后，最后打出的那张只能用来胡；没人胡就是流局，无人输赢。庄家胡牌或流局则连庄，否则下家坐庄。')),
   rule('bulb', t('The coach', '教练'), t('With the coach on, a gold arrow marks the tile to let go, and the rail says why: how many tiles you are from ready (向听), and how many unseen tiles would help. When someone lets a tile go that you could take, it says whether taking it is worth it.', '开启教练后，金色箭头标出建议打的牌，侧栏说明原因：离听牌还差几步（向听），还有多少张没见过的牌能进张。别人打出你能吃碰的牌时，也会告诉你值不值得要。')),
   rule('flag', t('Computer levels', '电脑难度'), t('Easy keeps its hand in shape but plays loosely and claims eagerly. Normal lets go the tile that leaves the most ways to improve and claims what brings it closer. Hard also keeps its hand concealed early and lets go safe tiles when someone looks close to winning. They only ever see what you could see at a real table.', '简单：保持牌型，但打得随意、爱吃碰。普通：打出后进张最多的牌，只要能更接近胡牌就吃碰。困难：前期尽量门清，看到别人快胡时会打安全牌。电脑只看得到真实牌桌上能看到的牌。')),
-  rule('globe', t('Friends online', '和好友在线'), t('Create a Mahjong room and send the code to up to three friends, on the web or in the Qi app. Computer players sit in the empty seats, and a friend who joins later takes one over. Each player\'s tiles travel locked to that player alone; the room\'s creator deals, so their Qi holds the wall.', '创建麻将房间，把房间码发给最多三位好友，网页和 Qi 应用都能加入。空位由电脑补上，好友晚到也能接替电脑。每个人的牌都加密只发给本人；由房主的 Qi 发牌并保管牌墙。')),
+  rule('globe', t('Friends online', '和好友在线'), t('Create a Mahjong room and send the code to up to three friends, on the web or in the Qi Zi app. Computer players sit in the empty seats, and a friend who joins later takes one over. Each player\'s tiles travel locked to that player alone; the room\'s creator deals, so their Qi Zi holds the wall.', '创建麻将房间，把房间码发给最多三位好友，网页和「棋子」应用都能加入。空位由电脑补上，好友晚到也能接替电脑。每个人的牌都加密只发给本人；由房主的「棋子」发牌并保管牌墙。')),
 ];
 
 // ── Registration ──────────────────────────────────────────────────────────────

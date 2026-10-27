@@ -1,12 +1,12 @@
 /* Qi on the web: the app's start screen and its games (Qi/Views/*.swift), in English and
    中文. Each game screen is the board (2D canvas, or 3D when it is swapped in) and the
    rail: the header, the status, the room, the replay, the coach and the buttons. */
-import { C, icon, glyph } from './art.js?v=13';
-import { GridBoard, ChessBoard } from './boards.js?v=13';
-import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=13';
-import * as Gomoku from './gomoku.js?v=13';
-import * as Chess from './chess.js?v=13';
-import * as Sound from './sound.js?v=13';
+import { C, icon, glyph } from './art.js?v=14';
+import { GridBoard, ChessBoard } from './boards.js?v=14';
+import { Go, GoModel, GomokuModel, ChessModel, SEATINGS, isAI } from './models.js?v=14';
+import * as Gomoku from './gomoku.js?v=14';
+import * as Chess from './chess.js?v=14';
+import * as Sound from './sound.js?v=14';
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -141,8 +141,8 @@ function pieceRule(kind, title, text) {
   return `<div class="rule"><div class="pieces" data-piece="${kind}"></div><div><b>${esc(title)}</b><p>${esc(text)}</p></div></div>`;
 }
 const ONLINE_RULE = () => rule('globe', t('Play a friend online', '和好友在线对局'), t(
-  'Tap Play online on the start screen (or A friend online… under New game), create a room and send your friend its code. They open Qi, in the app or here on the web, tap Play online and enter it. Take-backs and draws are asked, not taken; after a game you can both press Rematch and swap sides.',
-  '在开始页面点「在线对局」（或在「新对局」里选「在线好友…」），创建房间并把房间码发给好友。对方在 Qi 应用或这个网页上点「在线对局」并输入房间码。悔棋与和棋需要对方同意；一局结束后双方都按「再来」即可交换先后手再下一局。'));
+  'Tap Play online on the start screen (or A friend online… under New game), create a room and send your friend its code. They open Qi Zi, in the app or here on the web, tap Play online and enter it. Take-backs and draws are asked, not taken; after a game you can both press Rematch and swap sides.',
+  '在开始页面点「在线对局」（或在「新对局」里选「在线好友…」），创建房间并把房间码发给好友。对方在「棋子」应用或这个网页上点「在线对局」并输入房间码。悔棋与和棋需要对方同意；一局结束后双方都按「再来」即可交换先后手再下一局。'));
 
 export const RULES = {
   go: () => [
@@ -192,7 +192,7 @@ export function rulesSheet(game) {
 export function header(title, subtitle) {
   const zh = app.lang === 'zh';
   return `<div class="head">
-    <button class="round-btn back" data-act="back" aria-label="${esc(t('Back to Qi', '返回'))}">${icon('back')}</button>
+    <button class="round-btn back" data-act="back" aria-label="${esc(t('Back to Qi Zi', '返回'))}">${icon('back')}</button>
     <div class="titles"><h1 class="${zh ? 'zh' : ''}">${esc(title)}</h1><div class="sub">${esc(subtitle)}</div></div>
     <button class="round-btn" data-act="rules" aria-label="${esc(t('How to play', '玩法'))}">${icon('help')}</button>
     <button class="round-btn${app.soundOn ? ' on' : ''}" data-act="sound" aria-label="${esc(app.soundOn ? t('Mute sounds', '静音') : t('Turn sounds on', '开启声音'))}">${icon(app.soundOn ? 'sound' : 'mute')}</button>
@@ -836,7 +836,7 @@ class Hub {
         <button class="chip-btn icon" data-act="sound" aria-label="${esc(app.soundOn ? t('Mute sounds', '静音') : t('Turn sounds on', '开启声音'))}">${icon(app.soundOn ? 'sound' : 'mute')}</button>
         <button class="chip-btn" data-act="lang">${icon('globe')}<span>${app.lang === 'en' ? '中文' : 'English'}</span></button>
       </div>
-      <div class="hub-title"><h1><span>QI</span><span class="zh">· 棋</span></h1><p>${esc(count)}</p></div>
+      <div class="hub-title"><h1><span>QI ZI</span><span class="zh">· 棋子</span></h1><p>${esc(count)}</p></div>
       <div class="cards${games.length === 4 ? ' four' : ''}">${games.map((g) => {
         const [title, blurb] = (CARD[g] || hooks.screens[g].card)();
         return `<button class="card" data-act="open" data-arg="${g}"><div class="mini" data-mini="${g}"></div><div><h2>${esc(title)}</h2><p>${esc(blurb)}</p><span class="go-on">${esc(t('Play', '开始'))} ${icon('back')}</span></div></button>`;
@@ -845,7 +845,7 @@ class Hub {
       <footer class="hub-foot">
         <span>${esc(hooks.openOnline ? t('Offline against the computer · online with a friend · no ads · no tracking', '离线对战电脑 · 在线约好友 · 无广告 · 无追踪')
           : t('Against the computer or two on one device · no ads · no tracking', '对战电脑或双人同屏 · 无广告 · 无追踪'))}</span>
-        <a href="https://apps.apple.com/app/id6821608519" rel="noopener">${esc(t('Also on iPhone and iPad: Qi on the App Store →', '也有 iPhone 与 iPad 版：在 App Store 下载 Qi →'))}</a>
+        <a href="https://apps.apple.com/app/id6821608519" rel="noopener">${esc(t('Also on iPhone and iPad: Qi Zi on the App Store →', '也有 iPhone 与 iPad 版：在 App Store 下载「棋子」→'))}</a>
       </footer>`;
     this.root.querySelectorAll('[data-mini]').forEach((wrap) => this.minis.push(miniBoard(wrap, wrap.dataset.mini)));
   }
@@ -907,7 +907,14 @@ function show(screen) {
   if (screen !== 'hub' && !make) app.screen = 'hub';
   current.mount(root);
   window.scrollTo(0, 0);
-  document.title = screen === 'hub' ? 'Qi · 棋: Go, Gomoku, Chess & Mahjong // Game Life' : `${current.title ? current.title() : ''} · Qi 棋`;
+  setTitle();
+}
+
+/** The tab's title, one language at a time: Qi Zi in English, 棋子 in Chinese. */
+function setTitle() {
+  if (!current) return;
+  document.title = app.screen === 'hub' ? t('Qi Zi: Go, Gomoku, Chess & Mahjong // Game Life', '棋子：围棋、五子棋、国际象棋与麻将 // Game Life')
+    : `${current.title ? current.title() : ''} · ${t('Qi Zi', '棋子')}`;
 }
 
 let pending = false;
@@ -918,6 +925,7 @@ export function scheduleRender() {
 }
 function rerender(full) {
   if (!current) return;
+  if (full) setTitle();
   if (full && current instanceof Hub) current.render();
   else scheduleRender();
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Privacy policy for Life Game Project games and apps: no accounts, ads or tracking. Optional Qi and Manilha online rooms use random room player IDs and gameplay data to run the game; room data expires after about six hours of inactivity. Web leaderboards keep the nickname and score you choose to submit.">
+  <meta name="description" content="Privacy policy for Life Game Project games and apps: no accounts, ads or tracking. Optional Qi Zi and Manilha online rooms use random room player IDs and gameplay data to run the game; room data expires after about six hours of inactivity. Web leaderboards keep the nickname and score you choose to submit.">
   <title>Privacy Policy // Life Game Project</title>
   <style>
     body { background:#0a0a0a; color:#ccc; font-family:'Courier New',monospace; line-height:1.7;
@@ -21,7 +21,7 @@
   <h1>Privacy Policy</h1>
   <div class="sub">Life Game Project · lifegameproject.com · last updated 26 October 2026</div>
 
-  <p>This policy covers Life Game Project's website and the iPhone and iPad apps named below, including Qi. We try to collect as little as possible. The first sections describe the Game of Life website; the app and online-room sections explain what those games store and what leaves your device.</p>
+  <p>This policy covers Life Game Project's website and the iPhone and iPad apps named below, including Qi Zi. We try to collect as little as possible. The first sections describe the Game of Life website; the app and online-room sections explain what those games store and what leaves your device.</p>
 
   <h2>What stays on your device</h2>
   <ul>
@@ -44,7 +44,7 @@
   </ul>
 
   <h2>iPhone and iPad apps</h2>
-  <p>The native apps <b>Manilha</b>, <b>Game Life</b>, <b>Qi</b> and <b>Plank Constant</b> have no accounts, leaderboards, galleries, analytics or advertising. Your language choice, game settings and bests are stored only on your device and are deleted when you delete the app. <b>Game Life</b> and <b>Plank Constant</b> send nothing to us. <b>Manilha</b> and <b>Qi</b> send online-room data when you choose to play online with friends. Qi also requests the online server address at startup. The following sections explain these requests and Plank Constant's use of the camera.</p>
+  <p>The native apps <b>Manilha</b>, <b>Game Life</b>, <b>Qi Zi</b> and <b>Plank Constant</b> have no accounts, leaderboards, galleries, analytics or advertising. Your language choice, game settings and bests are stored only on your device and are deleted when you delete the app. <b>Game Life</b> and <b>Plank Constant</b> send nothing to us. <b>Manilha</b> and <b>Qi Zi</b> send online-room data when you choose to play online with friends. Qi also requests the online server address at startup. The following sections explain these requests and Plank Constant's use of the camera.</p>
 
   <h2>Manilha: online rooms</h2>
   <p>You can play Manilha with up to three friends in an online room, from the Manilha app on iPhone or iPad or in a browser at lifegameproject.com/game/truco.html. Solo and same-device games never go online.</p>
@@ -56,8 +56,8 @@
     <li><strong>Cloudflare:</strong> Cloudflare operates the relay and handles connection data, including your IP address, to deliver the service, under its <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener">privacy policy</a>.</li>
   </ul>
 
-  <h2>Qi: online rooms</h2>
-  <p>You can play Go, Gomoku or Chess with a friend, or Mahjong with up to four players, in an online room from the Qi app on iPhone or iPad or in a browser at <a href="/game/qi.html">lifegameproject.com/game/qi.html</a>. Games against the computer and games shared on one device do not use the online relay.</p>
+  <h2>Qi Zi: online rooms</h2>
+  <p>You can play Go, Gomoku or Chess with a friend, or Mahjong with up to four players, in an online room from the Qi Zi app on iPhone or iPad or in a browser at <a href="/game/qi.html">lifegameproject.com/game/qi.html</a>. Games against the computer and games shared on one device do not use the online relay.</p>
   <ul>
     <li><strong>Server configuration:</strong> at startup, the app makes an HTTPS request to <a href="/game/truco-relay.json">lifegameproject.com/game/truco-relay.json</a> for the current relay address. This request does not include a player ID, room code or gameplay content. The website host handles ordinary connection data, such as your IP address, to serve the request.</li>
     <li><strong>What is sent:</strong> when you create or join a room, your device connects to the same room server as Manilha (the "relay", which runs on Cloudflare). It sends the room code; a random player ID generated for that room; your seat; the game and board settings; and gameplay content, including moves, take-back and draw requests, Go dead-stone marks, Mahjong discards and claims, scores and rematch requests. The host sends the shared game record. Mahjong also sends public encryption keys, encrypted tile data and encrypted host notes.</li>
@@ -66,7 +66,7 @@
     <li><strong>Who can see it:</strong> devices connected to the room receive its data to show the game. Anyone who has the room code can access the room while it exists, so share it only with people you intend to play with. Public moves and scores are visible to the room.</li>
     <li><strong>Mahjong hands:</strong> the host's device deals and knows every tile. Tiles sent privately to a guest are encrypted for that guest using X25519 key agreement, HKDF-SHA256 and ChaCha20-Poly1305; the iPhone and iPad app uses Apple's CryptoKit. Other guests and the relay receive encrypted tile data rather than that guest's readable hand. At the end of a hand, the host publishes the information needed for everyone to reveal and replay it. These protections do not hide tiles from the host.</li>
     <li><strong>How long it is kept:</strong> the relay automatically deletes room data, including player IDs and gameplay content, after about six hours without a game-data update. Connection keep-alives do not extend this period. Leaving a room or forgetting it on your device does not immediately delete its relay data.</li>
-    <li><strong>What stays on your device:</strong> Qi remembers the last room's code, your random player ID and, for Mahjong, your room secret so you can return to the game. The × next to the saved room on the start screen removes that saved room information from the app.</li>
+    <li><strong>What stays on your device:</strong> Qi Zi remembers the last room's code, your random player ID and, for Mahjong, your room secret so you can return to the game. The × next to the saved room on the start screen removes that saved room information from the app.</li>
     <li><strong>Cloudflare:</strong> Cloudflare operates the relay and handles connection data, including your IP address, to deliver the service, under its <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener">privacy policy</a>.</li>
   </ul>
 
