@@ -402,7 +402,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b72 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b73 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -2593,7 +2593,7 @@ const STARTER_ARMS = ['gong','jian','mao','dao'];
    Every compound below is a real character; where one part only gives the
    sound (形声), the note says so rather than inventing a picture for it.     */
 const RESON = {
-  gong: {'大':{ch:'夷', py:'yí',  en:'a man with a bow, as seal script draws it — Shuowen’s people of the east', zh:'篆形大人负弓——《说文》：东方之人'}},
+  gong: {'大':{ch:'夷', py:'yí',  en:'seal script reads it as 大 carrying 弓; the bronze form is an arrow 矢 wound with a cord — the people of the east', zh:'篆形似大人负弓；金文本是矢上缠绳——东方之人'}},
   ge:   {'人':{ch:'伐', py:'fá',  en:'the dagger-axe at the neck — “to fell”',               zh:'戈加人颈——「伐」'}},
   mao:  {'木':{ch:'柔', py:'róu', en:'wood that bends and springs back — 矛 lends only its sound', zh:'木曲直也——「矛」表音'}},
   jin:  {'木':{ch:'析', py:'xī',  en:'the axe splits the wood — “to cleave apart”',          zh:'以斤劈木——「析」'}},
@@ -3521,6 +3521,7 @@ const Game = (function(){
   }
   /* the LV label ends left of the 音 button: on a desktop the buttons sit over the field at a fixed
      pixel size while the canvas scales, so a fixed canvas offset slid under them (checked twice a second) */
+  let hudA = 1;                          // the top-left readout's alpha: see-through while your glyph is under it
   let lvX = CW-WALL-76, lvXt = -1;
   function lvLabelX(){
     if(tGlobal - lvXt < 0.5 && tGlobal >= lvXt) return lvX;
@@ -6129,7 +6130,12 @@ const Game = (function(){
 
     if(inkMo) drawInkMoment();
 
-    // xp strip along the top, hp segments under it, carried arms below
+    // xp strip along the top, hp segments under it, carried arms below;
+    // when your glyph walks into that corner the readout goes see-through
+    // (like the toast and the corner buttons) so you never lose yourself
+    const hudR = WALL + 6 + Math.max(1, weapons.length)*34 + (loanOwed ? 120 : 70);
+    const hudUnder = !!player && running && player.x - 24 < hudR && player.y - 60 < WALL + 78;
+    hudA += ((hudUnder ? 0.3 : 1) - hudA) * 0.2;
     ctx.save();
     const bw = CW-WALL*2-8;
     ctx.globalAlpha = 0.25; ctx.fillStyle = '#000';
@@ -6143,31 +6149,33 @@ const Game = (function(){
     const lowPulse = lives<=2 ? 0.55+0.45*Math.sin(tGlobal*8) : 1;
     for(let i=0;i<maxHp;i++){
       const sx = WALL+22+i*24;
-      ctx.globalAlpha = 0.3; ctx.fillStyle = '#000';
+      ctx.globalAlpha = 0.3*hudA; ctx.fillStyle = '#000';
       ctx.fillRect(sx, WALL+14, 20, 9);
-      if(i < lives){ ctx.globalAlpha = lowPulse; ctx.fillStyle = '#f0674a'; ctx.fillRect(sx+1, WALL+15, 18, 7); }
-      ctx.globalAlpha = 0.5; ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 1;
+      if(i < lives){ ctx.globalAlpha = lowPulse*hudA; ctx.fillStyle = '#f0674a'; ctx.fillRect(sx+1, WALL+15, 18, 7); }
+      ctx.globalAlpha = 0.5*hudA; ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 1;
       ctx.strokeRect(sx+0.5, WALL+14.5, 20, 9);
     }
-    ctx.globalAlpha = 0.9; ctx.fillStyle = '#f0674a';
+    ctx.globalAlpha = 0.9*hudA; ctx.fillStyle = '#f0674a';
     ctx.font = 'bold 13px "EB Garamond","Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
     ctx.fillText('♥', WALL+6, WALL+23);
     ctx.restore();
     for(let i=0; i<weapons.length; i++){
       const w = weapons[i];
+      ctx.save(); ctx.globalAlpha = hudA;
       drawWeaponIcon(ctx, w.key, w.lv, WALL+20+i*34, WALL+46, 20, era.accent);
-      ctx.save(); ctx.fillStyle = era.accent; ctx.globalAlpha = 0.9;
+      ctx.restore();
+      ctx.save(); ctx.fillStyle = era.accent; ctx.globalAlpha = 0.9*hudA;
       for(let pip=0; pip<w.lv; pip++) ctx.fillRect(WALL+13+i*34+pip*7, WALL+58, 4, 3);
       if(w.res){                                        // the character you two spell together
         ctx.font = 'bold 13px "EB Garamond","Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
-        ctx.globalAlpha = 0.7 + 0.3*Math.sin(tGlobal*3);
+        ctx.globalAlpha = (0.7 + 0.3*Math.sin(tGlobal*3))*hudA;
         ctx.fillText(w.res, WALL+20+i*34, WALL+72);
       }
       ctx.restore();
     }
     if(!stage){                                         // 貝: the purse, beside the arms
       ctx.save(); ctx.font = 'bold 13px "EB Garamond","Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.globalAlpha = 0.9; ctx.fillStyle = era.accent;
+      ctx.globalAlpha = 0.9*hudA; ctx.fillStyle = era.accent;
       ctx.fillText('貝 ' + bei + (loanOwed ? '  債' + loanOwed : ''), WALL + 6 + Math.max(1, weapons.length)*34, WALL + 47);
       ctx.restore();
     }
