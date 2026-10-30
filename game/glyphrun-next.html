@@ -402,7 +402,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b73 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b74 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -2318,8 +2318,8 @@ const STAGES = [
    lore_zh:'《说文》：燕燕，玄鳥也。——整只燕子：头、张翅、叉尾。古人爱其形，借去写「宴」。'},
   {ch:'火', py:'huǒ',  en:'THE BURNING FIELD — survive the fires',  zh:'燎原——火中求生',
    era:1, dur:60, spawn:1.0, cap:13, spd:66, fire:2.2, mix:[['gui',3],['shi',1]], goal:{survive:1},
-   lore_en:'Shuowen: 火，燬也。南方之行，炎而上 — fire, the destroyer; the phase of the South, flaming upward. On the bones it is almost a twin of 山.',
-   lore_zh:'《说文》：火，燬也。南方之行，炎而上。象形。——甲骨上「火」与「山」几乎孪生，全靠文意分辨。'},
+   lore_en:'火 is tongues of flame leaping from one base. On the bones it is almost a twin of 山, the peaks — scribes told them apart by context. (Fire as the phase of the South is Han five-phase thought, laid on much later.)',
+   lore_zh:'「火」是从一处升起的几道火舌。甲骨上「火」与「山」几乎孪生，全靠文意分辨。（《说文》以火为「南方之行」，是汉代五行之说，远晚于造字。）'},
   {ch:'央', py:'yāng', en:'THE YOKES — dragged steps, kill 12',     zh:'颈枷之阵——步履维艰，斩十二',
    era:1, dur:80, spawn:0.85, cap:14, spd:64, mix:[['yoke',3],['gui',3],['yan',1]], goal:{kill:14},
    lore_en:'央 is a person with a carrying-beam across the neck — pinned at the very middle. That is why 央 means CENTER, as in 中央.',
@@ -2330,24 +2330,24 @@ const STAGES = [
    lore_zh:'「矢」是完整一支箭：镞、杆、羽。指箭为誓，便有了「誓」——如矢之直的一句话。'},
   {ch:'壴', py:'zhù',  en:'THE DRUMS — cross the rings, kill 10',   zh:'战鼓——穿越震波，斩十',
    era:2, dur:80, spawn:0.9, cap:13, spd:66, mix:[['drum',3],['gui',2],['yan',1]], goal:{kill:12},
-   lore_en:'Shuowen: 壴，陳樂立而上見也 — music set standing, seen from above the stand. Add a hand with a stick and it becomes 鼓, to drum.',
-   lore_zh:'《说文》：壴，陳樂立而上見也。——立在架上的战鼓，顶有羽饰。加一只执槌的手，便是「鼓」。'},
+   lore_en:'壴 is a war drum standing on its frame, a plume on top. Add a hand with a stick and it becomes 鼓, to drum.',
+   lore_zh:'「壴」是立在架上的战鼓，顶有羽饰。加一只执槌的手，便是「鼓」。'},
   {ch:'血', py:'xuè',  en:'THE FEEDING DARK — fell the priests, kill 18', zh:'血祭——先斩其祭，共斩十八',
    era:2, dur:90, spawn:0.7, cap:17, spd:72, mix:[['xue',2],['gui',4],['shi',1]], goal:{kill:22},
    lore_en:'Shuowen: 血，祭所薦牲血也 — the beast-blood offered in sacrifice, one drop shown falling into the 皿. Oaths were sealed 歃血, lips touched to it.',
    lore_zh:'《说文》：血，祭所薦牲血也。——皿中那一滴牲血。古人盟誓「歃血」，以唇沾之为信。'},
   {ch:'電', py:'diàn', en:'THE STORM — the sky itself strikes',     zh:'雷霆——天怒地击',
    era:2, dur:70, spawn:0.85, cap:15, spd:74, bolt:2.4, weather:'storm', mix:[['gui',3],['yan',2]], goal:{survive:1},
-   lore_en:'Shuowen: 電，陰陽激燿也 — yin and yang striking sparks. The bolt 申 under the rain; and 申 alone was so awesome it became 神, the god.',
-   lore_zh:'《说文》：電，陰陽激燿也。——雨下之「申」。而「申」本身太震撼，又成了「神」：闪电即神明。'},
+   lore_en:'On the bones 申 is the lightning itself, a bolt forking off a jagged stem. Bronze sets it under 雨 to write 電; and 申 alone was so awesome it became 神, the god.',
+   lore_zh:'甲骨文「申」就是闪电本身：一道曲折的电光向两旁分叉。金文加「雨」成「電」；而「申」本身太震撼，又成了「神」：闪电即神明。'},
   {ch:'皿', py:'mǐn',  en:'THE VESSELS — slay both before the sand runs', zh:'双皿——沙尽前诛二器',
    era:3, dur:90, spawn:1.3, cap:10, spd:72, mix:[['gui',1]], goal:{boss:['meng','gu']},
    lore_en:'Shuowen: 皿，飯食之用器也 — the eating vessel, drawn in profile. Fill it with blood for 血, breed worms in it for 蠱: half the dark arts stand on this one dish.',
    lore_zh:'《说文》：皿，飯食之用器也。——礼器侧影。盛血为「血」，养虫为「蠱」——半部巫史立于此一皿。'},
   {ch:'龍', py:'lóng', en:'THE LAST NIGHT — the dragon, alone',     zh:'终夜——独面龙躯',
    era:3, dur:90, spawn:1.8, cap:8,  spd:76, mix:[['gui',1]], goal:{boss:['long']},
-   lore_en:'Shuowen: 龍，鱗蟲之長。能幽能明，能細能巨；春分而登天，秋分而潛淵 — chief of all scaled things: dark or shining, tiny or vast; it climbs to heaven at spring equinox and sinks into the deep at autumn.',
-   lore_zh:'《说文》：龍，鱗蟲之長。能幽能明，能細能巨，能短能長；春分而登天，秋分而潛淵。'}
+   lore_en:'On the bones 龍 is a serpent with a crested, horned head and gaping jaws, its body coiled back on itself. Shuowen later made it chief of all scaled things, climbing to heaven at spring equinox and sinking into the deep at autumn.',
+   lore_zh:'甲骨文「龍」是一条蛇身：头顶冠角，巨口大张，身躯回卷。《说文》后来说它是「鱗蟲之長」，春分而登天，秋分而潛淵。'}
 ];
 
 /* ============================== 文房四宝 · the scholar's desk ============================== */
