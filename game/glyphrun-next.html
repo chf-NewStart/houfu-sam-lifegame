@@ -402,7 +402,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b75 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b76 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -6146,12 +6146,15 @@ const Game = (function(){
     ctx.font = 'bold 12px "EB Garamond","Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'right';
     ctx.fillStyle = level>=3 ? era.accent : '#8bc34a';
     ctx.fillText(level>=3 ? 'LV MAX' : `LV${NUMCH[level]} ${coins}/${LV_XP[level+1]}`, lvLabelX(), WALL+24);   // clear of the 音 and 止 buttons
-    const lowPulse = lives<=2 ? 0.55+0.45*Math.sin(tGlobal*8) : 1;
+    // at low health the last hearts throb, but never fade so far they read as gone,
+    // and they stay legible even while you stand under the see-through readout
+    const lowPulse = lives<=2 ? 0.75+0.25*Math.sin(tGlobal*8) : 1;
+    const heartA = lives<=2 ? Math.max(hudA, 0.7) : hudA;
     for(let i=0;i<maxHp;i++){
       const sx = WALL+22+i*24;
       ctx.globalAlpha = 0.3*hudA; ctx.fillStyle = '#000';
       ctx.fillRect(sx, WALL+14, 20, 9);
-      if(i < lives){ ctx.globalAlpha = lowPulse*hudA; ctx.fillStyle = '#f0674a'; ctx.fillRect(sx+1, WALL+15, 18, 7); }
+      if(i < lives){ ctx.globalAlpha = lowPulse*heartA; ctx.fillStyle = '#f0674a'; ctx.fillRect(sx+1, WALL+15, 18, 7); }
       ctx.globalAlpha = 0.5*hudA; ctx.strokeStyle = '#f0674a'; ctx.lineWidth = 1;
       ctx.strokeRect(sx+0.5, WALL+14.5, 20, 9);
     }
@@ -6923,7 +6926,7 @@ const Game = (function(){
                          desk, elems, synOn, pools, sealSave: seal, codexSave: seen, acts, hails, arcs, brushInk, inkMo, bei, loanOwed }),
            // for scripted checks: call a summon, set the sky, jump a level, fire a gift now
            test: { glyph: (ch)=>applyGlyphEffect(ch), sky: (w)=>{ weather = w; wBoltT = 0.3; }, lv: (n)=>{ level = n; },
-                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, bei: (n)=>{ bei = n; }, market: ()=>openMarket(), ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; }, endWave: ()=>{ waveT = 0; }, at: (x, y)=>{ player.x = x; player.y = y; } } };
+                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, bei: (n)=>{ bei = n; }, market: ()=>openMarket(), ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; }, endWave: ()=>{ waveT = 0; }, hp: (n, max)=>{ maxHp = max || startHearts(); lives = n; syncHud(); }, at: (x, y)=>{ player.x = x; player.y = y; } } };
 })();
 
 </script>

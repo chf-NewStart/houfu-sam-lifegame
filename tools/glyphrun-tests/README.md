@@ -6,4 +6,4 @@ Headless-Chrome checks for `game/glyphrun-next.html` (the preview) and `game/gly
 - `fxshot.mjs <outDir> <charIndex> '<json steps>'`: starts a battle and runs scripted steps (`eval`, `wait`, `shots`) for frame-by-frame captures. `fxshot-m.mjs` does the same on an emulated landscape phone (`MOBILE=1`).
 - `stshots.mjs`, `wpshots.mjs`: dense frame sheets of each character's strike and each weapon (need ffmpeg).
 
-The page exposes `Game.test.*` hooks for these (`glyph`, `sky`, `lv`, `gift`, `hurt`, `arm`, `noStrike`, `ink`, `bei`, `market`, `god`) and `Game.dbg()` for state.
+The page exposes `Game.test.*` hooks for these (`glyph`, `sky`, `lv`, `gift`, `hurt`, `arm`, `noStrike`, `ink`, `bei`, `market`, `god`, `hp`) and `Game.dbg()` for state.
