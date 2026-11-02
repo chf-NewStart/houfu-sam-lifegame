@@ -16,6 +16,14 @@ lookup; these books are the tie-breaker and depth source.
 
 - **甲骨文汉字对应表.pdf** — the oracle↔汉字 correspondence table used for
   b23's exact oracle glyphs (feeds tools/extract_glyphs.py → oracle-glyphs.json).
+- **甲骨文汉字对照表（小味草·注音释义版）.pdf** — the same table re-laid by
+  小味草 on Xiaohongshu (1,603 glyphs ↔ 792 汉字), adding pinyin over rare
+  characters and a 生僻字注音释义 appendix (readings + meanings). Use it for
+  pronunciations and lore/toast text; keep tracing glyphs from the original
+  above. Built from a screen recording of the post (Nov 2026), so it has doc
+  pages 2–17 and 21 only: page 1 (A–B) and appendix pages 18–20 (the entries
+  between H and Y) are missing. Footer: personal study only, no commercial use.
+  Only on the Mac's refs/ so far — not yet in the big library or on Drive.
 - **徐中舒《汉语古文字字形表》** — per-character form tables across
   甲骨(with dig citations)/金文(vessel names)/说文古文·籀文/篆.
   THE reference for the four-era strip (甲骨→金文→篆→隸/楷). Verified layout:
