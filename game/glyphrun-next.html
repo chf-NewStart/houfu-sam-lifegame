@@ -402,7 +402,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b76 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b77 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -3904,7 +3904,12 @@ const Game = (function(){
     if(banner){                                   // a boss arrives: the world holds its breath
       banner.t += dt;
       if(banner.t >= banner.dur) banner = null;
-      else dt *= 0.3;
+      else {
+        // the strip goes see-through while you stand under it
+        const by = CH*0.32, under = player && player.y > by - 30 && player.y < by + 96 + 40 ? 1 : 0;
+        banner.under = (banner.under || 0) + (under - (banner.under || 0))*Math.min(1, dt*10);
+        dt *= 0.3;
+      }
     }
     if(stopT > 0){ stopT -= dt; dt *= 0.06; }     // the pause IS the stroke
     tGlobal += dt;
@@ -6185,9 +6190,9 @@ const Game = (function(){
 
     // boss arrival banner
     if(banner){
-      const a = Math.min(1, banner.t*3, (banner.dur-banner.t)*1.6);
+      const a = Math.min(1, banner.t*3, (banner.dur-banner.t)*1.6)*(1 - 0.65*(banner.under || 0));
       ctx.save();
-      ctx.globalAlpha = 0.8*a; ctx.fillStyle = '#050505';
+      ctx.globalAlpha = 0.8*a*(1 - 0.5*(banner.under || 0)); ctx.fillStyle = '#050505';
       ctx.fillRect(WALL, CH*0.32, CW-WALL*2, 96);
       ctx.globalAlpha = a;
       ctx.fillStyle = GHOST; ctx.shadowColor = GHOST; ctx.shadowBlur = 18;
@@ -6926,7 +6931,7 @@ const Game = (function(){
                          desk, elems, synOn, pools, sealSave: seal, codexSave: seen, acts, hails, arcs, brushInk, inkMo, bei, loanOwed }),
            // for scripted checks: call a summon, set the sky, jump a level, fire a gift now
            test: { glyph: (ch)=>applyGlyphEffect(ch), sky: (w)=>{ weather = w; wBoltT = 0.3; }, lv: (n)=>{ level = n; },
-                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, bei: (n)=>{ bei = n; }, market: ()=>openMarket(), ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; }, endWave: ()=>{ waveT = 0; }, hp: (n, max)=>{ maxHp = max || startHearts(); lives = n; syncHud(); }, at: (x, y)=>{ player.x = x; player.y = y; } } };
+                   gift: ()=>{ player.pulseT = 0; }, hurt: ()=>hurtPlayer(null), arm: (key, lv)=>{ weapons = key ? [{key, lv: lv||1, t: 0}] : []; }, noStrike: (on)=>{ testNoStrike = !!on; }, bei: (n)=>{ bei = n; }, market: ()=>openMarket(), ink: ()=>{ brushInk = BRUSH_FULL; }, god: (on)=>{ lives = on ? 99 : lives; maxHp = on ? 99 : maxHp; }, endWave: ()=>{ waveT = 0; }, hp: (n, max)=>{ maxHp = max || startHearts(); lives = n; syncHud(); }, at: (x, y)=>{ player.x = x; player.y = y; }, banner: (type)=>showBanner(type || 'gui') } };
 })();
 
 </script>
