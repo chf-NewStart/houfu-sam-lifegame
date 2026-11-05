@@ -402,7 +402,7 @@
       <div class="title"><span class="cn">字源</span>GLYPH RUN</div>
     </div>
     <div class="sub" data-en="Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder." data-zh="撑过长夜，就是逆流时光。你就是一个「字」——群鬼自暗处涌来，笔墨自会出手。掉落的古字就是经验：升级即进化成同族新字，直到甲骨文本形。每撑过一波便开一道门，通往更深的古代——从隶书到甲骨文——夜也越难熬。">Survive the night and you'll travel back in time. You ARE a character — spirits swarm from the dark and your ink strikes back on its own. Fallen glyphs are experience: level up to EVOLVE into related characters, all the way to your oracle-bone form. Every survived wave opens a gate deeper into the past — 隸書 to 甲骨文 — and the night gets harder.</div>
-    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b77 preview</span>
+    <a class="back" href="/" data-en="← back to the arcade" data-zh="← 返回游戏厅">← back to the arcade</a> <span class="buildtag" style="color:#3a3a3a;font-size:0.62rem">b78 preview</span>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()">中文</button>
 </div>
@@ -2310,12 +2310,12 @@ const SYNERGIES = {
 const STAGES = [
   {ch:'人', py:'rén',  en:'FIRST STEPS — the shades gather',        zh:'初行——群影渐聚',
    era:0, dur:45, spawn:1.1, cap:11, spd:60, mix:[['gui',1]], goal:{survive:1},
-   lore_en:'人 is a person seen from the side, bowing into work. Shuowen calls humans 天地之性最贵者 — the dearest thing between heaven and earth.',
-   lore_zh:'「人」是侧身躬身劳作之形。《说文》：天地之性最贵者也。'},
+   lore_en:'人 is a person seen from the side, arms hanging, back gently bent. Turn the same person to face you, arms spread, and you have 大.',
+   lore_zh:'「人」是侧立之人：双臂下垂，背微躬。转过身来正面张臂，便是「大」。'},
   {ch:'燕', py:'yàn',  en:'THE FLOCK — swift wings, kill 15',       zh:'燕群——疾翼，斩十五',
    era:0, dur:75, spawn:0.7, cap:14, spd:64, mix:[['yan',5],['gui',2]], goal:{kill:18},
-   lore_en:'Shuowen: 燕燕，玄鳥也 — the dark bird, drawn whole: head, spread wings, forked tail. So loved it was borrowed for 宴, the feast.',
-   lore_zh:'《说文》：燕燕，玄鳥也。——整只燕子：头、张翅、叉尾。古人爱其形，借去写「宴」。'},
+   lore_en:'On the bones 燕 is the swallow drawn whole: head, spread wings, forked tail. Old texts borrow it for its sound to write 宴, the feast.',
+   lore_zh:'甲骨文「燕」是整只燕子：头、张翅、叉尾。古书又借其音写「宴」，如「燕飨」。'},
   {ch:'火', py:'huǒ',  en:'THE BURNING FIELD — survive the fires',  zh:'燎原——火中求生',
    era:1, dur:60, spawn:1.0, cap:13, spd:66, fire:2.2, mix:[['gui',3],['shi',1]], goal:{survive:1},
    lore_en:'火 is tongues of flame leaping from one base. On the bones it is almost a twin of 山, the peaks — scribes told them apart by context. (Fire as the phase of the South is Han five-phase thought, laid on much later.)',
@@ -2326,24 +2326,24 @@ const STAGES = [
    lore_zh:'「央」是颈上横着扁担的人——正被压在正当中。所以「央」意为正中，如「中央」。'},
   {ch:'矢', py:'shǐ',  en:'THE VOLLEY — arrows from every dark',    zh:'万矢——暗处放箭',
    era:1, dur:60, spawn:0.75, cap:14, spd:68, mix:[['she',4],['yan',2]], goal:{survive:1},
-   lore_en:'矢 is the whole arrow: point, shaft, fletching. Swear on it and you get 誓 — the oath, a word as straight as an arrow.',
-   lore_zh:'「矢」是完整一支箭：镞、杆、羽。指箭为誓，便有了「誓」——如矢之直的一句话。'},
+   lore_en:'矢 is the whole arrow: point, shaft, fletching. It was also borrowed to mean "to swear", as in 矢志, a vow held fast. The later 誓 has no arrow in it: it is 言, speech, with 折 for its sound.',
+   lore_zh:'「矢」是完整一支箭：镞、杆、羽。又借作「发誓」之义，如「矢志」。后起的「誓」里并没有箭：从言，折声。'},
   {ch:'壴', py:'zhù',  en:'THE DRUMS — cross the rings, kill 10',   zh:'战鼓——穿越震波，斩十',
    era:2, dur:80, spawn:0.9, cap:13, spd:66, mix:[['drum',3],['gui',2],['yan',1]], goal:{kill:12},
    lore_en:'壴 is a war drum standing on its frame, a plume on top. Add a hand with a stick and it becomes 鼓, to drum.',
    lore_zh:'「壴」是立在架上的战鼓，顶有羽饰。加一只执槌的手，便是「鼓」。'},
   {ch:'血', py:'xuè',  en:'THE FEEDING DARK — fell the priests, kill 18', zh:'血祭——先斩其祭，共斩十八',
    era:2, dur:90, spawn:0.7, cap:17, spd:72, mix:[['xue',2],['gui',4],['shi',1]], goal:{kill:22},
-   lore_en:'Shuowen: 血，祭所薦牲血也 — the beast-blood offered in sacrifice, one drop shown falling into the 皿. Oaths were sealed 歃血, lips touched to it.',
-   lore_zh:'《说文》：血，祭所薦牲血也。——皿中那一滴牲血。古人盟誓「歃血」，以唇沾之为信。'},
+   lore_en:'On the bones 血 is a 皿 with a drop inside it: the beast-blood offered in sacrifice. Oaths were sealed 歃血, lips touched to it.',
+   lore_zh:'甲骨文「血」是「皿」中一点：祭祀所献的牲血。古人盟誓「歃血」，以唇沾之为信。'},
   {ch:'電', py:'diàn', en:'THE STORM — the sky itself strikes',     zh:'雷霆——天怒地击',
    era:2, dur:70, spawn:0.85, cap:15, spd:74, bolt:2.4, weather:'storm', mix:[['gui',3],['yan',2]], goal:{survive:1},
    lore_en:'On the bones 申 is the lightning itself, a bolt forking off a jagged stem. Bronze sets it under 雨 to write 電; and 申 alone was so awesome it became 神, the god.',
    lore_zh:'甲骨文「申」就是闪电本身：一道曲折的电光向两旁分叉。金文加「雨」成「電」；而「申」本身太震撼，又成了「神」：闪电即神明。'},
   {ch:'皿', py:'mǐn',  en:'THE VESSELS — slay both before the sand runs', zh:'双皿——沙尽前诛二器',
    era:3, dur:90, spawn:1.3, cap:10, spd:72, mix:[['gui',1]], goal:{boss:['meng','gu']},
-   lore_en:'Shuowen: 皿，飯食之用器也 — the eating vessel, drawn in profile. Fill it with blood for 血, breed worms in it for 蠱: half the dark arts stand on this one dish.',
-   lore_zh:'《说文》：皿，飯食之用器也。——礼器侧影。盛血为「血」，养虫为「蠱」——半部巫史立于此一皿。'},
+   lore_en:'On the bones 皿 is a footed basin drawn in profile, a vessel for food and offerings. Put a drop in it for 血, worms for 蠱: half the dark arts stand on this one dish.',
+   lore_zh:'甲骨文「皿」是侧视的高足之盆，盛食献祭之器。中加一点为「血」，养虫为「蠱」——半部巫史立于此一皿。'},
   {ch:'龍', py:'lóng', en:'THE LAST NIGHT — the dragon, alone',     zh:'终夜——独面龙躯',
    era:3, dur:90, spawn:1.8, cap:8,  spd:76, mix:[['gui',1]], goal:{boss:['long']},
    lore_en:'On the bones 龍 is a serpent with a crested, horned head and gaping jaws, its body coiled back on itself. Shuowen later made it chief of all scaled things, climbing to heaven at spring equinox and sinking into the deep at autumn.',
@@ -2617,7 +2617,7 @@ const BOW_SIGHT = 340;                    // the bow no longer snipes across the
 const ERAS = {
   kai:    {name_en:'Clerical Script', name_zh:'隶书',   sub:'隸書', ink:'#f0e9d2', accent:'#e8b04a',
            sky:['#0d1220','#141b2e'], hill:'#1a2540'},
-  seal:   {name_en:'Seal Script',    name_zh:'篆书',   sub:'篆書', ink:'#ffcaa8', accent:'#e0533a',
+  seal:   {name_en:'Seal Script',    name_zh:'篆书',   sub:'篆書', ink:'#ffcaa8', accent:'#e0533a', hud:'#ff9a7e',   // hud: the accent is too close to this stage's red for small HUD marks
            sky:['#1c0d12','#2a1016'], hill:'#3a141c'},
   bronze: {name_en:'Bronze Script',  name_zh:'金文',   sub:'金文', ink:'#d6e8b8', accent:'#8bc34a',
            sky:['#0a1512','#0e1f1a'], hill:'#123028'},
@@ -6167,12 +6167,13 @@ const Game = (function(){
     ctx.font = 'bold 13px "EB Garamond","Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left';
     ctx.fillText('♥', WALL+6, WALL+23);
     ctx.restore();
+    const hudTint = era.hud || era.accent;
     for(let i=0; i<weapons.length; i++){
       const w = weapons[i];
       ctx.save(); ctx.globalAlpha = hudA;
-      drawWeaponIcon(ctx, w.key, w.lv, WALL+20+i*34, WALL+46, 20, era.accent);
+      drawWeaponIcon(ctx, w.key, w.lv, WALL+20+i*34, WALL+46, 20, hudTint);
       ctx.restore();
-      ctx.save(); ctx.fillStyle = era.accent; ctx.globalAlpha = 0.9*hudA;
+      ctx.save(); ctx.fillStyle = hudTint; ctx.globalAlpha = 0.9*hudA;
       for(let pip=0; pip<w.lv; pip++) ctx.fillRect(WALL+13+i*34+pip*7, WALL+58, 4, 3);
       if(w.res){                                        // the character you two spell together
         ctx.font = 'bold 13px "EB Garamond","Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'center';
@@ -6183,7 +6184,7 @@ const Game = (function(){
     }
     if(!stage){                                         // 貝: the purse, beside the arms
       ctx.save(); ctx.font = 'bold 13px "EB Garamond","Ma Shan Zheng",KaiTi,serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.globalAlpha = 0.9*hudA; ctx.fillStyle = era.accent;
+      ctx.globalAlpha = 0.9*hudA; ctx.fillStyle = hudTint;
       ctx.fillText('貝 ' + bei + (loanOwed ? '  債' + loanOwed : ''), WALL + 6 + Math.max(1, weapons.length)*34, WALL + 47);
       ctx.restore();
     }
